@@ -1,4 +1,4 @@
-import { GraduationCap, Users, Calendar, Plus, Loader2 } from "lucide-react";
+import { GraduationCap, Users, Calendar, Plus, Loader2, MapPin } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
 const statusMap: Record<string, string> = {
@@ -17,14 +18,38 @@ const statusMap: Record<string, string> = {
 
 export default function ProgrammasPage() {
   const [addOpen, setAddOpen] = useState(false);
+  const [selectedArea, setSelectedArea] = useState<string>("");
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
   const { toast } = useToast();
+
+  const { data: areas = [] } = useQuery({
+    queryKey: ["areas"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("areas").select("*").order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: neighborhoods = [] } = useQuery({
+    queryKey: ["neighborhoods"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("neighborhoods").select("*").order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const filteredNeighborhoods = selectedArea
+    ? neighborhoods.filter((n: any) => n.area_id === selectedArea)
+    : neighborhoods;
 
   const { data: programs = [], isLoading, refetch } = useQuery({
     queryKey: ["programs"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("programs")
-        .select("*, schools(name), program_clients(count)")
+        .select("*, schools(name), program_clients(count), areas(name), neighborhoods(name)")
         .order("start_date", { ascending: true });
       if (error) throw error;
       return data ?? [];
@@ -40,13 +65,17 @@ export default function ProgrammasPage() {
       start_date: (form.get("start_date") as string) || null,
       end_date: (form.get("end_date") as string) || null,
       max_participants: Number(form.get("max_participants")) || 10,
-    });
+      area_id: selectedArea || null,
+      neighborhood_id: selectedNeighborhood || null,
+    } as any);
 
     if (error) {
       toast({ title: "Fout", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Programma aangemaakt" });
       setAddOpen(false);
+      setSelectedArea("");
+      setSelectedNeighborhood("");
       refetch();
     }
   };
@@ -74,6 +103,30 @@ export default function ProgrammasPage() {
                 <div><Label>Einddatum</Label><Input name="end_date" type="date" /></div>
               </div>
               <div><Label>Max deelnemers</Label><Input name="max_participants" type="number" defaultValue={10} min={1} /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Gebied</Label>
+                  <Select value={selectedArea} onValueChange={(v) => { setSelectedArea(v); setSelectedNeighborhood(""); }}>
+                    <SelectTrigger><SelectValue placeholder="Selecteer gebied" /></SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      {areas.map((a: any) => (
+                        <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Wijk</Label>
+                  <Select value={selectedNeighborhood} onValueChange={setSelectedNeighborhood} disabled={!selectedArea}>
+                    <SelectTrigger><SelectValue placeholder="Selecteer wijk" /></SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      {filteredNeighborhoods.map((n: any) => (
+                        <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
               <Button type="submit" className="w-full">Opslaan</Button>
             </form>
           </DialogContent>
@@ -105,6 +158,12 @@ export default function ProgrammasPage() {
                 </div>
                 <h3 className="mt-3 font-display text-base font-bold text-card-foreground">{prog.name}</h3>
                 {prog.schools?.name && <p className="text-xs text-muted-foreground">{prog.schools.name}</p>}
+                {(prog.areas?.name || prog.neighborhoods?.name) && (
+                  <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                    <MapPin className="h-3 w-3" />
+                    {prog.areas?.name}{prog.neighborhoods?.name ? ` — ${prog.neighborhoods.name}` : ""}
+                  </p>
+                )}
                 <div className="mt-4 space-y-2 border-t border-border pt-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="flex items-center gap-1.5 text-muted-foreground"><Users className="h-3.5 w-3.5" /> Deelnemers</span>
