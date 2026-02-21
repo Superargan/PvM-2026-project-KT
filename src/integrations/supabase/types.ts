@@ -271,42 +271,62 @@ export type Database = {
       }
       programs: {
         Row: {
+          area_id: string | null
           created_at: string
           description: string | null
           end_date: string | null
           id: string
           max_participants: number | null
           name: string
+          neighborhood_id: string | null
           school_id: string | null
           start_date: string | null
           status: string | null
           updated_at: string
         }
         Insert: {
+          area_id?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
           id?: string
           max_participants?: number | null
           name: string
+          neighborhood_id?: string | null
           school_id?: string | null
           start_date?: string | null
           status?: string | null
           updated_at?: string
         }
         Update: {
+          area_id?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
           id?: string
           max_participants?: number | null
           name?: string
+          neighborhood_id?: string | null
           school_id?: string | null
           start_date?: string | null
           status?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "programs_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programs_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "neighborhoods"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "programs_school_id_fkey"
             columns: ["school_id"]
