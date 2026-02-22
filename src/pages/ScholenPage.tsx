@@ -266,14 +266,22 @@ export default function ScholenPage() {
       const rows = await readFileAsRows(file);
       if (rows.length === 0) throw new Error("Bestand is leeg");
 
-      const mapped = rows.map((r) => ({
-        name: r["naam"] || r["Naam"] || r["name"] || r["School"] || r["school"] || "",
-        address: r["adres"] || r["Adres"] || r["address"] || r["Address"] || null,
-        contact_email: r["email"] || r["Email"] || r["E-mail"] || r["e-mail"] || null,
-        contact_phone: r["telefoon"] || r["Telefoon"] || r["phone"] || r["Phone"] || null,
-        website_url: r["website"] || r["Website"] || r["website_url"] || r["URL"] || r["url"] || r["Website URL"] || r["website url"] || null,
-        student_count: Number(r["leerlingen"] || r["Leerlingen"] || r["student_count"] || r["Aantal leerlingen"] || 0) || 0,
-      })).filter((s) => s.name);
+      const mapped = rows.map((r) => {
+        // Build address from DUO columns if available
+        const duoStraat = r["STRAATNAAM"];
+        const duoNr = r["HUISNUMMER-TOEVOEGING"];
+        const duoPostcode = r["POSTCODE"];
+        const duoAddress = duoStraat ? `${duoStraat} ${duoNr || ""}, ${duoPostcode || ""}`.trim().replace(/,\s*$/, "") : null;
+
+        return {
+          name: r["naam"] || r["Naam"] || r["name"] || r["School"] || r["school"] || r["VESTIGINGSNAAM"] || "",
+          address: r["adres"] || r["Adres"] || r["address"] || r["Address"] || duoAddress || null,
+          contact_email: r["email"] || r["Email"] || r["E-mail"] || r["e-mail"] || null,
+          contact_phone: r["telefoon"] || r["Telefoon"] || r["phone"] || r["Phone"] || r["TELEFOONNUMMER"] || null,
+          website_url: r["website"] || r["Website"] || r["website_url"] || r["URL"] || r["url"] || r["Website URL"] || r["website url"] || r["INTERNETADRES"] || null,
+          student_count: Number(r["leerlingen"] || r["Leerlingen"] || r["student_count"] || r["Aantal leerlingen"] || 0) || 0,
+        };
+      }).filter((s) => s.name);
 
       if (mapped.length === 0) throw new Error("Geen geldige scholen gevonden. Zorg dat er een kolom 'Naam' is.");
 
