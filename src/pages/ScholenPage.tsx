@@ -1,14 +1,15 @@
-import { School, Search, Plus, MapPin, Loader2, Upload, Users, Trash2, Pencil, UserPlus } from "lucide-react";
+import { School, Search, Plus, MapPin, Loader2, Upload, Users, Trash2, Pencil, UserPlus, Wand2 } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from "xlsx";
+import { getAreaFromAddress } from "@/lib/postcodeMapping";
 
 // ── CSV / Outlook helpers ──────────────────────────────────────────────
 
@@ -170,16 +171,41 @@ export default function ScholenPage() {
     },
   });
 
+  // Auto-detect neighborhood from address postcode
+  const autoDetectNeighborhood = (address: string) => {
+    const areaName = getAreaFromAddress(address);
+    if (!areaName) return;
+    // Find the first neighborhood in this area
+    const area = areas.find((a: any) => a.name === areaName);
+    if (area && area.neighborhoods?.length > 0) {
+      setSelectedNeighborhood(area.neighborhoods[0].id);
+    }
+  };
+
   const handleAddSchool = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
+    const address = (form.get("address") as string) || "";
+
+    // Auto-detect neighborhood if not manually selected
+    let neighborhoodId = selectedNeighborhood || null;
+    if (!neighborhoodId && address) {
+      const areaName = getAreaFromAddress(address);
+      if (areaName) {
+        const area = areas.find((a: any) => a.name === areaName);
+        if (area && area.neighborhoods?.length > 0) {
+          neighborhoodId = area.neighborhoods[0].id;
+        }
+      }
+    }
+
     const { error } = await supabase.from("schools").insert({
       name: form.get("name") as string,
-      address: (form.get("address") as string) || null,
+      address: address || null,
       contact_email: (form.get("contact_email") as string) || null,
       contact_phone: (form.get("contact_phone") as string) || null,
       student_count: Number(form.get("student_count")) || 0,
-      neighborhood_id: selectedNeighborhood || null,
+      neighborhood_id: neighborhoodId,
     });
 
     if (error) {
@@ -191,6 +217,34 @@ export default function ScholenPage() {
       refetch();
     }
   };
+
+  // ── Bulk-assign schools to neighborhoods based on postcode ──
+  const bulkAssignMutation = useMutation({
+    mutationFn: async () => {
+      let assigned = 0;
+      for (const school of schools as any[]) {
+        if (school.neighborhood_id || !school.address) continue;
+        const areaName = getAreaFromAddress(school.address);
+        if (!areaName) continue;
+        const area = areas.find((a: any) => a.name === areaName);
+        if (!area || !area.neighborhoods?.length) continue;
+        const neighborhoodId = area.neighborhoods[0].id;
+        const { error } = await supabase
+          .from("schools")
+          .update({ neighborhood_id: neighborhoodId })
+          .eq("id", school.id);
+        if (!error) assigned++;
+      }
+      return assigned;
+    },
+    onSuccess: (count) => {
+      toast({ title: `${count} scholen gekoppeld aan een gebied` });
+      queryClient.invalidateQueries({ queryKey: ["schools"] });
+    },
+    onError: (err: any) => {
+      toast({ title: "Fout bij koppelen", description: err.message, variant: "destructive" });
+    },
+  });
 
   // ── School file upload (Excel + CSV) ──
 
@@ -355,6 +409,15 @@ export default function ScholenPage() {
           <p className="text-sm text-muted-foreground">{schools.length} partnerscholen geregistreerd</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {/* Bulk assign areas */}
+          <Button
+            variant="outline"
+            onClick={() => bulkAssignMutation.mutate()}
+            disabled={bulkAssignMutation.isPending}
+          >
+            <Wand2 className="h-4 w-4" />
+            {bulkAssignMutation.isPending ? "Bezig..." : "Gebieden Toewijzen"}
+          </Button>
           {/* Contact upload dialog */}
           <Dialog open={contactUploadOpen} onOpenChange={setContactUploadOpen}>
             <DialogTrigger asChild>
@@ -437,7 +500,7 @@ export default function ScholenPage() {
               </DialogHeader>
               <form onSubmit={handleAddSchool} className="space-y-4">
                 <div><Label>Naam *</Label><Input name="name" required /></div>
-                <div><Label>Adres</Label><Input name="address" /></div>
+                <div><Label>Adres</Label><Input name="address" onBlur={(e) => autoDetectNeighborhood(e.target.value)} /></div>
                 <div>
                   <Label>Gebied / Wijk</Label>
                   <Select value={selectedNeighborhood} onValueChange={setSelectedNeighborhood}>
