@@ -266,6 +266,15 @@ export default function ScholenPage() {
       const rows = await readFileAsRows(file);
       if (rows.length === 0) throw new Error("Bestand is leeg");
 
+      // Build a lookup: area name (lowercase) → { areaId, neighborhoods: [{ id, name }] }
+      const areaLookup = new Map<string, { areaId: string; neighborhoods: { id: string; name: string }[] }>();
+      for (const a of areas) {
+        areaLookup.set(a.name.toLowerCase(), {
+          areaId: a.id,
+          neighborhoods: (a as any).neighborhoods ?? [],
+        });
+      }
+
       const mapped = rows.map((r) => {
         // Build address from DUO columns if available
         const duoStraat = r["STRAATNAAM"];
@@ -273,28 +282,56 @@ export default function ScholenPage() {
         const duoPostcode = r["POSTCODE"];
         const duoAddress = duoStraat ? `${duoStraat} ${duoNr || ""}, ${duoPostcode || ""}`.trim().replace(/,\s*$/, "") : null;
 
+        const address = r["adres"] || r["Adres"] || r["address"] || r["Address"] || duoAddress || null;
+
+        // Auto-detect neighborhood from postcode
+        let neighborhoodId: string | null = null;
+        if (address) {
+          const areaName = getAreaFromAddress(address);
+          if (areaName) {
+            const entry = areaLookup.get(areaName.toLowerCase());
+            if (entry && entry.neighborhoods.length > 0) {
+              // Pick first neighborhood in that area as default
+              neighborhoodId = entry.neighborhoods[0].id;
+            }
+          }
+        }
+
         return {
           name: r["naam"] || r["Naam"] || r["name"] || r["School"] || r["school"] || r["VESTIGINGSNAAM"] || "",
-          address: r["adres"] || r["Adres"] || r["address"] || r["Address"] || duoAddress || null,
+          address,
           contact_email: r["email"] || r["Email"] || r["E-mail"] || r["e-mail"] || null,
           contact_phone: r["telefoon"] || r["Telefoon"] || r["phone"] || r["Phone"] || r["TELEFOONNUMMER"] || null,
           website_url: r["website"] || r["Website"] || r["website_url"] || r["URL"] || r["url"] || r["Website URL"] || r["website url"] || r["INTERNETADRES"] || null,
           student_count: Number(r["leerlingen"] || r["Leerlingen"] || r["student_count"] || r["Aantal leerlingen"] || 0) || 0,
+          neighborhood_id: neighborhoodId,
         };
       }).filter((s) => s.name);
 
       if (mapped.length === 0) throw new Error("Geen geldige scholen gevonden. Zorg dat er een kolom 'Naam' is.");
 
-      for (let i = 0; i < mapped.length; i += 50) {
-        const chunk = mapped.slice(i, i + 50);
+      // Fetch existing school names for deduplication
+      const { data: existingSchools } = await supabase.from("schools").select("name");
+      const existingNames = new Set((existingSchools ?? []).map((s) => s.name.toLowerCase().trim()));
+      const newSchools = mapped.filter((s) => !existingNames.has(s.name.toLowerCase().trim()));
+
+      if (newSchools.length === 0) {
+        return { imported: 0, skipped: mapped.length };
+      }
+
+      for (let i = 0; i < newSchools.length; i += 50) {
+        const chunk = newSchools.slice(i, i + 50);
         const { error } = await supabase.from("schools").insert(chunk);
         if (error) throw error;
       }
 
-      return mapped.length;
+      return { imported: newSchools.length, skipped: mapped.length - newSchools.length };
     },
-    onSuccess: (count) => {
-      toast({ title: `${count} scholen geïmporteerd` });
+    onSuccess: (result) => {
+      const msg = result.skipped > 0
+        ? `${result.imported} scholen geïmporteerd, ${result.skipped} duplicaten overgeslagen`
+        : `${result.imported} scholen geïmporteerd`;
+      toast({ title: msg });
       setUploadOpen(false);
       queryClient.invalidateQueries({ queryKey: ["schools"] });
     },
