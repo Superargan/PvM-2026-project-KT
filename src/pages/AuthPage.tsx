@@ -4,10 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 export default function AuthPage() {
-  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -16,23 +14,10 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
-      if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        toast.success("Welkom terug!");
-        navigate("/");
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: { full_name: fullName },
-            emailRedirectTo: window.location.origin,
-          },
-        });
-        if (error) throw error;
-        toast.success("Account aangemaakt! Controleer je e-mail om te bevestigen.");
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      toast.success("Welkom terug!");
+      navigate("/");
     } catch (error: any) {
       toast.error(error.message || "Er is iets misgegaan");
     } finally {
@@ -73,27 +58,12 @@ export default function AuthPage() {
             </h1>
           </div>
 
-          <h2 className="font-display text-2xl font-extrabold text-foreground">
-            {isLogin ? "Inloggen" : "Account aanmaken"}
-          </h2>
+          <h2 className="font-display text-2xl font-extrabold text-foreground">Inloggen</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {isLogin ? "Welkom terug! Log in met je gegevens." : "Maak een nieuw medewerker-account aan."}
+            Welkom terug! Log in met je gegevens.
           </p>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            {!isLogin && (
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-foreground">Volledige naam</label>
-                <input
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required={!isLogin}
-                  placeholder="Jan de Vries"
-                  className="w-full rounded-lg border border-input bg-card px-3 py-2.5 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-              </div>
-            )}
             <div>
               <label className="mb-1.5 block text-sm font-medium text-foreground">E-mailadres</label>
               <input
@@ -122,18 +92,12 @@ export default function AuthPage() {
               disabled={loading}
               className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
-              {loading ? "Even geduld..." : isLogin ? "Inloggen" : "Account aanmaken"}
+              {loading ? "Even geduld..." : "Inloggen"}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            {isLogin ? "Nog geen account? " : "Al een account? "}
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="font-semibold text-primary hover:underline"
-            >
-              {isLogin ? "Registreren" : "Inloggen"}
-            </button>
+          <p className="mt-6 text-center text-xs text-muted-foreground">
+            Geen account? Neem contact op met een beheerder voor een uitnodiging.
           </p>
         </div>
       </div>
