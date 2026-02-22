@@ -1,51 +1,62 @@
 
-# Registratie alleen op uitnodiging van beheerders
-
-## Overzicht
-De openbare "Registreren" optie wordt verwijderd van de loginpagina. Nieuwe medewerkers kunnen alleen worden toegevoegd door een beheerder (backoffice) via de Medewerkers-pagina. De loginpagina toont uitsluitend het inlogformulier.
+# Importeren met Outlook-exportbestanden
 
 ## Wat verandert er?
 
-### 1. Loginpagina vereenvoudigen
-- De "Registreren" knop en het registratieformulier worden verwijderd van de AuthPage
-- Gebruikers zien alleen het inlogformulier (e-mail + wachtwoord)
-- Geen mogelijkheid meer om zelf een account aan te maken
+De importfunctie wordt uitgebreid zodat naast Excel-bestanden (.xlsx/.xls) ook **CSV-bestanden** worden ondersteund. Outlook exporteert contactpersonen standaard als CSV-bestanden, vaak met puntkomma (;) als scheidingsteken en Windows-1252 codering.
 
-### 2. Uitnodigingsfunctie op Medewerkers-pagina
-De "Medewerker Toevoegen" knop op de Medewerkers-pagina wordt gekoppeld aan een uitnodigingsformulier:
-- Beheerder vult in: naam, e-mailadres en rol (backoffice of trainer)
-- Een backend-functie stuurt een uitnodigingsmail naar de nieuwe medewerker
-- De medewerker ontvangt een link om een wachtwoord in te stellen en het account te activeren
+## Aanpassingen
 
-### 3. Backend-functie voor uitnodigingen
-Een nieuwe backend-functie `invite-user` wordt aangemaakt die:
-- Controleert of de aanvrager een backoffice-rol heeft
-- Via de admin API een uitnodiging verstuurt naar het opgegeven e-mailadres
-- Automatisch het profiel en de juiste rol (backoffice/trainer) aanmaakt
-- Optioneel een koppeling maakt met een staff-record
+### 1. Bestandstypen uitbreiden
+- De upload accepteert nu ook `.csv`-bestanden
+- Automatische herkenning of het een Excel- of CSV-bestand is (op basis van extensie)
 
-### 4. Medewerkers-pagina uitbreiden
-- De mock-data wordt vervangen door echte data uit de database (profiles + staff + user_roles)
-- Een dialoogvenster voor "Medewerker Uitnodigen" met velden voor naam, e-mail en rol
-- Overzicht van alle medewerkers met hun actuele rol en status
+### 2. CSV-parsing toevoegen
+- CSV-bestanden worden gelezen met correcte tekencodering (UTF-8 en Windows-1252)
+- Ondersteuning voor zowel komma (,) als puntkomma (;) als scheidingsteken (Outlook gebruikt standaard puntkomma)
+
+### 3. Outlook-kolomnamen herkennen
+Outlook exporteert contactpersonen met Engelse of Nederlandse kolomnamen. De import herkent automatisch:
+- **Naam**: First Name, Last Name, Voornaam, Achternaam, Display Name, Weergavenaam
+- **E-mail**: E-mail Address, E-mailadres, Email
+- **Telefoon**: Business Phone, Home Phone, Mobile Phone, Telefoon op werk, Mobiele telefoon
+- **Functie**: Job Title, Functie
+- **Bedrijf/School**: Company, Bedrijf (wordt gematcht aan bestaande scholen)
+
+### 4. Contactpersonen-import (naast scholen-import)
+- Nieuwe "Contactpersonen Importeren" knop
+- Upload-dialoog specifiek voor contactpersonen
+- School wordt automatisch gematcht op naam uit het "Company/Bedrijf"-veld
+- Resultaat toont hoeveel contactpersonen geimporteerd en hoeveel niet gematcht konden worden
 
 ---
 
 ## Technische details
 
-### AuthPage.tsx
-- Verwijder alle registratie-gerelateerde state (`isLogin`, `fullName`) en UI-elementen
-- Alleen het inlogformulier behouden (e-mail + wachtwoord)
+### Wijzigingen in `src/pages/ScholenPage.tsx`:
 
-### Edge Function: `invite-user`
-- Ontvangt: `email`, `full_name`, `role` (backoffice/trainer)
-- Valideert dat de aanvrager backoffice-rechten heeft via JWT-token
-- Gebruikt `supabase.auth.admin.inviteUserByEmail()` om een uitnodiging te sturen
-- Na aanmaak: voegt een rij toe aan `user_roles` met de juiste rol
-- Het bestaande `handle_new_user` trigger zorgt automatisch voor het `profiles` record
+**Nieuwe state:**
+- `contactUploadOpen` voor de contactpersonen-importdialoog
 
-### MedewerkersPage.tsx
-- Vervang mock-data door queries op `profiles`, `staff` en `user_roles`
-- Voeg een dialoogvenster toe met formulier voor naam, e-mail en rolselectie
-- Bij verzenden wordt de `invite-user` backend-functie aangeroepen
-- Toon succes/foutmelding na het versturen van de uitnodiging
+**CSV-parseerlogica:**
+- Extensie-check: `.csv` wordt als tekst gelezen, `.xlsx`/`.xls` met XLSX-library
+- CSV wordt gesplitst op regels, eerste regel = kolomnamen
+- Scheidingsteken wordt automatisch gedetecteerd (puntkomma of komma)
+- Voor- en achternaam worden gecombineerd tot een volledige naam
+
+**Outlook-kolomherkenning:**
+- Een mapping-object dat veelvoorkomende Outlook-kolomnamen (EN + NL) koppelt aan databasevelden (`name`, `email`, `phone`, `function_title`, `school`)
+
+**School-matching:**
+- Het "Company" of "Bedrijf" veld wordt vergeleken met bestaande schoolnamen (case-insensitive)
+- Niet-gematchte rijen worden gerapporteerd aan de gebruiker
+
+**Batch insert:**
+- Contactpersonen worden in batches van 50 ingevoegd in de `referrers` tabel
+
+### Bestaande scholen-import
+- Wordt ook uitgebreid met CSV-ondersteuning (dezelfde parseerlogica)
+- Accepteert nu `.xlsx`, `.xls` en `.csv`
+
+### Database
+- Geen wijzigingen nodig. De `referrers` tabel heeft alle benodigde kolommen.
