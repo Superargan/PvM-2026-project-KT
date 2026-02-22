@@ -136,6 +136,7 @@ export default function ScholenPage() {
   const [contactDialogOpen, setContactDialogOpen] = useState(false);
   const [selectedSchool, setSelectedSchool] = useState<any>(null);
   const [editingReferrer, setEditingReferrer] = useState<any>(null);
+  const [selectedArea, setSelectedArea] = useState<string>("");
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -175,12 +176,21 @@ export default function ScholenPage() {
   const autoDetectNeighborhood = (address: string) => {
     const areaName = getAreaFromAddress(address);
     if (!areaName) return;
-    // Find the first neighborhood in this area
     const area = areas.find((a: any) => a.name === areaName);
-    if (area && area.neighborhoods?.length > 0) {
-      setSelectedNeighborhood(area.neighborhoods[0].id);
+    if (area) {
+      setSelectedArea(area.id);
+      if (area.neighborhoods?.length > 0) {
+        setSelectedNeighborhood(area.neighborhoods[0].id);
+      } else {
+        setSelectedNeighborhood("");
+      }
     }
   };
+
+  // Neighborhoods filtered by selected area
+  const filteredNeighborhoods = selectedArea
+    ? (areas.find((a: any) => a.id === selectedArea) as any)?.neighborhoods ?? []
+    : [];
 
   const handleAddSchool = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -212,7 +222,7 @@ export default function ScholenPage() {
       toast({ title: "Fout", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "School toegevoegd" });
-      setAddOpen(false);
+      setSelectedArea("");
       setSelectedNeighborhood("");
       refetch();
     }
@@ -223,7 +233,7 @@ export default function ScholenPage() {
     mutationFn: async () => {
       let assigned = 0;
       for (const school of schools as any[]) {
-        if (school.neighborhood_id || !school.address) continue;
+        if (!school.address) continue;
         const areaName = getAreaFromAddress(school.address);
         if (!areaName) continue;
         const area = areas.find((a: any) => a.name === areaName);
@@ -502,14 +512,27 @@ export default function ScholenPage() {
                 <div><Label>Naam *</Label><Input name="name" required /></div>
                 <div><Label>Adres</Label><Input name="address" onBlur={(e) => autoDetectNeighborhood(e.target.value)} /></div>
                 <div>
-                  <Label>Gebied / Wijk</Label>
-                  <Select value={selectedNeighborhood} onValueChange={setSelectedNeighborhood}>
+                  <Label>Gebied</Label>
+                  <Select value={selectedArea} onValueChange={(val) => { setSelectedArea(val); setSelectedNeighborhood(""); }}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecteer een wijk..." />
+                      <SelectValue placeholder="Selecteer een gebied..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {neighborhoodOptions.map((n: any) => (
-                        <SelectItem key={n.id} value={n.id}>{n.label}</SelectItem>
+                      {areas.map((a: any) => (
+                        <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Wijk</Label>
+                  <Select value={selectedNeighborhood} onValueChange={setSelectedNeighborhood} disabled={!selectedArea}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={selectedArea ? "Selecteer een wijk..." : "Kies eerst een gebied"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredNeighborhoods.map((n: any) => (
+                        <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
