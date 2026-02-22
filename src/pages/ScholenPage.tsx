@@ -569,13 +569,14 @@ export default function ScholenPage() {
               <tr className="border-b border-border bg-muted/50">
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">School</th>
                 <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground md:table-cell">Gebied</th>
+                <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground md:table-cell">Wijk</th>
                 <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Contactpersonen</th>
                 <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Leerlingen</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {schools.length === 0 && (
-                <tr><td colSpan={4} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen scholen gevonden</td></tr>
+                <tr><td colSpan={5} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen scholen gevonden</td></tr>
               )}
               {schools.map((school: any) => (
                 <tr key={school.id} className="transition-colors hover:bg-muted/30">
@@ -595,9 +596,18 @@ export default function ScholenPage() {
                     </div>
                   </td>
                   <td className="hidden px-5 py-4 md:table-cell">
-                    {school.neighborhoods ? (
+                    {school.neighborhoods?.areas?.name ? (
                       <span className="inline-flex items-center rounded-md bg-accent/10 px-2 py-1 text-xs font-medium text-accent">
-                        {school.neighborhoods.areas?.name ?? ""} – {school.neighborhoods.name}
+                        {school.neighborhoods.areas.name}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </td>
+                  <td className="hidden px-5 py-4 md:table-cell">
+                    {school.neighborhoods?.name ? (
+                      <span className="inline-flex items-center rounded-md bg-accent/10 px-2 py-1 text-xs font-medium text-accent">
+                        {school.neighborhoods.name}
                       </span>
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>
