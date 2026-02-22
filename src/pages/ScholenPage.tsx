@@ -1,4 +1,4 @@
-import { School, Search, Plus, MapPin, Loader2, Upload, Users, Trash2, Pencil, UserPlus, Wand2 } from "lucide-react";
+import { School, Search, Plus, MapPin, Loader2, Upload, Users, Trash2, Pencil, UserPlus, Wand2, FileText, Globe, Download } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -134,10 +134,12 @@ export default function ScholenPage() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [contactUploadOpen, setContactUploadOpen] = useState(false);
   const [contactDialogOpen, setContactDialogOpen] = useState(false);
+  const [docsDialogOpen, setDocsDialogOpen] = useState(false);
   const [selectedSchool, setSelectedSchool] = useState<any>(null);
   const [editingReferrer, setEditingReferrer] = useState<any>(null);
   const [selectedArea, setSelectedArea] = useState<string>("");
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
+  const [docUploading, setDocUploading] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -214,9 +216,10 @@ export default function ScholenPage() {
       address: address || null,
       contact_email: (form.get("contact_email") as string) || null,
       contact_phone: (form.get("contact_phone") as string) || null,
+      website_url: (form.get("website_url") as string) || null,
       student_count: Number(form.get("student_count")) || 0,
       neighborhood_id: neighborhoodId,
-    });
+    } as any);
 
     if (error) {
       toast({ title: "Fout", description: error.message, variant: "destructive" });
@@ -411,6 +414,69 @@ export default function ScholenPage() {
     ? (schools.find((s: any) => s.id === selectedSchool.id) as any)?.referrers ?? []
     : [];
 
+  // ── Documents for selected school ──
+  const { data: schoolDocs = [], refetch: refetchDocs } = useQuery({
+    queryKey: ["school-documents", selectedSchool?.id],
+    queryFn: async () => {
+      if (!selectedSchool?.id) return [];
+      const { data, error } = await supabase
+        .from("school_documents" as any)
+        .select("*")
+        .eq("school_id", selectedSchool.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!selectedSchool?.id && docsDialogOpen,
+  });
+
+  const handleDocUpload = async (e: React.ChangeEvent<HTMLInputElement>, category: string) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedSchool) return;
+    setDocUploading(true);
+    try {
+      const filePath = `${selectedSchool.id}/${Date.now()}_${file.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from("school-documents")
+        .upload(filePath, file);
+      if (uploadError) throw uploadError;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error: dbError } = await supabase.from("school_documents" as any).insert({
+        school_id: selectedSchool.id,
+        category,
+        file_name: file.name,
+        file_path: filePath,
+        uploaded_by: user?.id,
+      } as any);
+      if (dbError) throw dbError;
+
+      toast({ title: "Document geüpload" });
+      refetchDocs();
+    } catch (err: any) {
+      toast({ title: "Upload mislukt", description: err.message, variant: "destructive" });
+    } finally {
+      setDocUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleDocDelete = async (doc: any) => {
+    await supabase.storage.from("school-documents").remove([doc.file_path]);
+    const { error } = await supabase.from("school_documents" as any).delete().eq("id", doc.id);
+    if (error) {
+      toast({ title: "Fout", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Document verwijderd" });
+      refetchDocs();
+    }
+  };
+
+  const handleDocDownload = async (doc: any) => {
+    const { data } = await supabase.storage.from("school-documents").createSignedUrl(doc.file_path, 60);
+    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -541,6 +607,7 @@ export default function ScholenPage() {
                   <div><Label>E-mail</Label><Input name="contact_email" type="email" /></div>
                   <div><Label>Telefoon</Label><Input name="contact_phone" type="tel" /></div>
                 </div>
+                <div><Label>Website</Label><Input name="website_url" type="url" placeholder="https://..." /></div>
                 <div><Label>Aantal leerlingen</Label><Input name="student_count" type="number" min="0" /></div>
                 <Button type="submit" className="w-full">Opslaan</Button>
               </form>
@@ -592,6 +659,20 @@ export default function ScholenPage() {
                             <MapPin className="h-3 w-3" /> {school.address}
                           </p>
                         )}
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {(school as any).website_url && (
+                            <a href={(school as any).website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary hover:underline">
+                              <Globe className="h-3 w-3" /> Website
+                            </a>
+                          )}
+                          <button
+                            type="button"
+                            className="flex items-center gap-1 text-xs text-primary hover:underline"
+                            onClick={() => { setSelectedSchool(school); setDocsDialogOpen(true); }}
+                          >
+                            <FileText className="h-3 w-3" /> Documenten
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </td>
@@ -710,6 +791,71 @@ export default function ScholenPage() {
                 )}
               </div>
             </form>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Documents dialog */}
+      <Dialog open={docsDialogOpen} onOpenChange={(open) => {
+        setDocsDialogOpen(open);
+        if (!open) setSelectedSchool(null);
+      }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Documenten – {selectedSchool?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+            {/* Schoolgids upload */}
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-card-foreground">Schoolgids</p>
+              {(schoolDocs as any[]).filter((d: any) => d.category === "schoolgids").map((doc: any) => (
+                <div key={doc.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="text-sm truncate">{doc.file_name}</span>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDocDownload(doc)}>
+                      <Download className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDocDelete(doc)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              <label className="flex cursor-pointer items-center gap-2 rounded-lg border-2 border-dashed border-border p-3 hover:bg-muted/30">
+                <Upload className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">{docUploading ? "Bezig..." : "Schoolgids uploaden"}</span>
+                <input type="file" className="hidden" onChange={(e) => handleDocUpload(e, "schoolgids")} disabled={docUploading} />
+              </label>
+            </div>
+
+            {/* Overig upload */}
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-card-foreground">Overig</p>
+              {(schoolDocs as any[]).filter((d: any) => d.category === "overig").map((doc: any) => (
+                <div key={doc.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="text-sm truncate">{doc.file_name}</span>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDocDownload(doc)}>
+                      <Download className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDocDelete(doc)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              <label className="flex cursor-pointer items-center gap-2 rounded-lg border-2 border-dashed border-border p-3 hover:bg-muted/30">
+                <Upload className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">{docUploading ? "Bezig..." : "Document uploaden"}</span>
+                <input type="file" className="hidden" onChange={(e) => handleDocUpload(e, "overig")} disabled={docUploading} />
+              </label>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

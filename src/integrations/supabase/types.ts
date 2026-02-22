@@ -377,6 +377,47 @@ export type Database = {
           },
         ]
       }
+      school_documents: {
+        Row: {
+          category: string
+          created_at: string
+          file_name: string
+          file_path: string
+          id: string
+          school_id: string
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          id?: string
+          school_id: string
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          id?: string
+          school_id?: string
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_documents_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schools: {
         Row: {
           address: string | null
@@ -388,6 +429,7 @@ export type Database = {
           neighborhood_id: string | null
           student_count: number | null
           updated_at: string
+          website_url: string | null
         }
         Insert: {
           address?: string | null
@@ -399,6 +441,7 @@ export type Database = {
           neighborhood_id?: string | null
           student_count?: number | null
           updated_at?: string
+          website_url?: string | null
         }
         Update: {
           address?: string | null
@@ -410,6 +453,7 @@ export type Database = {
           neighborhood_id?: string | null
           student_count?: number | null
           updated_at?: string
+          website_url?: string | null
         }
         Relationships: [
           {
