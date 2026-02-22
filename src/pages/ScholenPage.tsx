@@ -637,13 +637,14 @@ export default function ScholenPage() {
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">School</th>
                 <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground md:table-cell">Gebied</th>
                 <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground md:table-cell">Wijk</th>
+                <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Contact</th>
                 <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Contactpersonen</th>
                 <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Leerlingen</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {schools.length === 0 && (
-                <tr><td colSpan={5} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen scholen gevonden</td></tr>
+                <tr><td colSpan={6} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen scholen gevonden</td></tr>
               )}
               {schools.map((school: any) => (
                 <tr key={school.id} className="transition-colors hover:bg-muted/30">
@@ -693,6 +694,24 @@ export default function ScholenPage() {
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
+                  </td>
+                  <td className="hidden px-5 py-4 lg:table-cell">
+                    <div className="space-y-0.5 text-xs text-muted-foreground">
+                      {school.contact_email && (
+                        <a href={`mailto:${school.contact_email}`} className="block hover:text-primary truncate">{school.contact_email}</a>
+                      )}
+                      {school.contact_phone && (
+                        <a href={`tel:${school.contact_phone}`} className="block hover:text-primary">{school.contact_phone}</a>
+                      )}
+                      {(school as any).website_url && (
+                        <a href={(school as any).website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary">
+                          <Globe className="h-3 w-3" /> Website
+                        </a>
+                      )}
+                      {!school.contact_email && !school.contact_phone && !(school as any).website_url && (
+                        <span>—</span>
+                      )}
+                    </div>
                   </td>
                   <td className="hidden px-5 py-4 lg:table-cell">
                     <div className="flex items-center gap-2">
@@ -810,10 +829,14 @@ export default function ScholenPage() {
               <p className="text-sm font-medium text-card-foreground">Schoolgids</p>
               {(schoolDocs as any[]).filter((d: any) => d.category === "schoolgids").map((doc: any) => (
                 <div key={doc.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <span className="text-sm truncate">{doc.file_name}</span>
-                  </div>
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 min-w-0 hover:underline text-left"
+                    onClick={() => handleDocDownload(doc)}
+                  >
+                    <FileText className="h-4 w-4 shrink-0 text-primary" />
+                    <span className="text-sm truncate text-primary">{doc.file_name}</span>
+                  </button>
                   <div className="flex gap-1 shrink-0">
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDocDownload(doc)}>
                       <Download className="h-3.5 w-3.5" />
@@ -836,10 +859,14 @@ export default function ScholenPage() {
               <p className="text-sm font-medium text-card-foreground">Overig</p>
               {(schoolDocs as any[]).filter((d: any) => d.category === "overig").map((doc: any) => (
                 <div key={doc.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <span className="text-sm truncate">{doc.file_name}</span>
-                  </div>
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 min-w-0 hover:underline text-left"
+                    onClick={() => handleDocDownload(doc)}
+                  >
+                    <FileText className="h-4 w-4 shrink-0 text-primary" />
+                    <span className="text-sm truncate text-primary">{doc.file_name}</span>
+                  </button>
                   <div className="flex gap-1 shrink-0">
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDocDownload(doc)}>
                       <Download className="h-3.5 w-3.5" />
