@@ -1,46 +1,51 @@
 
-
-# Gebied en Wijk toevoegen aan Programma's (Kanjertraining)
+# Registratie alleen op uitnodiging van beheerders
 
 ## Overzicht
-De velden **Gebied** en **Wijk** worden toegevoegd aan de programma's/kanjertrainingen, zodat bij het aanmaken of bewerken van een training het gebied en de wijk kunnen worden vastgelegd -- net als bij scholen en clienten.
+De openbare "Registreren" optie wordt verwijderd van de loginpagina. Nieuwe medewerkers kunnen alleen worden toegevoegd door een beheerder (backoffice) via de Medewerkers-pagina. De loginpagina toont uitsluitend het inlogformulier.
 
 ## Wat verandert er?
 
-### 1. Database: twee nieuwe kolommen op `programs`
-- `area_id` (optioneel, verwijst naar `areas`)
-- `neighborhood_id` (optioneel, verwijst naar `neighborhoods`)
+### 1. Loginpagina vereenvoudigen
+- De "Registreren" knop en het registratieformulier worden verwijderd van de AuthPage
+- Gebruikers zien alleen het inlogformulier (e-mail + wachtwoord)
+- Geen mogelijkheid meer om zelf een account aan te maken
 
-### 2. Formulier "Nieuw Programma" uitbreiden
-Het aanmaakformulier op de Programma's-pagina krijgt:
-- Een **Gebied**-dropdown (gevuld vanuit de `areas` tabel)
-- Een **Wijk**-dropdown (gefilterd op het geselecteerde gebied)
-- Later (als de postcode-mapping is gebouwd) kan dit ook automatisch worden ingevuld op basis van het adres van de gekoppelde school
+### 2. Uitnodigingsfunctie op Medewerkers-pagina
+De "Medewerker Toevoegen" knop op de Medewerkers-pagina wordt gekoppeld aan een uitnodigingsformulier:
+- Beheerder vult in: naam, e-mailadres en rol (backoffice of trainer)
+- Een backend-functie stuurt een uitnodigingsmail naar de nieuwe medewerker
+- De medewerker ontvangt een link om een wachtwoord in te stellen en het account te activeren
 
-### 3. Programmakaarten verrijken
-Op de overzichtspagina wordt het gebied/wijk getoond bij elke kanjertraining, zodat je in een oogopslag ziet in welk deel van Rotterdam de training plaatsvindt.
+### 3. Backend-functie voor uitnodigingen
+Een nieuwe backend-functie `invite-user` wordt aangemaakt die:
+- Controleert of de aanvrager een backoffice-rol heeft
+- Via de admin API een uitnodiging verstuurt naar het opgegeven e-mailadres
+- Automatisch het profiel en de juiste rol (backoffice/trainer) aanmaakt
+- Optioneel een koppeling maakt met een staff-record
 
-### 4. Aansluiting op de postcode-mapping (vervolg)
-Wanneer de herbruikbare `PostcodeAreaSelector`-component wordt gebouwd (uit het eerder goedgekeurde plan), wordt deze ook beschikbaar gemaakt voor het programmaformulier. Als een school wordt geselecteerd, kan het gebied automatisch worden overgenomen van die school.
+### 4. Medewerkers-pagina uitbreiden
+- De mock-data wordt vervangen door echte data uit de database (profiles + staff + user_roles)
+- Een dialoogvenster voor "Medewerker Uitnodigen" met velden voor naam, e-mail en rol
+- Overzicht van alle medewerkers met hun actuele rol en status
 
 ---
 
 ## Technische details
 
-### Database-migratie
-```text
-ALTER TABLE programs
-  ADD COLUMN area_id UUID REFERENCES areas(id),
-  ADD COLUMN neighborhood_id UUID REFERENCES neighborhoods(id);
-```
+### AuthPage.tsx
+- Verwijder alle registratie-gerelateerde state (`isLogin`, `fullName`) en UI-elementen
+- Alleen het inlogformulier behouden (e-mail + wachtwoord)
 
-### ProgrammasPage.tsx aanpassingen
-- Areas en neighborhoods ophalen via query (zelfde patroon als ScholenPage)
-- Twee Select-dropdowns toevoegen aan het formulier
-- Wijk-dropdown filtert op basis van geselecteerd gebied
-- Bij insert `area_id` en `neighborhood_id` meesturen
-- In de programmakaarten het gebied tonen als badge
+### Edge Function: `invite-user`
+- Ontvangt: `email`, `full_name`, `role` (backoffice/trainer)
+- Valideert dat de aanvrager backoffice-rechten heeft via JWT-token
+- Gebruikt `supabase.auth.admin.inviteUserByEmail()` om een uitnodiging te sturen
+- Na aanmaak: voegt een rij toe aan `user_roles` met de juiste rol
+- Het bestaande `handle_new_user` trigger zorgt automatisch voor het `profiles` record
 
-### Consistentie
-Dezelfde dropdown-structuur als op de ScholenPage wordt hergebruikt: `Gebied -- Wijk` formaat. Later wordt dit vervangen door de herbruikbare `PostcodeAreaSelector`-component.
-
+### MedewerkersPage.tsx
+- Vervang mock-data door queries op `profiles`, `staff` en `user_roles`
+- Voeg een dialoogvenster toe met formulier voor naam, e-mail en rolselectie
+- Bij verzenden wordt de `invite-user` backend-functie aangeroepen
+- Toon succes/foutmelding na het versturen van de uitnodiging
