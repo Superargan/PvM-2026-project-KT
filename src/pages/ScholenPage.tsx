@@ -271,6 +271,7 @@ export default function ScholenPage() {
         address: r["adres"] || r["Adres"] || r["address"] || r["Address"] || null,
         contact_email: r["email"] || r["Email"] || r["E-mail"] || r["e-mail"] || null,
         contact_phone: r["telefoon"] || r["Telefoon"] || r["phone"] || r["Phone"] || null,
+        website_url: r["website"] || r["Website"] || r["website_url"] || r["URL"] || r["url"] || r["Website URL"] || r["website url"] || null,
         student_count: Number(r["leerlingen"] || r["Leerlingen"] || r["student_count"] || r["Aantal leerlingen"] || 0) || 0,
       })).filter((s) => s.name);
 
