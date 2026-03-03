@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { downloadCsv } from "@/lib/csvExport";
+import { downloadExport, ExportColumn } from "@/lib/csvExport";
 
 const statusMap: Record<string, { css: string; label: string }> = {
   te_plannen: { css: "status-rood", label: "Te plannen" },
@@ -112,34 +112,36 @@ export default function ProgrammasPage() {
           <p className="text-sm text-muted-foreground">Trainingsgroepen en individuele trajecten</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => {
-            const rows = programs.map((p: any) => ({
-              naam: p.name,
-              beschrijving: p.description ?? "",
-              school: p.schools?.name ?? "",
-              gebied: p.areas?.name ?? "",
-              wijk: p.neighborhoods?.name ?? "",
-              status: statusMap[p.status ?? "te_plannen"]?.label ?? p.status ?? "",
-              deelnemers: p.program_clients?.[0]?.count ?? 0,
-              max: p.max_participants ?? "",
-              start: p.start_date ?? "",
-              eind: p.end_date ?? "",
-            }));
-            downloadCsv("programmas.csv", [
-              { key: "naam", label: "Naam" },
-              { key: "beschrijving", label: "Beschrijving" },
-              { key: "school", label: "School" },
-              { key: "gebied", label: "Gebied" },
-              { key: "wijk", label: "Wijk" },
-              { key: "status", label: "Status" },
-              { key: "deelnemers", label: "Deelnemers" },
-              { key: "max", label: "Max" },
-              { key: "start", label: "Startdatum" },
-              { key: "eind", label: "Einddatum" },
-            ], rows);
-          }}>
-            <Download className="h-4 w-4" /> CSV
-          </Button>
+          {(["csv", "xlsx"] as const).map((fmt) => (
+            <Button key={fmt} variant="outline" size="sm" onClick={() => {
+              const rows = programs.map((p: any) => ({
+                naam: p.name,
+                beschrijving: p.description ?? "",
+                school: p.schools?.name ?? "",
+                gebied: p.areas?.name ?? "",
+                wijk: p.neighborhoods?.name ?? "",
+                status: statusMap[p.status ?? "te_plannen"]?.label ?? p.status ?? "",
+                deelnemers: p.program_clients?.[0]?.count ?? 0,
+                max: p.max_participants ?? "",
+                start: p.start_date ?? "",
+                eind: p.end_date ?? "",
+              }));
+              downloadExport(`programmas.${fmt}`, [
+                { key: "naam", label: "Naam" },
+                { key: "beschrijving", label: "Beschrijving" },
+                { key: "school", label: "School" },
+                { key: "gebied", label: "Gebied" },
+                { key: "wijk", label: "Wijk" },
+                { key: "status", label: "Status" },
+                { key: "deelnemers", label: "Deelnemers" },
+                { key: "max", label: "Max" },
+                { key: "start", label: "Startdatum" },
+                { key: "eind", label: "Einddatum" },
+              ], rows, fmt);
+            }}>
+              <Download className="h-4 w-4" /> {fmt.toUpperCase()}
+            </Button>
+          ))}
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
               <Button><Plus className="h-4 w-4" /> Programma Aanmaken</Button>
