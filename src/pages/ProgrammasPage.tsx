@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { GraduationCap, Users, Calendar, Plus, Loader2, MapPin, ArrowRight, Download } from "lucide-react";
 import ProgramTrainers from "@/components/ProgramTrainers";
 import ProgramAttendance from "@/components/ProgramAttendance";
@@ -33,6 +34,7 @@ const nextStatusLabel: Record<string, string> = {
 };
 
 export default function ProgrammasPage() {
+  const navigate = useNavigate();
   const [addOpen, setAddOpen] = useState(false);
   const [selectedArea, setSelectedArea] = useState<string>("");
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
@@ -233,7 +235,7 @@ export default function ProgrammasPage() {
                     {statusInfo.label}
                   </span>
                 </div>
-                <h3 className="mt-3 font-display text-base font-bold text-card-foreground">{prog.name}</h3>
+                <h3 className="mt-3 font-display text-base font-bold text-card-foreground cursor-pointer hover:underline" onClick={() => navigate(`/programmas/${prog.id}`)}>{prog.name}</h3>
                 {prog.description && <p className="text-xs text-muted-foreground">{prog.description}</p>}
                 {prog.schools?.name && <p className="text-xs text-muted-foreground">{prog.schools.name}</p>}
                 {(prog.areas?.name || prog.neighborhoods?.name) && (

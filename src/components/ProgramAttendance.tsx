@@ -15,10 +15,11 @@ import SessionDetails from "@/components/SessionDetails";
 interface Props {
   programId: string;
   programName: string;
+  inline?: boolean;
 }
 
-export default function ProgramAttendance({ programId, programName }: Props) {
-  const [open, setOpen] = useState(false);
+export default function ProgramAttendance({ programId, programName, inline = false }: Props) {
+  const [open, setOpen] = useState(inline ? true : false);
   const { toast } = useToast();
   const qc = useQueryClient();
   const SESSION_COUNT = programName.startsWith("KT") ? 10 : 8;
@@ -106,6 +107,79 @@ export default function ProgramAttendance({ programId, programName }: Props) {
 
   const loading = sessionsLoading || attLoading || createSessionsMut.isPending;
 
+  const tabContent = (
+    <Tabs defaultValue="presentie" className="w-full">
+      <TabsList className="w-full">
+        <TabsTrigger value="presentie" className="flex-1">Presentielijst</TabsTrigger>
+        <TabsTrigger value="bijeenkomsten" className="flex-1">Bijeenkomsten</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="presentie">
+        {enrolledClients.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            Geen deelnemers ingeschreven bij dit programma.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="sticky left-0 bg-background z-10 min-w-[160px]">Deelnemer</TableHead>
+                  {sessions.map((s: any) => (
+                    <TableHead key={s.id} className="text-center min-w-[44px] px-1">{s.session_number}</TableHead>
+                  ))}
+                  <TableHead className="text-center min-w-[50px]">Totaal</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {enrolledClients.map((client: any) => {
+                  const presentCount = sessions.filter((s: any) => attMap.get(`${s.id}_${client.id}`)?.present).length;
+                  return (
+                    <TableRow key={client.id}>
+                      <TableCell className="sticky left-0 bg-background z-10 font-medium whitespace-nowrap">
+                        {client.first_name} {client.last_name}
+                      </TableCell>
+                      {sessions.map((s: any) => {
+                        const isPresent = attMap.get(`${s.id}_${client.id}`)?.present ?? false;
+                        return (
+                          <TableCell key={s.id} className="text-center px-1">
+                            <Checkbox
+                              checked={isPresent}
+                              onCheckedChange={(checked) =>
+                                toggleAttendance.mutate({ sessionId: s.id, clientId: client.id, present: !!checked })
+                              }
+                            />
+                          </TableCell>
+                        );
+                      })}
+                      <TableCell className="text-center font-semibold">{presentCount}/{sessions.length}</TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </TabsContent>
+
+      <TabsContent value="bijeenkomsten">
+        <div className="space-y-3">
+          {sessions.map((s: any) => (
+            <SessionDetails key={s.id} session={s} programId={programId} />
+          ))}
+        </div>
+      </TabsContent>
+    </Tabs>
+  );
+
+  if (inline) {
+    return loading ? (
+      <div className="flex justify-center py-8">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    ) : tabContent;
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -117,76 +191,13 @@ export default function ProgramAttendance({ programId, programName }: Props) {
         <DialogHeader>
           <DialogTitle>{programName}</DialogTitle>
         </DialogHeader>
-
         {loading ? (
           <div className="flex justify-center py-8">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
-        ) : (
-          <Tabs defaultValue="presentie" className="w-full">
-            <TabsList className="w-full">
-              <TabsTrigger value="presentie" className="flex-1">Presentielijst</TabsTrigger>
-              <TabsTrigger value="bijeenkomsten" className="flex-1">Bijeenkomsten</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="presentie">
-              {enrolledClients.length === 0 ? (
-                <p className="py-6 text-center text-sm text-muted-foreground">
-                  Geen deelnemers ingeschreven bij dit programma.
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="sticky left-0 bg-background z-10 min-w-[160px]">Deelnemer</TableHead>
-                        {sessions.map((s: any) => (
-                          <TableHead key={s.id} className="text-center min-w-[44px] px-1">{s.session_number}</TableHead>
-                        ))}
-                        <TableHead className="text-center min-w-[50px]">Totaal</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {enrolledClients.map((client: any) => {
-                        const presentCount = sessions.filter((s: any) => attMap.get(`${s.id}_${client.id}`)?.present).length;
-                        return (
-                          <TableRow key={client.id}>
-                            <TableCell className="sticky left-0 bg-background z-10 font-medium whitespace-nowrap">
-                              {client.first_name} {client.last_name}
-                            </TableCell>
-                            {sessions.map((s: any) => {
-                              const isPresent = attMap.get(`${s.id}_${client.id}`)?.present ?? false;
-                              return (
-                                <TableCell key={s.id} className="text-center px-1">
-                                  <Checkbox
-                                    checked={isPresent}
-                                    onCheckedChange={(checked) =>
-                                      toggleAttendance.mutate({ sessionId: s.id, clientId: client.id, present: !!checked })
-                                    }
-                                  />
-                                </TableCell>
-                              );
-                            })}
-                            <TableCell className="text-center font-semibold">{presentCount}/{sessions.length}</TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="bijeenkomsten">
-              <div className="space-y-3">
-                {sessions.map((s: any) => (
-                  <SessionDetails key={s.id} session={s} programId={programId} />
-                ))}
-              </div>
-            </TabsContent>
-          </Tabs>
-        )}
+        ) : tabContent}
       </DialogContent>
     </Dialog>
   );
 }
+
