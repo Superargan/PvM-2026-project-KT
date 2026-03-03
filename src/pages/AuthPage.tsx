@@ -7,6 +7,8 @@ export default function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [forgotMode, setForgotMode] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,6 +24,25 @@ export default function AuthPage() {
       toast.error(error.message || "Er is iets misgegaan");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      toast.error("Vul je e-mailadres in");
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      setResetSent(true);
     }
   };
 
@@ -58,43 +79,99 @@ export default function AuthPage() {
             </h1>
           </div>
 
-          <h2 className="font-display text-2xl font-extrabold text-foreground">Inloggen</h2>
+          <h2 className="font-display text-2xl font-extrabold text-foreground">
+            {forgotMode ? "Wachtwoord vergeten" : "Inloggen"}
+          </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Welkom terug! Log in met je gegevens.
+            {forgotMode
+              ? "Voer je e-mailadres in om een resetlink te ontvangen."
+              : "Welkom terug! Log in met je gegevens."}
           </p>
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-foreground">E-mailadres</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="naam@kanjertraining.nl"
-                className="w-full rounded-lg border border-input bg-card px-3 py-2.5 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
+          {resetSent ? (
+            <div className="mt-6 rounded-lg border border-border bg-card p-6 text-center space-y-3">
+              <p className="text-sm text-foreground font-medium">Resetlink verzonden!</p>
+              <p className="text-sm text-muted-foreground">
+                Controleer je inbox voor een link om je wachtwoord te resetten.
+              </p>
+              <button
+                onClick={() => { setForgotMode(false); setResetSent(false); }}
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                Terug naar inloggen
+              </button>
             </div>
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-foreground">Wachtwoord</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                placeholder="••••••••"
-                className="w-full rounded-lg border border-input bg-card px-3 py-2.5 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50"
-            >
-              {loading ? "Even geduld..." : "Inloggen"}
-            </button>
-          </form>
+          ) : forgotMode ? (
+            <form onSubmit={handleForgotPassword} className="mt-6 space-y-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">E-mailadres</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="naam@kanjertraining.nl"
+                  className="w-full rounded-lg border border-input bg-card px-3 py-2.5 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50"
+              >
+                {loading ? "Even geduld..." : "Resetlink versturen"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setForgotMode(false)}
+                className="w-full text-sm font-medium text-muted-foreground hover:text-foreground"
+              >
+                Terug naar inloggen
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-foreground">E-mailadres</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="naam@kanjertraining.nl"
+                  className="w-full rounded-lg border border-input bg-card px-3 py-2.5 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <div>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <label className="text-sm font-medium text-foreground">Wachtwoord</label>
+                  <button
+                    type="button"
+                    onClick={() => setForgotMode(true)}
+                    className="text-xs font-medium text-primary hover:underline"
+                  >
+                    Wachtwoord vergeten?
+                  </button>
+                </div>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  placeholder="••••••••"
+                  className="w-full rounded-lg border border-input bg-card px-3 py-2.5 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50"
+              >
+                {loading ? "Even geduld..." : "Inloggen"}
+              </button>
+            </form>
+          )}
 
           <p className="mt-6 text-center text-xs text-muted-foreground">
             Geen account? Neem contact op met een beheerder voor een uitnodiging.
