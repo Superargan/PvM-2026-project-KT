@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { Link } from "react-router-dom";
 
 interface StatCardProps {
   title: string;
@@ -6,6 +7,7 @@ interface StatCardProps {
   subtitle?: string;
   icon: React.ReactNode;
   color: "rood" | "geel" | "blauw" | "groen";
+  to?: string;
 }
 
 const colorMap = {
@@ -15,9 +17,9 @@ const colorMap = {
   groen: "bg-kanjer-groen/10 text-kanjer-groen",
 };
 
-export default function StatCard({ title, value, subtitle, icon, color }: StatCardProps) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
+export default function StatCard({ title, value, subtitle, icon, color, to }: StatCardProps) {
+  const content = (
+    <div className={cn("rounded-xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md", to && "cursor-pointer")}>
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
@@ -32,4 +34,9 @@ export default function StatCard({ title, value, subtitle, icon, color }: StatCa
       </div>
     </div>
   );
+
+  if (to) {
+    return <Link to={to}>{content}</Link>;
+  }
+  return content;
 }
