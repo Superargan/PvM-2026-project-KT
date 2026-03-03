@@ -19,7 +19,7 @@ export default function Dashboard() {
       const { count } = await supabase
         .from("programs")
         .select("*", { count: "exact", head: true })
-        .in("status", ["actief", "gepland"]);
+        .eq("status", "te_plannen");
       return count ?? 0;
     },
   });
@@ -63,7 +63,7 @@ export default function Dashboard() {
       const { data } = await supabase
         .from("programs")
         .select("name, start_date, max_participants, status, program_clients(count)")
-        .in("status", ["gepland", "actief"])
+        .in("status", ["te_plannen", "ingepland", "gestart"])
         .order("start_date", { ascending: true })
         .limit(4);
       return data ?? [];
@@ -76,6 +76,9 @@ export default function Dashboard() {
     actief: { label: "Actief", color: "groen" },
     wachtlijst: { label: "Wachtlijst", color: "oranje" },
     afgerond: { label: "Afgerond", color: "groen" },
+    te_plannen: { label: "Te plannen", color: "rood" },
+    ingepland: { label: "Ingepland", color: "oranje" },
+    gestart: { label: "Gestart", color: "groen" },
   };
 
   return (
@@ -87,8 +90,8 @@ export default function Dashboard() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Actieve Cliënten" value={clientCount} icon={<Users className="h-5 w-5" />} color="blauw" />
-        <StatCard title="Lopende Programma's" value={programCount} icon={<GraduationCap className="h-5 w-5" />} color="groen" />
-        <StatCard title="Partnerscholen" value={schoolCount} icon={<School className="h-5 w-5" />} color="geel" />
+        <StatCard title="In te plannen trainingen" value={programCount} icon={<GraduationCap className="h-5 w-5" />} color="groen" />
+        <StatCard title="PO Scholen Rotterdam" value={schoolCount} icon={<School className="h-5 w-5" />} color="geel" />
         <StatCard title="Nieuwe Aanmeldingen" value={newClientCount} subtitle="Afgelopen 7 dagen" icon={<ClipboardList className="h-5 w-5" />} color="rood" />
       </div>
 
