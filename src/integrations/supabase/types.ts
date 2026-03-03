@@ -169,6 +169,81 @@ export type Database = {
           },
         ]
       }
+      document_templates: {
+        Row: {
+          category: string
+          created_at: string
+          file_path: string
+          id: string
+          name: string
+          placeholder_fields: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          file_path: string
+          id?: string
+          name: string
+          placeholder_fields?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          file_path?: string
+          id?: string
+          name?: string
+          placeholder_fields?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      generated_documents: {
+        Row: {
+          client_id: string
+          created_at: string
+          file_name: string
+          file_path: string
+          generated_by: string
+          id: string
+          template_id: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          generated_by: string
+          id?: string
+          template_id?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          generated_by?: string
+          id?: string
+          template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_documents_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "document_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       neighborhoods: {
         Row: {
           area_id: string
