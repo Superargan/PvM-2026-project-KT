@@ -71,7 +71,7 @@ export default function AanmeldenPublicPage() {
       guardian_email: result.data.guardian_email,
       referral_reason: result.data.referral_reason,
       intake_status: "nieuw",
-    });
+    } as any);
     setSubmitting(false);
 
     if (error) {
