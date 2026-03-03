@@ -582,28 +582,52 @@ export type Database = {
       }
       staff: {
         Row: {
+          address: string | null
+          city: string | null
           created_at: string
+          email: string | null
           id: string
+          kvk_number: string | null
+          name: string | null
+          phone: string | null
+          postal_code: string | null
           school_id: string | null
           specialization: string | null
+          trade_name: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
+          address?: string | null
+          city?: string | null
           created_at?: string
+          email?: string | null
           id?: string
+          kvk_number?: string | null
+          name?: string | null
+          phone?: string | null
+          postal_code?: string | null
           school_id?: string | null
           specialization?: string | null
+          trade_name?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
+          address?: string | null
+          city?: string | null
           created_at?: string
+          email?: string | null
           id?: string
+          kvk_number?: string | null
+          name?: string | null
+          phone?: string | null
+          postal_code?: string | null
           school_id?: string | null
           specialization?: string | null
+          trade_name?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {

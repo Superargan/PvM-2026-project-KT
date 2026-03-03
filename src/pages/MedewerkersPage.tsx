@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { UserCog, Plus, Search, Mail, Phone, Loader2 } from "lucide-react";
+import { UserCog, Plus, Search, Mail, Phone, Loader2, Building2, Edit, Eye } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -19,6 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const rolColors: Record<string, string> = {
   backoffice: "bg-kanjer-blauw/10 text-kanjer-blauw",
@@ -30,18 +33,38 @@ const rolLabels: Record<string, string> = {
   trainer: "Trainer",
 };
 
+interface TrainerForm {
+  name: string;
+  trade_name: string;
+  kvk_number: string;
+  address: string;
+  postal_code: string;
+  city: string;
+  phone: string;
+  email: string;
+}
+
+const emptyTrainerForm: TrainerForm = {
+  name: "", trade_name: "", kvk_number: "", address: "", postal_code: "", city: "", phone: "", email: "",
+};
+
 export default function MedewerkersPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName, setInviteName] = useState("");
   const [inviteRole, setInviteRole] = useState<string>("");
+  
+  const [trainerDialogOpen, setTrainerDialogOpen] = useState(false);
+  const [trainerForm, setTrainerForm] = useState<TrainerForm>(emptyTrainerForm);
+  const [editingTrainerId, setEditingTrainerId] = useState<string | null>(null);
+  
   const queryClient = useQueryClient();
 
-  const { data: medewerkers = [], isLoading } = useQuery({
+  // Fetch medewerkers (users with accounts)
+  const { data: medewerkers = [], isLoading: loadingMedewerkers } = useQuery({
     queryKey: ["medewerkers"],
     queryFn: async () => {
-      // Fetch profiles, user_roles, and staff with active program count
       const { data: profiles, error: pErr } = await supabase
         .from("profiles")
         .select("user_id, full_name, email, phone");
@@ -73,6 +96,20 @@ export default function MedewerkersPage() {
     },
   });
 
+  // Fetch external trainers (staff without user_id or with extra fields)
+  const { data: trainers = [], isLoading: loadingTrainers } = useQuery({
+    queryKey: ["trainers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("staff")
+        .select("id, name, trade_name, kvk_number, address, postal_code, city, phone, email, user_id, program_staff(id, programs(name))")
+        .not("name", "is", null)
+        .order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const inviteMutation = useMutation({
     mutationFn: async (payload: { email: string; full_name: string; role: string }) => {
       const { data, error } = await supabase.functions.invoke("invite-user", {
@@ -84,7 +121,7 @@ export default function MedewerkersPage() {
     },
     onSuccess: () => {
       toast.success("Uitnodiging verstuurd!");
-      setDialogOpen(false);
+      setInviteDialogOpen(false);
       setInviteEmail("");
       setInviteName("");
       setInviteRole("");
@@ -95,21 +132,71 @@ export default function MedewerkersPage() {
     },
   });
 
-  const filtered = medewerkers.filter((m) => {
+  const trainerMutation = useMutation({
+    mutationFn: async () => {
+      if (!trainerForm.name) throw new Error("Naam is verplicht");
+      const payload: any = { ...trainerForm };
+      // Clean empty strings to null
+      for (const key of Object.keys(payload)) {
+        if (payload[key] === "") payload[key] = null;
+      }
+      // Keep name
+      payload.name = trainerForm.name;
+
+      if (editingTrainerId) {
+        const { error } = await supabase.from("staff").update(payload).eq("id", editingTrainerId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("staff").insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(editingTrainerId ? "Trainer bijgewerkt!" : "Trainer toegevoegd!");
+      setTrainerDialogOpen(false);
+      setTrainerForm(emptyTrainerForm);
+      setEditingTrainerId(null);
+      queryClient.invalidateQueries({ queryKey: ["trainers"] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+
+  const handleEditTrainer = (trainer: any) => {
+    setTrainerForm({
+      name: trainer.name || "",
+      trade_name: trainer.trade_name || "",
+      kvk_number: trainer.kvk_number || "",
+      address: trainer.address || "",
+      postal_code: trainer.postal_code || "",
+      city: trainer.city || "",
+      phone: trainer.phone || "",
+      email: trainer.email || "",
+    });
+    setEditingTrainerId(trainer.id);
+    setTrainerDialogOpen(true);
+  };
+
+  const handleNewTrainer = () => {
+    setTrainerForm(emptyTrainerForm);
+    setEditingTrainerId(null);
+    setTrainerDialogOpen(true);
+  };
+
+  const filteredMedewerkers = medewerkers.filter((m) => {
     const q = searchQuery.toLowerCase();
-    return (
-      m.naam.toLowerCase().includes(q) ||
-      m.rol.toLowerCase().includes(q) ||
-      m.specialisatie.toLowerCase().includes(q)
-    );
+    return m.naam.toLowerCase().includes(q) || m.rol.toLowerCase().includes(q) || m.specialisatie.toLowerCase().includes(q);
+  });
+
+  const filteredTrainers = trainers.filter((t: any) => {
+    const q = searchQuery.toLowerCase();
+    return (t.name?.toLowerCase().includes(q) || t.trade_name?.toLowerCase().includes(q) || t.city?.toLowerCase().includes(q));
   });
 
   const handleInvite = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inviteRole) {
-      toast.error("Selecteer een rol");
-      return;
-    }
+    if (!inviteRole) { toast.error("Selecteer een rol"); return; }
     inviteMutation.mutate({ email: inviteEmail, full_name: inviteName, role: inviteRole });
   };
 
@@ -117,72 +204,11 @@ export default function MedewerkersPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-extrabold text-foreground">Medewerkers</h1>
+          <h1 className="font-display text-2xl font-extrabold text-foreground">Medewerkers & Trainers</h1>
           <p className="text-sm text-muted-foreground">
-            {isLoading ? "Laden..." : `${medewerkers.length} teamleden`}
+            {loadingMedewerkers ? "Laden..." : `${medewerkers.length} teamleden, ${trainers.length} trainers`}
           </p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <button className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90">
-              <Plus className="h-4 w-4" />
-              Medewerker Uitnodigen
-            </button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Medewerker Uitnodigen</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleInvite} className="space-y-4">
-              <div>
-                <Label htmlFor="invite-name">Volledige naam</Label>
-                <Input
-                  id="invite-name"
-                  value={inviteName}
-                  onChange={(e) => setInviteName(e.target.value)}
-                  required
-                  placeholder="Jan de Vries"
-                />
-              </div>
-              <div>
-                <Label htmlFor="invite-email">E-mailadres</Label>
-                <Input
-                  id="invite-email"
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  required
-                  placeholder="jan@kanjertraining.nl"
-                />
-              </div>
-              <div>
-                <Label>Rol</Label>
-                <Select value={inviteRole} onValueChange={setInviteRole}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecteer een rol" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="trainer">Trainer</SelectItem>
-                    <SelectItem value="backoffice">Backoffice</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <button
-                type="submit"
-                disabled={inviteMutation.isPending}
-                className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50"
-              >
-                {inviteMutation.isPending ? (
-                  <span className="inline-flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Versturen...
-                  </span>
-                ) : (
-                  "Uitnodiging Versturen"
-                )}
-              </button>
-            </form>
-          </DialogContent>
-        </Dialog>
       </div>
 
       <div className="relative">
@@ -191,75 +217,211 @@ export default function MedewerkersPage() {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Zoek op naam, rol of specialisatie..."
+          placeholder="Zoek op naam, rol, handelsnaam of plaats..."
           className="w-full rounded-lg border border-input bg-card py-2.5 pl-10 pr-4 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <Tabs defaultValue="trainers" className="space-y-4">
+        <div className="flex items-center justify-between">
+          <TabsList>
+            <TabsTrigger value="trainers">Trainers</TabsTrigger>
+            <TabsTrigger value="medewerkers">Medewerkers</TabsTrigger>
+          </TabsList>
         </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((person) => (
-            <div
-              key={person.user_id}
-              className="rounded-xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md"
-            >
-              <div className="flex items-start gap-4">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-sm font-bold text-primary">
-                  {person.naam
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .slice(0, 2)}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-display text-sm font-bold text-card-foreground">
-                    {person.naam}
-                  </p>
-                  <div className="mt-1 flex items-center gap-2">
-                    <span
-                      className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${rolColors[person.rol] || ""}`}
-                    >
-                      {rolLabels[person.rol] || person.rol}
-                    </span>
-                    {person.specialisatie && (
-                      <span className="text-xs text-muted-foreground">
-                        {person.specialisatie}
-                      </span>
+
+        {/* Trainers tab */}
+        <TabsContent value="trainers" className="space-y-4">
+          <div className="flex justify-end">
+            <Button onClick={handleNewTrainer}>
+              <Plus className="h-4 w-4" /> Trainer Toevoegen
+            </Button>
+          </div>
+
+          {loadingTrainers ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : filteredTrainers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card py-16">
+              <Building2 className="h-10 w-10 text-muted-foreground" />
+              <p className="mt-3 text-sm text-muted-foreground">Nog geen trainers toegevoegd.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredTrainers.map((trainer: any) => (
+                <div key={trainer.id} className="rounded-xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
+                  <div className="flex items-start justify-between">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-display text-sm font-bold text-card-foreground">{trainer.name}</p>
+                      {trainer.trade_name && (
+                        <p className="text-xs text-muted-foreground mt-0.5">{trainer.trade_name}</p>
+                      )}
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => handleEditTrainer(trainer)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="mt-3 space-y-1.5 border-t border-border pt-3">
+                    {trainer.kvk_number && (
+                      <p className="text-xs text-muted-foreground">KVK: {trainer.kvk_number}</p>
+                    )}
+                    {(trainer.address || trainer.postal_code || trainer.city) && (
+                      <p className="text-xs text-muted-foreground">
+                        {[trainer.address, trainer.postal_code, trainer.city].filter(Boolean).join(", ")}
+                      </p>
+                    )}
+                    {trainer.email && (
+                      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Mail className="h-3 w-3" /> {trainer.email}
+                      </p>
+                    )}
+                    {trainer.phone && (
+                      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Phone className="h-3 w-3" /> {trainer.phone}
+                      </p>
+                    )}
+                    {trainer.program_staff?.length > 0 && (
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {trainer.program_staff.map((ps: any) => (
+                          <Badge key={ps.id} variant="secondary" className="text-[10px]">
+                            {ps.programs?.name ?? "Programma"}
+                          </Badge>
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Medewerkers tab */}
+        <TabsContent value="medewerkers" className="space-y-4">
+          <div className="flex justify-end">
+            <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4" /> Medewerker Uitnodigen
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Medewerker Uitnodigen</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleInvite} className="space-y-4">
+                  <div>
+                    <Label htmlFor="invite-name">Volledige naam</Label>
+                    <Input id="invite-name" value={inviteName} onChange={(e) => setInviteName(e.target.value)} required placeholder="Jan de Vries" />
+                  </div>
+                  <div>
+                    <Label htmlFor="invite-email">E-mailadres</Label>
+                    <Input id="invite-email" type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} required placeholder="jan@kanjertraining.nl" />
+                  </div>
+                  <div>
+                    <Label>Rol</Label>
+                    <Select value={inviteRole} onValueChange={setInviteRole}>
+                      <SelectTrigger><SelectValue placeholder="Selecteer een rol" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="trainer">Trainer</SelectItem>
+                        <SelectItem value="backoffice">Backoffice</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button type="submit" className="w-full" disabled={inviteMutation.isPending}>
+                    {inviteMutation.isPending ? <><Loader2 className="h-4 w-4 animate-spin" /> Versturen...</> : "Uitnodiging Versturen"}
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {loadingMedewerkers ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredMedewerkers.map((person) => (
+                <div key={person.user_id} className="rounded-xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-sm font-bold text-primary">
+                      {person.naam.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-display text-sm font-bold text-card-foreground">{person.naam}</p>
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${rolColors[person.rol] || ""}`}>
+                          {rolLabels[person.rol] || person.rol}
+                        </span>
+                        {person.specialisatie && <span className="text-xs text-muted-foreground">{person.specialisatie}</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 space-y-2 border-t border-border pt-3">
+                    {person.email && <p className="flex items-center gap-2 text-xs text-muted-foreground"><Mail className="h-3.5 w-3.5" /> {person.email}</p>}
+                    {person.telefoon && <p className="flex items-center gap-2 text-xs text-muted-foreground"><Phone className="h-3.5 w-3.5" /> {person.telefoon}</p>}
+                    {person.actieveGroepen > 0 && <p className="text-xs font-medium text-kanjer-groen">{person.actieveGroepen} actieve groep{person.actieveGroepen > 1 ? "en" : ""}</p>}
+                  </div>
+                </div>
+              ))}
+              {filteredMedewerkers.length === 0 && <p className="col-span-full py-8 text-center text-sm text-muted-foreground">Geen medewerkers gevonden.</p>}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Trainer add/edit dialog */}
+      <Dialog open={trainerDialogOpen} onOpenChange={(open) => { setTrainerDialogOpen(open); if (!open) { setEditingTrainerId(null); setTrainerForm(emptyTrainerForm); } }}>
+        <DialogContent className="bg-card">
+          <DialogHeader>
+            <DialogTitle>{editingTrainerId ? "Trainer Bewerken" : "Trainer Toevoegen"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+            <div>
+              <Label>Naam *</Label>
+              <Input value={trainerForm.name} onChange={(e) => setTrainerForm(f => ({ ...f, name: e.target.value }))} placeholder="Jan Jansen" />
+            </div>
+            <div>
+              <Label>Handelsnaam</Label>
+              <Input value={trainerForm.trade_name} onChange={(e) => setTrainerForm(f => ({ ...f, trade_name: e.target.value }))} placeholder="Kanjertraining Rotterdam" />
+            </div>
+            <div>
+              <Label>KVK-nummer</Label>
+              <Input value={trainerForm.kvk_number} onChange={(e) => setTrainerForm(f => ({ ...f, kvk_number: e.target.value }))} placeholder="12345678" />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label>Postcode</Label>
+                <Input value={trainerForm.postal_code} onChange={(e) => setTrainerForm(f => ({ ...f, postal_code: e.target.value }))} placeholder="3011 AA" />
               </div>
-              <div className="mt-4 space-y-2 border-t border-border pt-3">
-                {person.email && (
-                  <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Mail className="h-3.5 w-3.5" /> {person.email}
-                  </p>
-                )}
-                {person.telefoon && (
-                  <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Phone className="h-3.5 w-3.5" /> {person.telefoon}
-                  </p>
-                )}
-                {person.actieveGroepen > 0 && (
-                  <p className="text-xs font-medium text-kanjer-groen">
-                    {person.actieveGroepen} actieve groep
-                    {person.actieveGroepen > 1 ? "en" : ""}
-                  </p>
-                )}
+              <div className="col-span-2">
+                <Label>Adres</Label>
+                <Input value={trainerForm.address} onChange={(e) => setTrainerForm(f => ({ ...f, address: e.target.value }))} placeholder="Coolsingel 1" />
               </div>
             </div>
-          ))}
-          {filtered.length === 0 && !isLoading && (
-            <p className="col-span-full py-8 text-center text-sm text-muted-foreground">
-              Geen medewerkers gevonden.
-            </p>
-          )}
-        </div>
-      )}
+            <div>
+              <Label>Plaats</Label>
+              <Input value={trainerForm.city} onChange={(e) => setTrainerForm(f => ({ ...f, city: e.target.value }))} placeholder="Rotterdam" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Telefoon</Label>
+                <Input type="tel" value={trainerForm.phone} onChange={(e) => setTrainerForm(f => ({ ...f, phone: e.target.value }))} placeholder="06-12345678" />
+              </div>
+              <div>
+                <Label>E-mail</Label>
+                <Input type="email" value={trainerForm.email} onChange={(e) => setTrainerForm(f => ({ ...f, email: e.target.value }))} placeholder="jan@voorbeeld.nl" />
+              </div>
+            </div>
+            <Button className="w-full" onClick={() => trainerMutation.mutate()} disabled={!trainerForm.name || trainerMutation.isPending}>
+              {trainerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {editingTrainerId ? "Opslaan" : "Toevoegen"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
