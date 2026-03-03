@@ -72,54 +72,94 @@ export type Database = {
       }
       clients: {
         Row: {
+          address: string | null
+          city: string | null
+          class_group: string | null
+          consent_data_processing: boolean | null
           created_at: string
           date_of_birth: string | null
           first_name: string
+          gender: string | null
+          goals: string | null
           guardian_email: string | null
           guardian_name: string | null
           guardian_phone: string | null
           guardian_phone_alt: string | null
           id: string
+          intake_date: string | null
+          intake_notes: string | null
           intake_status: string | null
           last_name: string
           notes: string | null
+          postal_code: string | null
+          referral_reason: string | null
+          referrer_id: string | null
           school_id: string | null
           updated_at: string
           whatsapp_consent: boolean | null
         }
         Insert: {
+          address?: string | null
+          city?: string | null
+          class_group?: string | null
+          consent_data_processing?: boolean | null
           created_at?: string
           date_of_birth?: string | null
           first_name: string
+          gender?: string | null
+          goals?: string | null
           guardian_email?: string | null
           guardian_name?: string | null
           guardian_phone?: string | null
           guardian_phone_alt?: string | null
           id?: string
+          intake_date?: string | null
+          intake_notes?: string | null
           intake_status?: string | null
           last_name: string
           notes?: string | null
+          postal_code?: string | null
+          referral_reason?: string | null
+          referrer_id?: string | null
           school_id?: string | null
           updated_at?: string
           whatsapp_consent?: boolean | null
         }
         Update: {
+          address?: string | null
+          city?: string | null
+          class_group?: string | null
+          consent_data_processing?: boolean | null
           created_at?: string
           date_of_birth?: string | null
           first_name?: string
+          gender?: string | null
+          goals?: string | null
           guardian_email?: string | null
           guardian_name?: string | null
           guardian_phone?: string | null
           guardian_phone_alt?: string | null
           id?: string
+          intake_date?: string | null
+          intake_notes?: string | null
           intake_status?: string | null
           last_name?: string
           notes?: string | null
+          postal_code?: string | null
+          referral_reason?: string | null
+          referrer_id?: string | null
           school_id?: string | null
           updated_at?: string
           whatsapp_consent?: boolean | null
         }
         Relationships: [
+          {
+            foreignKeyName: "clients_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "referrers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "clients_school_id_fkey"
             columns: ["school_id"]
