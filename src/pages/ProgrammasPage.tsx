@@ -1,4 +1,5 @@
 import { GraduationCap, Users, Calendar, Plus, Loader2, MapPin, ArrowRight, Download } from "lucide-react";
+import ProgramTrainers from "@/components/ProgramTrainers";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -224,7 +225,8 @@ export default function ProgrammasPage() {
                   </p>
                 )}
                 <div className="mt-4 space-y-2 border-t border-border pt-3">
-                  <div className="flex items-center justify-between text-xs">
+                  <ProgramTrainers programId={prog.id} />
+                  <div className="flex items-center justify-between text-xs mt-2">
                     <span className="flex items-center gap-1.5 text-muted-foreground"><Users className="h-3.5 w-3.5" /> Deelnemers</span>
                     <span className="font-semibold text-card-foreground">{enrolled}/{max}</span>
                   </div>
