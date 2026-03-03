@@ -13,6 +13,7 @@ import ProgrammasPage from "./pages/ProgrammasPage";
 import ScholenPage from "./pages/ScholenPage";
 import MedewerkersPage from "./pages/MedewerkersPage";
 import DocumentenPage from "./pages/DocumentenPage";
+import AanmeldenPublicPage from "./pages/AanmeldenPublicPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ function AppRoutes() {
 
   return (
     <Routes>
+      <Route path="/aanmelden" element={<AanmeldenPublicPage />} />
       <Route path="/login" element={session ? <Navigate to="/" replace /> : <AuthPage />} />
       <Route path="/" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
       <Route path="/clienten" element={<ProtectedRoute><AppLayout><ClientenPage /></AppLayout></ProtectedRoute>} />
