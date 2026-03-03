@@ -14,6 +14,7 @@ import ScholenPage from "./pages/ScholenPage";
 import MedewerkersPage from "./pages/MedewerkersPage";
 import DocumentenPage from "./pages/DocumentenPage";
 import AanmeldenPublicPage from "./pages/AanmeldenPublicPage";
+import ClientDetailPage from "./pages/ClientDetailPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import NotFound from "./pages/NotFound";
 
@@ -56,6 +57,7 @@ function AppRoutes() {
       <Route path="/aanmelden" element={<ProtectedRoute><AppLayout><AanmeldenPublicPage /></AppLayout></ProtectedRoute>} />
       <Route path="/" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
       <Route path="/clienten" element={<ProtectedRoute><AppLayout><ClientenPage /></AppLayout></ProtectedRoute>} />
+      <Route path="/clienten/:id" element={<ProtectedRoute><AppLayout><ClientDetailPage /></AppLayout></ProtectedRoute>} />
       <Route path="/aanmeldingen" element={<ProtectedRoute><AppLayout><AanmeldingenPage /></AppLayout></ProtectedRoute>} />
       <Route path="/programmas" element={<ProtectedRoute><AppLayout><ProgrammasPage /></AppLayout></ProtectedRoute>} />
       <Route path="/scholen" element={<ProtectedRoute><AppLayout><ScholenPage /></AppLayout></ProtectedRoute>} />

@@ -1,4 +1,5 @@
 import { Users, Search, Filter, Eye, Plus, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,6 +38,7 @@ export default function ClientenPage() {
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const { data: clients = [], isLoading, refetch } = useQuery({
     queryKey: ["clients", search],
@@ -142,11 +144,11 @@ export default function ClientenPage() {
                 const age = calculateAge(client.date_of_birth);
                 const status = client.intake_status ?? "nieuw";
                 return (
-                  <tr key={client.id} className="transition-colors hover:bg-muted/30">
-                    <td className="px-5 py-4">
-                      <p className="text-sm font-semibold text-card-foreground">{client.first_name} {client.last_name}</p>
-                      <p className="text-xs text-muted-foreground sm:hidden">{age !== null ? `${age} jaar` : "—"}</p>
-                    </td>
+                   <tr key={client.id} className="transition-colors hover:bg-muted/30 cursor-pointer" onClick={() => navigate(`/clienten/${client.id}`)}>
+                     <td className="px-5 py-4">
+                       <p className="text-sm font-semibold text-primary hover:underline">{client.first_name} {client.last_name}</p>
+                       <p className="text-xs text-muted-foreground sm:hidden">{age !== null ? `${age} jaar` : "—"}</p>
+                     </td>
                     <td className="hidden px-5 py-4 sm:table-cell">
                       <span className="text-sm text-card-foreground">{age !== null ? `${age} jaar` : "—"}</span>
                     </td>
