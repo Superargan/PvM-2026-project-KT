@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { GraduationCap, Users, Calendar, Plus, Loader2, MapPin, ArrowRight, Download } from "lucide-react";
 import ProgramTrainers from "@/components/ProgramTrainers";
 import ProgramAttendance from "@/components/ProgramAttendance";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,12 @@ const nextStatusLabel: Record<string, string> = {
 export default function ProgrammasPage() {
   const navigate = useNavigate();
   const [addOpen, setAddOpen] = useState(false);
+  const [planOpen, setPlanOpen] = useState(false);
+  const [planTarget, setPlanTarget] = useState<{ id: string; area_id?: string; neighborhood_id?: string; start_date?: string; end_date?: string } | null>(null);
+  const [planArea, setPlanArea] = useState("");
+  const [planNeighborhood, setPlanNeighborhood] = useState("");
+  const [planStart, setPlanStart] = useState("");
+  const [planEnd, setPlanEnd] = useState("");
   const [selectedArea, setSelectedArea] = useState<string>("");
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
   const { toast } = useToast();
@@ -98,7 +104,17 @@ export default function ProgrammasPage() {
     }
   };
 
-  const handleStatusChange = async (id: string, currentStatus: string, newStatus: string, enrolled: number) => {
+  const handleStatusChange = async (id: string, currentStatus: string, newStatus: string, enrolled: number, prog?: any) => {
+    // For "Inplannen": open dialog to set period + area
+    if (currentStatus === "te_plannen" && newStatus === "ingepland") {
+      setPlanTarget({ id, area_id: prog?.area_id, neighborhood_id: prog?.neighborhood_id, start_date: prog?.start_date, end_date: prog?.end_date });
+      setPlanArea(prog?.area_id ?? "");
+      setPlanNeighborhood(prog?.neighborhood_id ?? "");
+      setPlanStart(prog?.start_date ?? "");
+      setPlanEnd(prog?.end_date ?? "");
+      setPlanOpen(true);
+      return;
+    }
     // Validate before starting: min 7 participants + 2 trainers
     if (currentStatus === "ingepland" && newStatus === "gestart") {
       if (enrolled < 7) {
@@ -124,6 +140,37 @@ export default function ProgrammasPage() {
       refetch();
     }
   };
+
+  const handlePlanSubmit = async () => {
+    if (!planTarget) return;
+    if (!planStart || !planEnd) {
+      toast({ title: "Vul de start- en einddatum in", variant: "destructive" });
+      return;
+    }
+    if (!planArea) {
+      toast({ title: "Selecteer een gebied", variant: "destructive" });
+      return;
+    }
+    const { error } = await supabase.from("programs").update({
+      status: "ingepland",
+      start_date: planStart,
+      end_date: planEnd,
+      area_id: planArea,
+      neighborhood_id: planNeighborhood || null,
+    } as any).eq("id", planTarget.id);
+    if (error) {
+      toast({ title: "Fout", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Training ingepland" });
+      setPlanOpen(false);
+      setPlanTarget(null);
+      refetch();
+    }
+  };
+
+  const planFilteredNeighborhoods = planArea
+    ? neighborhoods.filter((n: any) => n.area_id === planArea)
+    : [];
 
   return (
     <div className="space-y-6">
@@ -270,7 +317,7 @@ export default function ProgrammasPage() {
                       size="sm"
                       variant="outline"
                       className="mt-2 w-full text-xs"
-                      onClick={() => handleStatusChange(prog.id, status, next, enrolled)}
+                      onClick={() => handleStatusChange(prog.id, status, next, enrolled, prog)}
                     >
                       <ArrowRight className="mr-1 h-3 w-3" />
                       {nextStatusLabel[status]}
@@ -282,6 +329,52 @@ export default function ProgrammasPage() {
           })}
         </div>
       )}
+
+      {/* Planning dialog */}
+      <Dialog open={planOpen} onOpenChange={setPlanOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Training inplannen</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Startdatum *</Label>
+                <Input type="date" value={planStart} onChange={(e) => setPlanStart(e.target.value)} />
+              </div>
+              <div>
+                <Label>Einddatum *</Label>
+                <Input type="date" value={planEnd} onChange={(e) => setPlanEnd(e.target.value)} />
+              </div>
+            </div>
+            <div>
+              <Label>Gebied *</Label>
+              <Select value={planArea} onValueChange={(v) => { setPlanArea(v); setPlanNeighborhood(""); }}>
+                <SelectTrigger><SelectValue placeholder="Selecteer gebied" /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  {areas.map((a: any) => (
+                    <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Wijk</Label>
+              <Select value={planNeighborhood} onValueChange={setPlanNeighborhood} disabled={!planArea}>
+                <SelectTrigger><SelectValue placeholder="Selecteer wijk" /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  {planFilteredNeighborhoods.map((n: any) => (
+                    <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button className="w-full" onClick={handlePlanSubmit}>
+              <ArrowRight className="h-4 w-4 mr-1" /> Inplannen
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
