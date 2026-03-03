@@ -1,4 +1,4 @@
-import { GraduationCap, Users, Calendar, Plus, Loader2, MapPin } from "lucide-react";
+import { GraduationCap, Users, Calendar, Plus, Loader2, MapPin, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,10 +10,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
-const statusMap: Record<string, string> = {
-  actief: "status-groen",
-  gepland: "status-oranje",
-  afgerond: "status-rood",
+const statusMap: Record<string, { css: string; label: string }> = {
+  te_plannen: { css: "status-rood", label: "Te plannen" },
+  ingepland: { css: "status-oranje", label: "Ingepland" },
+  gestart: { css: "status-groen", label: "Gestart" },
+  afgerond: { css: "status-rood", label: "Afgerond" },
+};
+
+const nextStatus: Record<string, string> = {
+  te_plannen: "ingepland",
+  ingepland: "gestart",
+  gestart: "afgerond",
+};
+
+const nextStatusLabel: Record<string, string> = {
+  te_plannen: "Inplannen",
+  ingepland: "Starten",
+  gestart: "Afronden",
 };
 
 export default function ProgrammasPage() {
@@ -76,6 +89,16 @@ export default function ProgrammasPage() {
       setAddOpen(false);
       setSelectedArea("");
       setSelectedNeighborhood("");
+      refetch();
+    }
+  };
+
+  const handleStatusChange = async (id: string, newStatus: string) => {
+    const { error } = await supabase.from("programs").update({ status: newStatus } as any).eq("id", id);
+    if (error) {
+      toast({ title: "Fout", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: `Status gewijzigd naar ${statusMap[newStatus]?.label ?? newStatus}` });
       refetch();
     }
   };
@@ -145,18 +168,21 @@ export default function ProgrammasPage() {
           {programs.map((prog: any) => {
             const enrolled = prog.program_clients?.[0]?.count ?? 0;
             const max = prog.max_participants ?? 10;
-            const status = prog.status ?? "gepland";
+            const status = prog.status ?? "te_plannen";
+            const statusInfo = statusMap[status] ?? { css: "status-oranje", label: status };
+            const next = nextStatus[status];
             return (
               <div key={prog.id} className="rounded-xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
                 <div className="flex items-start justify-between">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-kanjer-geel/10">
                     <GraduationCap className="h-5 w-5 text-kanjer-geel" />
                   </div>
-                  <span className={`status-indicator ${statusMap[status] ?? "status-oranje"}`}>
-                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                  <span className={`status-indicator ${statusInfo.css}`}>
+                    {statusInfo.label}
                   </span>
                 </div>
                 <h3 className="mt-3 font-display text-base font-bold text-card-foreground">{prog.name}</h3>
+                {prog.description && <p className="text-xs text-muted-foreground">{prog.description}</p>}
                 {prog.schools?.name && <p className="text-xs text-muted-foreground">{prog.schools.name}</p>}
                 {(prog.areas?.name || prog.neighborhoods?.name) && (
                   <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
@@ -183,6 +209,17 @@ export default function ProgrammasPage() {
                       style={{ width: `${Math.min((enrolled / max) * 100, 100)}%` }}
                     />
                   </div>
+                  {next && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-2 w-full text-xs"
+                      onClick={() => handleStatusChange(prog.id, next)}
+                    >
+                      <ArrowRight className="mr-1 h-3 w-3" />
+                      {nextStatusLabel[status]}
+                    </Button>
+                  )}
                 </div>
               </div>
             );
