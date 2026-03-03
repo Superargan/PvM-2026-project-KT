@@ -50,8 +50,8 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route path="/aanmelden" element={<AanmeldenPublicPage />} />
       <Route path="/login" element={session ? <Navigate to="/" replace /> : <AuthPage />} />
+      <Route path="/aanmelden" element={<ProtectedRoute><AppLayout><AanmeldenPublicPage /></AppLayout></ProtectedRoute>} />
       <Route path="/" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
       <Route path="/clienten" element={<ProtectedRoute><AppLayout><ClientenPage /></AppLayout></ProtectedRoute>} />
       <Route path="/aanmeldingen" element={<ProtectedRoute><AppLayout><AanmeldingenPage /></AppLayout></ProtectedRoute>} />
