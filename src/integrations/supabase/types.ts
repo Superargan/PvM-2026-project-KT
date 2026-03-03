@@ -35,6 +35,45 @@ export type Database = {
         }
         Relationships: []
       }
+      attendance: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          present: boolean
+          session_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          present?: boolean
+          session_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          present?: boolean
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "program_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -358,6 +397,41 @@ export type Database = {
           },
           {
             foreignKeyName: "program_clients_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      program_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          program_id: string
+          session_date: string | null
+          session_number: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          program_id: string
+          session_date?: string | null
+          session_number: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          program_id?: string
+          session_date?: string | null
+          session_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_sessions_program_id_fkey"
             columns: ["program_id"]
             isOneToOne: false
             referencedRelation: "programs"
