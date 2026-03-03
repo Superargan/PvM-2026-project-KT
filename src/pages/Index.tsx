@@ -6,10 +6,14 @@ import { supabase } from "@/integrations/supabase/client";
 
 export default function Dashboard() {
   const { data: clientCount = 0 } = useQuery({
-    queryKey: ["dashboard-clients"],
+    queryKey: ["dashboard-participants"],
     queryFn: async () => {
-      const { count } = await supabase.from("clients").select("*", { count: "exact", head: true });
-      return count ?? 0;
+      const { data } = await supabase
+        .from("program_clients")
+        .select("client_id");
+      // Count unique clients
+      const unique = new Set(data?.map((r: any) => r.client_id));
+      return unique.size;
     },
   });
 
