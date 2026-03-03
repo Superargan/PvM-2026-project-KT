@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MapPin, Upload, FileText, Trash2, Loader2 } from "lucide-react";
+import { MapPin, Upload, FileText, Trash2, Loader2, CalendarDays } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Props {
@@ -15,7 +15,24 @@ export default function SessionDetails({ session, programId }: Props) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [location, setLocation] = useState(session.location ?? "");
+  const [sessionDate, setSessionDate] = useState(session.session_date ?? "");
   const [uploading, setUploading] = useState(false);
+
+  // Update session date
+  const updateDate = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("program_sessions")
+        .update({ session_date: sessionDate || null } as any)
+        .eq("id", session.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["program_sessions", programId] });
+      toast({ title: "Datum opgeslagen" });
+    },
+    onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
+  });
 
   // Update location
   const updateLocation = useMutation({
@@ -114,6 +131,26 @@ export default function SessionDetails({ session, programId }: Props) {
           </span>
         )}
       </h4>
+
+      {/* Date */}
+      <div className="flex items-center gap-2">
+        <CalendarDays className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        <Input
+          type="date"
+          value={sessionDate}
+          onChange={(e) => setSessionDate(e.target.value)}
+          className="h-7 text-xs w-40"
+        />
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 text-xs"
+          disabled={sessionDate === (session.session_date ?? "")}
+          onClick={() => updateDate.mutate()}
+        >
+          Opslaan
+        </Button>
+      </div>
 
       {/* Location */}
       <div className="flex items-center gap-2">
