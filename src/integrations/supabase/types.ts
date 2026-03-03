@@ -483,6 +483,7 @@ export type Database = {
       }
       programs: {
         Row: {
+          age_category: string | null
           area_id: string | null
           created_at: string
           description: string | null
@@ -497,6 +498,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          age_category?: string | null
           area_id?: string | null
           created_at?: string
           description?: string | null
@@ -511,6 +513,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          age_category?: string | null
           area_id?: string | null
           created_at?: string
           description?: string | null
