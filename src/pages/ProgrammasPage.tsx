@@ -96,7 +96,24 @@ export default function ProgrammasPage() {
     }
   };
 
-  const handleStatusChange = async (id: string, newStatus: string) => {
+  const handleStatusChange = async (id: string, currentStatus: string, newStatus: string, enrolled: number) => {
+    // Validate before starting: min 7 participants + 2 trainers
+    if (currentStatus === "ingepland" && newStatus === "gestart") {
+      if (enrolled < 7) {
+        toast({ title: "Kan niet starten", description: `Minimaal 7 deelnemers vereist (nu ${enrolled}).`, variant: "destructive" });
+        return;
+      }
+      const { data: trainers } = await supabase
+        .from("program_staff")
+        .select("id")
+        .eq("program_id", id)
+        .eq("role", "trainer");
+      const trainerCount = trainers?.length ?? 0;
+      if (trainerCount < 2) {
+        toast({ title: "Kan niet starten", description: `Minimaal 2 vaste trainers vereist (nu ${trainerCount}).`, variant: "destructive" });
+        return;
+      }
+    }
     const { error } = await supabase.from("programs").update({ status: newStatus } as any).eq("id", id);
     if (error) {
       toast({ title: "Fout", description: error.message, variant: "destructive" });
@@ -251,7 +268,7 @@ export default function ProgrammasPage() {
                       size="sm"
                       variant="outline"
                       className="mt-2 w-full text-xs"
-                      onClick={() => handleStatusChange(prog.id, next)}
+                      onClick={() => handleStatusChange(prog.id, status, next, enrolled)}
                     >
                       <ArrowRight className="mr-1 h-3 w-3" />
                       {nextStatusLabel[status]}
