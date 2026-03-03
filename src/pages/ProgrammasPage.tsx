@@ -44,6 +44,7 @@ export default function ProgrammasPage() {
   const [planEnd, setPlanEnd] = useState("");
   const [selectedArea, setSelectedArea] = useState<string>("");
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
+  const [selectedAgeCategory, setSelectedAgeCategory] = useState<string>("");
   const { toast } = useToast();
 
   const { data: areas = [] } = useQuery({
@@ -91,6 +92,7 @@ export default function ProgrammasPage() {
       max_participants: Number(form.get("max_participants")) || 10,
       area_id: selectedArea || null,
       neighborhood_id: selectedNeighborhood || null,
+      age_category: selectedAgeCategory || null,
     } as any);
 
     if (error) {
@@ -100,6 +102,7 @@ export default function ProgrammasPage() {
       setAddOpen(false);
       setSelectedArea("");
       setSelectedNeighborhood("");
+      setSelectedAgeCategory("");
       refetch();
     }
   };
@@ -226,6 +229,16 @@ export default function ProgrammasPage() {
                 <div><Label>Einddatum</Label><Input name="end_date" type="date" /></div>
               </div>
               <div><Label>Max deelnemers</Label><Input name="max_participants" type="number" defaultValue={10} min={1} /></div>
+              <div>
+                <Label>Leeftijdscategorie</Label>
+                <Select value={selectedAgeCategory} onValueChange={setSelectedAgeCategory}>
+                  <SelectTrigger><SelectValue placeholder="Selecteer categorie" /></SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="5-7">5–7 jaar</SelectItem>
+                    <SelectItem value="8-12">8–12 jaar</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Gebied</Label>
@@ -282,7 +295,10 @@ export default function ProgrammasPage() {
                     {statusInfo.label}
                   </span>
                 </div>
-                <h3 className="mt-3 font-display text-base font-bold text-card-foreground cursor-pointer hover:underline" onClick={() => navigate(`/programmas/${prog.id}`)}>{prog.name}</h3>
+                <h3 className="mt-3 font-display text-base font-bold text-card-foreground cursor-pointer hover:underline" onClick={() => navigate(`/programmas/${prog.id}`)}>
+                  {prog.name}
+                  {prog.age_category && <span className="ml-2 text-xs font-normal text-muted-foreground">({prog.age_category} jaar)</span>}
+                </h3>
                 {prog.description && <p className="text-xs text-muted-foreground">{prog.description}</p>}
                 {prog.schools?.name && <p className="text-xs text-muted-foreground">{prog.schools.name}</p>}
                 {(prog.areas?.name || prog.neighborhoods?.name) && (
