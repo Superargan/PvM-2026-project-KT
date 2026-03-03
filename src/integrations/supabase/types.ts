@@ -408,6 +408,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          location: string | null
           notes: string | null
           program_id: string
           session_date: string | null
@@ -416,6 +417,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          location?: string | null
           notes?: string | null
           program_id: string
           session_date?: string | null
@@ -424,6 +426,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          location?: string | null
           notes?: string | null
           program_id?: string
           session_date?: string | null
@@ -670,6 +673,41 @@ export type Database = {
             columns: ["neighborhood_id"]
             isOneToOne: false
             referencedRelation: "neighborhoods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_documents: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_path: string
+          id: string
+          session_id: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_path: string
+          id?: string
+          session_id: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          id?: string
+          session_id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_documents_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "program_sessions"
             referencedColumns: ["id"]
           },
         ]

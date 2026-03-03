@@ -6,14 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, ClipboardList } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import SessionDetails from "@/components/SessionDetails";
 
 interface Props {
   programId: string;
@@ -26,7 +23,6 @@ export default function ProgramAttendance({ programId, programName }: Props) {
   const qc = useQueryClient();
   const SESSION_COUNT = programName.startsWith("KT") ? 10 : 8;
 
-  // Ensure sessions exist
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
     queryKey: ["program_sessions", programId],
     enabled: open,
@@ -41,7 +37,6 @@ export default function ProgramAttendance({ programId, programName }: Props) {
     },
   });
 
-  // Auto-create sessions if none exist
   const createSessionsMut = useMutation({
     mutationFn: async () => {
       const rows = Array.from({ length: SESSION_COUNT }, (_, i) => ({
@@ -60,7 +55,6 @@ export default function ProgramAttendance({ programId, programName }: Props) {
     }
   }, [open, sessionsLoading, sessions.length]);
 
-  // Get enrolled clients
   const { data: enrolledClients = [] } = useQuery({
     queryKey: ["program_clients_detail", programId],
     enabled: open,
@@ -74,7 +68,6 @@ export default function ProgramAttendance({ programId, programName }: Props) {
     },
   });
 
-  // Get attendance records
   const sessionIds = sessions.map((s: any) => s.id);
   const { data: attendance = [], isLoading: attLoading } = useQuery({
     queryKey: ["attendance", programId, sessionIds],
@@ -89,7 +82,6 @@ export default function ProgramAttendance({ programId, programName }: Props) {
     },
   });
 
-  // Build lookup: `${sessionId}_${clientId}` -> attendance record
   const attMap = useMemo(() => {
     const map = new Map<string, any>();
     attendance.forEach((a: any) => map.set(`${a.session_id}_${a.client_id}`, a));
@@ -101,15 +93,10 @@ export default function ProgramAttendance({ programId, programName }: Props) {
       const key = `${sessionId}_${clientId}`;
       const existing = attMap.get(key);
       if (existing) {
-        const { error } = await supabase
-          .from("attendance")
-          .update({ present } as any)
-          .eq("id", existing.id);
+        const { error } = await supabase.from("attendance").update({ present } as any).eq("id", existing.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from("attendance")
-          .insert({ session_id: sessionId, client_id: clientId, present } as any);
+        const { error } = await supabase.from("attendance").insert({ session_id: sessionId, client_id: clientId, present } as any);
         if (error) throw error;
       }
     },
@@ -128,70 +115,76 @@ export default function ProgramAttendance({ programId, programName }: Props) {
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[85vh] overflow-auto">
         <DialogHeader>
-          <DialogTitle>Presentielijst — {programName}</DialogTitle>
+          <DialogTitle>{programName}</DialogTitle>
         </DialogHeader>
 
         {loading ? (
           <div className="flex justify-center py-8">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
-        ) : enrolledClients.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
-            Geen deelnemers ingeschreven bij dit programma.
-          </p>
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="sticky left-0 bg-background z-10 min-w-[160px]">Deelnemer</TableHead>
-                  {sessions.map((s: any) => (
-                    <TableHead key={s.id} className="text-center min-w-[44px] px-1">
-                      {s.session_number}
-                    </TableHead>
-                  ))}
-                  <TableHead className="text-center min-w-[50px]">Totaal</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {enrolledClients.map((client: any) => {
-                  const presentCount = sessions.filter((s: any) => {
-                    const rec = attMap.get(`${s.id}_${client.id}`);
-                    return rec?.present;
-                  }).length;
+          <Tabs defaultValue="presentie" className="w-full">
+            <TabsList className="w-full">
+              <TabsTrigger value="presentie" className="flex-1">Presentielijst</TabsTrigger>
+              <TabsTrigger value="bijeenkomsten" className="flex-1">Bijeenkomsten</TabsTrigger>
+            </TabsList>
 
-                  return (
-                    <TableRow key={client.id}>
-                      <TableCell className="sticky left-0 bg-background z-10 font-medium whitespace-nowrap">
-                        {client.first_name} {client.last_name}
-                      </TableCell>
-                      {sessions.map((s: any) => {
-                        const rec = attMap.get(`${s.id}_${client.id}`);
-                        const isPresent = rec?.present ?? false;
+            <TabsContent value="presentie">
+              {enrolledClients.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  Geen deelnemers ingeschreven bij dit programma.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="sticky left-0 bg-background z-10 min-w-[160px]">Deelnemer</TableHead>
+                        {sessions.map((s: any) => (
+                          <TableHead key={s.id} className="text-center min-w-[44px] px-1">{s.session_number}</TableHead>
+                        ))}
+                        <TableHead className="text-center min-w-[50px]">Totaal</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {enrolledClients.map((client: any) => {
+                        const presentCount = sessions.filter((s: any) => attMap.get(`${s.id}_${client.id}`)?.present).length;
                         return (
-                          <TableCell key={s.id} className="text-center px-1">
-                            <Checkbox
-                              checked={isPresent}
-                              onCheckedChange={(checked) =>
-                                toggleAttendance.mutate({
-                                  sessionId: s.id,
-                                  clientId: client.id,
-                                  present: !!checked,
-                                })
-                              }
-                            />
-                          </TableCell>
+                          <TableRow key={client.id}>
+                            <TableCell className="sticky left-0 bg-background z-10 font-medium whitespace-nowrap">
+                              {client.first_name} {client.last_name}
+                            </TableCell>
+                            {sessions.map((s: any) => {
+                              const isPresent = attMap.get(`${s.id}_${client.id}`)?.present ?? false;
+                              return (
+                                <TableCell key={s.id} className="text-center px-1">
+                                  <Checkbox
+                                    checked={isPresent}
+                                    onCheckedChange={(checked) =>
+                                      toggleAttendance.mutate({ sessionId: s.id, clientId: client.id, present: !!checked })
+                                    }
+                                  />
+                                </TableCell>
+                              );
+                            })}
+                            <TableCell className="text-center font-semibold">{presentCount}/{sessions.length}</TableCell>
+                          </TableRow>
                         );
                       })}
-                      <TableCell className="text-center font-semibold">
-                        {presentCount}/{sessions.length}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="bijeenkomsten">
+              <div className="space-y-3">
+                {sessions.map((s: any) => (
+                  <SessionDetails key={s.id} session={s} programId={programId} />
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
         )}
       </DialogContent>
     </Dialog>
