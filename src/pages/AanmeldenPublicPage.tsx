@@ -83,14 +83,14 @@ export default function AanmeldenPublicPage() {
 
   if (submitted) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background p-4">
-        <div className="w-full max-w-md text-center space-y-6">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[hsl(var(--status-groen)/0.15)]">
-            <CheckCircle2 className="h-8 w-8 text-[hsl(var(--status-groen))]" />
+      <div className="space-y-6">
+        <div className="max-w-md space-y-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[hsl(var(--status-groen)/0.15)]">
+            <CheckCircle2 className="h-7 w-7 text-[hsl(var(--status-groen))]" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Aanmelding ontvangen!</h1>
           <p className="text-muted-foreground">
-            Bedankt voor uw aanmelding. We nemen zo spoedig mogelijk contact met u op om de intake te plannen.
+            De aanmelding is succesvol verwerkt. Het kind staat nu in het systeem met status "Nieuw".
           </p>
           <Button variant="outline" onClick={() => { setSubmitted(false); setForm({}); }}>
             <ArrowLeft className="h-4 w-4" /> Nieuwe aanmelding
@@ -101,21 +101,15 @@ export default function AanmeldenPublicPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <div className="w-full max-w-lg space-y-6">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary font-bold text-primary-foreground text-lg">
-            K
-          </div>
-          <h1 className="text-2xl font-bold text-foreground">Kind Aanmelden</h1>
-          <p className="text-sm text-muted-foreground">
-            Vul het formulier in om uw kind aan te melden voor een trainingsprogramma.
-          </p>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="font-display text-2xl font-extrabold text-foreground">Kind Aanmelden</h1>
+        <p className="text-sm text-muted-foreground">
+          Vul het formulier in om een kind aan te melden voor een trainingsprogramma.
+        </p>
+      </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-5">
+      <form onSubmit={handleSubmit} className="max-w-lg rounded-xl border border-border bg-card p-6 shadow-sm space-y-5">
           <div className="grid grid-cols-2 gap-4">
             <FieldWrapper label="Voornaam kind *" error={errors.first_name}>
               <Input value={form.first_name ?? ""} onChange={(e) => updateField("first_name", e.target.value)} placeholder="Voornaam" />
@@ -172,10 +166,9 @@ export default function AanmeldenPublicPage() {
           </Button>
 
           <p className="text-xs text-muted-foreground text-center">
-            Uw gegevens worden vertrouwelijk behandeld conform de AVG.
+            Gegevens worden vertrouwelijk behandeld conform de AVG.
           </p>
         </form>
-      </div>
     </div>
   );
 }
