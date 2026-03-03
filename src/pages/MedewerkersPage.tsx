@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { UserCog, Plus, Search, Mail, Phone, Loader2, Building2, Edit, Eye } from "lucide-react";
+import { UserCog, Plus, Search, Mail, Phone, Loader2, Building2, Edit, FileText, Download } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -22,6 +22,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { nl } from "date-fns/locale";
 
 const rolColors: Record<string, string> = {
   backoffice: "bg-kanjer-blauw/10 text-kanjer-blauw",
@@ -58,6 +60,12 @@ export default function MedewerkersPage() {
   const [trainerDialogOpen, setTrainerDialogOpen] = useState(false);
   const [trainerForm, setTrainerForm] = useState<TrainerForm>(emptyTrainerForm);
   const [editingTrainerId, setEditingTrainerId] = useState<string | null>(null);
+
+  // Document generation state
+  const [docDialogOpen, setDocDialogOpen] = useState(false);
+  const [docTrainerId, setDocTrainerId] = useState<string | null>(null);
+  const [docTrainerName, setDocTrainerName] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
   
   const queryClient = useQueryClient();
 
@@ -96,7 +104,7 @@ export default function MedewerkersPage() {
     },
   });
 
-  // Fetch external trainers (staff without user_id or with extra fields)
+  // Fetch external trainers
   const { data: trainers = [], isLoading: loadingTrainers } = useQuery({
     queryKey: ["trainers"],
     queryFn: async () => {
@@ -108,6 +116,30 @@ export default function MedewerkersPage() {
       if (error) throw error;
       return data ?? [];
     },
+  });
+
+  // Fetch document templates
+  const { data: docTemplates = [] } = useQuery({
+    queryKey: ["document-templates"],
+    queryFn: async () => {
+      const { data } = await supabase.from("document_templates").select("*").order("name");
+      return data ?? [];
+    },
+  });
+
+  // Fetch generated docs for selected trainer
+  const { data: trainerDocs = [] } = useQuery({
+    queryKey: ["trainer-generated-docs", docTrainerId],
+    queryFn: async () => {
+      if (!docTrainerId) return [];
+      const { data } = await supabase
+        .from("generated_documents")
+        .select("*, document_templates(name)")
+        .eq("staff_id", docTrainerId)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!docTrainerId && docDialogOpen,
   });
 
   const inviteMutation = useMutation({
@@ -136,11 +168,9 @@ export default function MedewerkersPage() {
     mutationFn: async () => {
       if (!trainerForm.name) throw new Error("Naam is verplicht");
       const payload: any = { ...trainerForm };
-      // Clean empty strings to null
       for (const key of Object.keys(payload)) {
         if (payload[key] === "") payload[key] = null;
       }
-      // Keep name
       payload.name = trainerForm.name;
 
       if (editingTrainerId) {
@@ -163,6 +193,42 @@ export default function MedewerkersPage() {
     },
   });
 
+  // Generate document for trainer
+  const generateDocMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedTemplateId || !docTrainerId) throw new Error("Selecteer een template");
+      const { data, error } = await supabase.functions.invoke("generate-document", {
+        body: { template_id: selectedTemplateId, staff_id: docTrainerId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`Document gegenereerd: ${data.file_name}`);
+      setSelectedTemplateId("");
+      queryClient.invalidateQueries({ queryKey: ["trainer-generated-docs", docTrainerId] });
+    },
+    onError: (err: any) => {
+      toast.error(err.message);
+    },
+  });
+
+  // Download generated document
+  const handleDownloadDoc = async (doc: any) => {
+    const { data, error } = await supabase.storage.from("generated-documents").download(doc.file_path);
+    if (error || !data) {
+      toast.error("Download mislukt");
+      return;
+    }
+    const url = URL.createObjectURL(data);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = doc.file_name;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleEditTrainer = (trainer: any) => {
     setTrainerForm({
       name: trainer.name || "",
@@ -182,6 +248,13 @@ export default function MedewerkersPage() {
     setTrainerForm(emptyTrainerForm);
     setEditingTrainerId(null);
     setTrainerDialogOpen(true);
+  };
+
+  const handleOpenDocs = (trainer: any) => {
+    setDocTrainerId(trainer.id);
+    setDocTrainerName(trainer.name ?? "Trainer");
+    setSelectedTemplateId("");
+    setDocDialogOpen(true);
   };
 
   const filteredMedewerkers = medewerkers.filter((m) => {
@@ -258,9 +331,14 @@ export default function MedewerkersPage() {
                         <p className="text-xs text-muted-foreground mt-0.5">{trainer.trade_name}</p>
                       )}
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => handleEditTrainer(trainer)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => handleOpenDocs(trainer)} title="Documenten">
+                        <FileText className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleEditTrainer(trainer)} title="Bewerken">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                   <div className="mt-3 space-y-1.5 border-t border-border pt-3">
                     {trainer.kvk_number && (
@@ -419,6 +497,62 @@ export default function MedewerkersPage() {
               {trainerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               {editingTrainerId ? "Opslaan" : "Toevoegen"}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Trainer document generation dialog */}
+      <Dialog open={docDialogOpen} onOpenChange={(open) => { setDocDialogOpen(open); if (!open) { setDocTrainerId(null); setSelectedTemplateId(""); } }}>
+        <DialogContent className="max-w-lg bg-card">
+          <DialogHeader>
+            <DialogTitle>Documenten – {docTrainerName}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+            {/* Generate new */}
+            <div className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Document Genereren</p>
+              {docTemplates.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Geen templates beschikbaar. Upload templates via de Documenten-pagina.</p>
+              ) : (
+                <div className="flex gap-3 items-end">
+                  <div className="flex-1 space-y-1.5">
+                    <Label className="text-sm font-medium">Template</Label>
+                    <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                      <SelectTrigger><SelectValue placeholder="Selecteer een template" /></SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        {docTemplates.map((t: any) => (
+                          <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button onClick={() => generateDocMutation.mutate()} disabled={!selectedTemplateId || generateDocMutation.isPending}>
+                    {generateDocMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                    Genereer
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Generated documents list */}
+            {trainerDocs.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gegenereerde Documenten</p>
+                {trainerDocs.map((doc: any) => (
+                  <div key={doc.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-card-foreground truncate">{doc.file_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {doc.document_templates?.name ?? "—"} • {format(new Date(doc.created_at), "d MMM yyyy HH:mm", { locale: nl })}
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => handleDownloadDoc(doc)}>
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

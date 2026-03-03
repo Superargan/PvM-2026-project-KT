@@ -201,30 +201,36 @@ export type Database = {
       }
       generated_documents: {
         Row: {
-          client_id: string
+          client_id: string | null
           created_at: string
           file_name: string
           file_path: string
           generated_by: string
           id: string
+          school_id: string | null
+          staff_id: string | null
           template_id: string | null
         }
         Insert: {
-          client_id: string
+          client_id?: string | null
           created_at?: string
           file_name: string
           file_path: string
           generated_by: string
           id?: string
+          school_id?: string | null
+          staff_id?: string | null
           template_id?: string | null
         }
         Update: {
-          client_id?: string
+          client_id?: string | null
           created_at?: string
           file_name?: string
           file_path?: string
           generated_by?: string
           id?: string
+          school_id?: string | null
+          staff_id?: string | null
           template_id?: string | null
         }
         Relationships: [
@@ -233,6 +239,20 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_documents_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_documents_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
             referencedColumns: ["id"]
           },
           {
