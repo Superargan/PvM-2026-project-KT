@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from "xlsx";
 import { getAreaFromAddress } from "@/lib/postcodeMapping";
+import { downloadCsv } from "@/lib/csvExport";
 
 // ── CSV / Outlook helpers ──────────────────────────────────────────────
 
@@ -531,6 +532,32 @@ export default function ScholenPage() {
           <p className="text-sm text-muted-foreground">{schools.length} partnerscholen geregistreerd</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => {
+            const rows = schools.map((s: any) => ({
+              naam: s.name,
+              adres: s.address ?? "",
+              gebied: s.neighborhoods?.areas?.name ?? "",
+              wijk: s.neighborhoods?.name ?? "",
+              leerlingen: s.student_count ?? 0,
+              email: s.contact_email ?? "",
+              telefoon: s.contact_phone ?? "",
+              website: s.website_url ?? "",
+              contactpersonen: (s.referrers ?? []).map((r: any) => r.name).join(", "),
+            }));
+            downloadCsv("scholen.csv", [
+              { key: "naam", label: "Naam" },
+              { key: "adres", label: "Adres" },
+              { key: "gebied", label: "Gebied" },
+              { key: "wijk", label: "Wijk" },
+              { key: "leerlingen", label: "Leerlingen" },
+              { key: "email", label: "E-mail" },
+              { key: "telefoon", label: "Telefoon" },
+              { key: "website", label: "Website" },
+              { key: "contactpersonen", label: "Contactpersonen" },
+            ], rows);
+          }}>
+            <Download className="h-4 w-4" /> CSV
+          </Button>
           {/* Bulk assign areas */}
           <Button
             variant="outline"

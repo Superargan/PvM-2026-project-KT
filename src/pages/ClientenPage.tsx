@@ -1,4 +1,4 @@
-import { Users, Search, Filter, Eye, Plus, Loader2 } from "lucide-react";
+import { Users, Search, Filter, Eye, Plus, Loader2, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { downloadCsv } from "@/lib/csvExport";
 
 function calculateAge(dob: string | null): number | null {
   if (!dob) return null;
@@ -86,10 +87,39 @@ export default function ClientenPage() {
           <h1 className="font-display text-2xl font-extrabold text-foreground">Cliënten</h1>
           <p className="text-sm text-muted-foreground">{clients.length} cliënten in het systeem</p>
         </div>
-        <Dialog open={addOpen} onOpenChange={setAddOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4" /> Cliënt Toevoegen</Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => {
+            const rows = clients.map((c: any) => ({
+              voornaam: c.first_name,
+              achternaam: c.last_name,
+              leeftijd: calculateAge(c.date_of_birth) ?? "",
+              school: c.schools?.name ?? "",
+              ouder: c.guardian_name ?? "",
+              telefoon: c.guardian_phone ?? "",
+              email: c.guardian_email ?? "",
+              status: statusLabels[c.intake_status ?? "nieuw"] ?? c.intake_status ?? "",
+              avg: c.consent_data_processing ?? false,
+              whatsapp: c.whatsapp_consent ?? false,
+            }));
+            downloadCsv("clienten.csv", [
+              { key: "voornaam", label: "Voornaam" },
+              { key: "achternaam", label: "Achternaam" },
+              { key: "leeftijd", label: "Leeftijd" },
+              { key: "school", label: "School" },
+              { key: "ouder", label: "Ouder/Verzorger" },
+              { key: "telefoon", label: "Telefoon" },
+              { key: "email", label: "E-mail" },
+              { key: "status", label: "Status" },
+              { key: "avg", label: "AVG-toestemming" },
+              { key: "whatsapp", label: "WhatsApp-toestemming" },
+            ], rows);
+          }}>
+            <Download className="h-4 w-4" /> CSV
+          </Button>
+          <Dialog open={addOpen} onOpenChange={setAddOpen}>
+            <DialogTrigger asChild>
+              <Button><Plus className="h-4 w-4" /> Cliënt Toevoegen</Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Nieuwe Cliënt</DialogTitle>
@@ -109,6 +139,7 @@ export default function ClientenPage() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <div className="relative">
