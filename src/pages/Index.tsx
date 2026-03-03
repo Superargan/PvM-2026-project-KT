@@ -89,7 +89,7 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Actieve Cliënten" value={clientCount} icon={<Users className="h-5 w-5" />} color="blauw" />
+        <StatCard title="Deelnemers" value={clientCount} icon={<Users className="h-5 w-5" />} color="blauw" />
         <StatCard title="In te plannen trainingen" value={programCount} icon={<GraduationCap className="h-5 w-5" />} color="groen" />
         <StatCard title="PO Scholen Rotterdam" value={schoolCount} icon={<School className="h-5 w-5" />} color="geel" />
         <StatCard title="Nieuwe Aanmeldingen" value={newClientCount} subtitle="Afgelopen 7 dagen" icon={<ClipboardList className="h-5 w-5" />} color="rood" />
