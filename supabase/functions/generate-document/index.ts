@@ -26,9 +26,9 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error("Niet geautoriseerd");
 
-    const { template_id, client_id, staff_id } = await req.json();
+    const { template_id, client_id, staff_id, school_id } = await req.json();
     if (!template_id) throw new Error("template_id is verplicht");
-    if (!client_id && !staff_id) throw new Error("client_id of staff_id is verplicht");
+    if (!client_id && !staff_id && !school_id) throw new Error("client_id, staff_id of school_id is verplicht");
 
     // Fetch template metadata
     const { data: template, error: tplErr } = await supabase
@@ -46,7 +46,6 @@ serve(async (req) => {
     let outputFileName = "";
 
     if (staff_id) {
-      // Trainer document generation
       const { data: staff, error: staffErr } = await supabase
         .from("staff")
         .select("*")
@@ -69,8 +68,30 @@ serve(async (req) => {
       outputFileName = `${staff.name ?? "Trainer"}_${template.name}.docx`.replace(/\s+/g, "_");
     }
 
+    if (school_id) {
+      const { data: school, error: schoolErr } = await supabase
+        .from("schools")
+        .select("*, neighborhoods(name, areas(name))")
+        .eq("id", school_id)
+        .single();
+      if (schoolErr || !school) throw new Error("School niet gevonden");
+
+      replacements = {
+        ...replacements,
+        "{{school_naam}}": school.name ?? "",
+        "{{school_adres}}": school.address ?? "",
+        "{{school_email}}": school.contact_email ?? "",
+        "{{school_telefoon}}": school.contact_phone ?? "",
+        "{{school_website}}": school.website_url ?? "",
+        "{{school_leerlingen}}": String(school.student_count ?? ""),
+        "{{school_wijk}}": (school as any).neighborhoods?.name ?? "",
+        "{{school_gebied}}": (school as any).neighborhoods?.areas?.name ?? "",
+      };
+
+      outputFileName = `${school.name ?? "School"}_${template.name}.docx`.replace(/\s+/g, "_");
+    }
+
     if (client_id) {
-      // Client document generation
       const { data: client, error: clientErr } = await supabase
         .from("clients")
         .select("*, schools(name), referrers(name)")
@@ -78,7 +99,6 @@ serve(async (req) => {
         .single();
       if (clientErr || !client) throw new Error("Cliënt niet gevonden");
 
-      // Fetch programs for client
       const { data: programClients } = await supabase
         .from("program_clients")
         .select("programs(name, start_date, end_date, program_staff(staff(id, name, user_id)))")
@@ -87,7 +107,6 @@ serve(async (req) => {
 
       const program = (programClients as any)?.[0]?.programs;
 
-      // Fetch trainer name from staff or profile
       let trainerName = "";
       if (program?.program_staff?.length) {
         for (const ps of program.program_staff) {
@@ -163,7 +182,7 @@ serve(async (req) => {
     }
 
     const outputBuffer = await zip.generateAsync({ type: "uint8array" });
-    const storagePath = client_id ? `${client_id}` : `trainers/${staff_id}`;
+    const storagePath = client_id ? `${client_id}` : staff_id ? `trainers/${staff_id}` : `schools/${school_id}`;
     const outputPath = `${storagePath}/${crypto.randomUUID()}_${outputFileName}`;
 
     const { error: uploadErr } = await serviceSupabase.storage
@@ -171,16 +190,16 @@ serve(async (req) => {
       .upload(outputPath, outputBuffer, { contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
     if (uploadErr) throw new Error("Opslaan mislukt: " + uploadErr.message);
 
-    // Record in DB (client_id required for generated_documents, so only insert if client_id)
-    if (client_id) {
-      await serviceSupabase.from("generated_documents").insert({
-        client_id,
-        template_id,
-        file_path: outputPath,
-        file_name: outputFileName,
-        generated_by: user.id,
-      });
-    }
+    // Record in DB
+    await serviceSupabase.from("generated_documents").insert({
+      client_id: client_id || null,
+      staff_id: staff_id || null,
+      school_id: school_id || null,
+      template_id,
+      file_path: outputPath,
+      file_name: outputFileName,
+      generated_by: user.id,
+    });
 
     return new Response(
       JSON.stringify({ success: true, file_path: outputPath, file_name: outputFileName }),

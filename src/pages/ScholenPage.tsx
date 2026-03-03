@@ -461,6 +461,18 @@ export default function ScholenPage() {
     ? (schools.find((s: any) => s.id === selectedSchool.id) as any)?.referrers ?? []
     : [];
 
+  // Document generation state for schools
+  const [selectedSchoolTemplateId, setSelectedSchoolTemplateId] = useState("");
+
+  // Fetch document templates
+  const { data: schoolDocTemplates = [] } = useQuery({
+    queryKey: ["document-templates"],
+    queryFn: async () => {
+      const { data } = await supabase.from("document_templates").select("*").order("name");
+      return data ?? [];
+    },
+  });
+
   // ── Documents for selected school ──
   const { data: schoolDocs = [], refetch: refetchDocs } = useQuery({
     queryKey: ["school-documents", selectedSchool?.id],
@@ -476,6 +488,57 @@ export default function ScholenPage() {
     },
     enabled: !!selectedSchool?.id && docsDialogOpen,
   });
+
+  // Fetch generated docs for selected school
+  const { data: schoolGeneratedDocs = [], refetch: refetchSchoolGenDocs } = useQuery({
+    queryKey: ["school-generated-docs", selectedSchool?.id],
+    queryFn: async () => {
+      if (!selectedSchool?.id) return [];
+      const { data } = await supabase
+        .from("generated_documents")
+        .select("*, document_templates(name)")
+        .eq("school_id", selectedSchool.id)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!selectedSchool?.id && docsDialogOpen,
+  });
+
+  // Generate document for school
+  const generateSchoolDocMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedSchoolTemplateId || !selectedSchool?.id) throw new Error("Selecteer een template");
+      const { data, error } = await supabase.functions.invoke("generate-document", {
+        body: { template_id: selectedSchoolTemplateId, school_id: selectedSchool.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      toast({ title: "Document gegenereerd", description: data.file_name });
+      setSelectedSchoolTemplateId("");
+      refetchSchoolGenDocs();
+    },
+    onError: (err: any) => {
+      toast({ title: "Fout", description: err.message, variant: "destructive" });
+    },
+  });
+
+  // Download generated school document
+  const handleGenDocDownload = async (doc: any) => {
+    const { data, error } = await supabase.storage.from("generated-documents").download(doc.file_path);
+    if (error || !data) {
+      toast({ title: "Download mislukt", variant: "destructive" });
+      return;
+    }
+    const url = URL.createObjectURL(data);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = doc.file_name;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handleDocUpload = async (e: React.ChangeEvent<HTMLInputElement>, category: string) => {
     const file = e.target.files?.[0];
@@ -892,13 +955,53 @@ export default function ScholenPage() {
       {/* Documents dialog */}
       <Dialog open={docsDialogOpen} onOpenChange={(open) => {
         setDocsDialogOpen(open);
-        if (!open) setSelectedSchool(null);
+        if (!open) { setSelectedSchool(null); setSelectedSchoolTemplateId(""); }
       }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Documenten – {selectedSchool?.name}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+            {/* Document generation from template */}
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-card-foreground">Document Genereren</p>
+              {schoolDocTemplates.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Geen templates beschikbaar.</p>
+              ) : (
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1 space-y-1">
+                    <Select value={selectedSchoolTemplateId} onValueChange={setSelectedSchoolTemplateId}>
+                      <SelectTrigger><SelectValue placeholder="Selecteer een template" /></SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        {schoolDocTemplates.map((t: any) => (
+                          <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button size="sm" onClick={() => generateSchoolDocMutation.mutate()} disabled={!selectedSchoolTemplateId || generateSchoolDocMutation.isPending}>
+                    {generateSchoolDocMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                    Genereer
+                  </Button>
+                </div>
+              )}
+              {(schoolGeneratedDocs as any[]).length > 0 && (
+                <div className="space-y-1 mt-2">
+                  {(schoolGeneratedDocs as any[]).map((doc: any) => (
+                    <div key={doc.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-2">
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-card-foreground truncate">{doc.file_name}</p>
+                        <p className="text-[10px] text-muted-foreground">{doc.document_templates?.name ?? "—"}</p>
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleGenDocDownload(doc)}>
+                        <Download className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Schoolgids upload */}
             <div className="space-y-2">
               <p className="text-sm font-medium text-card-foreground">Schoolgids</p>

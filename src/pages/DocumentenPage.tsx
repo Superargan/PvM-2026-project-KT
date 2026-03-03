@@ -19,6 +19,8 @@ const PLACEHOLDER_OPTIONS = [
   "{{client_school}}", "{{client_klas}}", "{{ouder_naam}}", "{{ouder_telefoon}}", "{{ouder_email}}",
   "{{trainer_naam}}", "{{trainer_handelsnaam}}", "{{trainer_kvk}}", "{{trainer_adres}}",
   "{{trainer_postcode}}", "{{trainer_plaats}}", "{{trainer_telefoon}}", "{{trainer_email}}",
+  "{{school_naam}}", "{{school_adres}}", "{{school_email}}", "{{school_telefoon}}",
+  "{{school_website}}", "{{school_leerlingen}}", "{{school_wijk}}", "{{school_gebied}}",
   "{{programma_naam}}", "{{programma_start}}", "{{programma_eind}}",
   "{{doelen}}", "{{intake_notities}}", "{{datum_vandaag}}",
 ];
