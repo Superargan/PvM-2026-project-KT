@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2, Save, User, ClipboardList, BookOpen, Shield } from "lucide-react";
+import { ArrowLeft, Loader2, Save, User, ClipboardList, BookOpen, Shield, FileText, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 
@@ -130,7 +131,67 @@ export default function ClientDetailPage() {
     enabled: !!id,
   });
 
-  // Auto audit log on page open
+  // Fetch document templates
+  const { data: docTemplates = [] } = useQuery({
+    queryKey: ["document-templates"],
+    queryFn: async () => {
+      const { data } = await supabase.from("document_templates").select("*").order("name");
+      return data ?? [];
+    },
+  });
+
+  // Fetch generated documents for this client
+  const { data: generatedDocs = [] } = useQuery({
+    queryKey: ["client-generated-docs", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("generated_documents")
+        .select("*, document_templates(name, category)")
+        .eq("client_id", id!)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!id,
+  });
+
+  // Generate document mutation
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const generateDocMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedTemplateId) throw new Error("Selecteer een template");
+      const { data, error } = await supabase.functions.invoke("generate-document", {
+        body: { template_id: selectedTemplateId, client_id: id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      toast({ title: "Document gegenereerd", description: data.file_name });
+      setSelectedTemplateId("");
+      queryClient.invalidateQueries({ queryKey: ["client-generated-docs", id] });
+    },
+    onError: (err: any) => {
+      toast({ title: "Fout", description: err.message, variant: "destructive" });
+    },
+  });
+
+  // Download generated document
+  const handleDownloadDoc = async (doc: any) => {
+    const { data, error } = await supabase.storage.from("generated-documents").download(doc.file_path);
+    if (error || !data) {
+      toast({ title: "Download mislukt", variant: "destructive" });
+      return;
+    }
+    const url = URL.createObjectURL(data);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = doc.file_name;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+
   useEffect(() => {
     if (id && session?.user?.id) {
       supabase.from("audit_log").insert({
@@ -263,10 +324,11 @@ export default function ClientDetailPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="gegevens" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="gegevens" className="gap-1.5"><User className="h-3.5 w-3.5" /> Gegevens</TabsTrigger>
           <TabsTrigger value="intake" className="gap-1.5"><ClipboardList className="h-3.5 w-3.5" /> Intake</TabsTrigger>
           <TabsTrigger value="programmas" className="gap-1.5"><BookOpen className="h-3.5 w-3.5" /> Programma's</TabsTrigger>
+          <TabsTrigger value="documenten" className="gap-1.5"><FileText className="h-3.5 w-3.5" /> Documenten</TabsTrigger>
           <TabsTrigger value="audit" className="gap-1.5"><Shield className="h-3.5 w-3.5" /> Audit Log</TabsTrigger>
         </TabsList>
 
@@ -437,6 +499,69 @@ export default function ClientDetailPage() {
               </tbody>
             </table>
           </div>
+        </TabsContent>
+
+        {/* Documenten tab */}
+        <TabsContent value="documenten" className="space-y-4">
+          {/* Generate new */}
+          <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Document Genereren</p>
+            {docTemplates.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Geen templates beschikbaar. Upload templates via de Documenten-pagina.</p>
+            ) : (
+              <div className="flex gap-3 items-end">
+                <div className="flex-1 space-y-1.5">
+                  <Label className="text-sm font-medium">Template</Label>
+                  <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                    <SelectTrigger><SelectValue placeholder="Selecteer een template" /></SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      {docTemplates.map((t: any) => (
+                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button onClick={() => generateDocMutation.mutate()} disabled={!selectedTemplateId || generateDocMutation.isPending}>
+                  {generateDocMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                  Genereer
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Generated documents list */}
+          {generatedDocs.length > 0 && (
+            <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border bg-muted/50">
+                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Document</th>
+                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Template</th>
+                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Datum</th>
+                    <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Download</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {generatedDocs.map((doc: any) => (
+                    <tr key={doc.id} className="transition-colors hover:bg-muted/30">
+                      <td className="px-5 py-4 text-sm font-medium text-card-foreground">{doc.file_name}</td>
+                      <td className="px-5 py-4">
+                        <Badge variant="secondary">{doc.document_templates?.name ?? "—"}</Badge>
+                      </td>
+                      <td className="px-5 py-4 text-sm text-muted-foreground">
+                        {format(new Date(doc.created_at), "d MMM yyyy HH:mm", { locale: nl })}
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <Button variant="ghost" size="icon" onClick={() => handleDownloadDoc(doc)}>
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </TabsContent>
 
         {/* Audit Log tab */}
