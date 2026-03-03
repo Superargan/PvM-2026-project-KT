@@ -447,21 +447,27 @@ export type Database = {
           created_at: string
           id: string
           program_id: string
+          replaces_staff_id: string | null
           role: string | null
+          session_id: string | null
           staff_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           program_id: string
+          replaces_staff_id?: string | null
           role?: string | null
+          session_id?: string | null
           staff_id: string
         }
         Update: {
           created_at?: string
           id?: string
           program_id?: string
+          replaces_staff_id?: string | null
           role?: string | null
+          session_id?: string | null
           staff_id?: string
         }
         Relationships: [
@@ -470,6 +476,20 @@ export type Database = {
             columns: ["program_id"]
             isOneToOne: false
             referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_staff_replaces_staff_id_fkey"
+            columns: ["replaces_staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_staff_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "program_sessions"
             referencedColumns: ["id"]
           },
           {
