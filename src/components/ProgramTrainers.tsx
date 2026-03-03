@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, UserCheck, UserPlus } from "lucide-react";
+import { X, Plus, UserCheck, UserPlus, CalendarDays } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ProgramTrainersProps {
@@ -16,6 +16,8 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
   const queryClient = useQueryClient();
   const [addRole, setAddRole] = useState<"trainer" | "invaller">("trainer");
   const [selectedStaffId, setSelectedStaffId] = useState("");
+  const [selectedSessionId, setSelectedSessionId] = useState("");
+  const [replacesStaffId, setReplacesStaffId] = useState("");
   const [showAdd, setShowAdd] = useState(false);
 
   const { data: assignments = [] } = useQuery({
@@ -30,6 +32,20 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
     },
   });
 
+  // Fetch sessions for invaller selection
+  const { data: sessions = [] } = useQuery({
+    queryKey: ["program_sessions", programId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("program_sessions")
+        .select("*")
+        .eq("program_id", programId)
+        .order("session_number");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const { data: allStaff = [] } = useQuery({
     queryKey: ["staff-list"],
     queryFn: async () => {
@@ -39,25 +55,36 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
     },
   });
 
-  const assignedIds = assignments.map((a: any) => a.staff_id);
-  const availableStaff = allStaff.filter((s: any) => !assignedIds.includes(s.id));
-
   const mainTrainers = assignments.filter((a: any) => a.role === "trainer");
   const invallers = assignments.filter((a: any) => a.role === "invaller");
+
+  // For invallers, don't filter out already assigned staff (they can sub on different sessions)
+  const availableStaffForRole = addRole === "trainer"
+    ? allStaff.filter((s: any) => !assignments.filter((a: any) => a.role === "trainer").map((a: any) => a.staff_id).includes(s.id))
+    : allStaff;
 
   const addMutation = useMutation({
     mutationFn: async () => {
       if (!selectedStaffId) return;
-      const { error } = await supabase.from("program_staff").insert({
+      const insertData: any = {
         program_id: programId,
         staff_id: selectedStaffId,
         role: addRole,
-      } as any);
+      };
+      if (addRole === "invaller") {
+        if (!selectedSessionId) throw new Error("Selecteer een bijeenkomst");
+        if (!replacesStaffId) throw new Error("Selecteer voor welke trainer wordt ingevallen");
+        insertData.session_id = selectedSessionId;
+        insertData.replaces_staff_id = replacesStaffId;
+      }
+      const { error } = await supabase.from("program_staff").insert(insertData as any);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["program_staff", programId] });
       setSelectedStaffId("");
+      setSelectedSessionId("");
+      setReplacesStaffId("");
       setShowAdd(false);
       toast({ title: "Trainer gekoppeld" });
     },
@@ -81,6 +108,22 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
   });
 
   const canAddMain = mainTrainers.length < 2;
+
+  // Helper to get staff name by id
+  const getStaffName = (staffId: string) => {
+    const s = allStaff.find((st: any) => st.id === staffId);
+    return s?.name ?? "Onbekend";
+  };
+
+  // Helper to get session label
+  const getSessionLabel = (sessionId: string) => {
+    const s = sessions.find((ses: any) => ses.id === sessionId);
+    if (!s) return "";
+    const dateStr = s.session_date
+      ? new Date(s.session_date).toLocaleDateString("nl-NL", { day: "numeric", month: "short" })
+      : "";
+    return `#${s.session_number}${dateStr ? ` (${dateStr})` : ""}`;
+  };
 
   return (
     <div className="space-y-2">
@@ -115,8 +158,18 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
       {invallers.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">
           {invallers.map((a: any) => (
-            <Badge key={a.id} variant="outline" className="gap-1 pr-1">
+            <Badge key={a.id} variant="outline" className="gap-1 pr-1 text-xs">
               {a.staff?.name ?? "Onbekend"}
+              {a.session_id && (
+                <span className="text-muted-foreground ml-1">
+                  {getSessionLabel(a.session_id)}
+                </span>
+              )}
+              {a.replaces_staff_id && (
+                <span className="text-muted-foreground ml-1">
+                  → {getStaffName(a.replaces_staff_id)}
+                </span>
+              )}
               <button
                 onClick={() => removeMutation.mutate(a.id)}
                 className="ml-0.5 rounded-full p-0.5 hover:bg-muted"
@@ -134,7 +187,7 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
       {showAdd ? (
         <div className="flex flex-col gap-2 rounded-lg border border-border bg-background p-2 mt-2">
           <div className="flex gap-2">
-            <Select value={addRole} onValueChange={(v) => setAddRole(v as "trainer" | "invaller")}>
+            <Select value={addRole} onValueChange={(v) => { setAddRole(v as "trainer" | "invaller"); setSelectedSessionId(""); setReplacesStaffId(""); }}>
               <SelectTrigger className="w-28 h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
@@ -148,14 +201,53 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
                 <SelectValue placeholder="Selecteer trainer" />
               </SelectTrigger>
               <SelectContent className="bg-popover">
-                {availableStaff.map((s: any) => (
+                {availableStaffForRole.map((s: any) => (
                   <SelectItem key={s.id} value={s.id}>{s.name ?? s.email}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
+          {/* Extra fields for invaller */}
+          {addRole === "invaller" && (
+            <div className="flex gap-2">
+              <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
+                <SelectTrigger className="flex-1 h-8 text-xs">
+                  <SelectValue placeholder="Bijeenkomst" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  {sessions.map((s: any) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      #{s.session_number}
+                      {s.session_date
+                        ? ` — ${new Date(s.session_date).toLocaleDateString("nl-NL", { day: "numeric", month: "short" })}`
+                        : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={replacesStaffId} onValueChange={setReplacesStaffId}>
+                <SelectTrigger className="flex-1 h-8 text-xs">
+                  <SelectValue placeholder="Vervangt trainer" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  {mainTrainers.map((a: any) => (
+                    <SelectItem key={a.staff_id} value={a.staff_id}>
+                      {a.staff?.name ?? "Onbekend"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="flex gap-2">
-            <Button size="sm" className="h-7 text-xs flex-1" disabled={!selectedStaffId} onClick={() => addMutation.mutate()}>
+            <Button
+              size="sm"
+              className="h-7 text-xs flex-1"
+              disabled={!selectedStaffId || (addRole === "invaller" && (!selectedSessionId || !replacesStaffId))}
+              onClick={() => addMutation.mutate()}
+            >
               Koppelen
             </Button>
             <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowAdd(false)}>
