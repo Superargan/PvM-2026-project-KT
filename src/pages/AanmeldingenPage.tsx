@@ -217,7 +217,7 @@ export default function AanmeldingenPage() {
                 return (
                   <tr key={client.id} className="transition-colors hover:bg-muted/30">
                     <td className="px-5 py-4">
-                      <p className="text-sm font-semibold text-card-foreground">{client.first_name} {client.last_name}</p>
+                      <p className="text-sm font-semibold text-primary hover:underline cursor-pointer" onClick={() => navigate(`/clienten/${client.id}`)}>{client.first_name} {client.last_name}</p>
                       <p className="text-xs text-muted-foreground sm:hidden">{age !== null ? `${age} jaar` : "—"}</p>
                     </td>
                     <td className="hidden px-5 py-4 sm:table-cell">
