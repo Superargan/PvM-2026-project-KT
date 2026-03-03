@@ -1,4 +1,4 @@
-import { Users, GraduationCap, School, ClipboardList, ArrowRight } from "lucide-react";
+import { Users, GraduationCap, School, ClipboardList, ArrowRight, UserCog } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -8,10 +8,7 @@ export default function Dashboard() {
   const { data: clientCount = 0 } = useQuery({
     queryKey: ["dashboard-participants"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("program_clients")
-        .select("client_id");
-      // Count unique clients
+      const { data } = await supabase.from("program_clients").select("client_id");
       const unique = new Set(data?.map((r: any) => r.client_id));
       return unique.size;
     },
@@ -20,10 +17,7 @@ export default function Dashboard() {
   const { data: programCount = 0 } = useQuery({
     queryKey: ["dashboard-programs"],
     queryFn: async () => {
-      const { count } = await supabase
-        .from("programs")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "te_plannen");
+      const { count } = await supabase.from("programs").select("*", { count: "exact", head: true }).eq("status", "te_plannen");
       return count ?? 0;
     },
   });
@@ -41,10 +35,15 @@ export default function Dashboard() {
     queryFn: async () => {
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
-      const { count } = await supabase
-        .from("clients")
-        .select("*", { count: "exact", head: true })
-        .gte("created_at", weekAgo.toISOString());
+      const { count } = await supabase.from("clients").select("*", { count: "exact", head: true }).gte("created_at", weekAgo.toISOString());
+      return count ?? 0;
+    },
+  });
+
+  const { data: trainerCount = 0 } = useQuery({
+    queryKey: ["dashboard-trainers"],
+    queryFn: async () => {
+      const { count } = await supabase.from("staff").select("*", { count: "exact", head: true }).not("name", "is", null);
       return count ?? 0;
     },
   });
@@ -54,7 +53,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data } = await supabase
         .from("clients")
-        .select("first_name, last_name, intake_status, created_at, schools(name)")
+        .select("id, first_name, last_name, intake_status, created_at, schools(name)")
         .order("created_at", { ascending: false })
         .limit(5);
       return data ?? [];
@@ -66,7 +65,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data } = await supabase
         .from("programs")
-        .select("name, start_date, max_participants, status, program_clients(count)")
+        .select("id, name, start_date, max_participants, status, program_clients(count)")
         .in("status", ["te_plannen", "ingepland", "gestart"])
         .order("start_date", { ascending: true })
         .limit(4);
@@ -92,11 +91,12 @@ export default function Dashboard() {
         <p className="text-sm text-muted-foreground">Welkom terug! Hier is een overzicht van vandaag.</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Deelnemers" value={clientCount} icon={<Users className="h-5 w-5" />} color="blauw" />
-        <StatCard title="In te plannen trainingen" value={programCount} icon={<GraduationCap className="h-5 w-5" />} color="groen" />
-        <StatCard title="PO Scholen Rotterdam" value={schoolCount} icon={<School className="h-5 w-5" />} color="geel" />
-        <StatCard title="Nieuwe Aanmeldingen" value={newClientCount} subtitle="Afgelopen 7 dagen" icon={<ClipboardList className="h-5 w-5" />} color="rood" />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <StatCard title="Deelnemers" value={clientCount} icon={<Users className="h-5 w-5" />} color="blauw" to="/clienten" />
+        <StatCard title="In te plannen trainingen" value={programCount} icon={<GraduationCap className="h-5 w-5" />} color="groen" to="/programmas" />
+        <StatCard title="PO Scholen Rotterdam" value={schoolCount} icon={<School className="h-5 w-5" />} color="geel" to="/scholen" />
+        <StatCard title="Trainers" value={trainerCount} icon={<UserCog className="h-5 w-5" />} color="blauw" to="/medewerkers" />
+        <StatCard title="Nieuwe Aanmeldingen" value={newClientCount} subtitle="Afgelopen 7 dagen" icon={<ClipboardList className="h-5 w-5" />} color="rood" to="/aanmeldingen" />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -112,10 +112,10 @@ export default function Dashboard() {
             {recentClients.length === 0 && (
               <p className="px-5 py-8 text-center text-sm text-muted-foreground">Nog geen cliënten aangemeld</p>
             )}
-            {recentClients.map((client: any, i: number) => {
+            {recentClients.map((client: any) => {
               const st = statusMap[client.intake_status] ?? statusMap.nieuw;
               return (
-                <div key={i} className="flex items-center justify-between px-5 py-3">
+                <Link key={client.id} to={`/clienten/${client.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-muted/50 transition-colors">
                   <div>
                     <p className="text-sm font-semibold text-card-foreground">
                       {client.first_name} {client.last_name}
@@ -126,7 +126,7 @@ export default function Dashboard() {
                     <span className={`inline-block h-1.5 w-1.5 rounded-full bg-status-${st.color}`} />
                     {st.label}
                   </span>
-                </div>
+                </Link>
               );
             })}
           </div>
@@ -144,10 +144,10 @@ export default function Dashboard() {
             {upcomingPrograms.length === 0 && (
               <p className="px-5 py-8 text-center text-sm text-muted-foreground">Nog geen programma's gepland</p>
             )}
-            {upcomingPrograms.map((prog: any, i: number) => {
+            {upcomingPrograms.map((prog: any) => {
               const enrolled = prog.program_clients?.[0]?.count ?? 0;
               return (
-                <div key={i} className="flex items-center justify-between px-5 py-3">
+                <Link key={prog.id} to="/programmas" className="flex items-center justify-between px-5 py-3 hover:bg-muted/50 transition-colors">
                   <div>
                     <p className="text-sm font-semibold text-card-foreground">{prog.name}</p>
                     <p className="text-xs text-muted-foreground capitalize">{prog.status}</p>
@@ -158,7 +158,7 @@ export default function Dashboard() {
                       {prog.start_date ? new Date(prog.start_date).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" }) : "—"}
                     </p>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
