@@ -25,7 +25,7 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("program_staff")
-        .select("*, staff(id, name, email)")
+        .select("*, staff:staff!program_staff_staff_id_fkey(id, name, email)")
         .eq("program_id", programId);
       if (error) throw error;
       return data ?? [];
