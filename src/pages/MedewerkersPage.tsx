@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { UserCog, Plus, Search, Mail, Phone, Loader2, Building2, Edit, FileText, Download } from "lucide-react";
+import { useState, useRef } from "react";
+import { UserCog, Plus, Search, Mail, Phone, Loader2, Building2, Edit, FileText, Download, Upload, CheckCircle2, XCircle, ShieldCheck } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -110,7 +110,7 @@ export default function MedewerkersPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("staff")
-        .select("id, name, trade_name, kvk_number, address, postal_code, city, phone, email, user_id, program_staff(id, programs(name))")
+        .select("id, name, trade_name, kvk_number, address, postal_code, city, phone, email, user_id, kvk_uittreksel_path, kvk_uittreksel_uploaded_at, vog_path, vog_uploaded_at, program_staff(id, programs(name))")
         .not("name", "is", null)
         .order("name");
       if (error) throw error;
@@ -359,6 +359,16 @@ export default function MedewerkersPage() {
                         <Phone className="h-3 w-3" /> {trainer.phone}
                       </p>
                     )}
+                    {(trainer.kvk_uittreksel_path || trainer.vog_path) && (
+                      <div className="flex gap-2 pt-1">
+                        {trainer.kvk_uittreksel_path && (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-kanjer-groen"><CheckCircle2 className="h-3 w-3" />KVK</span>
+                        )}
+                        {trainer.vog_path && (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-kanjer-groen"><CheckCircle2 className="h-3 w-3" />VOG</span>
+                        )}
+                      </div>
+                    )}
                     {trainer.program_staff?.length > 0 && (
                       <div className="flex flex-wrap gap-1 pt-1">
                         {trainer.program_staff.map((ps: any) => (
@@ -501,14 +511,22 @@ export default function MedewerkersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Trainer document generation dialog */}
+      {/* Trainer dossier dialog */}
       <Dialog open={docDialogOpen} onOpenChange={(open) => { setDocDialogOpen(open); if (!open) { setDocTrainerId(null); setSelectedTemplateId(""); } }}>
         <DialogContent className="max-w-lg bg-card">
           <DialogHeader>
-            <DialogTitle>Documenten – {docTrainerName}</DialogTitle>
+            <DialogTitle>Dossier – {docTrainerName}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 max-h-[70vh] overflow-y-auto">
-            {/* Generate new */}
+          <div className="space-y-6 max-h-[70vh] overflow-y-auto">
+            {/* KVK Uittreksel & VOG section */}
+            <DossierDocumentSection
+              trainerId={docTrainerId}
+              trainerName={docTrainerName}
+              onRefresh={() => queryClient.invalidateQueries({ queryKey: ["trainers"] })}
+              trainer={trainers.find((t: any) => t.id === docTrainerId)}
+            />
+
+            {/* Generate new document */}
             <div className="space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Document Genereren</p>
               {docTemplates.length === 0 ? (
@@ -556,6 +574,118 @@ export default function MedewerkersPage() {
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function DossierDocumentSection({ trainerId, trainerName, onRefresh, trainer }: { trainerId: string | null; trainerName: string; onRefresh: () => void; trainer: any }) {
+  const kvkInputRef = useRef<HTMLInputElement>(null);
+  const vogInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState<string | null>(null);
+
+  if (!trainerId) return null;
+
+  const handleUpload = async (type: "kvk_uittreksel" | "vog", file: File) => {
+    setUploading(type);
+    try {
+      const ext = file.name.split(".").pop() || "pdf";
+      const path = `${trainerId}/${type}_${Date.now()}.${ext}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from("trainer-documents")
+        .upload(path, file);
+      if (uploadError) throw uploadError;
+
+      const updateData = type === "kvk_uittreksel"
+        ? { kvk_uittreksel_path: path, kvk_uittreksel_uploaded_at: new Date().toISOString() }
+        : { vog_path: path, vog_uploaded_at: new Date().toISOString() };
+
+      const { error: dbError } = await supabase.from("staff").update(updateData).eq("id", trainerId);
+      if (dbError) throw dbError;
+
+      toast.success(`${type === "kvk_uittreksel" ? "KVK uittreksel" : "VOG"} geüpload`);
+      onRefresh();
+    } catch (err: any) {
+      toast.error(err.message || "Upload mislukt");
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const handleDownload = async (path: string, filename: string) => {
+    const { data, error } = await supabase.storage.from("trainer-documents").download(path);
+    if (error || !data) { toast.error("Download mislukt"); return; }
+    const url = URL.createObjectURL(data);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const docs = [
+    {
+      key: "kvk_uittreksel" as const,
+      label: "KVK Uittreksel",
+      path: trainer?.kvk_uittreksel_path,
+      date: trainer?.kvk_uittreksel_uploaded_at,
+      inputRef: kvkInputRef,
+    },
+    {
+      key: "vog" as const,
+      label: "Positieve VOG",
+      path: trainer?.vog_path,
+      date: trainer?.vog_uploaded_at,
+      inputRef: vogInputRef,
+    },
+  ];
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Dossier Documenten</p>
+      {docs.map((doc) => (
+        <div key={doc.key} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <ShieldCheck className={`h-4 w-4 shrink-0 ${doc.path ? "text-kanjer-groen" : "text-muted-foreground"}`} />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-card-foreground">{doc.label}</p>
+              {doc.path && doc.date ? (
+                <p className="text-xs text-muted-foreground">
+                  Geüpload op {format(new Date(doc.date), "d MMM yyyy", { locale: nl })}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">Nog niet geüpload</p>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-1">
+            {doc.path && (
+              <Button variant="ghost" size="icon" onClick={() => handleDownload(doc.path!, `${doc.label} - ${trainerName}.pdf`)}>
+                <Download className="h-4 w-4" />
+              </Button>
+            )}
+            <input
+              ref={doc.inputRef}
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleUpload(doc.key, file);
+                e.target.value = "";
+              }}
+            />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => doc.inputRef.current?.click()}
+              disabled={uploading === doc.key}
+            >
+              {uploading === doc.key ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+            </Button>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

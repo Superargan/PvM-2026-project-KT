@@ -743,6 +743,8 @@ export type Database = {
           email: string | null
           id: string
           kvk_number: string | null
+          kvk_uittreksel_path: string | null
+          kvk_uittreksel_uploaded_at: string | null
           name: string | null
           phone: string | null
           postal_code: string | null
@@ -751,6 +753,8 @@ export type Database = {
           trade_name: string | null
           updated_at: string
           user_id: string | null
+          vog_path: string | null
+          vog_uploaded_at: string | null
         }
         Insert: {
           address?: string | null
@@ -759,6 +763,8 @@ export type Database = {
           email?: string | null
           id?: string
           kvk_number?: string | null
+          kvk_uittreksel_path?: string | null
+          kvk_uittreksel_uploaded_at?: string | null
           name?: string | null
           phone?: string | null
           postal_code?: string | null
@@ -767,6 +773,8 @@ export type Database = {
           trade_name?: string | null
           updated_at?: string
           user_id?: string | null
+          vog_path?: string | null
+          vog_uploaded_at?: string | null
         }
         Update: {
           address?: string | null
@@ -775,6 +783,8 @@ export type Database = {
           email?: string | null
           id?: string
           kvk_number?: string | null
+          kvk_uittreksel_path?: string | null
+          kvk_uittreksel_uploaded_at?: string | null
           name?: string | null
           phone?: string | null
           postal_code?: string | null
@@ -783,6 +793,8 @@ export type Database = {
           trade_name?: string | null
           updated_at?: string
           user_id?: string | null
+          vog_path?: string | null
+          vog_uploaded_at?: string | null
         }
         Relationships: [
           {
