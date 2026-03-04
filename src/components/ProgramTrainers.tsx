@@ -89,7 +89,10 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
       toast({ title: "Trainer gekoppeld" });
     },
     onError: (err: any) => {
-      toast({ title: "Fout", description: err.message, variant: "destructive" });
+      const msg = err.message?.includes("unique") || err.message?.includes("duplicate")
+        ? "Deze trainer is al gekoppeld aan dit programma"
+        : err.message;
+      toast({ title: "Fout", description: msg, variant: "destructive" });
     },
   });
 
