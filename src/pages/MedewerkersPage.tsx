@@ -24,6 +24,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
+import TrainerTrainings from "@/components/TrainerTrainings";
+import InvoiceManager from "@/components/InvoiceManager";
 
 const rolColors: Record<string, string> = {
   backoffice: "bg-kanjer-blauw/10 text-kanjer-blauw",
@@ -369,15 +371,7 @@ export default function MedewerkersPage() {
                         )}
                       </div>
                     )}
-                    {trainer.program_staff?.length > 0 && (
-                      <div className="flex flex-wrap gap-1 pt-1">
-                        {trainer.program_staff.map((ps: any) => (
-                          <Badge key={ps.id} variant="secondary" className="text-[10px]">
-                            {ps.programs?.name ?? "Programma"}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
+                    <TrainerTrainings staffId={trainer.id} />
                   </div>
                 </div>
               ))}
@@ -569,6 +563,13 @@ export default function MedewerkersPage() {
                     </Button>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Facturen sectie */}
+            {docTrainerId && (
+              <div className="border-t border-border pt-4">
+                <InvoiceManager staffId={docTrainerId} staffName={docTrainerName} />
               </div>
             )}
           </div>

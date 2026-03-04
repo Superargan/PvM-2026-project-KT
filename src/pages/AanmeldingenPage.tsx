@@ -1,4 +1,4 @@
-import { ClipboardList, Search, Pencil, Loader2, ExternalLink } from "lucide-react";
+import { ClipboardList, Search, Pencil, Loader2, ExternalLink, Clock } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
@@ -10,8 +10,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import WaitlistManager from "@/components/WaitlistManager";
 
 const editSchema = z.object({
   first_name: z.string().trim().min(1, "Voornaam is verplicht").max(100),
@@ -65,6 +67,7 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function AanmeldingenPage() {
+  const [activeTab, setActiveTab] = useState("lijst");
   const [search, setSearch] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const [editClient, setEditClient] = useState<any>(null);
@@ -96,6 +99,15 @@ export default function AanmeldingenPage() {
     queryKey: ["schools-list"],
     queryFn: async () => {
       const { data, error } = await supabase.from("schools").select("id, name").order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: areas = [] } = useQuery({
+    queryKey: ["areas-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("areas").select("id, name").order("name");
       if (error) throw error;
       return data ?? [];
     },
@@ -169,6 +181,21 @@ export default function AanmeldingenPage() {
     }
   };
 
+  // Handle putting client on waitlist
+  const handleWaitlist = async (clientId: string, waitlistStatus: string, areaId?: string) => {
+    const updateData: any = { waitlist_status: waitlistStatus || null };
+    if (areaId) updateData.waitlist_area_id = areaId;
+    if (!waitlistStatus) { updateData.waitlist_area_id = null; }
+
+    const { error } = await supabase.from("clients").update(updateData).eq("id", clientId);
+    if (error) {
+      toast({ title: "Fout", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: waitlistStatus ? "Op wachtlijst geplaatst" : "Van wachtlijst verwijderd" });
+      refetch();
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -181,6 +208,15 @@ export default function AanmeldingenPage() {
         </Button>
       </div>
 
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="lijst">Aanmeldingen</TabsTrigger>
+          <TabsTrigger value="wachtlijst" className="gap-1.5">
+            <Clock className="h-3.5 w-3.5" /> Wachtlijst
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="lijst" className="space-y-4">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <input
@@ -246,6 +282,14 @@ export default function AanmeldingenPage() {
           </table>
         </div>
       )}
+        </TabsContent>
+
+        <TabsContent value="wachtlijst">
+          <div className="rounded-xl border border-border bg-card p-6">
+            <WaitlistManager />
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Edit dialog – full form */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
@@ -327,7 +371,7 @@ export default function AanmeldingenPage() {
               </FieldWrapper>
             </div>
 
-            {/* Intake */}
+            {/* Intake & Wachtlijst */}
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t border-border pt-4">Intake & Status</p>
             <div className="grid grid-cols-2 gap-4">
               <FieldWrapper label="Status" error={errors.intake_status}>
@@ -346,6 +390,26 @@ export default function AanmeldingenPage() {
                 <Input type="date" value={form.intake_date ?? ""} onChange={(e) => updateField("intake_date", e.target.value)} />
               </FieldWrapper>
             </div>
+
+            {/* Wachtlijst velden */}
+            {form.intake_status === "wachtlijst" && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-3">
+                <p className="text-xs font-semibold text-amber-800">Wachtlijst-instellingen</p>
+                <FieldWrapper label="Wachtlijst-gebied">
+                  <Select value={(editClient as any)?.waitlist_area_id ?? ""} onValueChange={(v) => {
+                    handleWaitlist(editClient.id, "waiting", v);
+                  }}>
+                    <SelectTrigger><SelectValue placeholder="Selecteer gebied" /></SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      {areas.map((a: any) => (
+                        <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FieldWrapper>
+              </div>
+            )}
+
             <FieldWrapper label="Reden van aanmelding" error={errors.referral_reason}>
               <Textarea value={form.referral_reason ?? ""} onChange={(e) => updateField("referral_reason", e.target.value)} rows={2} />
             </FieldWrapper>

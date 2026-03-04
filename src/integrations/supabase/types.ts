@@ -117,6 +117,8 @@ export type Database = {
           consent_data_processing: boolean | null
           created_at: string
           date_of_birth: string | null
+          dropout_action: string | null
+          dropout_reason: string | null
           first_name: string
           gender: string | null
           goals: string | null
@@ -135,6 +137,8 @@ export type Database = {
           referrer_id: string | null
           school_id: string | null
           updated_at: string
+          waitlist_area_id: string | null
+          waitlist_status: string | null
           whatsapp_consent: boolean | null
         }
         Insert: {
@@ -144,6 +148,8 @@ export type Database = {
           consent_data_processing?: boolean | null
           created_at?: string
           date_of_birth?: string | null
+          dropout_action?: string | null
+          dropout_reason?: string | null
           first_name: string
           gender?: string | null
           goals?: string | null
@@ -162,6 +168,8 @@ export type Database = {
           referrer_id?: string | null
           school_id?: string | null
           updated_at?: string
+          waitlist_area_id?: string | null
+          waitlist_status?: string | null
           whatsapp_consent?: boolean | null
         }
         Update: {
@@ -171,6 +179,8 @@ export type Database = {
           consent_data_processing?: boolean | null
           created_at?: string
           date_of_birth?: string | null
+          dropout_action?: string | null
+          dropout_reason?: string | null
           first_name?: string
           gender?: string | null
           goals?: string | null
@@ -189,6 +199,8 @@ export type Database = {
           referrer_id?: string | null
           school_id?: string | null
           updated_at?: string
+          waitlist_area_id?: string | null
+          waitlist_status?: string | null
           whatsapp_consent?: boolean | null
         }
         Relationships: [
@@ -204,6 +216,13 @@ export type Database = {
             columns: ["school_id"]
             isOneToOne: false
             referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_waitlist_area_id_fkey"
+            columns: ["waitlist_area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
             referencedColumns: ["id"]
           },
         ]
@@ -303,6 +322,66 @@ export type Database = {
           },
         ]
       }
+      invoices: {
+        Row: {
+          amount: number | null
+          created_at: string
+          file_name: string
+          file_path: string
+          id: string
+          notes: string | null
+          program_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          staff_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          file_name: string
+          file_path: string
+          id?: string
+          notes?: string | null
+          program_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          staff_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          id?: string
+          notes?: string | null
+          program_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          staff_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       neighborhoods: {
         Row: {
           area_id: string
@@ -367,25 +446,79 @@ export type Database = {
       }
       program_clients: {
         Row: {
+          action_not_started: string | null
           client_id: string
           created_at: string
+          dropout_action: string | null
+          dropout_reason: string | null
+          early_dropout: boolean | null
           enrolled_at: string | null
+          evaluation_filled_parent: boolean | null
+          follow_up_program: string | null
           id: string
+          kanvas_child_post: number | null
+          kanvas_child_pre: number | null
+          kanvas_parent_post: number | null
+          kanvas_parent_pre: number | null
+          parent_participants: number | null
           program_id: string
+          reason_not_started: string | null
+          referred_to: string | null
+          satisfaction_child: number | null
+          satisfaction_parent: number | null
+          sessions_attended: number | null
+          started: boolean | null
+          successfully_completed: boolean | null
         }
         Insert: {
+          action_not_started?: string | null
           client_id: string
           created_at?: string
+          dropout_action?: string | null
+          dropout_reason?: string | null
+          early_dropout?: boolean | null
           enrolled_at?: string | null
+          evaluation_filled_parent?: boolean | null
+          follow_up_program?: string | null
           id?: string
+          kanvas_child_post?: number | null
+          kanvas_child_pre?: number | null
+          kanvas_parent_post?: number | null
+          kanvas_parent_pre?: number | null
+          parent_participants?: number | null
           program_id: string
+          reason_not_started?: string | null
+          referred_to?: string | null
+          satisfaction_child?: number | null
+          satisfaction_parent?: number | null
+          sessions_attended?: number | null
+          started?: boolean | null
+          successfully_completed?: boolean | null
         }
         Update: {
+          action_not_started?: string | null
           client_id?: string
           created_at?: string
+          dropout_action?: string | null
+          dropout_reason?: string | null
+          early_dropout?: boolean | null
           enrolled_at?: string | null
+          evaluation_filled_parent?: boolean | null
+          follow_up_program?: string | null
           id?: string
+          kanvas_child_post?: number | null
+          kanvas_child_pre?: number | null
+          kanvas_parent_post?: number | null
+          kanvas_parent_pre?: number | null
+          parent_participants?: number | null
           program_id?: string
+          reason_not_started?: string | null
+          referred_to?: string | null
+          satisfaction_child?: number | null
+          satisfaction_parent?: number | null
+          sessions_attended?: number | null
+          started?: boolean | null
+          successfully_completed?: boolean | null
         }
         Relationships: [
           {
