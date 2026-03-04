@@ -248,30 +248,58 @@ export default function RapportagesPage() {
       if (a.present) entry.present++;
     });
 
+    // Extract postcode from address (e.g. "Gordelweg 216, 3039 GA" -> "3039 GA")
+    const addressStr = program.schools?.address ?? "";
+    const postcodeMatch = addressStr.match(/\b(\d{4}\s?[A-Z]{2})\b/);
+    const postcode = postcodeMatch ? postcodeMatch[1] : addressStr;
+
     // Header info
-    const headerData = [
+    const headerData: any[][] = [
       ["Naam interventie - Kanjertraining voor ouder en kind"],
       [],
-      ["Gebied", program.areas?.name ?? ""],
-      ["Uitvoeringslocatie", program.schools?.name ?? ""],
-      ["Postcode", program.schools?.address ?? ""],
-      ["Leeftijdscategorie", program.age_category ?? ""],
-      ["Startdatum", program.start_date ?? ""],
-      ["Einddatum", program.end_date ?? ""],
+      ["Gebied", program.areas?.name ?? "", "", "Gestart en zit in de groepsapp"],
+      ["Uitvoeringslocatie", program.schools?.name ?? "", "", "Gestart, maar tussentijds gestopt"],
+      ["Postcode", postcode, "", "Willen deze ronde niet mee doen, staat weer op wachtlijst of nieuwe lijst 2026"],
+      ["Leeftijdscategorie", program.age_category ?? "", "", "Geen interesse meer"],
+      ["Startdatum", program.start_date ?? "", "", "Niet te pakken gekregen"],
+      ["Einddatum", program.end_date ?? "", "", "Vervolgtraject"],
       ["Aantal bijeenkomsten", pSessions.length],
-      ["Trainers", trainers.join(", ")],
       [],
-      ["#", "Naam kind", "Gestart", "Reden niet gestart", "Actie niet gestart",
-       "Aantal ouders deelgenomen", "Aantal bijeenkomsten deelgenomen", "Succesvol afgerond (80%)",
+      // Grouped headers row
+      ["", "", "", "", "", "", "", "", "", "", "",
+       "DOORVERWEZEN NAAR - VERVOLGTRAJECT", "",
+       "KANVAS", "", "", "",
+       "EVALUATIEFORMULIER - CLIENTTEVREDENHEID", "", ""],
+      // Column headers
+      ["", "Naam kind", "Gestart", "Reden niet gestart", "Actie niet gestart",
+       "Aantal ouders die heeft deelgenomen aan interventie", "Aantal bijeenkomsten deelgenomen",
+       "Succesvol afgerond Ja/Nee (80%)",
        "Voortijdig gestopt", "Reden voortijdig gestopt", "Actie voortijdig gestopt",
-       "Doorverwezen naar", "Vervolgtraject",
+       "Doorverwezen naar", "Welk vervolgtraject",
        "KANVAS Ouder - Voormeting", "KANVAS Kind - Voormeting",
        "KANVAS Ouder - Nameting", "KANVAS Kind - Nameting",
-       "Evaluatieformulier ingevuld ouders", "Cijfer tevredenheid ouders", "Cijfer tevredenheid kind"],
+       "Evaluatieformulier ingevuld ouders", "Cijfer clienttevredenheid ouders", "Cijfer clienttevredenheid kind"],
     ];
 
-    // Client rows
+    // Client rows & stats collection
     let totalGestart = 0, totalNietGestart = 0, totalAfgerond = 0, totalGestopt = 0;
+    let totalEvalIngevuld = 0, totalEvalNiet = 0;
+    let sumSatisfactionParent = 0, countSatisfactionParent = 0;
+    let sumSatisfactionChild = 0, countSatisfactionChild = 0;
+    let totalKanvasPreWel = 0, totalKanvasPreNiet = 0;
+    let totalKanvasPostWel = 0, totalKanvasPostNiet = 0;
+    let sumKanvasParentPre = 0, countKanvasParentPre = 0;
+    let sumKanvasChildPre = 0, countKanvasChildPre = 0;
+    let sumKanvasParentPost = 0, countKanvasParentPost = 0;
+    let sumKanvasChildPost = 0, countKanvasChildPost = 0;
+
+    // Doorverwijzing categories
+    const doorverwijzingCategories: Record<string, number> = {
+      "SMW": 0, "CJG": 0, "Andere preventieve interventie": 0,
+      "Wijkteam": 0, "Psycholoog": 0, "Veilig thuis/Jeugdbescherming": 0,
+      "Anders namelijk": 0, "Niet van toepassing": 0,
+    };
+
     const clientRows = pClients.map((pc: any, i: number) => {
       const c = clientMap.get(pc.client_id);
       const att = clientAttendance.get(pc.client_id);
@@ -284,6 +312,47 @@ export default function RapportagesPage() {
       if (started) totalGestart++; else totalNietGestart++;
       if (completed && started) totalAfgerond++;
       if (pc.early_dropout) totalGestopt++;
+
+      // Evaluation stats
+      if (pc.evaluation_filled_parent) {
+        totalEvalIngevuld++;
+      } else {
+        totalEvalNiet++;
+      }
+      if (pc.satisfaction_parent != null) {
+        sumSatisfactionParent += Number(pc.satisfaction_parent);
+        countSatisfactionParent++;
+      }
+      if (pc.satisfaction_child != null) {
+        sumSatisfactionChild += Number(pc.satisfaction_child);
+        countSatisfactionChild++;
+      }
+
+      // KANVAS stats
+      const hasPreParent = pc.kanvas_parent_pre != null;
+      const hasPreChild = pc.kanvas_child_pre != null;
+      const hasPre = hasPreParent || hasPreChild;
+      const hasPostParent = pc.kanvas_parent_post != null;
+      const hasPostChild = pc.kanvas_child_post != null;
+      const hasPost = hasPostParent || hasPostChild;
+
+      if (hasPre) totalKanvasPreWel++; else if (started) totalKanvasPreNiet++;
+      if (hasPost) totalKanvasPostWel++; else if (started) totalKanvasPostNiet++;
+
+      if (hasPreParent) { sumKanvasParentPre += Number(pc.kanvas_parent_pre); countKanvasParentPre++; }
+      if (hasPreChild) { sumKanvasChildPre += Number(pc.kanvas_child_pre); countKanvasChildPre++; }
+      if (hasPostParent) { sumKanvasParentPost += Number(pc.kanvas_parent_post); countKanvasParentPost++; }
+      if (hasPostChild) { sumKanvasChildPost += Number(pc.kanvas_child_post); countKanvasChildPost++; }
+
+      // Doorverwijzing
+      const ref = pc.referred_to ?? "";
+      if (ref) {
+        const matched = Object.keys(doorverwijzingCategories).find(
+          (k) => ref.toLowerCase().includes(k.toLowerCase())
+        );
+        if (matched) doorverwijzingCategories[matched]++;
+        else doorverwijzingCategories["Anders namelijk"]++;
+      }
 
       return [
         i + 1,
@@ -309,14 +378,73 @@ export default function RapportagesPage() {
       ];
     });
 
-    // Summary rows
-    const summaryRows = [
+    // Computed averages
+    const avgKanvasParentPre = countKanvasParentPre > 0 ? (sumKanvasParentPre / countKanvasParentPre).toFixed(1) : "";
+    const avgKanvasChildPre = countKanvasChildPre > 0 ? (sumKanvasChildPre / countKanvasChildPre).toFixed(1) : "";
+    const avgKanvasParentPost = countKanvasParentPost > 0 ? (sumKanvasParentPost / countKanvasParentPost).toFixed(1) : "";
+    const avgKanvasChildPost = countKanvasChildPost > 0 ? (sumKanvasChildPost / countKanvasChildPost).toFixed(1) : "";
+    const avgKanvasPreTotal = (countKanvasParentPre + countKanvasChildPre) > 0
+      ? ((sumKanvasParentPre + sumKanvasChildPre) / (countKanvasParentPre + countKanvasChildPre)).toFixed(1) : "";
+    const avgKanvasPostTotal = (countKanvasParentPost + countKanvasChildPost) > 0
+      ? ((sumKanvasParentPost + sumKanvasChildPost) / (countKanvasParentPost + countKanvasChildPost)).toFixed(1) : "";
+    const avgKanvasVerschil = avgKanvasPreTotal && avgKanvasPostTotal
+      ? (Number(avgKanvasPostTotal) - Number(avgKanvasPreTotal)).toFixed(1) : "";
+
+    const avgSatisfactionParent = countSatisfactionParent > 0
+      ? (sumSatisfactionParent / countSatisfactionParent).toFixed(1) : "";
+    const avgSatisfactionChild = countSatisfactionChild > 0
+      ? (sumSatisfactionChild / countSatisfactionChild).toFixed(1) : "";
+
+    const percDeelname = pClients.length > 0 ? `${Math.round((totalGestart / pClients.length) * 100)}%` : "";
+    const percUitval = totalGestart > 0 ? `${Math.round((totalGestopt / totalGestart) * 100)}%` : "";
+
+    const totalDoorverwezen = Object.values(doorverwijzingCategories).reduce((a, b) => a + b, 0);
+
+    // Summary rows matching reference template
+    const summaryRows: any[][] = [
       [],
-      ["", "Totaal geplaatst:", pClients.length],
-      ["", "Totaal gestart:", totalGestart],
-      ["", "Totaal niet gestart:", totalNietGestart],
-      ["", "Totaal tussentijds gestopt:", totalGestopt],
-      ["", "Totaal afgerond:", totalAfgerond],
+      // Totals row with column-aligned stats
+      ["", "", `Totaal: ${totalGestart}`, "", `Totaal: ${totalNietGestart}`, "", "",
+       `Totaal: ${totalAfgerond}`, `Totaal: ${totalGestopt}`, "", "",
+       `Aantal doorverwezen naar:`, "", `Totaal: ${totalKanvasPreWel}`, "",
+       `Totaal: ${totalKanvasPostWel}`, "", `Totaal: ${totalEvalIngevuld}`, "", `Totaal: ${countSatisfactionChild}`],
+      ["", "", `Percentage deelname: ${percDeelname}`, "", "", "", "", "",
+       `Uitvalpercentage: ${percUitval}`, "", "",
+       `SMW: ${doorverwijzingCategories["SMW"]}`, "", "", "", "", "", "", "", ""],
+      ["", `Totaal geplaatst: ${pClients.length}`, "", "", "", "", "", "", "", "", "",
+       `CJG: ${doorverwijzingCategories["CJG"]}`, "",
+       `Totaal STARTVRAGENLIJSTEN wel ingevuld: ${totalKanvasPreWel}`, "",
+       `Totaal EINDVRAGENLIJSTEN wel ingevuld: ${totalKanvasPostWel}`, "",
+       `Totaal wel ingevuld (Respons): ${totalEvalIngevuld}`,
+       `Gemiddeld cijfer clienttevredenheid ouders: ${avgSatisfactionParent}`,
+       `Gemiddeld cijfer clienttevredenheid kinderen: ${avgSatisfactionChild}`],
+      ["", `Totaal gestart: ${totalGestart}`, "", "", "", "", "", "", "", "", "",
+       `Andere preventieve interventie: ${doorverwijzingCategories["Andere preventieve interventie"]}`, "",
+       `Totaal STARTVRAGENLIJSTEN niet ingevuld: ${totalKanvasPreNiet}`, "",
+       `Totaal EINDVRAGENLIJSTEN niet ingevuld: ${totalKanvasPostNiet}`, "",
+       `Totaal niet ingevuld (Respons): ${totalEvalNiet}`, "", ""],
+      ["", `Totaal niet gestart: ${totalNietGestart}`, "", "", "", "", "", "", "", "", "",
+       `Wijkteam: ${doorverwijzingCategories["Wijkteam"]}`, "", "", "", "", "", "", "", ""],
+      ["", `Totaal tussentijds gestopt: ${totalGestopt}`, "", "", "", "", "", "", "", "", "",
+       `Psycholoog: ${doorverwijzingCategories["Psycholoog"]}`, "",
+       "Redenen niet ingevuld:", "", "Redenen niet ingevuld:", "",
+       "Reden niet ingevuld:", "", "Reden geen respons:"],
+      ["", `Totaal afgerond: ${totalAfgerond}`, "", "", "", "", "", "", "", "", "",
+       `Veilig thuis/Jeugdbescherming: ${doorverwijzingCategories["Veilig thuis/Jeugdbescherming"]}`, "",
+       "", "", "", "", "", "", ""],
+      ["", "", "", "", "", "", "", "", "", "", "",
+       `Anders namelijk: ${doorverwijzingCategories["Anders namelijk"]}`, "",
+       "TOELICHTING KANVAS:", "", "", "", "", "", ""],
+      ["", "", "", "", "", "", "", "", "", "", "",
+       `Niet van toepassing: ${doorverwijzingCategories["Niet van toepassing"]}`, "",
+       `Gemiddeld effect - Voormeting: ${avgKanvasPreTotal}`, "", "", "", "", "", ""],
+      ["", "", "", "", "", "", "", "", "", "", "", "", "",
+       `Gemiddeld effect - Nameting: ${avgKanvasPostTotal}`, "", "", "", "", "", ""],
+      ["", "", "", "", "", "", "", "", "", "", "",
+       `Totaal doorverwezen: ${totalDoorverwezen}`, "",
+       `Gemiddeld effect - Verschil: ${avgKanvasVerschil}`, "", "", "", "", "", ""],
+      ["", "", "", "", "", "", "", "", "", "", "", "", "",
+       "Toelichting:", "", "", "", "", "", ""],
     ];
 
     const allRows = [...headerData, ...clientRows, ...summaryRows];
@@ -327,10 +455,10 @@ export default function RapportagesPage() {
 
     // Set column widths
     ws["!cols"] = [
-      { wch: 4 }, { wch: 25 }, { wch: 10 }, { wch: 25 }, { wch: 25 },
-      { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 25 }, { wch: 25 },
-      { wch: 20 }, { wch: 20 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 },
-      { wch: 12 }, { wch: 12 }, { wch: 12 },
+      { wch: 4 }, { wch: 30 }, { wch: 22 }, { wch: 30 }, { wch: 30 },
+      { wch: 18 }, { wch: 14 }, { wch: 18 }, { wch: 14 }, { wch: 28 }, { wch: 28 },
+      { wch: 32 }, { wch: 24 }, { wch: 22 }, { wch: 22 }, { wch: 22 }, { wch: 22 },
+      { wch: 26 }, { wch: 26 }, { wch: 26 },
     ];
 
     XLSX.writeFile(wb, `Monitoringslijst_${program.name.replace(/\s+/g, "_")}.xlsx`);
