@@ -5,13 +5,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
-import { Loader2, BarChart3, Download } from "lucide-react";
+import { Loader2, BarChart3, Download, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { downloadExport, ExportColumn } from "@/lib/csvExport";
 import {
   startOfWeek, startOfMonth, startOfYear, format, getISOWeek, differenceInYears, parseISO,
 } from "date-fns";
 import { nl } from "date-fns/locale";
+import InvoiceManager from "@/components/InvoiceManager";
+import * as XLSX from "xlsx";
 
 type Granularity = "week" | "maand" | "jaar";
 type Breakdown = "totaal" | "school" | "gebied" | "leeftijd" | "geslacht";
@@ -38,6 +40,13 @@ function ageCategory(dob: string | null): string {
   return "16+";
 }
 
+function ageCategoryLabel(dob: string | null): string {
+  if (!dob) return "Onbekend";
+  const age = differenceInYears(new Date(), parseISO(dob));
+  if (age <= 7) return "5 - 7 jaar";
+  return "8 - 12 jaar";
+}
+
 function genderLabel(g: string | null): string {
   if (!g) return "Onbekend";
   if (g === "M" || g.toLowerCase() === "man" || g.toLowerCase() === "jongen") return "Jongen";
@@ -53,7 +62,7 @@ export default function RapportagesPage() {
   const { data: clients = [], isLoading: cl } = useQuery({
     queryKey: ["rpt_clients"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("clients").select("id, first_name, last_name, created_at, date_of_birth, gender, school_id");
+      const { data, error } = await supabase.from("clients").select("id, first_name, last_name, created_at, date_of_birth, gender, school_id, postal_code, address, city, guardian_name, guardian_phone, guardian_email");
       if (error) throw error;
       return data ?? [];
     },
@@ -62,7 +71,7 @@ export default function RapportagesPage() {
   const { data: programClients = [], isLoading: pcl } = useQuery({
     queryKey: ["rpt_program_clients"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("program_clients").select("id, client_id, program_id, enrolled_at");
+      const { data, error } = await supabase.from("program_clients").select("*");
       if (error) throw error;
       return data ?? [];
     },
@@ -71,7 +80,7 @@ export default function RapportagesPage() {
   const { data: programs = [], isLoading: prl } = useQuery({
     queryKey: ["rpt_programs"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("programs").select("id, name, area_id, school_id");
+      const { data, error } = await supabase.from("programs").select("id, name, area_id, school_id, start_date, end_date, status, age_category, max_participants, areas(name), schools(name, address)");
       if (error) throw error;
       return data ?? [];
     },
@@ -80,7 +89,7 @@ export default function RapportagesPage() {
   const { data: sessions = [], isLoading: sl } = useQuery({
     queryKey: ["rpt_sessions"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("program_sessions").select("id, program_id");
+      const { data, error } = await supabase.from("program_sessions").select("id, program_id, session_number");
       if (error) throw error;
       return data ?? [];
     },
@@ -98,7 +107,7 @@ export default function RapportagesPage() {
   const { data: schools = [] } = useQuery({
     queryKey: ["rpt_schools"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("schools").select("id, name");
+      const { data, error } = await supabase.from("schools").select("id, name, address");
       if (error) throw error;
       return data ?? [];
     },
@@ -113,10 +122,19 @@ export default function RapportagesPage() {
     },
   });
 
+  const { data: programStaff = [] } = useQuery({
+    queryKey: ["rpt_program_staff"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("program_staff").select("program_id, staff_id, role, staff:staff!program_staff_staff_id_fkey(name)");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const loading = cl || pcl || prl || sl || al;
 
   // Lookup maps
-  const schoolMap = useMemo(() => new Map(schools.map((s: any) => [s.id, s.name])), [schools]);
+  const schoolMap = useMemo(() => new Map(schools.map((s: any) => [s.id, s])), [schools]);
   const areaMap = useMemo(() => new Map(areas.map((a: any) => [a.id, a.name])), [areas]);
   const clientMap = useMemo(() => new Map(clients.map((c: any) => [c.id, c])), [clients]);
   const programMap = useMemo(() => new Map(programs.map((p: any) => [p.id, p])), [programs]);
@@ -127,10 +145,9 @@ export default function RapportagesPage() {
     const c = clientMap.get(clientId);
     if (!c) return "Onbekend";
     if (breakdown === "totaal") return "Totaal";
-    if (breakdown === "school") return schoolMap.get(c.school_id) ?? "Geen school";
+    if (breakdown === "school") return schoolMap.get(c.school_id)?.name ?? "Geen school";
     if (breakdown === "leeftijd") return ageCategory(c.date_of_birth);
     if (breakdown === "geslacht") return genderLabel(c.gender);
-    // gebied: via program
     return "Onbekend";
   }
 
@@ -138,7 +155,7 @@ export default function RapportagesPage() {
     if (breakdown === "totaal") return "Totaal";
     const p = programMap.get(programId);
     if (breakdown === "gebied") return areaMap.get(p?.area_id) ?? "Geen gebied";
-    if (breakdown === "school") return schoolMap.get(p?.school_id) ?? "Geen school";
+    if (breakdown === "school") return schoolMap.get(p?.school_id)?.name ?? "Geen school";
     return "Totaal";
   }
 
@@ -173,7 +190,6 @@ export default function RapportagesPage() {
 
   // === 3. <80% aanwezigheid ===
   const lowAttendance = useMemo(() => {
-    // Per client per program: count sessions + present
     const cpMap = new Map<string, { total: number; present: number; clientId: string; programId: string }>();
     attendance.forEach((a: any) => {
       const progId = sessionProgramMap.get(a.session_id);
@@ -197,7 +213,7 @@ export default function RapportagesPage() {
           aanwezig: v.present,
           totaal: v.total,
           percentage: Math.round(pct),
-          bk: breakdown === "school" ? schoolMap.get(c?.school_id) ?? "Geen school"
+          bk: breakdown === "school" ? schoolMap.get(c?.school_id)?.name ?? "Geen school"
             : breakdown === "gebied" ? areaMap.get(p?.area_id) ?? "Geen gebied"
             : breakdown === "leeftijd" ? ageCategory(c?.date_of_birth)
             : breakdown === "geslacht" ? genderLabel(c?.gender)
@@ -208,6 +224,117 @@ export default function RapportagesPage() {
     results.sort((a, b) => a.percentage - b.percentage);
     return results;
   }, [attendance, sessionProgramMap, clientMap, programMap, breakdown, schoolMap, areaMap]);
+
+  // === Monitoringslijst export ===
+  const handleExportMonitoring = (programId: string) => {
+    const program = programMap.get(programId);
+    if (!program) return;
+
+    const pClients = programClients.filter((pc: any) => pc.program_id === programId);
+    const pSessions = sessions.filter((s: any) => s.program_id === programId);
+    const trainers = programStaff
+      .filter((ps: any) => ps.program_id === programId && ps.role !== "invaller")
+      .map((ps: any) => (ps.staff as any)?.name ?? "")
+      .filter(Boolean);
+
+    // Build attendance per client
+    const clientAttendance = new Map<string, { total: number; present: number }>();
+    attendance.forEach((a: any) => {
+      const progId = sessionProgramMap.get(a.session_id);
+      if (progId !== programId) return;
+      if (!clientAttendance.has(a.client_id)) clientAttendance.set(a.client_id, { total: 0, present: 0 });
+      const entry = clientAttendance.get(a.client_id)!;
+      entry.total++;
+      if (a.present) entry.present++;
+    });
+
+    // Header info
+    const headerData = [
+      ["Naam interventie - Kanjertraining voor ouder en kind"],
+      [],
+      ["Gebied", program.areas?.name ?? ""],
+      ["Uitvoeringslocatie", program.schools?.name ?? ""],
+      ["Postcode", program.schools?.address ?? ""],
+      ["Leeftijdscategorie", program.age_category ?? ""],
+      ["Startdatum", program.start_date ?? ""],
+      ["Einddatum", program.end_date ?? ""],
+      ["Aantal bijeenkomsten", pSessions.length],
+      ["Trainers", trainers.join(", ")],
+      [],
+      ["#", "Naam kind", "Gestart", "Reden niet gestart", "Actie niet gestart",
+       "Aantal ouders deelgenomen", "Aantal bijeenkomsten deelgenomen", "Succesvol afgerond (80%)",
+       "Voortijdig gestopt", "Reden voortijdig gestopt", "Actie voortijdig gestopt",
+       "Doorverwezen naar", "Vervolgtraject",
+       "KANVAS Ouder - Voormeting", "KANVAS Kind - Voormeting",
+       "KANVAS Ouder - Nameting", "KANVAS Kind - Nameting",
+       "Evaluatieformulier ingevuld ouders", "Cijfer tevredenheid ouders", "Cijfer tevredenheid kind"],
+    ];
+
+    // Client rows
+    let totalGestart = 0, totalNietGestart = 0, totalAfgerond = 0, totalGestopt = 0;
+    const clientRows = pClients.map((pc: any, i: number) => {
+      const c = clientMap.get(pc.client_id);
+      const att = clientAttendance.get(pc.client_id);
+      const sessionsAttended = pc.sessions_attended ?? att?.present ?? 0;
+      const totalSessions = pSessions.length;
+      const pct = totalSessions > 0 ? (sessionsAttended / totalSessions) * 100 : 0;
+      const completed = pc.successfully_completed ?? pct >= 80;
+      const started = pc.started !== false;
+
+      if (started) totalGestart++; else totalNietGestart++;
+      if (completed && started) totalAfgerond++;
+      if (pc.early_dropout) totalGestopt++;
+
+      return [
+        i + 1,
+        c ? `${c.first_name} ${c.last_name}` : "?",
+        started ? "Ja" : "Nee",
+        pc.reason_not_started ?? "",
+        pc.action_not_started ?? "",
+        pc.parent_participants ?? "",
+        sessionsAttended,
+        completed ? "Ja" : "Nee",
+        pc.early_dropout ? "Ja" : "Nee",
+        pc.dropout_reason ?? "",
+        pc.dropout_action ?? "",
+        pc.referred_to ?? "",
+        pc.follow_up_program ?? "",
+        pc.kanvas_parent_pre ?? "",
+        pc.kanvas_child_pre ?? "",
+        pc.kanvas_parent_post ?? "",
+        pc.kanvas_child_post ?? "",
+        pc.evaluation_filled_parent ? "Ja" : "Nee",
+        pc.satisfaction_parent ?? "",
+        pc.satisfaction_child ?? "",
+      ];
+    });
+
+    // Summary rows
+    const summaryRows = [
+      [],
+      ["", "Totaal geplaatst:", pClients.length],
+      ["", "Totaal gestart:", totalGestart],
+      ["", "Totaal niet gestart:", totalNietGestart],
+      ["", "Totaal tussentijds gestopt:", totalGestopt],
+      ["", "Totaal afgerond:", totalAfgerond],
+    ];
+
+    const allRows = [...headerData, ...clientRows, ...summaryRows];
+
+    const ws = XLSX.utils.aoa_to_sheet(allRows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Monitoringslijst");
+
+    // Set column widths
+    ws["!cols"] = [
+      { wch: 4 }, { wch: 25 }, { wch: 10 }, { wch: 25 }, { wch: 25 },
+      { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 25 }, { wch: 25 },
+      { wch: 20 }, { wch: 20 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 },
+      { wch: 12 }, { wch: 12 }, { wch: 12 },
+    ];
+
+    XLSX.writeFile(wb, `Monitoringslijst_${program.name.replace(/\s+/g, "_")}.xlsx`);
+  };
 
   // Helper to flatten pivot data to rows for table
   function pivotToRows(data: Map<string, Map<string, number | Set<string>>>, isSet = false) {
@@ -246,11 +373,16 @@ export default function RapportagesPage() {
   const aanmeld = pivotToRows(aanmeldData);
   const deelnemer = pivotToRows(deelnemerData, true);
 
+  // Programs with enrolled clients (for monitoring export)
+  const programsWithClients = programs.filter((p: any) =>
+    programClients.some((pc: any) => pc.program_id === p.id)
+  );
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-extrabold text-foreground">Rapportages</h1>
-        <p className="text-sm text-muted-foreground">Overzichten van aanmeldingen, deelnemers en aanwezigheid</p>
+        <p className="text-sm text-muted-foreground">Overzichten van aanmeldingen, deelnemers, aanwezigheid en facturen</p>
       </div>
 
       {/* Filters */}
@@ -274,10 +406,12 @@ export default function RapportagesPage() {
       </div>
 
       <Tabs defaultValue="aanmeldingen" className="space-y-4">
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="aanmeldingen">Aanmeldingen</TabsTrigger>
           <TabsTrigger value="deelnemers">Deelnemers</TabsTrigger>
           <TabsTrigger value="aanwezigheid">Aanwezigheid &lt;80%</TabsTrigger>
+          <TabsTrigger value="monitoringslijst">Monitoringslijst</TabsTrigger>
+          <TabsTrigger value="facturen">Facturen</TabsTrigger>
         </TabsList>
 
         {/* Aanmeldingen tab */}
@@ -371,6 +505,46 @@ export default function RapportagesPage() {
                 </Table>
               </div>
             )}
+          </Card>
+        </TabsContent>
+
+        {/* Monitoringslijst tab */}
+        <TabsContent value="monitoringslijst">
+          <Card className="p-4">
+            <div className="mb-4">
+              <h2 className="font-display text-lg font-bold text-card-foreground">Monitoringslijst per training</h2>
+              <p className="text-sm text-muted-foreground">Selecteer een training om de monitoringslijst te exporteren</p>
+            </div>
+            {programsWithClients.length === 0 ? (
+              <p className="py-6 text-center text-sm text-muted-foreground">Geen trainingen met deelnemers gevonden.</p>
+            ) : (
+              <div className="space-y-2">
+                {programsWithClients.map((p: any) => {
+                  const clientCount = programClients.filter((pc: any) => pc.program_id === p.id).length;
+                  return (
+                    <div key={p.id} className="flex items-center justify-between rounded-lg border border-border p-3 hover:bg-muted/30 transition-colors">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{p.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {p.areas?.name ?? "Geen gebied"} • {clientCount} deelnemers
+                          {p.start_date && ` • ${new Date(p.start_date).toLocaleDateString("nl-NL")}`}
+                        </p>
+                      </div>
+                      <Button size="sm" variant="outline" onClick={() => handleExportMonitoring(p.id)}>
+                        <FileSpreadsheet className="h-3.5 w-3.5 mr-1" /> Export XLSX
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+        </TabsContent>
+
+        {/* Facturen tab */}
+        <TabsContent value="facturen">
+          <Card className="p-4">
+            <InvoiceManager />
           </Card>
         </TabsContent>
       </Tabs>
