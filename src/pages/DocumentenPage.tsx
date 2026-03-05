@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
   FileText, Upload, Trash2, Loader2, File, Plus, Copy, Download,
-  Search, FileSpreadsheet, FilePdf, UserCircle, Building2, GraduationCap, Eye
+  Search, UserCircle, Building2, GraduationCap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
