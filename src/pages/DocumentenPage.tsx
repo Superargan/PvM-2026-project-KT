@@ -633,7 +633,7 @@ function GenerateTab() {
   const { data: clients = [] } = useQuery({
     queryKey: ["clients-list"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("clients").select("id, first_name, last_name").order("first_name");
+      const { data, error } = await supabase.from("clients").select("id, first_name, last_name").eq("archived", false).order("first_name");
       if (error) throw error;
       return data;
     },
@@ -643,7 +643,7 @@ function GenerateTab() {
   const { data: staffList = [] } = useQuery({
     queryKey: ["staff-list"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("staff").select("id, name, trade_name").order("name");
+      const { data, error } = await supabase.from("staff").select("id, name, trade_name").eq("archived", false).order("name");
       if (error) throw error;
       return data;
     },
@@ -663,7 +663,7 @@ function GenerateTab() {
   const { data: programs = [] } = useQuery({
     queryKey: ["programs-for-generate"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("programs").select("id, name").order("name");
+      const { data, error } = await supabase.from("programs").select("id, name").eq("archived", false).order("name");
       if (error) throw error;
       return data;
     },

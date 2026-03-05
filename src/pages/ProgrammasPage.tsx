@@ -75,6 +75,7 @@ export default function ProgrammasPage() {
       const { data, error } = await supabase
         .from("programs")
         .select("*, schools(name), program_clients(count), areas(name), neighborhoods(name)")
+        .eq("archived", false)
         .order("start_date", { ascending: true });
       if (error) throw error;
       return data ?? [];
