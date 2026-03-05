@@ -72,6 +72,7 @@ serve(async (req) => {
 
     const foundFields: string[] = [];
     const replacedFields: string[] = [];
+    const detectedPlaceholders: string[] = [];
 
     for (const partName of xmlParts) {
       const file = zip.file(partName);
@@ -86,7 +87,6 @@ serve(async (req) => {
           const placeholder = MERGEFIELD_MAP[fieldName];
           if (placeholder) {
             replacedFields.push(`${fieldName} → ${placeholder}`);
-            // Keep the run formatting but replace the text
             return innerContent.replace(
               /<w:t[^>]*>[^<]*<\/w:t>/g,
               `<w:t>${placeholder}</w:t>`
@@ -100,7 +100,6 @@ serve(async (req) => {
       );
 
       // Replace complex MERGEFIELD (begin/separate/end pattern)
-      // This handles: fldChar begin → instrText MERGEFIELD → fldChar separate → display text → fldChar end
       xml = xml.replace(
         /(<w:r[^>]*>(?:<w:rPr>[\s\S]*?<\/w:rPr>)?<w:fldChar\s+w:fldCharType="begin"[^/]*\/>[\s\S]*?)<w:instrText[^>]*>\s*MERGEFIELD\s+(\S+)[^<]*<\/w:instrText>([\s\S]*?<w:fldChar\s+w:fldCharType="separate"[^/]*\/>)([\s\S]*?)(<w:fldChar\s+w:fldCharType="end"[^/]*\/>)/g,
         (_match, before, fieldName, middle, displayContent, end) => {
@@ -109,7 +108,6 @@ serve(async (req) => {
           if (MERGEFIELD_MAP[fieldName] && !replacedFields.includes(`${fieldName} → ${placeholder}`)) {
             replacedFields.push(`${fieldName} → ${placeholder}`);
           }
-          // Replace display text runs with placeholder
           const cleanedDisplay = displayContent.replace(
             /<w:t[^>]*>[^<]*<\/w:t>/g,
             `<w:t>${placeholder}</w:t>`
@@ -139,6 +137,15 @@ serve(async (req) => {
           );
         }
       );
+
+      // Detect existing {{placeholder}} patterns in the XML text nodes
+      const placeholderMatches = xml.matchAll(/\{\{([a-z_]+)\}\}/g);
+      for (const m of placeholderMatches) {
+        const ph = `{{${m[1]}}}`;
+        if (!detectedPlaceholders.includes(ph)) {
+          detectedPlaceholders.push(ph);
+        }
+      }
 
       zip.file(partName, xml);
     }
