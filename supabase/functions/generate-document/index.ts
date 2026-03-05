@@ -63,6 +63,7 @@ serve(async (req) => {
         "{{trainer_plaats}}": staff.city ?? "",
         "{{trainer_telefoon}}": staff.phone ?? "",
         "{{trainer_email}}": staff.email ?? "",
+        "{{trainer_specialisatie}}": staff.specialization ?? "",
       };
 
       outputFileName = `${staff.name ?? "Trainer"}_${template.name}.docx`.replace(/\s+/g, "_");
