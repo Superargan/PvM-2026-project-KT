@@ -130,6 +130,20 @@ export default function MedewerkersPage() {
     },
   });
 
+  // Fetch programs for trainer document generation
+  const { data: trainerPrograms = [] } = useQuery({
+    queryKey: ["trainer-programs", docTrainerId],
+    queryFn: async () => {
+      if (!docTrainerId) return [];
+      const { data } = await supabase
+        .from("program_staff")
+        .select("program_id, programs(id, name)")
+        .eq("staff_id", docTrainerId);
+      return (data ?? []).map((ps: any) => ps.programs).filter(Boolean);
+    },
+    enabled: !!docTrainerId && docDialogOpen,
+  });
+
   // Fetch generated docs for selected trainer
   const { data: trainerDocs = [] } = useQuery({
     queryKey: ["trainer-generated-docs", docTrainerId],
