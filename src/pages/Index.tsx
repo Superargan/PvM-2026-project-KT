@@ -54,6 +54,7 @@ export default function Dashboard() {
       const { data } = await supabase
         .from("clients")
         .select("id, first_name, last_name, intake_status, created_at, schools(name)")
+        .eq("archived", false)
         .order("created_at", { ascending: false })
         .limit(5);
       return data ?? [];
