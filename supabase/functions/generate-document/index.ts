@@ -26,7 +26,7 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error("Niet geautoriseerd");
 
-    const { template_id, client_id, staff_id, school_id } = await req.json();
+    const { template_id, client_id, staff_id, school_id, program_id } = await req.json();
     if (!template_id) throw new Error("template_id is verplicht");
     if (!client_id && !staff_id && !school_id) throw new Error("client_id, staff_id of school_id is verplicht");
 
@@ -65,6 +65,49 @@ serve(async (req) => {
         "{{trainer_email}}": staff.email ?? "",
         "{{trainer_specialisatie}}": staff.specialization ?? "",
       };
+
+      // If program_id is provided, fetch program data for trainer documents
+      const programToFetch = program_id;
+      if (!programToFetch) {
+        // Try to find the most recent program for this trainer
+        const { data: ps } = await supabase
+          .from("program_staff")
+          .select("program_id, programs(id, name, start_date, end_date, schools(name), neighborhoods(name, areas(name)))")
+          .eq("staff_id", staff_id)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (ps && ps.length > 0) {
+          const prog = (ps[0] as any).programs;
+          if (prog) {
+            replacements = {
+              ...replacements,
+              "{{programma_naam}}": prog.name ?? "",
+              "{{programma_start}}": prog.start_date ?? "",
+              "{{programma_eind}}": prog.end_date ?? "",
+              "{{programma_school}}": prog.schools?.name ?? "",
+              "{{programma_wijk}}": prog.neighborhoods?.name ?? "",
+              "{{programma_gebied}}": prog.neighborhoods?.areas?.name ?? "",
+            };
+          }
+        }
+      } else {
+        const { data: prog } = await supabase
+          .from("programs")
+          .select("*, schools(name), neighborhoods(name, areas(name))")
+          .eq("id", programToFetch)
+          .single();
+        if (prog) {
+          replacements = {
+            ...replacements,
+            "{{programma_naam}}": prog.name ?? "",
+            "{{programma_start}}": prog.start_date ?? "",
+            "{{programma_eind}}": prog.end_date ?? "",
+            "{{programma_school}}": (prog as any).schools?.name ?? "",
+            "{{programma_wijk}}": (prog as any).neighborhoods?.name ?? "",
+            "{{programma_gebied}}": (prog as any).neighborhoods?.areas?.name ?? "",
+          };
+        }
+      }
 
       outputFileName = `${staff.name ?? "Trainer"}_${template.name}.docx`.replace(/\s+/g, "_");
     }
