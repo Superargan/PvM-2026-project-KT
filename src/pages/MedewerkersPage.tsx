@@ -68,6 +68,7 @@ export default function MedewerkersPage() {
   const [docTrainerId, setDocTrainerId] = useState<string | null>(null);
   const [docTrainerName, setDocTrainerName] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [selectedProgramId, setSelectedProgramId] = useState("");
   
   const queryClient = useQueryClient();
 
