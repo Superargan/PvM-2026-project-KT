@@ -46,10 +46,11 @@ interface TrainerForm {
   city: string;
   phone: string;
   email: string;
+  trainer_type: string;
 }
 
 const emptyTrainerForm: TrainerForm = {
-  name: "", trade_name: "", kvk_number: "", address: "", postal_code: "", city: "", phone: "", email: "",
+  name: "", trade_name: "", kvk_number: "", address: "", postal_code: "", city: "", phone: "", email: "", trainer_type: "",
 };
 
 export default function MedewerkersPage() {
@@ -273,6 +274,7 @@ export default function MedewerkersPage() {
       city: trainer.city || "",
       phone: trainer.phone || "",
       email: trainer.email || "",
+      trainer_type: trainer.trainer_type || "",
     });
     setEditingTrainerId(trainer.id);
     setTrainerDialogOpen(true);
@@ -529,6 +531,17 @@ export default function MedewerkersPage() {
                 <Label>E-mail</Label>
                 <Input type="email" value={trainerForm.email} onChange={(e) => setTrainerForm(f => ({ ...f, email: e.target.value }))} placeholder="jan@voorbeeld.nl" />
               </div>
+            </div>
+            <div>
+              <Label>Type trainer</Label>
+              <Select value={trainerForm.trainer_type} onValueChange={(v) => setTrainerForm(f => ({ ...f, trainer_type: v }))}>
+                <SelectTrigger><SelectValue placeholder="Selecteer type..." /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="kindtrainer">Kindtrainer</SelectItem>
+                  <SelectItem value="oudertrainer">Oudertrainer</SelectItem>
+                  <SelectItem value="beide">Ouder- & Kindtrainer</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <Button className="w-full" onClick={() => trainerMutation.mutate()} disabled={!trainerForm.name || trainerMutation.isPending}>
               {trainerMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}

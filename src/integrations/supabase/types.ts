@@ -927,6 +927,7 @@ export type Database = {
           school_id: string | null
           specialization: string | null
           trade_name: string | null
+          trainer_type: string | null
           updated_at: string
           user_id: string | null
           vog_path: string | null
@@ -948,6 +949,7 @@ export type Database = {
           school_id?: string | null
           specialization?: string | null
           trade_name?: string | null
+          trainer_type?: string | null
           updated_at?: string
           user_id?: string | null
           vog_path?: string | null
@@ -969,6 +971,7 @@ export type Database = {
           school_id?: string | null
           specialization?: string | null
           trade_name?: string | null
+          trainer_type?: string | null
           updated_at?: string
           user_id?: string | null
           vog_path?: string | null
@@ -980,6 +983,44 @@ export type Database = {
             columns: ["school_id"]
             isOneToOne: false
             referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_availability: {
+        Row: {
+          available_date: string
+          created_at: string
+          end_time: string | null
+          id: string
+          notes: string | null
+          staff_id: string
+          start_time: string | null
+        }
+        Insert: {
+          available_date: string
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          notes?: string | null
+          staff_id: string
+          start_time?: string | null
+        }
+        Update: {
+          available_date?: string
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          notes?: string | null
+          staff_id?: string
+          start_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_availability_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
             referencedColumns: ["id"]
           },
         ]
