@@ -87,7 +87,7 @@ function TemplatesTab() {
   const [builderCategory, setBuilderCategory] = useState("overig");
   const [builderContent, setBuilderContent] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [detailTemplate, setDetailTemplate] = useState<any>(null);
+  const [editingTemplate, setEditingTemplate] = useState<any>(null);
 
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ["document-templates"],
@@ -112,7 +112,6 @@ function TemplatesTab() {
         .upload(filePath, uploadFile);
       if (storageError) throw storageError;
 
-      // Insert DB record first
       const { data: inserted, error: dbError } = await supabase
         .from("document_templates")
         .insert({ name: templateName, file_path: filePath, category: templateCategory, placeholder_fields: [] })
@@ -120,13 +119,12 @@ function TemplatesTab() {
         .single();
       if (dbError) throw dbError;
 
-      // Detect placeholders (and convert MERGEFIELDs if present) — formatting stays intact
       try {
         await supabase.functions.invoke("convert-template", {
           body: { template_id: inserted.id },
         });
       } catch {
-        // Detection is optional — template still works without it
+        // Detection is optional
       }
     },
     onSuccess: () => {
@@ -198,6 +196,19 @@ function TemplatesTab() {
       textarea.setSelectionRange(newPos, newPos);
     });
   };
+
+  // If editing a template, show the editor
+  if (editingTemplate) {
+    return (
+      <TemplateEditor
+        template={editingTemplate}
+        onClose={() => {
+          setEditingTemplate(null);
+          queryClient.invalidateQueries({ queryKey: ["document-templates"] });
+        }}
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -289,35 +300,6 @@ function TemplatesTab() {
         </Dialog>
       </div>
 
-      {/* Detail dialog */}
-      <Dialog open={!!detailTemplate} onOpenChange={(o) => !o && setDetailTemplate(null)}>
-        <DialogContent className="bg-card">
-          <DialogHeader><DialogTitle>{detailTemplate?.name}</DialogTitle></DialogHeader>
-          {detailTemplate && (
-            <div className="space-y-3">
-              <div className="flex gap-2">
-                <Badge variant="secondary">{categoryLabels[detailTemplate.category] ?? detailTemplate.category}</Badge>
-                <span className="text-xs text-muted-foreground">Geüpload op {format(new Date(detailTemplate.created_at), "d MMM yyyy", { locale: nl })}</span>
-              </div>
-              <div>
-                <p className="text-sm font-medium mb-2">Placeholders in dit template ({detailTemplate.placeholder_fields?.length ?? 0}):</p>
-                <div className="flex flex-wrap gap-1">
-                  {(detailTemplate.placeholder_fields ?? []).map((p: string) => (
-                    <Badge key={p} variant="outline" className="text-[10px] font-mono">{p}</Badge>
-                  ))}
-                  {(!detailTemplate.placeholder_fields || detailTemplate.placeholder_fields.length === 0) && (
-                    <p className="text-xs text-muted-foreground">Geen placeholders gedetecteerd</p>
-                  )}
-                </div>
-              </div>
-              <Button className="w-full" onClick={() => { handleDownload(detailTemplate); setDetailTemplate(null); }}>
-                <Download className="h-4 w-4" /> Download Template
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
       {isLoading ? (
         <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : templates.length === 0 ? (
@@ -340,7 +322,7 @@ function TemplatesTab() {
             </TableHeader>
             <TableBody>
               {templates.map((t: any) => (
-                <TableRow key={t.id} className="cursor-pointer hover:bg-muted/30" onClick={() => setDetailTemplate(t)}>
+                <TableRow key={t.id} className="cursor-pointer hover:bg-muted/30" onClick={() => setEditingTemplate(t)}>
                   <TableCell>
                     <div className="flex items-center gap-2 text-sm font-medium">
                       <File className="h-4 w-4 text-primary" />{t.name}
@@ -351,6 +333,7 @@ function TemplatesTab() {
                   <TableCell className="text-sm text-muted-foreground">{format(new Date(t.created_at), "d MMM yyyy", { locale: nl })}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
+                      <Button variant="ghost" size="icon" onClick={() => setEditingTemplate(t)} title="Bekijken & Bewerken"><Eye className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="icon" onClick={() => handleDownload(t)} title="Download"><Download className="h-4 w-4" /></Button>
                       <Button variant="ghost" size="icon" onClick={() => { if (confirm(`Template "${t.name}" verwijderen?`)) deleteMutation.mutate(t); }}>
                         <Trash2 className="h-4 w-4 text-destructive" />
@@ -365,6 +348,266 @@ function TemplatesTab() {
       )}
     </div>
   );
+}
+
+// ── Template Editor ────────────────────────────────────────────
+interface DocParagraph {
+  index: number;
+  text: string;
+  style: string;
+}
+
+interface DocSection {
+  part: string;
+  paragraphs: DocParagraph[];
+}
+
+function TemplateEditor({ template, onClose }: { template: any; onClose: () => void }) {
+  const { toast } = useToast();
+  const [sections, setSections] = useState<DocSection[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [editedTexts, setEditedTexts] = useState<Record<string, Record<number, string>>>({});
+  const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    loadTemplate();
+  }, [template.id]);
+
+  const loadTemplate = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("read-template", {
+        body: { template_id: template.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setSections(data.sections);
+      setEditedTexts({});
+      setIsEditing(false);
+    } catch (err: any) {
+      toast({ title: "Fout bij laden", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTextChange = (part: string, index: number, newText: string) => {
+    setEditedTexts((prev) => ({
+      ...prev,
+      [part]: { ...prev[part], [index]: newText },
+    }));
+  };
+
+  const hasChanges = Object.values(editedTexts).some((section) => Object.keys(section).length > 0);
+
+  const handleSave = async () => {
+    if (!hasChanges) return;
+    setSaving(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("update-template", {
+        body: { template_id: template.id, updates: editedTexts },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: "Template opgeslagen", description: "Wijzigingen zijn opgeslagen met behoud van opmaak." });
+      // Reload to reflect changes
+      await loadTemplate();
+    } catch (err: any) {
+      toast({ title: "Opslaan mislukt", description: err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const insertPlaceholderAtCursor = (placeholder: string) => {
+    // Insert into the currently focused input
+    const activeEl = document.activeElement;
+    if (activeEl && activeEl instanceof HTMLInputElement) {
+      const start = activeEl.selectionStart ?? activeEl.value.length;
+      const end = activeEl.selectionEnd ?? start;
+      const newValue = activeEl.value.substring(0, start) + placeholder + activeEl.value.substring(end);
+
+      // Find which section/paragraph this input belongs to
+      const sectionPart = activeEl.getAttribute("data-section");
+      const paragraphIndex = activeEl.getAttribute("data-index");
+      if (sectionPart && paragraphIndex != null) {
+        handleTextChange(sectionPart, parseInt(paragraphIndex), newValue);
+      }
+
+      // Trigger React state update via native event
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype, 'value'
+      )?.set;
+      nativeInputValueSetter?.call(activeEl, newValue);
+      activeEl.dispatchEvent(new Event('input', { bubbles: true }));
+
+      requestAnimationFrame(() => {
+        const newPos = start + placeholder.length;
+        activeEl.setSelectionRange(newPos, newPos);
+        activeEl.focus();
+      });
+    }
+  };
+
+  const sectionLabels: Record<string, string> = {
+    document: "Document",
+    header1: "Koptekst 1",
+    header2: "Koptekst 2",
+    footer1: "Voettekst 1",
+    footer2: "Voettekst 2",
+  };
+
+  const styleClasses: Record<string, string> = {
+    heading1: "text-xl font-bold",
+    heading2: "text-lg font-semibold",
+    heading3: "text-base font-semibold",
+    normal: "text-sm",
+    hr: "border-b border-border",
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <p className="text-sm text-muted-foreground">Template laden...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h2 className="text-lg font-bold text-foreground">{template.name}</h2>
+            <div className="flex items-center gap-2 mt-0.5">
+              <Badge variant="secondary">{categoryLabels[template.category] ?? template.category}</Badge>
+              <span className="text-xs text-muted-foreground">{template.placeholder_fields?.length ?? 0} placeholders</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          {isEditing ? (
+            <>
+              <Button variant="outline" size="sm" onClick={() => { setIsEditing(false); setEditedTexts({}); }}>
+                <X className="h-4 w-4" /> Annuleren
+              </Button>
+              <Button size="sm" onClick={handleSave} disabled={!hasChanges || saving}>
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                Opslaan
+              </Button>
+            </>
+          ) : (
+            <Button size="sm" onClick={() => setIsEditing(true)}>
+              <Pencil className="h-4 w-4" /> Bewerken
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className={`grid gap-6 ${isEditing ? "grid-cols-1 lg:grid-cols-4" : "grid-cols-1"}`}>
+        {/* Main content */}
+        <div className={isEditing ? "lg:col-span-3" : ""}>
+          {sections.map((section) => (
+            <div key={section.part} className="mb-6">
+              {section.part !== "document" && (
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant="outline" className="text-xs">{sectionLabels[section.part] ?? section.part}</Badge>
+                </div>
+              )}
+              <Card>
+                <CardContent className="p-6 space-y-1">
+                  {section.paragraphs.map((p) => {
+                    const currentText = editedTexts[section.part]?.[p.index] ?? p.text;
+
+                    if (p.style === "hr") {
+                      return <div key={p.index} className="border-b border-border my-3" />;
+                    }
+
+                    if (!isEditing) {
+                      // View mode: render with placeholder highlighting
+                      if (!p.text.trim()) return <div key={p.index} className="h-4" />;
+                      return (
+                        <p key={p.index} className={styleClasses[p.style] ?? "text-sm"}>
+                          {renderWithPlaceholders(p.text)}
+                        </p>
+                      );
+                    }
+
+                    // Edit mode
+                    return (
+                      <Input
+                        key={p.index}
+                        data-section={section.part}
+                        data-index={p.index}
+                        value={currentText}
+                        onChange={(e) => handleTextChange(section.part, p.index, e.target.value)}
+                        className={`border-0 border-b border-transparent focus:border-primary rounded-none px-1 ${
+                          styleClasses[p.style] ?? "text-sm"
+                        } ${editedTexts[section.part]?.[p.index] !== undefined ? "bg-primary/5" : ""}`}
+                        placeholder="(leeg)"
+                      />
+                    );
+                  })}
+                </CardContent>
+              </Card>
+            </div>
+          ))}
+        </div>
+
+        {/* Placeholder sidebar (only in edit mode) */}
+        {isEditing && (
+          <div className="space-y-3">
+            <Card>
+              <CardHeader className="py-3 px-4">
+                <CardTitle className="text-sm">Placeholders</CardTitle>
+                <CardDescription className="text-xs">Klik om in te voegen op cursorpositie</CardDescription>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 space-y-3 max-h-[60vh] overflow-y-auto">
+                {PLACEHOLDER_GROUPS.map((group) => (
+                  <div key={group.label}>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">{group.label}</p>
+                    <div className="flex flex-wrap gap-1">
+                      {group.items.map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => insertPlaceholderAtCursor(p)}
+                          className="inline-flex items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono text-primary hover:bg-primary/20 transition-colors cursor-pointer"
+                        >
+                          {p.replace(/\{\{|\}\}/g, "")}<Copy className="h-2.5 w-2.5 opacity-50" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Render text with {{placeholder}} parts highlighted */
+function renderWithPlaceholders(text: string) {
+  const parts = text.split(/(\{\{[a-z_]+\}\})/g);
+  return parts.map((part, i) => {
+    if (/^\{\{[a-z_]+\}\}$/.test(part)) {
+      return (
+        <span key={i} className="inline-flex items-center rounded bg-primary/10 px-1 py-0.5 text-[11px] font-mono text-primary mx-0.5">
+          {part}
+        </span>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
 }
 
 // ── Generate Tab ───────────────────────────────────────────────
