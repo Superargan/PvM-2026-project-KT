@@ -248,21 +248,38 @@ export default function PlanningPage() {
     return availability.some((a: any) => a.staff_id === staffId && a.available_date === date);
   };
 
-  // Save availability
+  // Save availability (trainer or client)
   const saveAvailability = async () => {
-    if (!selectedStaffId || !availDate) return;
-    const { error } = await supabase.from("staff_availability").upsert({
-      staff_id: selectedStaffId,
-      available_date: availDate,
-      start_time: availStart,
-      end_time: availEnd,
-    } as any, { onConflict: "staff_id,available_date" });
-    if (error) {
-      toast({ title: "Fout", description: error.message, variant: "destructive" });
+    if (availType === "trainer") {
+      if (!selectedStaffId || !availDate) return;
+      const { error } = await supabase.from("staff_availability").upsert({
+        staff_id: selectedStaffId,
+        available_date: availDate,
+        start_time: availStart,
+        end_time: availEnd,
+      } as any, { onConflict: "staff_id,available_date" });
+      if (error) {
+        toast({ title: "Fout", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Beschikbaarheid trainer opgeslagen" });
+        refetchAvailability();
+        setAvailabilityOpen(false);
+      }
     } else {
-      toast({ title: "Beschikbaarheid opgeslagen" });
-      refetchAvailability();
-      setAvailabilityOpen(false);
+      if (!selectedClientId || !availDate) return;
+      const { error } = await supabase.from("client_availability").upsert({
+        client_id: selectedClientId,
+        available_date: availDate,
+        start_time: availStart,
+        end_time: availEnd,
+      } as any, { onConflict: "client_id,available_date" });
+      if (error) {
+        toast({ title: "Fout", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Beschikbaarheid deelnemer opgeslagen" });
+        refetchClientAvail();
+        setAvailabilityOpen(false);
+      }
     }
   };
 
