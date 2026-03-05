@@ -159,6 +159,35 @@ export default function PlanningPage() {
     },
   });
 
+  // Clients for availability picker
+  const { data: allClients = [] } = useQuery({
+    queryKey: ["planning-clients"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, first_name, last_name")
+        .eq("archived", false)
+        .in("intake_status", ["nieuw", "intake_gepland", "intake", "actief", "wachtlijst"])
+        .order("first_name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Client availability
+  const { data: clientAvailability = [], refetch: refetchClientAvail } = useQuery({
+    queryKey: ["planning-client-availability", dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("client_availability")
+        .select("id, client_id, available_date, start_time, end_time, notes")
+        .gte("available_date", format(dateRange.start, "yyyy-MM-dd"))
+        .lte("available_date", format(dateRange.end, "yyyy-MM-dd"));
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const { data: areas = [] } = useQuery({
     queryKey: ["areas-list"],
     queryFn: async () => {
