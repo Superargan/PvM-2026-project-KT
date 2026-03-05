@@ -1,0 +1,563 @@
+import { useState, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval, isSameDay, parseISO, startOfMonth, endOfMonth, addMonths, subMonths, isWithinInterval } from "date-fns";
+import { nl } from "date-fns/locale";
+import { CalendarDays, ChevronLeft, ChevronRight, Users, UserCog, Clock, MapPin, Filter, Plus, X, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+
+const trainerTypeLabels: Record<string, string> = {
+  oudertrainer: "Oudertrainer",
+  kindtrainer: "Kindtrainer",
+  beide: "Ouder- & Kindtrainer",
+};
+
+const trainerTypeColors: Record<string, string> = {
+  oudertrainer: "bg-purple-100 text-purple-800",
+  kindtrainer: "bg-sky-100 text-sky-800",
+  beide: "bg-indigo-100 text-indigo-800",
+};
+
+type ViewMode = "week" | "maand";
+
+export default function PlanningPage() {
+  const [viewMode, setViewMode] = useState<ViewMode>("week");
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [filterArea, setFilterArea] = useState<string>("alle");
+  const [filterAge, setFilterAge] = useState<string>("alle");
+  const [availabilityOpen, setAvailabilityOpen] = useState(false);
+  const [selectedStaffId, setSelectedStaffId] = useState<string>("");
+  const [availDate, setAvailDate] = useState("");
+  const [availStart, setAvailStart] = useState("09:00");
+  const [availEnd, setAvailEnd] = useState("17:00");
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  // Date range for current view
+  const dateRange = useMemo(() => {
+    if (viewMode === "week") {
+      return {
+        start: startOfWeek(currentDate, { weekStartsOn: 1 }),
+        end: endOfWeek(currentDate, { weekStartsOn: 1 }),
+      };
+    }
+    return {
+      start: startOfMonth(currentDate),
+      end: endOfMonth(currentDate),
+    };
+  }, [viewMode, currentDate]);
+
+  const days = useMemo(() => eachDayOfInterval(dateRange), [dateRange]);
+
+  const navigate_ = (dir: "prev" | "next") => {
+    if (viewMode === "week") {
+      setCurrentDate(dir === "prev" ? subWeeks(currentDate, 1) : addWeeks(currentDate, 1));
+    } else {
+      setCurrentDate(dir === "prev" ? subMonths(currentDate, 1) : addMonths(currentDate, 1));
+    }
+  };
+
+  // === DATA QUERIES ===
+
+  // Intakes (clients with intake_date in range)
+  const { data: intakes = [] } = useQuery({
+    queryKey: ["planning-intakes", dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, first_name, last_name, intake_status, intake_date, date_of_birth, schools(name), waitlist_area_id")
+        .eq("archived", false)
+        .in("intake_status", ["intake_gepland", "intake"])
+        .gte("intake_date", format(dateRange.start, "yyyy-MM-dd"))
+        .lte("intake_date", format(dateRange.end, "yyyy-MM-dd"));
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Intake assignments (who is doing the intake)
+  const intakeClientIds = intakes.map((i: any) => i.id);
+  const { data: intakeAssignments = [] } = useQuery({
+    queryKey: ["planning-intake-assignments", intakeClientIds],
+    enabled: intakeClientIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("client_assignments")
+        .select("client_id, staff(name)")
+        .in("client_id", intakeClientIds);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Training sessions in range
+  const { data: sessions = [] } = useQuery({
+    queryKey: ["planning-sessions", dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("program_sessions")
+        .select("id, session_number, session_date, location, program_id, programs(id, name, age_category, status, area_id, areas(name), schools(name))")
+        .gte("session_date", format(dateRange.start, "yyyy-MM-dd"))
+        .lte("session_date", format(dateRange.end, "yyyy-MM-dd"))
+        .order("session_date");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Program staff for sessions in view
+  const programIds = [...new Set(sessions.map((s: any) => s.program_id))];
+  const { data: programStaff = [] } = useQuery({
+    queryKey: ["planning-program-staff", programIds],
+    enabled: programIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("program_staff")
+        .select("program_id, session_id, role, staff_id, replaces_staff_id, staff!program_staff_staff_id_fkey(name, trainer_type)")
+        .in("program_id", programIds);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Trainers with availability
+  const { data: allTrainers = [] } = useQuery({
+    queryKey: ["planning-trainers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("staff")
+        .select("id, name, trainer_type, email")
+        .eq("archived", false)
+        .not("name", "is", null)
+        .order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: availability = [], refetch: refetchAvailability } = useQuery({
+    queryKey: ["planning-availability", dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("staff_availability")
+        .select("id, staff_id, available_date, start_time, end_time, notes")
+        .gte("available_date", format(dateRange.start, "yyyy-MM-dd"))
+        .lte("available_date", format(dateRange.end, "yyyy-MM-dd"));
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: areas = [] } = useQuery({
+    queryKey: ["areas-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("areas").select("id, name").order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // === DERIVED DATA ===
+
+  const intakeAssignmentMap = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    intakeAssignments.forEach((a: any) => {
+      if (!map[a.client_id]) map[a.client_id] = [];
+      if (a.staff?.name) map[a.client_id].push(a.staff.name);
+    });
+    return map;
+  }, [intakeAssignments]);
+
+  // Build agenda items per day
+  const agendaByDay = useMemo(() => {
+    const map: Record<string, { intakes: any[]; sessions: any[] }> = {};
+
+    days.forEach((day) => {
+      const key = format(day, "yyyy-MM-dd");
+      map[key] = { intakes: [], sessions: [] };
+    });
+
+    intakes.forEach((intake: any) => {
+      if (intake.intake_date && map[intake.intake_date]) {
+        map[intake.intake_date].intakes.push(intake);
+      }
+    });
+
+    sessions.forEach((session: any) => {
+      if (session.session_date && map[session.session_date]) {
+        const prog = (session as any).programs;
+        // Apply filters
+        if (filterArea !== "alle" && prog?.area_id !== filterArea) return;
+        if (filterAge !== "alle" && prog?.age_category !== filterAge) return;
+        map[session.session_date].sessions.push(session);
+      }
+    });
+
+    return map;
+  }, [days, intakes, sessions, filterArea, filterAge]);
+
+  // Staff for a program (vaste + invallers)
+  const getStaffForSession = (programId: string, sessionId: string) => {
+    const vaste = programStaff.filter((ps: any) => ps.program_id === programId && ps.session_id === null);
+    const invallers = programStaff.filter((ps: any) => ps.program_id === programId && ps.session_id === sessionId);
+    return { vaste, invallers };
+  };
+
+  // Check trainer availability on a date
+  const isTrainerAvailable = (staffId: string, date: string) => {
+    return availability.some((a: any) => a.staff_id === staffId && a.available_date === date);
+  };
+
+  // Save availability
+  const saveAvailability = async () => {
+    if (!selectedStaffId || !availDate) return;
+    const { error } = await supabase.from("staff_availability").upsert({
+      staff_id: selectedStaffId,
+      available_date: availDate,
+      start_time: availStart,
+      end_time: availEnd,
+    } as any, { onConflict: "staff_id,available_date" });
+    if (error) {
+      toast({ title: "Fout", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Beschikbaarheid opgeslagen" });
+      refetchAvailability();
+      setAvailabilityOpen(false);
+    }
+  };
+
+  const today = format(new Date(), "yyyy-MM-dd");
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-extrabold text-foreground">Planning & Agenda</h1>
+          <p className="text-sm text-muted-foreground">
+            Intakes, trainingen en beschikbaarheid van trainers
+          </p>
+        </div>
+        <Button onClick={() => setAvailabilityOpen(true)} size="sm">
+          <Plus className="h-4 w-4" /> Beschikbaarheid toevoegen
+        </Button>
+      </div>
+
+      <Tabs defaultValue="agenda" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="agenda">Agenda</TabsTrigger>
+          <TabsTrigger value="trainers">Trainers & Beschikbaarheid</TabsTrigger>
+        </TabsList>
+
+        {/* === AGENDA TAB === */}
+        <TabsContent value="agenda" className="space-y-4">
+          {/* Controls */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon" onClick={() => navigate_("prev")}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>
+                Vandaag
+              </Button>
+              <Button variant="outline" size="icon" onClick={() => navigate_("next")}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+            <span className="font-display text-base font-bold text-foreground capitalize">
+              {viewMode === "week"
+                ? `${format(dateRange.start, "d MMM", { locale: nl })} – ${format(dateRange.end, "d MMM yyyy", { locale: nl })}`
+                : format(currentDate, "MMMM yyyy", { locale: nl })}
+            </span>
+            <div className="ml-auto flex gap-2">
+              <Select value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
+                <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="week">Week</SelectItem>
+                  <SelectItem value="maand">Maand</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterArea} onValueChange={setFilterArea}>
+                <SelectTrigger className="w-40"><SelectValue placeholder="Gebied" /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="alle">Alle gebieden</SelectItem>
+                  {areas.map((a: any) => (
+                    <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={filterAge} onValueChange={setFilterAge}>
+                <SelectTrigger className="w-32"><SelectValue placeholder="Leeftijd" /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="alle">Alle leeftijden</SelectItem>
+                  <SelectItem value="5-7 jaar">5-7 jaar</SelectItem>
+                  <SelectItem value="8-12 jaar">8-12 jaar</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Calendar grid */}
+          {viewMode === "week" ? (
+            <div className="space-y-1">
+              {days.map((day) => {
+                const key = format(day, "yyyy-MM-dd");
+                const items = agendaByDay[key];
+                const isToday = key === today;
+                const hasItems = items && (items.intakes.length > 0 || items.sessions.length > 0);
+                const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+
+                return (
+                  <div
+                    key={key}
+                    className={`rounded-lg border ${isToday ? "border-primary bg-primary/5" : "border-border bg-card"} ${isWeekend ? "opacity-60" : ""}`}
+                  >
+                    <div className="flex items-center gap-3 border-b border-border/50 px-4 py-2">
+                      <span className={`text-sm font-bold capitalize ${isToday ? "text-primary" : "text-foreground"}`}>
+                        {format(day, "EEEE d MMMM", { locale: nl })}
+                      </span>
+                      {isToday && <Badge variant="default" className="text-[10px] px-1.5 py-0">Vandaag</Badge>}
+                    </div>
+
+                    <div className="px-4 py-2 space-y-1.5">
+                      {!hasItems && (
+                        <p className="text-xs text-muted-foreground py-1">Geen activiteiten</p>
+                      )}
+
+                      {/* Intakes */}
+                      {items?.intakes.map((intake: any) => (
+                        <div
+                          key={intake.id}
+                          className="flex items-center gap-3 rounded-md bg-amber-50 border border-amber-200 px-3 py-2 cursor-pointer hover:bg-amber-100 transition-colors"
+                          onClick={() => navigate(`/clienten/${intake.id}`)}
+                        >
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-200">
+                            <Clock className="h-3.5 w-3.5 text-amber-800" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-amber-900">
+                              Intake: {intake.first_name} {intake.last_name}
+                            </p>
+                            <p className="text-xs text-amber-700">
+                              {intake.schools?.name ?? "Geen school"} · {intake.intake_status === "intake_gepland" ? "Gepland" : "In uitvoering"}
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {(intakeAssignmentMap[intake.id] ?? []).map((name: string, i: number) => (
+                              <Badge key={i} variant="secondary" className="text-[10px]">{name}</Badge>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Training sessions */}
+                      {items?.sessions.map((session: any) => {
+                        const prog = (session as any).programs;
+                        const { vaste, invallers } = getStaffForSession(session.program_id, session.id);
+                        return (
+                          <div
+                            key={session.id}
+                            className="flex items-start gap-3 rounded-md bg-sky-50 border border-sky-200 px-3 py-2 cursor-pointer hover:bg-sky-100 transition-colors"
+                            onClick={() => navigate(`/programmas/${session.program_id}`)}
+                          >
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sky-200 mt-0.5">
+                              <CalendarDays className="h-3.5 w-3.5 text-sky-800" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-sky-900">
+                                {prog?.name ?? "Training"} — Sessie {session.session_number}
+                              </p>
+                              <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-sky-700">
+                                {prog?.age_category && <span>{prog.age_category}</span>}
+                                {prog?.areas?.name && <span><MapPin className="inline h-3 w-3" /> {prog.areas.name}</span>}
+                                {prog?.schools?.name && <span>{prog.schools.name}</span>}
+                                {session.location && <span>📍 {session.location}</span>}
+                              </div>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {vaste.map((ps: any) => (
+                                  <Badge key={ps.staff_id} className={`text-[10px] ${trainerTypeColors[(ps as any).staff?.trainer_type] ?? "bg-muted text-muted-foreground"}`}>
+                                    <UserCog className="h-2.5 w-2.5 mr-0.5" />
+                                    {(ps as any).staff?.name ?? "Onbekend"}
+                                    {(ps as any).staff?.trainer_type ? ` (${trainerTypeLabels[(ps as any).staff.trainer_type] ?? ""})` : ""}
+                                  </Badge>
+                                ))}
+                                {invallers.map((ps: any) => (
+                                  <Badge key={`inv-${ps.staff_id}-${ps.session_id}`} variant="outline" className="text-[10px] border-orange-300 text-orange-700">
+                                    ↔ {(ps as any).staff?.name ?? "Invaller"}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            /* Maand grid */
+            <div>
+              <div className="grid grid-cols-7 gap-px bg-border rounded-xl overflow-hidden border border-border">
+                {["Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"].map((d) => (
+                  <div key={d} className="bg-muted/50 px-2 py-2 text-center text-xs font-semibold text-muted-foreground">{d}</div>
+                ))}
+                {/* Pad first row */}
+                {(() => {
+                  const firstDow = (days[0].getDay() + 6) % 7; // Mon=0
+                  return Array.from({ length: firstDow }).map((_, i) => (
+                    <div key={`pad-${i}`} className="bg-card min-h-[80px]" />
+                  ));
+                })()}
+                {days.map((day) => {
+                  const key = format(day, "yyyy-MM-dd");
+                  const items = agendaByDay[key];
+                  const isToday = key === today;
+                  const intakeCount = items?.intakes.length ?? 0;
+                  const sessionCount = items?.sessions.length ?? 0;
+
+                  return (
+                    <div
+                      key={key}
+                      className={`bg-card min-h-[80px] p-1.5 ${isToday ? "ring-2 ring-primary ring-inset" : ""}`}
+                    >
+                      <span className={`text-xs font-semibold ${isToday ? "text-primary" : "text-foreground"}`}>
+                        {format(day, "d")}
+                      </span>
+                      <div className="mt-1 space-y-0.5">
+                        {intakeCount > 0 && (
+                          <div className="rounded bg-amber-100 px-1 py-0.5 text-[10px] font-medium text-amber-800 truncate">
+                            {intakeCount} intake{intakeCount > 1 ? "s" : ""}
+                          </div>
+                        )}
+                        {sessionCount > 0 && (
+                          <div className="rounded bg-sky-100 px-1 py-0.5 text-[10px] font-medium text-sky-800 truncate">
+                            {sessionCount} sessie{sessionCount > 1 ? "s" : ""}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* === TRAINERS TAB === */}
+        <TabsContent value="trainers" className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Overzicht van trainers, hun type en beschikbaarheid in de huidige {viewMode === "week" ? "week" : "maand"}.
+          </p>
+
+          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border bg-muted/50">
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Trainer</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Type</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Beschikbaar in periode</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Geplande sessies</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {allTrainers.map((trainer: any) => {
+                  const trainerAvail = availability.filter((a: any) => a.staff_id === trainer.id);
+                  const trainerSessions = programStaff.filter((ps: any) => ps.staff_id === trainer.id && ps.session_id === null);
+                  const trainerInval = programStaff.filter((ps: any) => ps.staff_id === trainer.id && ps.session_id !== null);
+
+                  return (
+                    <tr key={trainer.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-3">
+                        <p className="text-sm font-semibold text-foreground">{trainer.name}</p>
+                        {trainer.email && <p className="text-xs text-muted-foreground">{trainer.email}</p>}
+                      </td>
+                      <td className="px-4 py-3">
+                        {trainer.trainer_type ? (
+                          <Badge className={trainerTypeColors[trainer.trainer_type] ?? "bg-muted"}>
+                            {trainerTypeLabels[trainer.trainer_type] ?? trainer.trainer_type}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Niet ingesteld</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-1">
+                          {trainerAvail.length > 0 ? trainerAvail.map((a: any) => (
+                            <Badge key={a.id} variant="outline" className="text-[10px] border-emerald-300 text-emerald-700">
+                              {format(parseISO(a.available_date), "d MMM", { locale: nl })}
+                              {a.start_time && a.end_time ? ` ${a.start_time.slice(0, 5)}–${a.end_time.slice(0, 5)}` : ""}
+                            </Badge>
+                          )) : (
+                            <span className="text-xs text-muted-foreground">Geen opgegeven</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-sm text-foreground font-medium">
+                          {trainerSessions.length} vast{trainerInval.length > 0 ? ` + ${trainerInval.length} inval` : ""}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {allTrainers.length === 0 && (
+                  <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-muted-foreground">Geen trainers gevonden</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Beschikbaarheid dialog */}
+      <Dialog open={availabilityOpen} onOpenChange={setAvailabilityOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Beschikbaarheid toevoegen</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Trainer</Label>
+              <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
+                <SelectTrigger><SelectValue placeholder="Selecteer trainer..." /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  {allTrainers.map((t: any) => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Datum</Label>
+              <Input type="date" value={availDate} onChange={(e) => setAvailDate(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Van</Label>
+                <Input type="time" value={availStart} onChange={(e) => setAvailStart(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Tot</Label>
+                <Input type="time" value={availEnd} onChange={(e) => setAvailEnd(e.target.value)} />
+              </div>
+            </div>
+            <Button className="w-full" onClick={saveAvailability} disabled={!selectedStaffId || !availDate}>
+              Opslaan
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
