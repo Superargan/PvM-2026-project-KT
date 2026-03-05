@@ -21,17 +21,21 @@ function calculateAge(dob: string | null): number | null {
 
 const statusStyles: Record<string, string> = {
   nieuw: "status-rood",
+  intake_gepland: "status-oranje",
   intake: "status-oranje",
   actief: "status-groen",
   wachtlijst: "status-oranje",
+  niet_deelnemen: "status-rood",
   afgerond: "status-groen",
 };
 
 const statusLabels: Record<string, string> = {
   nieuw: "Nieuw",
+  intake_gepland: "Intake gepland",
   intake: "Intake",
   actief: "Actief",
   wachtlijst: "Wachtlijst",
+  niet_deelnemen: "Niet deelnemen",
   afgerond: "Afgerond",
 };
 

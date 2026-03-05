@@ -76,9 +76,11 @@ export default function Dashboard() {
 
   const statusMap: Record<string, { label: string; color: string }> = {
     nieuw: { label: "Nieuw", color: "rood" },
+    intake_gepland: { label: "Intake gepland", color: "oranje" },
     intake: { label: "Intake", color: "oranje" },
     actief: { label: "Actief", color: "groen" },
     wachtlijst: { label: "Wachtlijst", color: "oranje" },
+    niet_deelnemen: { label: "Niet deelnemen", color: "rood" },
     afgerond: { label: "Afgerond", color: "groen" },
     te_plannen: { label: "Te plannen", color: "rood" },
     ingepland: { label: "Ingepland", color: "oranje" },

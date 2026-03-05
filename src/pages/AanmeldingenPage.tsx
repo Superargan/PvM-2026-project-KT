@@ -1,6 +1,6 @@
-import { ClipboardList, Search, Pencil, Loader2, ExternalLink, Clock } from "lucide-react";
+import { ClipboardList, Search, Pencil, Loader2, ExternalLink, Clock, UserPlus, X } from "lucide-react";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
 import WaitlistManager from "@/components/WaitlistManager";
 
 const editSchema = z.object({
@@ -52,17 +53,21 @@ function calculateAge(dob: string | null): number | null {
 
 const statusStyles: Record<string, string> = {
   nieuw: "status-rood",
+  intake_gepland: "status-oranje",
   intake: "status-oranje",
   actief: "status-groen",
   wachtlijst: "status-oranje",
+  niet_deelnemen: "status-rood",
   afgerond: "status-groen",
 };
 
 const statusLabels: Record<string, string> = {
   nieuw: "Nieuw",
+  intake_gepland: "Intake gepland",
   intake: "Intake",
   actief: "Actief",
   wachtlijst: "Wachtlijst",
+  niet_deelnemen: "Niet deelnemen",
   afgerond: "Afgerond",
 };
 
@@ -74,8 +79,10 @@ export default function AanmeldingenPage() {
   const [form, setForm] = useState<Partial<EditForm>>({});
   const [errors, setErrors] = useState<Partial<Record<keyof EditForm, string>>>({});
   const [saving, setSaving] = useState(false);
+  const [selectedProgramId, setSelectedProgramId] = useState<string>("");
   const { toast } = useToast();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: clients = [], isLoading, refetch } = useQuery({
     queryKey: ["aanmeldingen", search],
@@ -114,6 +121,44 @@ export default function AanmeldingenPage() {
     },
   });
 
+  const { data: staffList = [] } = useQuery({
+    queryKey: ["staff-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("staff").select("id, name").eq("archived", false).not("name", "is", null).order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Fetch assignments for the currently edited client
+  const { data: assignments = [], refetch: refetchAssignments } = useQuery({
+    queryKey: ["client-assignments", editClient?.id],
+    enabled: !!editClient?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("client_assignments")
+        .select("id, staff_id, staff(name)")
+        .eq("client_id", editClient.id);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Fetch available programs for "deelnemen" flow
+  const { data: availablePrograms = [] } = useQuery({
+    queryKey: ["available-programs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("programs")
+        .select("id, name, status, start_date, age_category, schools(name)")
+        .eq("archived", false)
+        .in("status", ["te_plannen", "ingepland", "gestart"])
+        .order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const openEdit = (client: any) => {
     setEditClient(client);
     setForm({
@@ -140,12 +185,39 @@ export default function AanmeldingenPage() {
       notes: client.notes ?? "",
     });
     setErrors({});
+    setSelectedProgramId("");
     setEditOpen(true);
   };
 
   const updateField = (field: keyof EditForm, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+
+  const addAssignment = async (staffId: string) => {
+    if (!editClient?.id) return;
+    const { error } = await supabase.from("client_assignments").insert({
+      client_id: editClient.id,
+      staff_id: staffId,
+    } as any);
+    if (error) {
+      if (error.code === "23505") {
+        toast({ title: "Al toegewezen", variant: "destructive" });
+      } else {
+        toast({ title: "Fout", description: error.message, variant: "destructive" });
+      }
+    } else {
+      refetchAssignments();
+    }
+  };
+
+  const removeAssignment = async (assignmentId: string) => {
+    const { error } = await supabase.from("client_assignments").delete().eq("id", assignmentId);
+    if (error) {
+      toast({ title: "Fout", description: error.message, variant: "destructive" });
+    } else {
+      refetchAssignments();
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -163,26 +235,45 @@ export default function AanmeldingenPage() {
       return;
     }
 
+    // Validate: if "actief" and no program selected, require it
+    if (result.data.intake_status === "actief" && !selectedProgramId) {
+      toast({ title: "Selecteer een programma", description: "Kies een programma om het kind aan te koppelen.", variant: "destructive" });
+      return;
+    }
+
     setSaving(true);
     const updateData: any = { ...result.data };
-    // Clean empty strings to null
     for (const key of Object.keys(updateData)) {
       if (updateData[key] === "") updateData[key] = null;
     }
 
     const { error } = await supabase.from("clients").update(updateData).eq("id", editClient.id);
-    setSaving(false);
 
     if (error) {
+      setSaving(false);
       toast({ title: "Fout", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Aanmelding bijgewerkt" });
-      setEditOpen(false);
-      refetch();
+      return;
     }
+
+    // If status changed to "actief" and program selected, create program_clients link
+    if (result.data.intake_status === "actief" && selectedProgramId) {
+      const { error: linkError } = await supabase.from("program_clients").insert({
+        client_id: editClient.id,
+        program_id: selectedProgramId,
+        started: true,
+      });
+      if (linkError && linkError.code !== "23505") {
+        toast({ title: "Waarschuwing", description: `Aanmelding opgeslagen, maar koppeling aan programma mislukt: ${linkError.message}`, variant: "destructive" });
+      }
+    }
+
+    setSaving(false);
+    toast({ title: "Aanmelding bijgewerkt" });
+    setEditOpen(false);
+    refetch();
+    queryClient.invalidateQueries({ queryKey: ["client-assignments"] });
   };
 
-  // Handle putting client on waitlist
   const handleWaitlist = async (clientId: string, waitlistStatus: string, areaId?: string) => {
     const updateData: any = { waitlist_status: waitlistStatus || null };
     if (areaId) updateData.waitlist_area_id = areaId;
@@ -196,6 +287,24 @@ export default function AanmeldingenPage() {
       refetch();
     }
   };
+
+  // Get assigned staff names for a client (from a preloaded map)
+  const { data: allAssignments = [] } = useQuery({
+    queryKey: ["all-client-assignments"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("client_assignments")
+        .select("client_id, staff(name)");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const assignmentsByClient = allAssignments.reduce((acc: Record<string, string[]>, a: any) => {
+    if (!acc[a.client_id]) acc[a.client_id] = [];
+    if (a.staff?.name) acc[a.client_id].push(a.staff.name);
+    return acc;
+  }, {});
 
   return (
     <div className="space-y-6">
@@ -239,7 +348,7 @@ export default function AanmeldingenPage() {
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Naam</th>
                 <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground sm:table-cell">Leeftijd</th>
                 <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground md:table-cell">School</th>
-                <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Ouder/Verzorger</th>
+                <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Toegewezen aan</th>
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
                 <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actie</th>
               </tr>
@@ -251,6 +360,7 @@ export default function AanmeldingenPage() {
               {clients.map((client: any) => {
                 const age = calculateAge(client.date_of_birth);
                 const status = client.intake_status ?? "nieuw";
+                const assigned = assignmentsByClient[client.id] ?? [];
                 return (
                   <tr key={client.id} className="transition-colors hover:bg-muted/30">
                     <td className="px-5 py-4">
@@ -264,7 +374,14 @@ export default function AanmeldingenPage() {
                       <span className="text-sm text-card-foreground">{client.schools?.name ?? <span className="text-destructive text-xs">Niet gekoppeld</span>}</span>
                     </td>
                     <td className="hidden px-5 py-4 lg:table-cell">
-                      <span className="text-sm text-card-foreground">{client.guardian_name ?? "—"}</span>
+                      <div className="flex flex-wrap gap-1">
+                        {assigned.length > 0
+                          ? assigned.map((name, i) => (
+                              <Badge key={i} variant="secondary" className="text-xs">{name}</Badge>
+                            ))
+                          : <span className="text-xs text-muted-foreground">—</span>
+                        }
+                      </div>
                     </td>
                     <td className="px-5 py-4">
                       <span className={`status-indicator ${statusStyles[status] ?? "status-rood"}`}>
@@ -372,7 +489,35 @@ export default function AanmeldingenPage() {
               </FieldWrapper>
             </div>
 
-            {/* Intake & Wachtlijst */}
+            {/* Toewijzing aan medewerkers */}
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t border-border pt-4">Toegewezen aan</p>
+            <div className="space-y-2">
+              <div className="flex flex-wrap gap-2">
+                {assignments.map((a: any) => (
+                  <Badge key={a.id} variant="secondary" className="gap-1 pr-1">
+                    {(a as any).staff?.name ?? "Onbekend"}
+                    <button type="button" onClick={() => removeAssignment(a.id)} className="ml-1 rounded-full p-0.5 hover:bg-muted-foreground/20">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+                {assignments.length === 0 && <span className="text-xs text-muted-foreground">Nog niemand toegewezen</span>}
+              </div>
+              <Select onValueChange={(v) => addAssignment(v)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Medewerker/trainer toewijzen..." />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  {staffList
+                    .filter((s: any) => !assignments.some((a: any) => a.staff_id === s.id))
+                    .map((s: any) => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Intake & Status */}
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t border-border pt-4">Intake & Status</p>
             <div className="grid grid-cols-2 gap-4">
               <FieldWrapper label="Status" error={errors.intake_status}>
@@ -380,9 +525,11 @@ export default function AanmeldingenPage() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-popover">
                     <SelectItem value="nieuw">Nieuw</SelectItem>
-                    <SelectItem value="intake">Intake</SelectItem>
-                    <SelectItem value="actief">Actief</SelectItem>
+                    <SelectItem value="intake_gepland">Intake gepland</SelectItem>
+                    <SelectItem value="intake">Intake (in uitvoering)</SelectItem>
+                    <SelectItem value="actief">Deelnemen</SelectItem>
                     <SelectItem value="wachtlijst">Wachtlijst</SelectItem>
+                    <SelectItem value="niet_deelnemen">Niet deelnemen</SelectItem>
                     <SelectItem value="afgerond">Afgerond</SelectItem>
                   </SelectContent>
                 </Select>
@@ -391,6 +538,31 @@ export default function AanmeldingenPage() {
                 <Input type="date" value={form.intake_date ?? ""} onChange={(e) => updateField("intake_date", e.target.value)} />
               </FieldWrapper>
             </div>
+
+            {/* Info: auto-trigger uitleg */}
+            {form.intake_status === "nieuw" && form.intake_date && (
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+                <p className="text-xs text-blue-800">💡 Bij opslaan wordt de status automatisch naar <strong>Intake gepland</strong> gewijzigd omdat er een intakedatum is ingevuld.</p>
+              </div>
+            )}
+
+            {/* Programma koppeling bij "deelnemen" */}
+            {form.intake_status === "actief" && (
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 space-y-3">
+                <p className="text-xs font-semibold text-emerald-800">Programma koppeling</p>
+                <p className="text-xs text-emerald-700">Selecteer het programma waaraan dit kind gaat deelnemen.</p>
+                <Select value={selectedProgramId} onValueChange={setSelectedProgramId}>
+                  <SelectTrigger><SelectValue placeholder="Kies een programma..." /></SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    {availablePrograms.map((p: any) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name} {p.age_category ? `(${p.age_category})` : ""} — {(p as any).schools?.name ?? "Geen school"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Wachtlijst velden */}
             {form.intake_status === "wachtlijst" && (
@@ -407,6 +579,16 @@ export default function AanmeldingenPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                </FieldWrapper>
+              </div>
+            )}
+
+            {/* Niet deelnemen reden */}
+            {form.intake_status === "niet_deelnemen" && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 space-y-3">
+                <p className="text-xs font-semibold text-red-800">Reden niet deelnemen</p>
+                <FieldWrapper label="Notities">
+                  <Textarea value={form.notes ?? ""} onChange={(e) => updateField("notes", e.target.value)} rows={2} placeholder="Reden waarom het kind niet deelneemt..." />
                 </FieldWrapper>
               </div>
             )}
