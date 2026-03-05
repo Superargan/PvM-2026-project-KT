@@ -145,6 +145,44 @@ export type Database = {
           },
         ]
       }
+      client_availability: {
+        Row: {
+          available_date: string
+          client_id: string
+          created_at: string
+          end_time: string | null
+          id: string
+          notes: string | null
+          start_time: string | null
+        }
+        Insert: {
+          available_date: string
+          client_id: string
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          notes?: string | null
+          start_time?: string | null
+        }
+        Update: {
+          available_date?: string
+          client_id?: string
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          notes?: string | null
+          start_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_availability_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
