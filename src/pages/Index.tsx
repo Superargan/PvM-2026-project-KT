@@ -48,6 +48,14 @@ export default function Dashboard() {
     },
   });
 
+  const { data: intakeGeplandCount = 0 } = useQuery({
+    queryKey: ["dashboard-intake-gepland"],
+    queryFn: async () => {
+      const { count } = await supabase.from("clients").select("*", { count: "exact", head: true }).eq("archived", false).eq("intake_status", "intake_gepland");
+      return count ?? 0;
+    },
+  });
+
   const { data: recentClients = [] } = useQuery({
     queryKey: ["dashboard-recent-clients"],
     queryFn: async () => {
@@ -94,11 +102,12 @@ export default function Dashboard() {
         <p className="text-sm text-muted-foreground">Welkom terug! Hier is een overzicht van vandaag.</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
         <StatCard title="Deelnemers" value={clientCount} icon={<Users className="h-5 w-5" />} color="blauw" to="/clienten" />
         <StatCard title="In te plannen trainingen" value={programCount} icon={<GraduationCap className="h-5 w-5" />} color="groen" to="/programmas" />
         <StatCard title="PO Scholen Rotterdam" value={schoolCount} icon={<School className="h-5 w-5" />} color="geel" to="/scholen" />
         <StatCard title="Trainers" value={trainerCount} icon={<UserCog className="h-5 w-5" />} color="blauw" to="/medewerkers" />
+        <StatCard title="Geplande intakes" value={intakeGeplandCount} icon={<ClipboardList className="h-5 w-5" />} color="oranje" to="/aanmeldingen" />
         <StatCard title="Nieuwe Aanmeldingen" value={newClientCount} subtitle="Afgelopen 7 dagen" icon={<ClipboardList className="h-5 w-5" />} color="rood" to="/aanmeldingen" />
       </div>
 
