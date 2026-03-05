@@ -16,12 +16,16 @@ import { nl } from "date-fns/locale";
 
 const PLACEHOLDER_OPTIONS = [
   "{{client_voornaam}}", "{{client_achternaam}}", "{{client_geboortedatum}}", "{{client_leeftijd}}",
-  "{{client_school}}", "{{client_klas}}", "{{ouder_naam}}", "{{ouder_telefoon}}", "{{ouder_email}}",
+  "{{client_adres}}", "{{client_postcode}}", "{{client_plaats}}", "{{client_geslacht}}",
+  "{{client_school}}", "{{client_klas}}",
+  "{{ouder_naam}}", "{{ouder_telefoon}}", "{{ouder_telefoon_alt}}", "{{ouder_email}}",
+  "{{verwijzer_naam}}", "{{verwijzer_functie}}", "{{verwijsreden}}", "{{intake_datum}}",
   "{{trainer_naam}}", "{{trainer_handelsnaam}}", "{{trainer_kvk}}", "{{trainer_adres}}",
-  "{{trainer_postcode}}", "{{trainer_plaats}}", "{{trainer_telefoon}}", "{{trainer_email}}",
+  "{{trainer_postcode}}", "{{trainer_plaats}}", "{{trainer_telefoon}}", "{{trainer_email}}", "{{trainer_specialisatie}}",
   "{{school_naam}}", "{{school_adres}}", "{{school_email}}", "{{school_telefoon}}",
   "{{school_website}}", "{{school_leerlingen}}", "{{school_wijk}}", "{{school_gebied}}",
   "{{programma_naam}}", "{{programma_start}}", "{{programma_eind}}",
+  "{{programma_school}}", "{{programma_wijk}}", "{{programma_gebied}}",
   "{{doelen}}", "{{intake_notities}}", "{{datum_vandaag}}",
 ];
 
