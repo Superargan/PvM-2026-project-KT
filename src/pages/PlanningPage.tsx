@@ -576,16 +576,42 @@ export default function PlanningPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Trainer</Label>
-              <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
-                <SelectTrigger><SelectValue placeholder="Selecteer trainer..." /></SelectTrigger>
+              <Label>Type</Label>
+              <Select value={availType} onValueChange={(v) => { setAvailType(v as "trainer" | "deelnemer"); setSelectedStaffId(""); setSelectedClientId(""); }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent className="bg-popover">
-                  {allTrainers.map((t: any) => (
-                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                  ))}
+                  <SelectItem value="trainer">Trainer / Medewerker</SelectItem>
+                  <SelectItem value="deelnemer">Deelnemer</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {availType === "trainer" ? (
+              <div className="space-y-1.5">
+                <Label>Trainer</Label>
+                <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
+                  <SelectTrigger><SelectValue placeholder="Selecteer trainer..." /></SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    {allTrainers.map((t: any) => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label>Deelnemer</Label>
+                <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                  <SelectTrigger><SelectValue placeholder="Selecteer deelnemer..." /></SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    {allClients.map((c: any) => (
+                      <SelectItem key={c.id} value={c.id}>{c.first_name} {c.last_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="space-y-1.5">
               <Label>Datum</Label>
               <Input type="date" value={availDate} onChange={(e) => setAvailDate(e.target.value)} />
@@ -600,7 +626,11 @@ export default function PlanningPage() {
                 <Input type="time" value={availEnd} onChange={(e) => setAvailEnd(e.target.value)} />
               </div>
             </div>
-            <Button className="w-full" onClick={saveAvailability} disabled={!selectedStaffId || !availDate}>
+            <Button
+              className="w-full"
+              onClick={saveAvailability}
+              disabled={(availType === "trainer" ? !selectedStaffId : !selectedClientId) || !availDate}
+            >
               Opslaan
             </Button>
           </div>
