@@ -112,6 +112,7 @@ export type Database = {
       clients: {
         Row: {
           address: string | null
+          archived: boolean
           city: string | null
           class_group: string | null
           consent_data_processing: boolean | null
@@ -143,6 +144,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          archived?: boolean
           city?: string | null
           class_group?: string | null
           consent_data_processing?: boolean | null
@@ -174,6 +176,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          archived?: boolean
           city?: string | null
           class_group?: string | null
           consent_data_processing?: boolean | null
@@ -637,6 +640,7 @@ export type Database = {
       programs: {
         Row: {
           age_category: string | null
+          archived: boolean
           area_id: string | null
           created_at: string
           description: string | null
@@ -652,6 +656,7 @@ export type Database = {
         }
         Insert: {
           age_category?: string | null
+          archived?: boolean
           area_id?: string | null
           created_at?: string
           description?: string | null
@@ -667,6 +672,7 @@ export type Database = {
         }
         Update: {
           age_category?: string | null
+          archived?: boolean
           area_id?: string | null
           created_at?: string
           description?: string | null
@@ -871,6 +877,7 @@ export type Database = {
       staff: {
         Row: {
           address: string | null
+          archived: boolean
           city: string | null
           created_at: string
           email: string | null
@@ -891,6 +898,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          archived?: boolean
           city?: string | null
           created_at?: string
           email?: string | null
@@ -911,6 +919,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          archived?: boolean
           city?: string | null
           created_at?: string
           email?: string | null
