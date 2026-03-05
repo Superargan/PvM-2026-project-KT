@@ -17,7 +17,7 @@ export default function Dashboard() {
   const { data: programCount = 0 } = useQuery({
     queryKey: ["dashboard-programs"],
     queryFn: async () => {
-      const { count } = await supabase.from("programs").select("*", { count: "exact", head: true }).eq("status", "te_plannen");
+      const { count } = await supabase.from("programs").select("*", { count: "exact", head: true }).eq("archived", false).eq("status", "te_plannen");
       return count ?? 0;
     },
   });
@@ -35,7 +35,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
-      const { count } = await supabase.from("clients").select("*", { count: "exact", head: true }).gte("created_at", weekAgo.toISOString());
+      const { count } = await supabase.from("clients").select("*", { count: "exact", head: true }).eq("archived", false).gte("created_at", weekAgo.toISOString());
       return count ?? 0;
     },
   });
@@ -43,7 +43,7 @@ export default function Dashboard() {
   const { data: trainerCount = 0 } = useQuery({
     queryKey: ["dashboard-trainers"],
     queryFn: async () => {
-      const { count } = await supabase.from("staff").select("*", { count: "exact", head: true }).not("name", "is", null);
+      const { count } = await supabase.from("staff").select("*", { count: "exact", head: true }).eq("archived", false).not("name", "is", null);
       return count ?? 0;
     },
   });

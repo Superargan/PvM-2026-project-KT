@@ -83,6 +83,7 @@ export default function AanmeldingenPage() {
       let query = supabase
         .from("clients")
         .select("*, schools(name)")
+        .eq("archived", false)
         .order("created_at", { ascending: false });
 
       if (search.trim()) {
