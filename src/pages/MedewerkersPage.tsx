@@ -572,9 +572,14 @@ export default function MedewerkersPage() {
                         {doc.document_templates?.name ?? "—"} • {format(new Date(doc.created_at), "d MMM yyyy HH:mm", { locale: nl })}
                       </p>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => handleDownloadDoc(doc)}>
-                      <Download className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => handleDownloadDoc(doc)}>
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => { if (confirm(`"${doc.file_name}" verwijderen?`)) deleteDocMutation.mutate(doc); }}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
