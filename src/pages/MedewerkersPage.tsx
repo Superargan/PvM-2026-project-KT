@@ -558,21 +558,36 @@ export default function MedewerkersPage() {
               {docTemplates.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Geen templates beschikbaar. Upload templates via de Documenten-pagina.</p>
               ) : (
-                <div className="flex gap-3 items-end">
-                  <div className="flex-1 space-y-1.5">
-                    <Label className="text-sm font-medium">Template</Label>
-                    <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-                      <SelectTrigger><SelectValue placeholder="Selecteer een template" /></SelectTrigger>
-                      <SelectContent className="bg-popover">
-                        {docTemplates.map((t: any) => (
-                          <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                <div className="space-y-3">
+                  <div className="flex gap-3 items-end">
+                    <div className="flex-1 space-y-1.5">
+                      <Label className="text-sm font-medium">Template</Label>
+                      <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                        <SelectTrigger><SelectValue placeholder="Selecteer een template" /></SelectTrigger>
+                        <SelectContent className="bg-popover">
+                          {docTemplates.map((t: any) => (
+                            <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <Button onClick={() => generateDocMutation.mutate()} disabled={!selectedTemplateId || generateDocMutation.isPending}>
+                  {trainerPrograms.length > 0 && (
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium">Programma (optioneel)</Label>
+                      <Select value={selectedProgramId} onValueChange={setSelectedProgramId}>
+                        <SelectTrigger><SelectValue placeholder="Selecteer een programma..." /></SelectTrigger>
+                        <SelectContent className="bg-popover">
+                          {trainerPrograms.map((p: any) => (
+                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  <Button className="w-full" onClick={() => generateDocMutation.mutate()} disabled={!selectedTemplateId || generateDocMutation.isPending}>
                     {generateDocMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-                    Genereer
+                    Document Genereren
                   </Button>
                 </div>
               )}
