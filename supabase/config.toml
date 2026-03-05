@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.create-test-template]
 verify_jwt = false
+
+[functions.build-template]
+verify_jwt = false
