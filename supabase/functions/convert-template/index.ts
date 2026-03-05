@@ -160,8 +160,12 @@ serve(async (req) => {
       });
     if (uploadErr) throw new Error("Upload mislukt: " + uploadErr.message);
 
-    // Update placeholder_fields in DB
-    const allPlaceholders = replacedFields.map(r => r.split(" → ")[1]);
+    // Combine converted MERGEFIELD placeholders with detected {{...}} placeholders
+    const allPlaceholders = [
+      ...replacedFields.map(r => r.split(" → ")[1]),
+      ...detectedPlaceholders,
+    ].filter((v, i, a) => a.indexOf(v) === i); // unique
+
     if (allPlaceholders.length > 0) {
       await serviceSupabase
         .from("document_templates")
@@ -175,6 +179,7 @@ serve(async (req) => {
         name: template.name,
         found_fields: foundFields,
         replaced: replacedFields,
+        detected: detectedPlaceholders,
         placeholders: allPlaceholders,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
