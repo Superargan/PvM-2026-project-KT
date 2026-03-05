@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2, Save, User, ClipboardList, BookOpen, Shield, FileText, Download } from "lucide-react";
+import { ArrowLeft, Loader2, Save, User, ClipboardList, BookOpen, Shield, FileText, Download, CalendarDays, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -328,9 +328,10 @@ export default function ClientDetailPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="gegevens" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="gegevens" className="gap-1.5"><User className="h-3.5 w-3.5" /> Gegevens</TabsTrigger>
           <TabsTrigger value="intake" className="gap-1.5"><ClipboardList className="h-3.5 w-3.5" /> Intake</TabsTrigger>
+          <TabsTrigger value="beschikbaarheid" className="gap-1.5"><CalendarDays className="h-3.5 w-3.5" /> Beschikbaarheid</TabsTrigger>
           <TabsTrigger value="programmas" className="gap-1.5"><BookOpen className="h-3.5 w-3.5" /> Programma's</TabsTrigger>
           <TabsTrigger value="documenten" className="gap-1.5"><FileText className="h-3.5 w-3.5" /> Documenten</TabsTrigger>
           <TabsTrigger value="audit" className="gap-1.5"><Shield className="h-3.5 w-3.5" /> Audit Log</TabsTrigger>
@@ -467,6 +468,11 @@ export default function ClientDetailPage() {
               <Textarea value={form.notes ?? ""} onChange={(e) => updateField("notes", e.target.value)} rows={3} />
             </Field>
           </div>
+        </TabsContent>
+
+        {/* Beschikbaarheid tab */}
+        <TabsContent value="beschikbaarheid" className="space-y-4">
+          <ClientAvailabilitySection clientId={id!} />
         </TabsContent>
 
         {/* Programma's tab */}
