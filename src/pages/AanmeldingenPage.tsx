@@ -129,7 +129,6 @@ export default function AanmeldingenPage() {
       return data ?? [];
     },
   });
-  });
 
   // Fetch assignments for the currently edited client
   const { data: assignments = [], refetch: refetchAssignments } = useQuery({
