@@ -122,12 +122,13 @@ export default function AanmeldingenPage() {
   });
 
   const { data: staffList = [] } = useQuery({
-    queryKey: ["staff-list"],
+    queryKey: ["staff-list-for-assignment"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("staff").select("id, name").eq("archived", false).not("name", "is", null).order("name");
+      const { data, error } = await supabase.from("staff").select("id, name, user_id").eq("archived", false).not("name", "is", null).order("name");
       if (error) throw error;
       return data ?? [];
     },
+  });
   });
 
   // Fetch assignments for the currently edited client
@@ -503,16 +504,36 @@ export default function AanmeldingenPage() {
                 ))}
                 {assignments.length === 0 && <span className="text-xs text-muted-foreground">Nog niemand toegewezen</span>}
               </div>
-              <Select onValueChange={(v) => addAssignment(v)}>
+              <Select onValueChange={(v) => addAssignment(v)} value="">
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Medewerker/trainer toewijzen..." />
+                  <SelectValue placeholder="Trainer of medewerker toewijzen..." />
                 </SelectTrigger>
                 <SelectContent className="bg-popover">
-                  {staffList
-                    .filter((s: any) => !assignments.some((a: any) => a.staff_id === s.id))
-                    .map((s: any) => (
-                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                    ))}
+                  {(() => {
+                    const available = staffList.filter((s: any) => !assignments.some((a: any) => a.staff_id === s.id));
+                    const trainers = available.filter((s: any) => !s.user_id);
+                    const medewerkers = available.filter((s: any) => !!s.user_id);
+                    return (
+                      <>
+                        {trainers.length > 0 && (
+                          <>
+                            <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Trainers</p>
+                            {trainers.map((s: any) => (
+                              <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                            ))}
+                          </>
+                        )}
+                        {medewerkers.length > 0 && (
+                          <>
+                            <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Medewerkers</p>
+                            {medewerkers.map((s: any) => (
+                              <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                            ))}
+                          </>
+                        )}
+                      </>
+                    );
+                  })()}
                 </SelectContent>
               </Select>
             </div>
