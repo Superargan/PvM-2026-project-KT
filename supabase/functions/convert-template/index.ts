@@ -11,8 +11,11 @@ const corsHeaders = {
 // Mapping from Word MERGEFIELD names to our placeholder format
 const MERGEFIELD_MAP: Record<string, string> = {
   "Naam_trainer": "{{trainer_naam}}",
+  "Naam": "{{trainer_naam}}",
   "handelsnaam_": "{{trainer_handelsnaam}}",
+  "Handelsnaam": "{{trainer_handelsnaam}}",
   "kvk_nummer": "{{trainer_kvk}}",
+  "KVK_nummer": "{{trainer_kvk}}",
   "Training_nummer": "{{programma_naam}}",
   "Training_naam": "{{programma_naam}}",
   "Startdatum_train_ing_": "{{programma_start}}",
