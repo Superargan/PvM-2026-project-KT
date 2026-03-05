@@ -63,6 +63,7 @@ serve(async (req) => {
         "{{trainer_plaats}}": staff.city ?? "",
         "{{trainer_telefoon}}": staff.phone ?? "",
         "{{trainer_email}}": staff.email ?? "",
+        "{{trainer_specialisatie}}": staff.specialization ?? "",
       };
 
       outputFileName = `${staff.name ?? "Trainer"}_${template.name}.docx`.replace(/\s+/g, "_");
@@ -107,6 +108,28 @@ serve(async (req) => {
 
       const program = (programClients as any)?.[0]?.programs;
 
+      // Fetch program school/area/neighborhood info
+      let programSchoolName = "";
+      let programWijk = "";
+      let programGebied = "";
+      if (program?.name) {
+        // Get the full program with relations
+        const latestPc = programClients as any;
+        const programId = latestPc?.[0]?.program_id ?? latestPc?.[0]?.programs?.id;
+        if (programId) {
+          const { data: fullProgram } = await supabase
+            .from("programs")
+            .select("schools(name), neighborhoods(name, areas(name))")
+            .eq("id", programId)
+            .single();
+          if (fullProgram) {
+            programSchoolName = (fullProgram as any).schools?.name ?? "";
+            programWijk = (fullProgram as any).neighborhoods?.name ?? "";
+            programGebied = (fullProgram as any).neighborhoods?.areas?.name ?? "";
+          }
+        }
+      }
+
       let trainerName = "";
       if (program?.program_staff?.length) {
         for (const ps of program.program_staff) {
@@ -142,15 +165,27 @@ serve(async (req) => {
         "{{client_achternaam}}": client.last_name ?? "",
         "{{client_geboortedatum}}": client.date_of_birth ?? "",
         "{{client_leeftijd}}": age,
+        "{{client_adres}}": client.address ?? "",
+        "{{client_postcode}}": client.postal_code ?? "",
+        "{{client_plaats}}": client.city ?? "",
+        "{{client_geslacht}}": client.gender ?? "",
         "{{client_school}}": (client as any).schools?.name ?? "",
         "{{client_klas}}": client.class_group ?? "",
         "{{ouder_naam}}": client.guardian_name ?? "",
         "{{ouder_telefoon}}": client.guardian_phone ?? "",
+        "{{ouder_telefoon_alt}}": client.guardian_phone_alt ?? "",
         "{{ouder_email}}": client.guardian_email ?? "",
+        "{{verwijzer_naam}}": (client as any).referrers?.name ?? "",
+        "{{verwijzer_functie}}": (client as any).referrers?.function_title ?? "",
+        "{{verwijsreden}}": client.referral_reason ?? "",
+        "{{intake_datum}}": client.intake_date ?? "",
         "{{trainer_naam}}": replacements["{{trainer_naam}}"] || trainerName,
         "{{programma_naam}}": program?.name ?? "",
         "{{programma_start}}": program?.start_date ?? "",
         "{{programma_eind}}": program?.end_date ?? "",
+        "{{programma_school}}": programSchoolName,
+        "{{programma_wijk}}": programWijk,
+        "{{programma_gebied}}": programGebied,
         "{{doelen}}": client.goals ?? "",
         "{{intake_notities}}": client.intake_notes ?? "",
       };
