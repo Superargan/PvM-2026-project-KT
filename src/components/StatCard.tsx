@@ -6,7 +6,7 @@ interface StatCardProps {
   value: string | number;
   subtitle?: string;
   icon: React.ReactNode;
-  color: "rood" | "geel" | "blauw" | "groen";
+  color: "rood" | "geel" | "blauw" | "groen" | "oranje";
   to?: string;
 }
 
@@ -15,6 +15,7 @@ const colorMap = {
   geel: "bg-kanjer-geel/10 text-kanjer-geel",
   blauw: "bg-kanjer-blauw/10 text-kanjer-blauw",
   groen: "bg-kanjer-groen/10 text-kanjer-groen",
+  oranje: "bg-amber-100 text-amber-700",
 };
 
 export default function StatCard({ title, value, subtitle, icon, color, to }: StatCardProps) {
