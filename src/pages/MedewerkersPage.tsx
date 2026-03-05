@@ -287,6 +287,7 @@ export default function MedewerkersPage() {
     setDocTrainerId(trainer.id);
     setDocTrainerName(trainer.name ?? "Trainer");
     setSelectedTemplateId("");
+    setSelectedProgramId("");
     setDocDialogOpen(true);
   };
 
