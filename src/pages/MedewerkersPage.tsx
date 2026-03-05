@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { UserCog, Plus, Search, Mail, Phone, Loader2, Building2, Edit, FileText, Download, Upload, CheckCircle2, XCircle, ShieldCheck } from "lucide-react";
+import { UserCog, Plus, Search, Mail, Phone, Loader2, Building2, Edit, FileText, Download, Upload, CheckCircle2, XCircle, ShieldCheck, Trash2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -68,6 +68,7 @@ export default function MedewerkersPage() {
   const [docTrainerId, setDocTrainerId] = useState<string | null>(null);
   const [docTrainerName, setDocTrainerName] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [selectedProgramId, setSelectedProgramId] = useState("");
   
   const queryClient = useQueryClient();
 
@@ -127,6 +128,20 @@ export default function MedewerkersPage() {
       const { data } = await supabase.from("document_templates").select("*").order("name");
       return data ?? [];
     },
+  });
+
+  // Fetch programs for trainer document generation
+  const { data: trainerPrograms = [] } = useQuery({
+    queryKey: ["trainer-programs", docTrainerId],
+    queryFn: async () => {
+      if (!docTrainerId) return [];
+      const { data } = await supabase
+        .from("program_staff")
+        .select("program_id, programs(id, name)")
+        .eq("staff_id", docTrainerId);
+      return (data ?? []).map((ps: any) => ps.programs).filter(Boolean);
+    },
+    enabled: !!docTrainerId && docDialogOpen,
   });
 
   // Fetch generated docs for selected trainer
@@ -199,8 +214,10 @@ export default function MedewerkersPage() {
   const generateDocMutation = useMutation({
     mutationFn: async () => {
       if (!selectedTemplateId || !docTrainerId) throw new Error("Selecteer een template");
+      const body: any = { template_id: selectedTemplateId, staff_id: docTrainerId };
+      if (selectedProgramId) body.program_id = selectedProgramId;
       const { data, error } = await supabase.functions.invoke("generate-document", {
-        body: { template_id: selectedTemplateId, staff_id: docTrainerId },
+        body,
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -214,6 +231,20 @@ export default function MedewerkersPage() {
     onError: (err: any) => {
       toast.error(err.message);
     },
+  });
+
+  // Delete generated document
+  const deleteDocMutation = useMutation({
+    mutationFn: async (doc: any) => {
+      await supabase.storage.from("generated-documents").remove([doc.file_path]);
+      const { error } = await supabase.from("generated_documents").delete().eq("id", doc.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Document verwijderd");
+      queryClient.invalidateQueries({ queryKey: ["trainer-generated-docs", docTrainerId] });
+    },
+    onError: (err: any) => toast.error(err.message || "Verwijderen mislukt"),
   });
 
   // Download generated document
@@ -256,6 +287,7 @@ export default function MedewerkersPage() {
     setDocTrainerId(trainer.id);
     setDocTrainerName(trainer.name ?? "Trainer");
     setSelectedTemplateId("");
+    setSelectedProgramId("");
     setDocDialogOpen(true);
   };
 
@@ -526,21 +558,36 @@ export default function MedewerkersPage() {
               {docTemplates.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Geen templates beschikbaar. Upload templates via de Documenten-pagina.</p>
               ) : (
-                <div className="flex gap-3 items-end">
-                  <div className="flex-1 space-y-1.5">
-                    <Label className="text-sm font-medium">Template</Label>
-                    <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-                      <SelectTrigger><SelectValue placeholder="Selecteer een template" /></SelectTrigger>
-                      <SelectContent className="bg-popover">
-                        {docTemplates.map((t: any) => (
-                          <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                <div className="space-y-3">
+                  <div className="flex gap-3 items-end">
+                    <div className="flex-1 space-y-1.5">
+                      <Label className="text-sm font-medium">Template</Label>
+                      <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                        <SelectTrigger><SelectValue placeholder="Selecteer een template" /></SelectTrigger>
+                        <SelectContent className="bg-popover">
+                          {docTemplates.map((t: any) => (
+                            <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <Button onClick={() => generateDocMutation.mutate()} disabled={!selectedTemplateId || generateDocMutation.isPending}>
+                  {trainerPrograms.length > 0 && (
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium">Programma (optioneel)</Label>
+                      <Select value={selectedProgramId} onValueChange={setSelectedProgramId}>
+                        <SelectTrigger><SelectValue placeholder="Selecteer een programma..." /></SelectTrigger>
+                        <SelectContent className="bg-popover">
+                          {trainerPrograms.map((p: any) => (
+                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  <Button className="w-full" onClick={() => generateDocMutation.mutate()} disabled={!selectedTemplateId || generateDocMutation.isPending}>
                     {generateDocMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-                    Genereer
+                    Document Genereren
                   </Button>
                 </div>
               )}
@@ -558,9 +605,14 @@ export default function MedewerkersPage() {
                         {doc.document_templates?.name ?? "—"} • {format(new Date(doc.created_at), "d MMM yyyy HH:mm", { locale: nl })}
                       </p>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => handleDownloadDoc(doc)}>
-                      <Download className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => handleDownloadDoc(doc)}>
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => { if (confirm(`"${doc.file_name}" verwijderen?`)) deleteDocMutation.mutate(doc); }}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
