@@ -34,7 +34,9 @@ export default function PlanningPage() {
   const [filterArea, setFilterArea] = useState<string>("alle");
   const [filterAge, setFilterAge] = useState<string>("alle");
   const [availabilityOpen, setAvailabilityOpen] = useState(false);
+  const [availType, setAvailType] = useState<"trainer" | "deelnemer">("trainer");
   const [selectedStaffId, setSelectedStaffId] = useState<string>("");
+  const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [availDate, setAvailDate] = useState("");
   const [availStart, setAvailStart] = useState("09:00");
   const [availEnd, setAvailEnd] = useState("17:00");
@@ -157,6 +159,35 @@ export default function PlanningPage() {
     },
   });
 
+  // Clients for availability picker
+  const { data: allClients = [] } = useQuery({
+    queryKey: ["planning-clients"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, first_name, last_name")
+        .eq("archived", false)
+        .in("intake_status", ["nieuw", "intake_gepland", "intake", "actief", "wachtlijst"])
+        .order("first_name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Client availability
+  const { data: clientAvailability = [], refetch: refetchClientAvail } = useQuery({
+    queryKey: ["planning-client-availability", dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("client_availability")
+        .select("id, client_id, available_date, start_time, end_time, notes")
+        .gte("available_date", format(dateRange.start, "yyyy-MM-dd"))
+        .lte("available_date", format(dateRange.end, "yyyy-MM-dd"));
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const { data: areas = [] } = useQuery({
     queryKey: ["areas-list"],
     queryFn: async () => {
@@ -217,21 +248,38 @@ export default function PlanningPage() {
     return availability.some((a: any) => a.staff_id === staffId && a.available_date === date);
   };
 
-  // Save availability
+  // Save availability (trainer or client)
   const saveAvailability = async () => {
-    if (!selectedStaffId || !availDate) return;
-    const { error } = await supabase.from("staff_availability").upsert({
-      staff_id: selectedStaffId,
-      available_date: availDate,
-      start_time: availStart,
-      end_time: availEnd,
-    } as any, { onConflict: "staff_id,available_date" });
-    if (error) {
-      toast({ title: "Fout", description: error.message, variant: "destructive" });
+    if (availType === "trainer") {
+      if (!selectedStaffId || !availDate) return;
+      const { error } = await supabase.from("staff_availability").upsert({
+        staff_id: selectedStaffId,
+        available_date: availDate,
+        start_time: availStart,
+        end_time: availEnd,
+      } as any, { onConflict: "staff_id,available_date" });
+      if (error) {
+        toast({ title: "Fout", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Beschikbaarheid trainer opgeslagen" });
+        refetchAvailability();
+        setAvailabilityOpen(false);
+      }
     } else {
-      toast({ title: "Beschikbaarheid opgeslagen" });
-      refetchAvailability();
-      setAvailabilityOpen(false);
+      if (!selectedClientId || !availDate) return;
+      const { error } = await supabase.from("client_availability").upsert({
+        client_id: selectedClientId,
+        available_date: availDate,
+        start_time: availStart,
+        end_time: availEnd,
+      } as any, { onConflict: "client_id,available_date" });
+      if (error) {
+        toast({ title: "Fout", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Beschikbaarheid deelnemer opgeslagen" });
+        refetchClientAvail();
+        setAvailabilityOpen(false);
+      }
     }
   };
 
@@ -528,16 +576,42 @@ export default function PlanningPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Trainer</Label>
-              <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
-                <SelectTrigger><SelectValue placeholder="Selecteer trainer..." /></SelectTrigger>
+              <Label>Type</Label>
+              <Select value={availType} onValueChange={(v) => { setAvailType(v as "trainer" | "deelnemer"); setSelectedStaffId(""); setSelectedClientId(""); }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent className="bg-popover">
-                  {allTrainers.map((t: any) => (
-                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                  ))}
+                  <SelectItem value="trainer">Trainer / Medewerker</SelectItem>
+                  <SelectItem value="deelnemer">Deelnemer</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {availType === "trainer" ? (
+              <div className="space-y-1.5">
+                <Label>Trainer</Label>
+                <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
+                  <SelectTrigger><SelectValue placeholder="Selecteer trainer..." /></SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    {allTrainers.map((t: any) => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label>Deelnemer</Label>
+                <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                  <SelectTrigger><SelectValue placeholder="Selecteer deelnemer..." /></SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    {allClients.map((c: any) => (
+                      <SelectItem key={c.id} value={c.id}>{c.first_name} {c.last_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="space-y-1.5">
               <Label>Datum</Label>
               <Input type="date" value={availDate} onChange={(e) => setAvailDate(e.target.value)} />
@@ -552,7 +626,11 @@ export default function PlanningPage() {
                 <Input type="time" value={availEnd} onChange={(e) => setAvailEnd(e.target.value)} />
               </div>
             </div>
-            <Button className="w-full" onClick={saveAvailability} disabled={!selectedStaffId || !availDate}>
+            <Button
+              className="w-full"
+              onClick={saveAvailability}
+              disabled={(availType === "trainer" ? !selectedStaffId : !selectedClientId) || !availDate}
+            >
               Opslaan
             </Button>
           </div>
