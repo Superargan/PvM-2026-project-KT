@@ -34,7 +34,9 @@ export default function PlanningPage() {
   const [filterArea, setFilterArea] = useState<string>("alle");
   const [filterAge, setFilterAge] = useState<string>("alle");
   const [availabilityOpen, setAvailabilityOpen] = useState(false);
+  const [availType, setAvailType] = useState<"trainer" | "deelnemer">("trainer");
   const [selectedStaffId, setSelectedStaffId] = useState<string>("");
+  const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [availDate, setAvailDate] = useState("");
   const [availStart, setAvailStart] = useState("09:00");
   const [availEnd, setAvailEnd] = useState("17:00");
