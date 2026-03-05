@@ -183,6 +183,9 @@ serve(async (req) => {
         "{{programma_naam}}": program?.name ?? "",
         "{{programma_start}}": program?.start_date ?? "",
         "{{programma_eind}}": program?.end_date ?? "",
+        "{{programma_school}}": programSchoolName,
+        "{{programma_wijk}}": programWijk,
+        "{{programma_gebied}}": programGebied,
         "{{doelen}}": client.goals ?? "",
         "{{intake_notities}}": client.intake_notes ?? "",
       };
