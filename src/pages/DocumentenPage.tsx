@@ -112,17 +112,21 @@ function TemplatesTab() {
         .upload(filePath, uploadFile);
       if (storageError) throw storageError;
 
-      // Auto-detect placeholders by scanning the docx
-      const { data, error: detectErr } = await supabase.functions.invoke("convert-template", {
-        body: { template_id: "auto-detect", file_path: filePath, name: templateName, category: templateCategory },
-      });
+      // Insert DB record first
+      const { data: inserted, error: dbError } = await supabase
+        .from("document_templates")
+        .insert({ name: templateName, file_path: filePath, category: templateCategory, placeholder_fields: [] })
+        .select("id")
+        .single();
+      if (dbError) throw dbError;
 
-      // If auto-detect fails, just save without placeholders
-      if (detectErr || data?.error) {
-        const { error: dbError } = await supabase
-          .from("document_templates")
-          .insert({ name: templateName, file_path: filePath, category: templateCategory, placeholder_fields: [] });
-        if (dbError) throw dbError;
+      // Detect placeholders (and convert MERGEFIELDs if present) — formatting stays intact
+      try {
+        await supabase.functions.invoke("convert-template", {
+          body: { template_id: inserted.id },
+        });
+      } catch {
+        // Detection is optional — template still works without it
       }
     },
     onSuccess: () => {
