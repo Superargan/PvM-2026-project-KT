@@ -13,6 +13,7 @@ import {
   LogOut,
   ChevronLeft,
   Menu,
+  CalendarDays,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,7 @@ const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/" },
   { label: "Cliënten", icon: Users, path: "/clienten" },
   { label: "Aanmeldingen", icon: ClipboardList, path: "/aanmeldingen" },
+  { label: "Planning", icon: CalendarDays, path: "/planning" },
   { label: "Programma's", icon: GraduationCap, path: "/programmas" },
   { label: "Scholen", icon: School, path: "/scholen" },
   { label: "Medewerkers", icon: UserCog, path: "/medewerkers" },
