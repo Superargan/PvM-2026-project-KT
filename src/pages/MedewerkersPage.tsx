@@ -216,6 +216,20 @@ export default function MedewerkersPage() {
     },
   });
 
+  // Delete generated document
+  const deleteDocMutation = useMutation({
+    mutationFn: async (doc: any) => {
+      await supabase.storage.from("generated-documents").remove([doc.file_path]);
+      const { error } = await supabase.from("generated_documents").delete().eq("id", doc.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Document verwijderd");
+      queryClient.invalidateQueries({ queryKey: ["trainer-generated-docs", docTrainerId] });
+    },
+    onError: (err: any) => toast.error(err.message || "Verwijderen mislukt"),
+  });
+
   // Download generated document
   const handleDownloadDoc = async (doc: any) => {
     const { data, error } = await supabase.storage.from("generated-documents").download(doc.file_path);
