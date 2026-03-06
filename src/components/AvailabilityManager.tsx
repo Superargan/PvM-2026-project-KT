@@ -314,7 +314,7 @@ export default function AvailabilityManager({ type }: AvailabilityManagerProps) 
     const allDays = eachDayOfInterval(dateRange);
     const weekdaysInPeriod = allDays.filter(d => {
       const dow = jsDayToDow(getDay(d));
-      return dow >= 1 && dow <= 5;
+      return dow >= 1 && dow <= 7;
     });
 
     const unavailable: Date[] = [];
