@@ -32,6 +32,8 @@ const WEEKDAYS = [
   { dow: 3, label: "Woensdag", short: "Wo" },
   { dow: 4, label: "Donderdag", short: "Do" },
   { dow: 5, label: "Vrijdag", short: "Vr" },
+  { dow: 6, label: "Zaterdag", short: "Za" },
+  { dow: 7, label: "Zondag", short: "Zo" },
 ];
 
 // Convert JS getDay (0=Sun) to our dow (1=Mon..5=Fri)
