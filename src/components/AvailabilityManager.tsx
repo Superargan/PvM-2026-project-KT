@@ -43,15 +43,16 @@ function jsDayToDow(jsDay: number): number {
 
 interface AvailabilityManagerProps {
   type: "trainer" | "deelnemer";
+  fixedPersonId?: string;
 }
 
-export default function AvailabilityManager({ type }: AvailabilityManagerProps) {
+export default function AvailabilityManager({ type, fixedPersonId }: AvailabilityManagerProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const [periodMode, setPeriodMode] = useState<PeriodMode>("week");
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedPersonId, setSelectedPersonId] = useState<string>("");
+  const [selectedPersonId, setSelectedPersonId] = useState<string>(fixedPersonId ?? "");
   const [saving, setSaving] = useState(false);
 
   // Grid state: { "1-ochtend": true, "3-middag": true, ... }
@@ -336,17 +337,19 @@ export default function AvailabilityManager({ type }: AvailabilityManagerProps) 
     <div className="space-y-4">
       {/* Person + Period selection */}
       <div className="flex flex-wrap items-end gap-3">
-        <div className="space-y-1.5 min-w-[200px]">
-          <Label>{type === "trainer" ? "Trainer" : "Deelnemer"}</Label>
-          <Select value={selectedPersonId} onValueChange={(v) => { setSelectedPersonId(v); setSelections({}); setCustomTimes({}); }}>
-            <SelectTrigger><SelectValue placeholder={`Selecteer ${type}...`} /></SelectTrigger>
-            <SelectContent className="bg-popover max-h-60">
-              {people.map((p: any) => (
-                <SelectItem key={p.id} value={p.id}>{personLabel(p)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {!fixedPersonId && (
+          <div className="space-y-1.5 min-w-[200px]">
+            <Label>{type === "trainer" ? "Trainer" : "Deelnemer"}</Label>
+            <Select value={selectedPersonId} onValueChange={(v) => { setSelectedPersonId(v); setSelections({}); setCustomTimes({}); }}>
+              <SelectTrigger><SelectValue placeholder={`Selecteer ${type}...`} /></SelectTrigger>
+              <SelectContent className="bg-popover max-h-60">
+                {people.map((p: any) => (
+                  <SelectItem key={p.id} value={p.id}>{personLabel(p)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         <div className="space-y-1.5">
           <Label>Periode</Label>
@@ -378,7 +381,7 @@ export default function AvailabilityManager({ type }: AvailabilityManagerProps) 
         </span>
       </div>
 
-      {!selectedPersonId ? (
+      {!selectedPersonId && !fixedPersonId ? (
         <div className="rounded-xl border border-border bg-card p-8 text-center">
           <p className="text-sm text-muted-foreground">
             Selecteer een {type} om beschikbaarheid in te vullen.

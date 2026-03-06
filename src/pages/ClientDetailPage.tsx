@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2, Save, User, ClipboardList, BookOpen, Shield, FileText, Download, CalendarDays, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, Save, User, ClipboardList, BookOpen, Shield, FileText, Download, CalendarDays } from "lucide-react";
+import AvailabilityManager from "@/components/AvailabilityManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -472,7 +473,7 @@ export default function ClientDetailPage() {
 
         {/* Beschikbaarheid tab */}
         <TabsContent value="beschikbaarheid" className="space-y-4">
-          <ClientAvailabilitySection clientId={id!} />
+          <AvailabilityManager type="deelnemer" fixedPersonId={id!} />
         </TabsContent>
 
         {/* Programma's tab */}
@@ -616,108 +617,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <div className="space-y-1.5">
       <Label className="text-sm font-medium">{label}</Label>
       {children}
-    </div>
-  );
-}
-
-function ClientAvailabilitySection({ clientId }: { clientId: string }) {
-  const [date, setDate] = useState("");
-  const [startTime, setStartTime] = useState("09:00");
-  const [endTime, setEndTime] = useState("17:00");
-  const [notes, setNotes] = useState("");
-  const { toast } = useToast();
-
-  const { data: avail = [], refetch } = useQuery({
-    queryKey: ["client-availability", clientId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("client_availability")
-        .select("*")
-        .eq("client_id", clientId)
-        .order("available_date");
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-
-  const addAvailability = async () => {
-    if (!date) return;
-    const { error } = await supabase.from("client_availability").upsert({
-      client_id: clientId,
-      available_date: date,
-      start_time: startTime,
-      end_time: endTime,
-      notes: notes || null,
-    } as any, { onConflict: "client_id,available_date" });
-    if (error) {
-      toast({ title: "Fout", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Beschikbaarheid opgeslagen" });
-      setDate("");
-      setNotes("");
-      refetch();
-    }
-  };
-
-  const removeAvailability = async (id: string) => {
-    const { error } = await supabase.from("client_availability").delete().eq("id", id);
-    if (error) {
-      toast({ title: "Fout", description: error.message, variant: "destructive" });
-    } else {
-      refetch();
-    }
-  };
-
-  return (
-    <div className="rounded-xl border border-border bg-card p-6 space-y-5">
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Beschikbaarheid</p>
-
-      {/* Add form */}
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="space-y-1.5">
-          <Label className="text-sm font-medium">Datum</Label>
-          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-40" />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-sm font-medium">Van</Label>
-          <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="w-28" />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-sm font-medium">Tot</Label>
-          <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="w-28" />
-        </div>
-        <div className="space-y-1.5 flex-1 min-w-[120px]">
-          <Label className="text-sm font-medium">Notitie</Label>
-          <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optioneel..." />
-        </div>
-        <Button onClick={addAvailability} disabled={!date} size="sm">
-          <Plus className="h-4 w-4" /> Toevoegen
-        </Button>
-      </div>
-
-      {/* List */}
-      {avail.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Nog geen beschikbaarheid opgegeven.</p>
-      ) : (
-        <div className="divide-y divide-border rounded-lg border border-border overflow-hidden">
-          {avail.map((a: any) => (
-            <div key={a.id} className="flex items-center justify-between px-4 py-2.5">
-              <div>
-                <span className="text-sm font-medium text-foreground">
-                  {format(new Date(a.available_date + "T00:00:00"), "EEEE d MMMM yyyy", { locale: nl })}
-                </span>
-                <span className="ml-2 text-xs text-muted-foreground">
-                  {a.start_time?.slice(0, 5)} – {a.end_time?.slice(0, 5)}
-                </span>
-                {a.notes && <span className="ml-2 text-xs text-muted-foreground italic">({a.notes})</span>}
-              </div>
-              <Button variant="ghost" size="icon" onClick={() => removeAvailability(a.id)} className="h-7 w-7">
-                <Trash2 className="h-3.5 w-3.5 text-destructive" />
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
