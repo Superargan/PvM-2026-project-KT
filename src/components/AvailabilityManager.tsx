@@ -32,6 +32,8 @@ const WEEKDAYS = [
   { dow: 3, label: "Woensdag", short: "Wo" },
   { dow: 4, label: "Donderdag", short: "Do" },
   { dow: 5, label: "Vrijdag", short: "Vr" },
+  { dow: 6, label: "Zaterdag", short: "Za" },
+  { dow: 7, label: "Zondag", short: "Zo" },
 ];
 
 // Convert JS getDay (0=Sun) to our dow (1=Mon..5=Fri)
@@ -152,7 +154,7 @@ export default function AvailabilityManager({ type }: AvailabilityManagerProps) 
     existingAvailability.forEach((a: any) => {
       const date = parseISO(a.available_date);
       const dow = jsDayToDow(getDay(date));
-      if (dow > 5) return; // skip weekends
+      if (dow > 7) return;
 
       const startTime = a.start_time?.slice(0, 5) ?? "09:00";
       const endTime = a.end_time?.slice(0, 5) ?? "17:00";
@@ -269,7 +271,7 @@ export default function AvailabilityManager({ type }: AvailabilityManagerProps) 
 
       allDays.forEach(day => {
         const dow = jsDayToDow(getDay(day));
-        if (dow > 5) return;
+        if (dow > 7) return;
         const dateStr = format(day, "yyyy-MM-dd");
 
         DAGDELEN.forEach(dagdeel => {
@@ -312,7 +314,7 @@ export default function AvailabilityManager({ type }: AvailabilityManagerProps) 
     const allDays = eachDayOfInterval(dateRange);
     const weekdaysInPeriod = allDays.filter(d => {
       const dow = jsDayToDow(getDay(d));
-      return dow >= 1 && dow <= 5;
+      return dow >= 1 && dow <= 7;
     });
 
     const unavailable: Date[] = [];
