@@ -368,12 +368,11 @@ export default function PlanningPage() {
                 const items = agendaByDay[key];
                 const isToday = key === today;
                 const hasItems = items && (items.intakes.length > 0 || items.sessions.length > 0);
-                const isWeekend = day.getDay() === 0 || day.getDay() === 6;
 
                 return (
                   <div
                     key={key}
-                    className={`rounded-lg border ${isToday ? "border-primary bg-primary/5" : "border-border bg-card"} ${isWeekend ? "opacity-60" : ""}`}
+                    className={`rounded-lg border ${isToday ? "border-primary bg-primary/5" : "border-border bg-card"}`}
                   >
                     <div className="flex items-center gap-3 border-b border-border/50 px-4 py-2">
                       <span className={`text-sm font-bold capitalize ${isToday ? "text-primary" : "text-foreground"}`}>
