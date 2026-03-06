@@ -121,14 +121,28 @@ export default function AvailabilityManager({ type }: AvailabilityManagerProps) 
     queryKey: ["avail-existing", type, selectedPersonId, dateRange.start.toISOString(), dateRange.end.toISOString()],
     enabled: !!selectedPersonId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from(tableName)
-        .select("id, available_date, start_time, end_time, notes")
-        .eq(idColumn as any, selectedPersonId)
-        .gte("available_date", format(dateRange.start, "yyyy-MM-dd"))
-        .lte("available_date", format(dateRange.end, "yyyy-MM-dd"));
-      if (error) throw error;
-      return data ?? [];
+      const startStr = format(dateRange.start, "yyyy-MM-dd");
+      const endStr = format(dateRange.end, "yyyy-MM-dd");
+
+      if (type === "trainer") {
+        const { data, error } = await supabase
+          .from("staff_availability")
+          .select("id, available_date, start_time, end_time, notes")
+          .eq("staff_id", selectedPersonId)
+          .gte("available_date", startStr)
+          .lte("available_date", endStr);
+        if (error) throw error;
+        return data ?? [];
+      } else {
+        const { data, error } = await supabase
+          .from("client_availability")
+          .select("id, available_date, start_time, end_time, notes")
+          .eq("client_id", selectedPersonId)
+          .gte("available_date", startStr)
+          .lte("available_date", endStr);
+        if (error) throw error;
+        return data ?? [];
+      }
     },
   });
 
@@ -231,14 +245,26 @@ export default function AvailabilityManager({ type }: AvailabilityManagerProps) 
       const allDays = eachDayOfInterval(dateRange);
 
       // First, delete existing availability in the period for this person
-      const { error: delError } = await supabase
-        .from(tableName)
-        .delete()
-        .eq(idColumn as any, selectedPersonId)
-        .gte("available_date", format(dateRange.start, "yyyy-MM-dd"))
-        .lte("available_date", format(dateRange.end, "yyyy-MM-dd"));
+      const startStr = format(dateRange.start, "yyyy-MM-dd");
+      const endStr = format(dateRange.end, "yyyy-MM-dd");
 
-      if (delError) throw delError;
+      if (type === "trainer") {
+        const { error: delError } = await supabase
+          .from("staff_availability")
+          .delete()
+          .eq("staff_id", selectedPersonId)
+          .gte("available_date", startStr)
+          .lte("available_date", endStr);
+        if (delError) throw delError;
+      } else {
+        const { error: delError } = await supabase
+          .from("client_availability")
+          .delete()
+          .eq("client_id", selectedPersonId)
+          .gte("available_date", startStr)
+          .lte("available_date", endStr);
+        if (delError) throw delError;
+      }
 
       // Build inserts
       const inserts: any[] = [];
