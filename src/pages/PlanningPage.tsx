@@ -305,6 +305,9 @@ export default function PlanningPage() {
         <TabsList>
           <TabsTrigger value="agenda">Agenda</TabsTrigger>
           <TabsTrigger value="trainers">Trainers & Beschikbaarheid</TabsTrigger>
+          <TabsTrigger value="deelnemers">Deelnemers beschikbaarheid</TabsTrigger>
+          <TabsTrigger value="trainer-invoer">Beschikbaarheid invoeren (Trainer)</TabsTrigger>
+          <TabsTrigger value="deelnemer-invoer">Beschikbaarheid invoeren (Deelnemer)</TabsTrigger>
           <TabsTrigger value="groepen">Groepen samenstellen</TabsTrigger>
         </TabsList>
 
