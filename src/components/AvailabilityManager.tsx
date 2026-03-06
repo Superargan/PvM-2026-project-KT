@@ -337,17 +337,19 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
     <div className="space-y-4">
       {/* Person + Period selection */}
       <div className="flex flex-wrap items-end gap-3">
-        <div className="space-y-1.5 min-w-[200px]">
-          <Label>{type === "trainer" ? "Trainer" : "Deelnemer"}</Label>
-          <Select value={selectedPersonId} onValueChange={(v) => { setSelectedPersonId(v); setSelections({}); setCustomTimes({}); }}>
-            <SelectTrigger><SelectValue placeholder={`Selecteer ${type}...`} /></SelectTrigger>
-            <SelectContent className="bg-popover max-h-60">
-              {people.map((p: any) => (
-                <SelectItem key={p.id} value={p.id}>{personLabel(p)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {!fixedPersonId && (
+          <div className="space-y-1.5 min-w-[200px]">
+            <Label>{type === "trainer" ? "Trainer" : "Deelnemer"}</Label>
+            <Select value={selectedPersonId} onValueChange={(v) => { setSelectedPersonId(v); setSelections({}); setCustomTimes({}); }}>
+              <SelectTrigger><SelectValue placeholder={`Selecteer ${type}...`} /></SelectTrigger>
+              <SelectContent className="bg-popover max-h-60">
+                {people.map((p: any) => (
+                  <SelectItem key={p.id} value={p.id}>{personLabel(p)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         <div className="space-y-1.5">
           <Label>Periode</Label>
