@@ -381,7 +381,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
         </span>
       </div>
 
-      {!selectedPersonId ? (
+      {!selectedPersonId && !fixedPersonId ? (
         <div className="rounded-xl border border-border bg-card p-8 text-center">
           <p className="text-sm text-muted-foreground">
             Selecteer een {type} om beschikbaarheid in te vullen.
