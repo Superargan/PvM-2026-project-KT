@@ -8,9 +8,12 @@ export default function Dashboard() {
   const { data: clientCount = 0 } = useQuery({
     queryKey: ["dashboard-participants"],
     queryFn: async () => {
-      const { data } = await supabase.from("program_clients").select("client_id");
-      const unique = new Set(data?.map((r: any) => r.client_id));
-      return unique.size;
+      const { count } = await supabase
+        .from("clients")
+        .select("*", { count: "exact", head: true })
+        .eq("archived", false)
+        .in("intake_status", ["actief", "wachtlijst", "intake_gepland", "intake", "nieuw"]);
+      return count ?? 0;
     },
   });
 
