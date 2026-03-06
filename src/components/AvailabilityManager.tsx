@@ -154,7 +154,7 @@ export default function AvailabilityManager({ type }: AvailabilityManagerProps) 
     existingAvailability.forEach((a: any) => {
       const date = parseISO(a.available_date);
       const dow = jsDayToDow(getDay(date));
-      if (dow > 5) return; // skip weekends
+      if (dow > 7) return;
 
       const startTime = a.start_time?.slice(0, 5) ?? "09:00";
       const endTime = a.end_time?.slice(0, 5) ?? "17:00";
@@ -271,7 +271,7 @@ export default function AvailabilityManager({ type }: AvailabilityManagerProps) 
 
       allDays.forEach(day => {
         const dow = jsDayToDow(getDay(day));
-        if (dow > 5) return;
+        if (dow > 7) return;
         const dateStr = format(day, "yyyy-MM-dd");
 
         DAGDELEN.forEach(dagdeel => {
