@@ -1,59 +1,41 @@
 
 
-# Plan: Testomgeving 2025 met Kanjertrainingen
+## Plan: Trainers zonder type meenemen in planningstool
 
-## Huidige situatie
+### Huidige situatie
+De bestaande beschikbaarheidstab toont al alle trainers, ook zonder `trainer_type`. De "Groepen samenstellen" tab moet nog gebouwd worden (eerder goedgekeurd plan).
 
-| Gegeven | Aantal |
-|---------|--------|
-| Programma's (2026, KT) | 28 (te_plannen) + 3 (ingepland) |
-| Trainers | 1 (Patrick van Mastricht) |
-| Scholen | 162 |
-| Gebieden | 14 (alle Rotterdamse gebieden) |
-| Cliënten | 1 |
-| Sessies | 10 |
+### Aanpassing aan het plan
+Bij de implementatie van "Groepen samenstellen" worden trainers als volgt gesuggereerd per groep:
 
-Er bestaan nog geen 2025-programma's. Alle huidige KT-nummers beginnen met 26xxx.
+- **Oudertrainer-dropdown**: toont trainers met `trainer_type` = `oudertrainer`, `beide`, **of `null`/leeg**
+- **Kindtrainer-dropdown**: toont trainers met `trainer_type` = `kindtrainer`, `beide`, **of `null`/leeg**
+- Trainers zonder type krijgen een label "(type onbekend)" zodat de planner weet dat het type nog ingesteld moet worden
 
-## Wat er nodig is
+### Wat wordt gebouwd (volledig, inclusief eerder plan)
 
-Om realistisch te testen hebben we voor 5 Kanjertrainingen (2025) het volgende nodig:
+**Geen database-wijzigingen nodig.**
 
-1. **5 KT-programma's** met naam `KT - 25001` t/m `KT - 25005`, status `afgerond`, met start/einddatum in 2025, leeftijdscategorie, en gekoppeld aan een gebied/school
-2. **Trainers** - minimaal 4-6 extra trainers om realistisch 2 per programma te koppelen
-3. **Cliënten** - minimaal 35-40 kinderen (7-8 per groep) met naam, geboortedatum, school
-4. **Sessies** - 10 bijeenkomsten per programma (standaard KT = 10 lessen)
-5. **Presentie** - aanwezigheidsregistratie per sessie per kind
-6. **Koppelingen** - program_staff en program_clients records
+**`src/pages/PlanningPage.tsx`** -- nieuw tab "Groepen samenstellen":
 
-## Aanpak
+1. **Wachtlijst-deelnemers ophalen**: `clients` met `intake_status = 'wachtlijst'`, join naar `schools -> neighborhoods -> areas` voor gebiedsbepaling, plus `waitlist_area_id` als fallback
+2. **Leeftijdsgroepering**: berekening op `date_of_birth` (5-7 / 8-12 jaar), groeperen per `area_id + leeftijdscategorie`
+3. **Per groepskaart tonen**:
+   - Gebied + leeftijdscategorie
+   - Aantal deelnemers met kleurindicatie (groen >= 8, oranje 5-7, rood < 5)
+   - Checkboxes per deelnemer (standaard aangevinkt)
+   - **Oudertrainer dropdown**: alle trainers met type `oudertrainer`, `beide`, of *niet ingevuld* -- trainers zonder type tonen "(type onbekend)"
+   - **Kindtrainer dropdown**: alle trainers met type `kindtrainer`, `beide`, of *niet ingevuld* -- idem
+4. **"Groep aanmaken" actie**: maakt programma aan, koppelt deelnemers en trainers, zet status naar `actief`
 
-### Stap 1: Testdata genereren via SQL
-Ik maak een script dat via database-inserts de volgende testdata aanmaakt:
+### Filterlogica trainers (kernwijziging)
 
-- **5 programma's**: KT - 25001 t/m 25005, verdeeld over verschillende gebieden, mix van 5-7 en 8-12 jaar, status `afgerond`, periode jan-jun 2025
-- **6 trainers**: realistische Nederlandse namen, gekoppeld aan scholen
-- **40 cliënten**: kinderen met naam, geboortedatum (passend bij leeftijdscategorie), school, oudergegevens, intake_status `afgerond`
-- **50 sessies**: 10 per programma, wekelijks verspreid over de periode
-- **Koppelingen**: elke training 2 trainers + 7-8 kinderen
-- **Presentie**: realistische aanwezigheid (~85%)
+```text
+-- Pseudo-code voor trainer selectie
+Oudertrainer-opties = staff WHERE trainer_type IN ('oudertrainer', 'beide') OR trainer_type IS NULL
+Kindtrainer-opties = staff WHERE trainer_type IN ('kindtrainer', 'beide') OR trainer_type IS NULL
+```
 
-### Stap 2: Bestanden inlezen
-Je noemde dat je bestanden hebt met 2025-gegevens. Na stap 1 kun je die uploaden zodat we echte data gebruiken in plaats van (of naast) gegenereerde testdata. We kunnen dan bestaande records bijwerken of aanvullen.
-
-### Stap 3: Validatie
-Na het inladen controleren we of:
-- Programma's correct op de kaarten verschijnen
-- Trainers en deelnemers zichtbaar zijn op de detailpagina
-- Presentie en sessies kloppen
-- Filters en rapportages werken met de 2025-data
-
-## Vraag aan jou
-
-Voordat ik begin:
-
-- **Wil je eerst met puur gegenereerde testdata starten (5 programma's)**, zodat je daarna je eigen bestanden kunt uploaden om aan te vullen of te corrigeren?
-- **Of wil je eerst je bestanden delen**, zodat ik de echte 2025-gegevens direct kan verwerken?
-
-De eerste optie is het snelst om mee te testen; de tweede geeft meteen realistische data.
+### Bestanden die worden gewijzigd
+- `src/pages/PlanningPage.tsx` -- toevoegen tab "Groepen samenstellen" met bovenstaande logica
 
