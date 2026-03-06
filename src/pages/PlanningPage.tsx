@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import GroupComposer from "@/components/GroupComposer";
 
 const trainerTypeLabels: Record<string, string> = {
   oudertrainer: "Oudertrainer",
@@ -304,6 +305,7 @@ export default function PlanningPage() {
         <TabsList>
           <TabsTrigger value="agenda">Agenda</TabsTrigger>
           <TabsTrigger value="trainers">Trainers & Beschikbaarheid</TabsTrigger>
+          <TabsTrigger value="groepen">Groepen samenstellen</TabsTrigger>
         </TabsList>
 
         {/* === AGENDA TAB === */}
@@ -565,6 +567,11 @@ export default function PlanningPage() {
               </tbody>
             </table>
           </div>
+        </TabsContent>
+
+        {/* === GROEPEN SAMENSTELLEN TAB === */}
+        <TabsContent value="groepen" className="space-y-4">
+          <GroupComposer />
         </TabsContent>
       </Tabs>
 
