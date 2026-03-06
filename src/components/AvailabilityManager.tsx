@@ -43,15 +43,16 @@ function jsDayToDow(jsDay: number): number {
 
 interface AvailabilityManagerProps {
   type: "trainer" | "deelnemer";
+  fixedPersonId?: string;
 }
 
-export default function AvailabilityManager({ type }: AvailabilityManagerProps) {
+export default function AvailabilityManager({ type, fixedPersonId }: AvailabilityManagerProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const [periodMode, setPeriodMode] = useState<PeriodMode>("week");
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedPersonId, setSelectedPersonId] = useState<string>("");
+  const [selectedPersonId, setSelectedPersonId] = useState<string>(fixedPersonId ?? "");
   const [saving, setSaving] = useState(false);
 
   // Grid state: { "1-ochtend": true, "3-middag": true, ... }
