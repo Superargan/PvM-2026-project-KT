@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import GroupComposer from "@/components/GroupComposer";
+import AvailabilityManager from "@/components/AvailabilityManager";
 
 const trainerTypeLabels: Record<string, string> = {
   oudertrainer: "Oudertrainer",
@@ -570,6 +571,60 @@ export default function PlanningPage() {
               </tbody>
             </table>
           </div>
+        </TabsContent>
+
+        {/* === DEELNEMERS BESCHIKBAARHEID TAB === */}
+        <TabsContent value="deelnemers" className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Overzicht van deelnemers en hun beschikbaarheid in de huidige {viewMode === "week" ? "week" : "maand"}.
+          </p>
+          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border bg-muted/50">
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Deelnemer</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Beschikbaar in periode</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {allClients.map((client: any) => {
+                  const clientAvail = clientAvailability.filter((a: any) => a.client_id === client.id);
+                  return (
+                    <tr key={client.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-3">
+                        <p className="text-sm font-semibold text-foreground">{client.first_name} {client.last_name}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-1">
+                          {clientAvail.length > 0 ? clientAvail.map((a: any) => (
+                            <Badge key={a.id} variant="outline" className="text-[10px] border-emerald-300 text-emerald-700">
+                              {format(parseISO(a.available_date), "d MMM", { locale: nl })}
+                              {a.start_time && a.end_time ? ` ${a.start_time.slice(0, 5)}–${a.end_time.slice(0, 5)}` : ""}
+                            </Badge>
+                          )) : (
+                            <span className="text-xs text-muted-foreground">Geen opgegeven</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {allClients.length === 0 && (
+                  <tr><td colSpan={2} className="px-4 py-8 text-center text-sm text-muted-foreground">Geen deelnemers gevonden</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </TabsContent>
+
+        {/* === TRAINER INVOER TAB === */}
+        <TabsContent value="trainer-invoer" className="space-y-4">
+          <AvailabilityManager type="trainer" />
+        </TabsContent>
+
+        {/* === DEELNEMER INVOER TAB === */}
+        <TabsContent value="deelnemer-invoer" className="space-y-4">
+          <AvailabilityManager type="deelnemer" />
         </TabsContent>
 
         {/* === GROEPEN SAMENSTELLEN TAB === */}
