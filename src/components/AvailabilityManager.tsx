@@ -114,8 +114,6 @@ export default function AvailabilityManager({ type }: AvailabilityManagerProps) 
   const people = type === "trainer" ? trainers : clients;
 
   // Fetch existing availability for selected person + period
-  const tableName = type === "trainer" ? "staff_availability" : "client_availability";
-  const idColumn = type === "trainer" ? "staff_id" : "client_id";
 
   const { data: existingAvailability = [], refetch: refetchAvail } = useQuery({
     queryKey: ["avail-existing", type, selectedPersonId, dateRange.start.toISOString(), dateRange.end.toISOString()],
@@ -266,23 +264,19 @@ export default function AvailabilityManager({ type }: AvailabilityManagerProps) 
         if (delError) throw delError;
       }
 
-      // Build inserts
+      // Build inserts grouped by type
       const inserts: any[] = [];
 
       allDays.forEach(day => {
         const dow = jsDayToDow(getDay(day));
-        if (dow > 5) return; // skip weekends
-
+        if (dow > 5) return;
         const dateStr = format(day, "yyyy-MM-dd");
 
         DAGDELEN.forEach(dagdeel => {
           const key = `${dow}-${dagdeel.key}`;
           if (!selections[key]) return;
-
           const times = customTimes[key] ?? { start: dagdeel.start, end: dagdeel.end };
-
           inserts.push({
-            [idColumn]: selectedPersonId,
             available_date: dateStr,
             start_time: times.start,
             end_time: times.end,
@@ -291,8 +285,15 @@ export default function AvailabilityManager({ type }: AvailabilityManagerProps) 
       });
 
       if (inserts.length > 0) {
-        const { error: insertError } = await supabase.from(tableName).insert(inserts);
-        if (insertError) throw insertError;
+        if (type === "trainer") {
+          const rows = inserts.map(i => ({ ...i, staff_id: selectedPersonId }));
+          const { error: insertError } = await supabase.from("staff_availability").insert(rows);
+          if (insertError) throw insertError;
+        } else {
+          const rows = inserts.map(i => ({ ...i, client_id: selectedPersonId }));
+          const { error: insertError } = await supabase.from("client_availability").insert(rows);
+          if (insertError) throw insertError;
+        }
       }
 
       toast({ title: "Beschikbaarheid opgeslagen", description: `${inserts.length} tijdslots opgeslagen` });
