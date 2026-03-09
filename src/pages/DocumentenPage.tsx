@@ -22,7 +22,7 @@ import { nl } from "date-fns/locale";
 
 const PLACEHOLDER_GROUPS = [
   {
-    label: "Cliënt",
+    label: "Deelnemer",
     items: [
       "{{client_voornaam}}", "{{client_achternaam}}", "{{client_geboortedatum}}", "{{client_leeftijd}}",
       "{{client_adres}}", "{{client_postcode}}", "{{client_plaats}}", "{{client_geslacht}}",
@@ -1003,7 +1003,7 @@ function GenerateTab() {
               <Label className="text-sm font-semibold">2. Gegevens van</Label>
               <div className="flex gap-2 mt-1">
                 {([
-                  { value: "client", label: "Cliënt", icon: UserCircle },
+                  { value: "client", label: "Deelnemer", icon: UserCircle },
                   { value: "staff", label: "Trainer", icon: GraduationCap },
                   { value: "school", label: "School", icon: Building2 },
                   { value: "program", label: "Training", icon: Calendar },
@@ -1023,7 +1023,7 @@ function GenerateTab() {
             {/* Step 3: Select Entity */}
             <div>
               <Label className="text-sm font-semibold">
-                3. {entityType === "client" ? "Cliënt" : entityType === "staff" ? "Trainer" : entityType === "program" ? "Training" : "School"} selecteren
+                3. {entityType === "client" ? "Deelnemer" : entityType === "staff" ? "Trainer" : entityType === "program" ? "Training" : "School"} selecteren
               </Label>
               <div className="relative mt-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -1182,7 +1182,7 @@ function GenerateTab() {
           </CardHeader>
           <CardContent className="text-xs text-muted-foreground space-y-2">
             <p><strong>1.</strong> Kies een template (Word-bestand met placeholders)</p>
-            <p><strong>2.</strong> Selecteer het type gegevens (cliënt, trainer of school)</p>
+            <p><strong>2.</strong> Selecteer het type gegevens (deelnemer, trainer of school)</p>
             <p><strong>3.</strong> Kies de specifieke persoon/organisatie</p>
             <p><strong>4.</strong> Het document wordt gegenereerd met alle gegevens ingevuld, met behoud van de originele Word-opmaak</p>
           </CardContent>

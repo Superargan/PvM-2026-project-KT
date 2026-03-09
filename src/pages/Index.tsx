@@ -125,7 +125,7 @@ export default function Dashboard() {
           </div>
           <div className="divide-y divide-border">
             {recentClients.length === 0 && (
-              <p className="px-5 py-8 text-center text-sm text-muted-foreground">Nog geen cliënten aangemeld</p>
+              <p className="px-5 py-8 text-center text-sm text-muted-foreground">Nog geen deelnemers aangemeld</p>
             )}
             {recentClients.map((client: any) => {
               const st = statusMap[client.intake_status] ?? statusMap.nieuw;

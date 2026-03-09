@@ -261,7 +261,7 @@ export default function ClientImport({ open, onOpenChange, onComplete }: ClientI
     if (added > 0) {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       queryClient.invalidateQueries({ queryKey: ["aanmeldingen"] });
-      toast({ title: `${added} cliënt(en) geïmporteerd` });
+      toast({ title: `${added} deelnemer(s) geïmporteerd` });
       onComplete?.();
     }
   };
@@ -277,7 +277,7 @@ export default function ClientImport({ open, onOpenChange, onComplete }: ClientI
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Cliënten importeren uit Excel</DialogTitle>
+          <DialogTitle>Deelnemers importeren uit Excel</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -325,7 +325,7 @@ export default function ClientImport({ open, onOpenChange, onComplete }: ClientI
               </p>
 
               <Button onClick={handleImport} disabled={importing} className="w-full">
-                {importing ? <><Loader2 className="h-4 w-4 animate-spin" /> Importeren...</> : <><Upload className="h-4 w-4" /> {rows.length} cliënt(en) importeren</>}
+                {importing ? <><Loader2 className="h-4 w-4 animate-spin" /> Importeren...</> : <><Upload className="h-4 w-4" /> {rows.length} deelnemer(s) importeren</>}
               </Button>
             </div>
           )}

@@ -81,7 +81,7 @@ export default function ClientenPage() {
     if (error) {
       toast({ title: "Fout", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Cliënt toegevoegd" });
+      toast({ title: "Deelnemer toegevoegd" });
       setAddOpen(false);
       refetch();
     }
@@ -91,8 +91,8 @@ export default function ClientenPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-extrabold text-foreground">Cliënten</h1>
-          <p className="text-sm text-muted-foreground">{clients.length} cliënten in het systeem</p>
+          <h1 className="font-display text-2xl font-extrabold text-foreground">Deelnemers</h1>
+          <p className="text-sm text-muted-foreground">{clients.length} deelnemers in het systeem</p>
         </div>
         <div className="flex gap-2">
           {(["csv", "xlsx"] as const).map((fmt) => (
@@ -109,7 +109,7 @@ export default function ClientenPage() {
                 avg: c.consent_data_processing ?? false,
                 whatsapp: c.whatsapp_consent ?? false,
               }));
-              downloadExport(`clienten.${fmt}`, [
+              downloadExport(`deelnemers.${fmt}`, [
                 { key: "voornaam", label: "Voornaam" },
                 { key: "achternaam", label: "Achternaam" },
                 { key: "leeftijd", label: "Leeftijd" },
@@ -130,11 +130,11 @@ export default function ClientenPage() {
           </Button>
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
-              <Button><Plus className="h-4 w-4" /> Cliënt Toevoegen</Button>
+              <Button><Plus className="h-4 w-4" /> Deelnemer Toevoegen</Button>
             </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Nieuwe Cliënt</DialogTitle>
+              <DialogTitle>Nieuwe Deelnemer</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleAddClient} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -181,7 +181,7 @@ export default function ClientenPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {clients.length === 0 && (
-                <tr><td colSpan={5} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen cliënten gevonden</td></tr>
+                <tr><td colSpan={5} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen deelnemers gevonden</td></tr>
               )}
               {clients.map((client: any) => {
                 const age = calculateAge(client.date_of_birth);

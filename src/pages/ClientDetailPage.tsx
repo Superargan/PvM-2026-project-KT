@@ -289,7 +289,7 @@ export default function ClientDetailPage() {
         <Button variant="ghost" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-4 w-4" /> Terug
         </Button>
-        <p className="text-muted-foreground">Cliënt niet gevonden.</p>
+        <p className="text-muted-foreground">Deelnemer niet gevonden.</p>
       </div>
     );
   }
