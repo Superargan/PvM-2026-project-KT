@@ -233,14 +233,17 @@ export default function WachtlijstPage() {
                   </TableCell>
                   <TableCell className="text-sm text-card-foreground">{(() => { const age = calculateAge(client.date_of_birth); return age !== null ? `${age} jaar` : "—"; })()}</TableCell>
                   <TableCell>{(client as any).areas?.name ?? "—"}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {client.created_at ? format(new Date(client.created_at), "d MMM yyyy", { locale: nl }) : "—"}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {client.intake_date ? format(new Date(client.intake_date), "d MMM yyyy", { locale: nl }) : "—"}
+                  </TableCell>
                   <TableCell>
                     <Badge className={statusColors[client.waitlist_status] ?? ""}>
                       {client.waitlist_status === "waiting" ? <Clock className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
                       {statusLabels[client.waitlist_status] ?? client.waitlist_status}
                     </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
-                    {client.dropout_reason ?? "—"}
                   </TableCell>
                   <TableCell className="text-right">
                     {assigningClient === client.id ? (
