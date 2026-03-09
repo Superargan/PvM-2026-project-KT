@@ -219,7 +219,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
     const batchKeys = new Set<string>();
 
     const inserts: any[] = [];
-
+    const updates: { id: string; data: any }[] = [];
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const rowNum = i + 2; // Excel row (header = 1)
