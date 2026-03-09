@@ -22,7 +22,7 @@ import { nl } from "date-fns/locale";
 
 const PLACEHOLDER_GROUPS = [
   {
-    label: "Cliënt",
+    label: "Deelnemer",
     items: [
       "{{client_voornaam}}", "{{client_achternaam}}", "{{client_geboortedatum}}", "{{client_leeftijd}}",
       "{{client_adres}}", "{{client_postcode}}", "{{client_plaats}}", "{{client_geslacht}}",
