@@ -300,13 +300,18 @@ serve(async (req) => {
       const file = zip.file(partName);
       if (!file) continue;
       let xml = await file.async("string");
+
+      // Normalize fancy curly braces to standard ones before replacement
+      xml = xml.replace(/\u201C/g, '"').replace(/\u201D/g, '"')
+               .replace(/\u2018/g, "'").replace(/\u2019/g, "'")
+               .replace(/\uFF5B/g, "{").replace(/\uFF5D/g, "}");
       
       // Pass 1: simple text replacement for non-split placeholders
       for (const [placeholder, value] of Object.entries(replacements)) {
         xml = xml.split(placeholder).join(escapeXml(value));
       }
       
-      // Pass 2: handle split placeholders SCOPED per paragraph to prevent cross-paragraph destruction
+      // Pass 2: handle split placeholders SCOPED per paragraph
       xml = xml.replace(/<w:p\b[^\/]*?>[\s\S]*?<\/w:p>/g, (para) => {
         const texts: string[] = [];
         para.replace(/<w:t[^>]*>([^<]*)<\/w:t>/g, (_m: string, t: string) => {
@@ -321,6 +326,23 @@ serve(async (req) => {
             modified = replaceSplitPlaceholder(modified, placeholder, escapeXml(value));
           }
         }
+
+        // Pass 3: if placeholders STILL remain after split handling, collapse all runs
+        // and do a simple text replace on the collapsed text
+        const textsAfter: string[] = [];
+        modified.replace(/<w:t[^>]*>([^<]*)<\/w:t>/g, (_m: string, t: string) => {
+          textsAfter.push(t);
+          return _m;
+        });
+        const joinedAfter = textsAfter.join("");
+        for (const [placeholder, value] of Object.entries(replacements)) {
+          if (joinedAfter.includes(placeholder)) {
+            // Nuclear option: collapse to single run
+            modified = collapseParagraphAndReplace(modified, replacements);
+            break;
+          }
+        }
+
         return modified;
       });
 
