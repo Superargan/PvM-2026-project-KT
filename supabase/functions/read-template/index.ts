@@ -98,10 +98,10 @@ serve(async (req) => {
     if (tplErr) throw new Error("Fout bij ophalen template: " + tplErr.message);
     if (!template) throw new Error("Template niet gevonden");
 
-    const { data: fileData, error: dlErr } = await supabase.storage
+    const { data: fileData, error: dlErr } = await serviceSupabase.storage
       .from("document-templates")
       .download(template.file_path);
-    if (dlErr || !fileData) throw new Error("Bestand niet gevonden");
+    if (dlErr || !fileData) throw new Error("Bestand niet gevonden: " + (dlErr?.message ?? "geen data"));
 
     const zip = await JSZip.loadAsync(await fileData.arrayBuffer());
 
