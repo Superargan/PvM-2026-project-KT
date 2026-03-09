@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 
-type PeriodMode = "week" | "maand";
+type PeriodMode = "week" | "maand" | "kwartaal";
 type Dagdeel = "ochtend" | "middag";
 
 const DAGDELEN: { key: Dagdeel; label: string; icon: React.ReactNode; start: string; end: string }[] = [
