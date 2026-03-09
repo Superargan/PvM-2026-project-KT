@@ -257,12 +257,28 @@ serve(async (req) => {
       const file = zip.file(partName);
       if (!file) continue;
       let xml = await file.async("string");
+      
+      // Pass 1: simple text replacement for non-split placeholders
       for (const [placeholder, value] of Object.entries(replacements)) {
         xml = xml.split(placeholder).join(escapeXml(value));
       }
-      for (const [placeholder, value] of Object.entries(replacements)) {
-        xml = replaceSplitPlaceholder(xml, placeholder, escapeXml(value));
-      }
+      
+      // Pass 2: handle split placeholders SCOPED per paragraph to prevent cross-paragraph destruction
+      xml = xml.replace(/<w:p\b[^\/]*?>[\s\S]*?<\/w:p>/g, (para) => {
+        // Extract concatenated text from all w:t elements in this paragraph
+        const texts: string[] = [];
+        para.replace(/<w:t[^>]*>([^<]*)<\/w:t>/g, (_m: string, t: string) => { texts.push(t); return _m; });
+        const joined = texts.join("");
+        
+        let modified = para;
+        for (const [placeholder, value] of Object.entries(replacements)) {
+          if (joined.includes(placeholder)) {
+            modified = replaceSplitPlaceholder(modified, placeholder, escapeXml(value));
+          }
+        }
+        return modified;
+      });
+      
       zip.file(partName, xml);
     }
 
