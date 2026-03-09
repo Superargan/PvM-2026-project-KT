@@ -78,9 +78,11 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: authHeader } },
     });
+    const serviceSupabase = createClient(supabaseUrl, serviceKey);
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error("Niet geautoriseerd");
@@ -88,17 +90,18 @@ serve(async (req) => {
     const { template_id } = await req.json();
     if (!template_id) throw new Error("template_id is verplicht");
 
-    const { data: template, error: tplErr } = await supabase
+    const { data: template, error: tplErr } = await serviceSupabase
       .from("document_templates")
       .select("*")
       .eq("id", template_id)
-      .single();
-    if (tplErr || !template) throw new Error("Template niet gevonden");
+      .maybeSingle();
+    if (tplErr) throw new Error("Fout bij ophalen template: " + tplErr.message);
+    if (!template) throw new Error("Template niet gevonden");
 
-    const { data: fileData, error: dlErr } = await supabase.storage
+    const { data: fileData, error: dlErr } = await serviceSupabase.storage
       .from("document-templates")
       .download(template.file_path);
-    if (dlErr || !fileData) throw new Error("Bestand niet gevonden");
+    if (dlErr || !fileData) throw new Error("Bestand niet gevonden: " + (dlErr?.message ?? "geen data"));
 
     const zip = await JSZip.loadAsync(await fileData.arrayBuffer());
 
