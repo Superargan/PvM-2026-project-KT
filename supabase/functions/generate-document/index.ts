@@ -173,8 +173,9 @@ serve(async (req) => {
       if (category === "voorovereenkomst") {
         outputFileName = sanitizeFileName(`Voorovereenkomst ${tradeName} ${currentMonth} ${currentYear}`) + ext;
       } else if (category === "overeenkomst") {
-        const trainingNum = replacements["{{programma_nummer}}"] || "";
-        outputFileName = sanitizeFileName(`${trainingNum} ${tradeName} ${staff.name || ""}`) + ext;
+        const trainingNum = replacements["{{programma_nummer}}"] || replacements["{{programma_naam}}"]?.replace(/\D+/g, "").trim() || "";
+        const prefix = trainingNum ? `${trainingNum} ` : "";
+        outputFileName = sanitizeFileName(`${prefix}${tradeName} ${staff.name || ""}`) + ext;
       } else {
         outputFileName = sanitizeFileName(`${staff.name ?? "Trainer"}_${template.name}`) + ext;
       }
