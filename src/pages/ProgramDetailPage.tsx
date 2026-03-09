@@ -250,10 +250,11 @@ export default function ProgramDetailPage() {
         </TabsContent>
 
         {/* Trainers tab */}
-        <TabsContent value="trainers">
+        <TabsContent value="trainers" className="space-y-4">
           <div className="rounded-xl border border-border bg-card p-6">
             <ProgramTrainers programId={id!} />
           </div>
+          <ProgramDocumentGenerator programId={id!} />
         </TabsContent>
 
         {/* Sessies tab */}
