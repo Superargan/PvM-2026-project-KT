@@ -298,7 +298,7 @@ export default function ProgrammasPage() {
 
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-      ) : programs.length === 0 ? (
+      ) : filteredPrograms.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card py-16">
           <GraduationCap className="h-10 w-10 text-muted-foreground" />
           <p className="mt-3 text-sm text-muted-foreground">Nog geen programma's aangemaakt</p>
