@@ -123,6 +123,7 @@ export default function Dashboard() {
         <StatCard title="Trainers" value={trainerCount} icon={<UserCog className="h-5 w-5" />} color="blauw" to="/medewerkers" />
         <StatCard title="Geplande intakes" value={intakeGeplandCount} icon={<ClipboardList className="h-5 w-5" />} color="oranje" to="/aanmeldingen" />
         <StatCard title="Nieuwe Aanmeldingen" value={newClientCount} subtitle="Afgelopen 7 dagen" icon={<ClipboardList className="h-5 w-5" />} color="rood" to="/aanmeldingen" />
+        <StatCard title="Wachtlijst" value={waitlistCount} icon={<Clock className="h-5 w-5" />} color="oranje" to="/wachtlijst" />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
