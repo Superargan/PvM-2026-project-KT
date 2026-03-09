@@ -1109,26 +1109,6 @@ function GenerateTab() {
               <p className="text-sm text-muted-foreground italic">Geen trainers gekoppeld aan deze training.</p>
             )}
 
-            {/* Step 4: Output format */}
-            <div>
-              <Label className="text-sm font-semibold">4. Uitvoerformaat</Label>
-              <div className="flex gap-2 mt-1">
-                <Button
-                  variant={outputFormat === "docx" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setOutputFormat("docx")}
-                >
-                  <FileText className="h-4 w-4" /> Word (.docx)
-                </Button>
-                <Button
-                  variant={outputFormat === "pdf" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setOutputFormat("pdf")}
-                >
-                  <File className="h-4 w-4" /> PDF
-                </Button>
-              </div>
-            </div>
 
             {/* Generate Button */}
             <Button
