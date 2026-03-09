@@ -499,7 +499,20 @@ function collapseParagraphAndReplace(para: string, replacements: Record<string, 
 
   // Apply replacements
   for (const [placeholder, value] of Object.entries(replacements)) {
-    fullText = fullText.split(placeholder).join(escapeXml(value));
+    fullText = fullText.split(placeholder).join(value);
+  }
+
+  // Also try whitespace-normalized matching for any remaining {{ }}
+  if (/\{\{[^}]+\}\}/.test(fullText)) {
+    for (const [placeholder, value] of Object.entries(replacements)) {
+      // Create a regex that allows flexible whitespace within the placeholder
+      const inner = placeholder.replace(/^\{\{/, "").replace(/\}\}$/, "").trim();
+      const flexPattern = inner.replace(/[\s_]+/g, "[\\s_]*");
+      try {
+        const re = new RegExp("\\{\\{\\s*" + flexPattern + "\\s*\\}\\}", "gi");
+        fullText = fullText.replace(re, value);
+      } catch { /* ignore */ }
+    }
   }
 
   // Rebuild paragraph: keep pPr, replace all runs with single run
@@ -509,7 +522,7 @@ function collapseParagraphAndReplace(para: string, replacements: Record<string, 
   // Get paragraph open/close tags
   const openTag = para.match(/^<w:p\b[^>]*>/)?.[0] ?? "<w:p>";
   
-  return `${openTag}${pPr}<w:r>${rPr}<w:t xml:space="preserve">${fullText}</w:t></w:r></w:p>`;
+  return `${openTag}${pPr}<w:r>${rPr}<w:t xml:space="preserve">${escapeXml(fullText)}</w:t></w:r></w:p>`;
 }
 
 
