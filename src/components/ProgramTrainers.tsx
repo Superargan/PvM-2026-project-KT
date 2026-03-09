@@ -96,6 +96,21 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
     },
   });
 
+  const toggleRoleMutation = useMutation({
+    mutationFn: async ({ id, currentRole }: { id: string; currentRole: string }) => {
+      const newRole = currentRole === "oudertrainer" ? "kindtrainer" : "oudertrainer";
+      const { error } = await supabase.from("program_staff").update({ role: newRole }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["program_staff", programId] });
+      toast({ title: "Rol gewijzigd" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Fout", description: err.message, variant: "destructive" });
+    },
+  });
+
   const removeMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("program_staff").delete().eq("id", id);
