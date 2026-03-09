@@ -301,7 +301,7 @@ export default function ProgrammasPage() {
       ) : filteredPrograms.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card py-16">
           <GraduationCap className="h-10 w-10 text-muted-foreground" />
-          <p className="mt-3 text-sm text-muted-foreground">Nog geen programma's aangemaakt</p>
+          <p className="mt-3 text-sm text-muted-foreground">Geen programma's gevonden{statusFilter !== "alle" ? " voor deze status" : ""}</p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
