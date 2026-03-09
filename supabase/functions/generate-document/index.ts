@@ -213,7 +213,7 @@ serve(async (req) => {
         ...replacements,
         "{{client_voornaam}}": client.first_name ?? "",
         "{{client_achternaam}}": client.last_name ?? "",
-        "{{client_geboortedatum}}": client.date_of_birth ?? "",
+        "{{client_geboortedatum}}": formatDateNL(client.date_of_birth),
         "{{client_leeftijd}}": age,
         "{{client_adres}}": client.address ?? "",
         "{{client_postcode}}": client.postal_code ?? "",
