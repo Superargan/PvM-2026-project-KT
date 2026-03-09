@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, UserPlus, Clock, XCircle, Upload } from "lucide-react";
 import ClientImport from "@/components/ClientImport";
+import { format, differenceInYears } from "date-fns";
+import { nl } from "date-fns/locale";
 
 const statusLabels: Record<string, string> = {
   waiting: "Wachtend",
@@ -37,7 +39,7 @@ export default function WaitlistManager() {
     queryFn: async () => {
       let query = supabase
         .from("clients")
-        .select("id, first_name, last_name, date_of_birth, school_id, waitlist_status, waitlist_area_id, dropout_reason, dropout_action, schools(name), areas:waitlist_area_id(name)")
+        .select("id, first_name, last_name, date_of_birth, created_at, intake_date, school_id, waitlist_status, waitlist_area_id, dropout_reason, dropout_action, schools(name), areas:waitlist_area_id(name)")
         .not("waitlist_status", "is", null);
 
       if (filterArea !== "all") {
@@ -124,6 +126,9 @@ export default function WaitlistManager() {
             <TableHeader>
               <TableRow>
                 <TableHead>Naam</TableHead>
+                <TableHead>Leeftijdsgroep</TableHead>
+                <TableHead>Aanmelddatum</TableHead>
+                <TableHead>Intakedatum</TableHead>
                 <TableHead>Gebied</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Reden</TableHead>
@@ -131,9 +136,27 @@ export default function WaitlistManager() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {waitlistClients.map((client: any) => (
+              {waitlistClients.map((client: any) => {
+                const age = client.date_of_birth ? differenceInYears(new Date(), new Date(client.date_of_birth)) : null;
+                const ageGroup = age !== null
+                  ? age <= 7 ? "4-7 jaar"
+                  : age <= 12 ? "8-12 jaar"
+                  : age <= 16 ? "13-16 jaar"
+                  : "17+ jaar"
+                  : "—";
+
+                return (
                 <TableRow key={client.id}>
                   <TableCell className="font-medium">{client.first_name} {client.last_name}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs">{ageGroup}</Badge>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                    {client.created_at ? format(new Date(client.created_at), "d MMM yyyy", { locale: nl }) : "—"}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                    {client.intake_date ? format(new Date(client.intake_date), "d MMM yyyy", { locale: nl }) : "—"}
+                  </TableCell>
                   <TableCell>{(client as any).areas?.name ?? "—"}</TableCell>
                   <TableCell>
                     <Badge className={statusColors[client.waitlist_status] ?? ""}>
@@ -179,7 +202,8 @@ export default function WaitlistManager() {
                     )}
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </div>
