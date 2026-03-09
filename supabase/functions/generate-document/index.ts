@@ -524,6 +524,12 @@ function collapseParagraphAndReplace(para: string, replacements: Record<string, 
     }
   }
 
+  // Final catch-all: replace any remaining datum-like placeholders with today's date
+  if (/\{\{[^}]*datum[^}]*\}\}/i.test(fullText)) {
+    const todayNL = new Date().toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" });
+    fullText = fullText.replace(/\{\{[^}]*datum[^}]*\}\}/gi, todayNL);
+  }
+
   // Rebuild paragraph: keep pPr, replace all runs with single run
   const pPrMatch = para.match(/<w:pPr>[\s\S]*?<\/w:pPr>/);
   const pPr = pPrMatch ? pPrMatch[0] : "";
