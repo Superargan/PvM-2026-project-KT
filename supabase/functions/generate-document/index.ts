@@ -80,7 +80,7 @@ serve(async (req) => {
       if (!programToFetch) {
         const { data: ps } = await supabase
           .from("program_staff")
-          .select("program_id, programs(id, name, training_number, start_date, end_date, schools(name), neighborhoods(name, areas(name)))")
+          .select("program_id, programs(id, name, training_number, location, start_date, end_date, schools(name), neighborhoods(name, areas(name)))")
           .eq("staff_id", staff_id)
           .order("created_at", { ascending: false })
           .limit(1);
@@ -103,7 +103,7 @@ serve(async (req) => {
               "{{programma_eind}}": programEnd,
               "{{einddatum}}": programEnd,
               "{{programma_school}}": prog.schools?.name ?? "",
-              "{{locatie}}": prog.schools?.name ?? "",
+              "{{locatie}}": prog.location || prog.schools?.name || "",
               "{{programma_wijk}}": prog.neighborhoods?.name ?? "",
               "{{programma_gebied}}": prog.neighborhoods?.areas?.name ?? "",
             };
@@ -132,7 +132,7 @@ serve(async (req) => {
             "{{programma_eind}}": programEnd,
             "{{einddatum}}": programEnd,
             "{{programma_school}}": (prog as any).schools?.name ?? "",
-            "{{locatie}}": (prog as any).schools?.name ?? "",
+            "{{locatie}}": (prog as any).location || (prog as any).schools?.name || "",
             "{{programma_wijk}}": (prog as any).neighborhoods?.name ?? "",
             "{{programma_gebied}}": (prog as any).neighborhoods?.areas?.name ?? "",
           };
@@ -197,6 +197,7 @@ serve(async (req) => {
       const program = (programClients as any)?.[0]?.programs;
 
       let programSchoolName = "";
+      let programLocation = "";
       let programWijk = "";
       let programGebied = "";
       if (program?.name) {
@@ -205,11 +206,12 @@ serve(async (req) => {
         if (programId) {
           const { data: fullProgram } = await supabase
             .from("programs")
-            .select("schools(name), neighborhoods(name, areas(name))")
+            .select("location, schools(name), neighborhoods(name, areas(name))")
             .eq("id", programId)
             .single();
           if (fullProgram) {
             programSchoolName = (fullProgram as any).schools?.name ?? "";
+            programLocation = (fullProgram as any).location || programSchoolName;
             programWijk = (fullProgram as any).neighborhoods?.name ?? "";
             programGebied = (fullProgram as any).neighborhoods?.areas?.name ?? "";
           }
@@ -273,7 +275,7 @@ serve(async (req) => {
         "{{programma_start}}": formatDateNL(program?.start_date),
         "{{programma_eind}}": formatDateNL(program?.end_date),
         "{{programma_school}}": programSchoolName,
-        "{{locatie}}": programSchoolName,
+        "{{locatie}}": programLocation || programSchoolName,
         "{{programma_wijk}}": programWijk,
         "{{programma_gebied}}": programGebied,
         "{{doelen}}": client.goals ?? "",

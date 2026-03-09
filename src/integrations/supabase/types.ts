@@ -720,6 +720,7 @@ export type Database = {
           description: string | null
           end_date: string | null
           id: string
+          location: string | null
           max_participants: number | null
           name: string
           neighborhood_id: string | null
@@ -737,6 +738,7 @@ export type Database = {
           description?: string | null
           end_date?: string | null
           id?: string
+          location?: string | null
           max_participants?: number | null
           name: string
           neighborhood_id?: string | null
@@ -754,6 +756,7 @@ export type Database = {
           description?: string | null
           end_date?: string | null
           id?: string
+          location?: string | null
           max_participants?: number | null
           name?: string
           neighborhood_id?: string | null

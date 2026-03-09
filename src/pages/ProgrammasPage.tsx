@@ -89,6 +89,7 @@ export default function ProgrammasPage() {
       name: form.get("name") as string,
       description: (form.get("description") as string) || null,
       training_number: (form.get("training_number") as string) || null,
+      location: (form.get("location") as string) || null,
       start_date: (form.get("start_date") as string) || null,
       end_date: (form.get("end_date") as string) || null,
       max_participants: Number(form.get("max_participants")) || 10,
@@ -226,6 +227,7 @@ export default function ProgrammasPage() {
             <form onSubmit={handleAdd} className="space-y-4">
               <div><Label>Naam *</Label><Input name="name" required /></div>
               <div><Label>Trainingsnummer</Label><Input name="training_number" placeholder="bijv. KT-001" /></div>
+              <div><Label>Locatie</Label><Input name="location" placeholder="bijv. Huis aan de Wijk, schoolnaam..." /></div>
               <div><Label>Beschrijving</Label><Textarea name="description" /></div>
               <div className="grid grid-cols-2 gap-4">
                 <div><Label>Startdatum</Label><Input name="start_date" type="date" /></div>
