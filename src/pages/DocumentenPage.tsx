@@ -914,6 +914,7 @@ function GenerateTab() {
       }
       if (entityType === "school") body.school_id = selectedEntity;
 
+      body.output_format = outputFormat;
       const { data, error } = await supabase.functions.invoke("generate-document", { body });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
