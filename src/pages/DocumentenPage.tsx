@@ -410,8 +410,10 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
     }));
   };
 
+  const categoryChanged = editCategory !== (template.category ?? "overig");
   const hasChanges = Object.values(editedTexts).some((section) => Object.keys(section).length > 0) ||
-    Object.values(insertedParagraphs).some((arr) => arr.length > 0);
+    Object.values(insertedParagraphs).some((arr) => arr.length > 0) ||
+    categoryChanged;
 
   const addParagraph = (sectionPart: string, afterIndex: number) => {
     setInsertedParagraphs((prev) => ({
