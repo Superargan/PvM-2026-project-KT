@@ -199,7 +199,7 @@ serve(async (req) => {
         "{{school_gebied}}": (school as any).neighborhoods?.areas?.name ?? "",
       };
 
-      outputFileName = `${school.name ?? "School"}_${template.name}.docx`.replace(/\s+/g, "_");
+      outputFileName = sanitizeFileName(`${school.name ?? "School"}_${template.name}`) + ".docx";
     }
 
     if (client_id) {
