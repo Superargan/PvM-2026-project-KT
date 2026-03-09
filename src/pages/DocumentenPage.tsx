@@ -654,10 +654,21 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
                           onDragOver={(e) => {
                             e.preventDefault();
                             e.dataTransfer.dropEffect = "copy";
+                            const input = e.currentTarget as HTMLInputElement;
+                            const rect = input.getBoundingClientRect();
+                            const style = window.getComputedStyle(input);
+                            const fontSize = parseFloat(style.fontSize) || 14;
+                            const charWidth = fontSize * 0.6;
+                            const paddingLeft = parseFloat(style.paddingLeft) || 0;
+                            const dropX = e.clientX - rect.left - paddingLeft;
+                            const caretLeft = Math.max(0, Math.min(dropX, currentText.length * charWidth));
+                            setDropCaret({ section: section.part, index: p.index, left: paddingLeft + caretLeft });
                           }}
+                          onDragLeave={() => setDropCaret(null)}
                           onDrop={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
+                            setDropCaret(null);
                             const placeholder = e.dataTransfer.getData("text/plain");
                             if (!placeholder) return;
 
@@ -682,7 +693,7 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
                               input.focus();
                             });
                           }}
-                          className={`border-0 border-b border-transparent focus:border-primary rounded-none px-1 ${
+                          className={`relative border-0 border-b border-transparent focus:border-primary rounded-none px-1 ${
                             styleClasses[p.style] ?? "text-sm"
                           } ${editedTexts[section.part]?.[p.index] !== undefined ? "bg-primary/5" : ""}`}
                           placeholder="(leeg)"
