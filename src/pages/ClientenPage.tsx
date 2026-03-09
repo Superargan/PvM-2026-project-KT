@@ -81,7 +81,7 @@ export default function ClientenPage() {
     if (error) {
       toast({ title: "Fout", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Cliënt toegevoegd" });
+      toast({ title: "Deelnemer toegevoegd" });
       setAddOpen(false);
       refetch();
     }
