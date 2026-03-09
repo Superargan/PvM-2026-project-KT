@@ -805,8 +805,19 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
     return list;
   }, [rows]);
 
+  // Voorovereenkomsten: count per unique trainer (not per slot)
+  const uniqueTrainers = useMemo(() => {
+    const map = new Map<string, { exempt: boolean; has: boolean }>();
+    rows.forEach((r) => r.trainers.forEach((t: any) => {
+      if (!map.has(t.staffId)) map.set(t.staffId, { exempt: t.exempt, has: t.hasVoorovereenkomst });
+    }));
+    return map;
+  }, [rows]);
+  const totalUniqueTrainers = [...uniqueTrainers.values()].filter((v) => !v.exempt).length;
+  const voorOk = [...uniqueTrainers.values()].filter((v) => !v.exempt && v.has).length;
+
+  // Overeenkomsten van opdracht: count per trainer-program combination
   const totalSlots = rows.reduce((s, r) => s + r.trainers.filter((t: any) => !t.exempt).length, 0);
-  const voorOk = rows.reduce((s, r) => s + r.trainers.filter((t: any) => !t.exempt && t.hasVoorovereenkomst).length, 0);
   const ovkOk = rows.reduce((s, r) => s + r.trainers.filter((t: any) => !t.exempt && t.hasOvereenkomst).length, 0);
 
   const statusLabels: Record<string, string> = { te_plannen: "Te plannen", ingepland: "Ingepland", gestart: "Gestart", afgerond: "Afgerond" };
