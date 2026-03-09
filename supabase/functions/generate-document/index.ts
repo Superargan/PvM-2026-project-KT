@@ -253,6 +253,8 @@ serve(async (req) => {
     const zip = await JSZip.loadAsync(await fileData.arrayBuffer());
     const xmlParts = ["word/document.xml", "word/header1.xml", "word/header2.xml", "word/header3.xml", "word/footer1.xml", "word/footer2.xml", "word/footer3.xml"];
 
+    console.log("Replacements to apply:", JSON.stringify(replacements));
+    
     for (const partName of xmlParts) {
       const file = zip.file(partName);
       if (!file) continue;
@@ -260,6 +262,9 @@ serve(async (req) => {
       
       // Pass 1: simple text replacement for non-split placeholders
       for (const [placeholder, value] of Object.entries(replacements)) {
+        if (xml.includes(placeholder)) {
+          console.log(`[${partName}] Direct match found for ${placeholder}`);
+        }
         xml = xml.split(placeholder).join(escapeXml(value));
       }
       
@@ -270,9 +275,15 @@ serve(async (req) => {
         para.replace(/<w:t[^>]*>([^<]*)<\/w:t>/g, (_m: string, t: string) => { texts.push(t); return _m; });
         const joined = texts.join("");
         
+        // Log paragraphs that contain {{ to see what placeholders look like
+        if (joined.includes("{{")) {
+          console.log(`[${partName}] Paragraph text: "${joined}"`);
+        }
+        
         let modified = para;
         for (const [placeholder, value] of Object.entries(replacements)) {
           if (joined.includes(placeholder)) {
+            console.log(`[${partName}] Split match found for ${placeholder} in: "${joined}"`);
             modified = replaceSplitPlaceholder(modified, placeholder, escapeXml(value));
           }
         }
