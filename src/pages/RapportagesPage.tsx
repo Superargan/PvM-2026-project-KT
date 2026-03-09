@@ -809,7 +809,7 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
       })
       .filter((r) => r.status === "gestart" || r.status === "afgerond" || r.trainers.length > 0)
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [programs, programStaff, staffHasVoorovereenkomst, programStaffHasOvereenkomst, statusFilter, areaMap]);
+  }, [programs, programStaff, staffHasVoorovereenkomst, programStaffHasOvereenkomst, staffHasVoorovereenkomstGenerated, programStaffHasOvereenkomstGenerated, statusFilter, areaMap]);
 
   const missingVoor = useMemo(() => {
     const seen = new Map<string, { staffId: string; name: string; tradeName: string; programs: string[] }>();
