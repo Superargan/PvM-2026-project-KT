@@ -273,6 +273,7 @@ serve(async (req) => {
         "{{programma_start}}": formatDateNL(program?.start_date),
         "{{programma_eind}}": formatDateNL(program?.end_date),
         "{{programma_school}}": programSchoolName,
+        "{{locatie}}": programSchoolName,
         "{{programma_wijk}}": programWijk,
         "{{programma_gebied}}": programGebied,
         "{{doelen}}": client.goals ?? "",
