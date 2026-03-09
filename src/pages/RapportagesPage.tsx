@@ -788,7 +788,15 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas }: {
           allOvereenkomsten: trainers.length > 0 && trainers.every((t: any) => t.hasOvereenkomst),
         };
       })
+      .filter((row: any) => {
+        const s = row.status;
+        // Always show gestart and afgerond
+        if (s === "gestart" || s === "afgerond") return true;
+        // For te_plannen and ingepland, only show if trainers are linked
+        return row.trainers.length > 0;
+      })
       .sort((a: any, b: any) => (a.name ?? "").localeCompare(b.name ?? ""));
+  }, [programs, programStaff, staffDocCategories, statusFilter, areaMap]);
   }, [programs, programStaff, staffDocCategories, statusFilter, areaMap]);
 
   const statusLabels: Record<string, string> = {
