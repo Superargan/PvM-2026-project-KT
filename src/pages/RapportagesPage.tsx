@@ -734,7 +734,31 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
   const voorovereenkomstTemplate = useMemo(() => docTemplates.find((t: any) => t.category === "voorovereenkomst"), [docTemplates]);
   const overeenkomstTemplate = useMemo(() => docTemplates.find((t: any) => t.category === "overeenkomst"), [docTemplates]);
 
+  // Only count as "done" when the document has a signed version
   const staffHasVoorovereenkomst = useMemo(() => {
+    const set = new Set<string>();
+    generatedDocs.forEach((doc: any) => {
+      if (!doc.staff_id) return;
+      const cat = (doc.document_templates as any)?.category?.toLowerCase() ?? "";
+      if (cat === "voorovereenkomst" && doc.signed_file_path) set.add(doc.staff_id);
+    });
+    return set;
+  }, [generatedDocs]);
+
+  const programStaffHasOvereenkomst = useMemo(() => {
+    const set = new Set<string>();
+    generatedDocs.forEach((doc: any) => {
+      if (!doc.staff_id) return;
+      const cat = (doc.document_templates as any)?.category?.toLowerCase() ?? "";
+      if (cat === "overeenkomst" && doc.program_id && doc.signed_file_path) {
+        set.add(`${doc.program_id}_${doc.staff_id}`);
+      }
+    });
+    return set;
+  }, [generatedDocs]);
+
+  // Track whether a document has been generated (but not yet signed)
+  const staffHasVoorovereenkomstGenerated = useMemo(() => {
     const set = new Set<string>();
     generatedDocs.forEach((doc: any) => {
       if (!doc.staff_id) return;
@@ -744,7 +768,7 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
     return set;
   }, [generatedDocs]);
 
-  const programStaffHasOvereenkomst = useMemo(() => {
+  const programStaffHasOvereenkomstGenerated = useMemo(() => {
     const set = new Set<string>();
     generatedDocs.forEach((doc: any) => {
       if (!doc.staff_id) return;
@@ -774,6 +798,8 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
               staffId: ps.staff_id, name, tradeName, role: ps.role ?? "trainer", exempt,
               hasVoorovereenkomst: exempt || staffHasVoorovereenkomst.has(ps.staff_id),
               hasOvereenkomst: exempt || programStaffHasOvereenkomst.has(`${prog.id}_${ps.staff_id}`),
+              voorovereenkomstGenerated: staffHasVoorovereenkomstGenerated.has(ps.staff_id),
+              overeenkomstGenerated: programStaffHasOvereenkomstGenerated.has(`${prog.id}_${ps.staff_id}`),
             };
           });
         return {
@@ -783,7 +809,7 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
       })
       .filter((r) => r.status === "gestart" || r.status === "afgerond" || r.trainers.length > 0)
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [programs, programStaff, staffHasVoorovereenkomst, programStaffHasOvereenkomst, statusFilter, areaMap]);
+  }, [programs, programStaff, staffHasVoorovereenkomst, programStaffHasOvereenkomst, staffHasVoorovereenkomstGenerated, programStaffHasOvereenkomstGenerated, statusFilter, areaMap]);
 
   const missingVoor = useMemo(() => {
     const seen = new Map<string, { staffId: string; name: string; tradeName: string; programs: string[] }>();
@@ -1068,7 +1094,8 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
                           <TableCell className="text-xs text-muted-foreground capitalize">{t.role}</TableCell>
                           <TableCell className="text-center">
                             {t.exempt ? <span className="text-xs text-muted-foreground">n.v.t.</span>
-                              : t.hasVoorovereenkomst ? <span className="text-xs font-medium text-emerald-700">✓</span>
+                              : t.hasVoorovereenkomst ? <span className="text-xs font-medium text-emerald-700">✓ Getekend</span>
+                              : t.voorovereenkomstGenerated ? <span className="text-xs font-medium text-amber-600">⏳ Niet getekend</span>
                               : (
                                 <Button size="sm" variant="ghost" className="h-6 text-xs text-destructive" disabled={!voorovereenkomstTemplate || generatingIds.has(`voor_${t.staffId}`)}
                                   onClick={() => voorovereenkomstTemplate && generateDocument(voorovereenkomstTemplate.id, t.staffId)}>
@@ -1078,7 +1105,8 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
                           </TableCell>
                           <TableCell className="text-center">
                             {t.exempt ? <span className="text-xs text-muted-foreground">n.v.t.</span>
-                              : t.hasOvereenkomst ? <span className="text-xs font-medium text-emerald-700">✓</span>
+                              : t.hasOvereenkomst ? <span className="text-xs font-medium text-emerald-700">✓ Getekend</span>
+                              : t.overeenkomstGenerated ? <span className="text-xs font-medium text-amber-600">⏳ Niet getekend</span>
                               : (
                                 <Button size="sm" variant="ghost" className="h-6 text-xs text-destructive" disabled={!overeenkomstTemplate || generatingIds.has(`ovk_${row.id}_${t.staffId}`)}
                                   onClick={() => overeenkomstTemplate && generateDocument(overeenkomstTemplate.id, t.staffId, row.id)}>
