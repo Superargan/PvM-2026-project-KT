@@ -342,6 +342,7 @@ export type Database = {
           file_path: string
           generated_by: string
           id: string
+          program_id: string | null
           school_id: string | null
           staff_id: string | null
           template_id: string | null
@@ -353,6 +354,7 @@ export type Database = {
           file_path: string
           generated_by: string
           id?: string
+          program_id?: string | null
           school_id?: string | null
           staff_id?: string | null
           template_id?: string | null
@@ -364,6 +366,7 @@ export type Database = {
           file_path?: string
           generated_by?: string
           id?: string
+          program_id?: string | null
           school_id?: string | null
           staff_id?: string | null
           template_id?: string | null
@@ -374,6 +377,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_documents_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
             referencedColumns: ["id"]
           },
           {

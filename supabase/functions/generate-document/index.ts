@@ -409,6 +409,7 @@ serve(async (req) => {
       client_id: client_id || null,
       staff_id: staff_id || null,
       school_id: school_id || null,
+      program_id: program_id || null,
       template_id,
       file_path: outputPath,
       file_name: outputFileName,
