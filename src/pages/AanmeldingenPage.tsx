@@ -626,6 +626,26 @@ export default function AanmeldingenPage() {
               <Textarea value={form.notes ?? ""} onChange={(e) => updateField("notes", e.target.value)} rows={2} />
             </FieldWrapper>
 
+            {/* Beschikbaarheid */}
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t border-border pt-4">Beschikbaarheid</p>
+            <div className="rounded-lg border border-border bg-muted/30 p-3 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-foreground">Beschikbaarheid deelnemer</p>
+                <p className="text-xs text-muted-foreground">Leg vast wanneer het kind beschikbaar is voor trainingen</p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setEditOpen(false);
+                  navigate(`/clienten/${editClient?.id}?tab=beschikbaarheid`);
+                }}
+              >
+                <CalendarDays className="h-3.5 w-3.5" /> Beheren
+              </Button>
+            </div>
+
             {/* Toestemming */}
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t border-border pt-4">Toestemming</p>
             <div className="flex items-center gap-3">
