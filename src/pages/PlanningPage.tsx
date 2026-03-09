@@ -707,6 +707,8 @@ export default function PlanningPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <PlanningImport open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 }
