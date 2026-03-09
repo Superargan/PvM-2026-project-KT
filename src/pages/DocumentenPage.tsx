@@ -564,6 +564,36 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
               )}
               <Card>
                 <CardContent className="p-6 space-y-1">
+                  {isEditing && (
+                    <div className="flex justify-center -mb-1">
+                      <button
+                        type="button"
+                        onClick={() => addParagraph(section.part, -1)}
+                        className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors opacity-0 hover:opacity-100 focus:opacity-100 py-0.5"
+                        title="Regel toevoegen bovenaan"
+                      >
+                        <Plus className="h-3 w-3" /> regel toevoegen
+                      </button>
+                    </div>
+                  )}
+                  {/* Render inserted paragraphs before index 0 (afterIndex === -1) */}
+                  {isEditing && (insertedParagraphs[section.part] ?? [])
+                    .filter((ip) => ip.afterIndex === -1)
+                    .map((ip) => (
+                      <div key={ip.id} className="flex items-center gap-1">
+                        <Input
+                          value={ip.text}
+                          onChange={(e) => updateInsertedText(section.part, ip.id, e.target.value)}
+                          className="border-0 border-b border-dashed border-primary/40 rounded-none px-1 text-sm bg-primary/5 flex-1"
+                          placeholder="Nieuwe regel..."
+                          autoFocus
+                        />
+                        <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeInsertedParagraph(section.part, ip.id)}>
+                          <X className="h-3 w-3 text-destructive" />
+                        </Button>
+                      </div>
+                    ))
+                  }
                   {section.paragraphs.map((p) => {
                     const currentText = editedTexts[section.part]?.[p.index] ?? p.text;
 
@@ -583,17 +613,46 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
 
                     // Edit mode
                     return (
-                      <Input
-                        key={p.index}
-                        data-section={section.part}
-                        data-index={p.index}
-                        value={currentText}
-                        onChange={(e) => handleTextChange(section.part, p.index, e.target.value)}
-                        className={`border-0 border-b border-transparent focus:border-primary rounded-none px-1 ${
-                          styleClasses[p.style] ?? "text-sm"
-                        } ${editedTexts[section.part]?.[p.index] !== undefined ? "bg-primary/5" : ""}`}
-                        placeholder="(leeg)"
-                      />
+                      <div key={p.index}>
+                        <Input
+                          data-section={section.part}
+                          data-index={p.index}
+                          value={currentText}
+                          onChange={(e) => handleTextChange(section.part, p.index, e.target.value)}
+                          className={`border-0 border-b border-transparent focus:border-primary rounded-none px-1 ${
+                            styleClasses[p.style] ?? "text-sm"
+                          } ${editedTexts[section.part]?.[p.index] !== undefined ? "bg-primary/5" : ""}`}
+                          placeholder="(leeg)"
+                        />
+                        {/* Inserted paragraphs after this index */}
+                        {(insertedParagraphs[section.part] ?? [])
+                          .filter((ip) => ip.afterIndex === p.index)
+                          .map((ip) => (
+                            <div key={ip.id} className="flex items-center gap-1 mt-1">
+                              <Input
+                                value={ip.text}
+                                onChange={(e) => updateInsertedText(section.part, ip.id, e.target.value)}
+                                className="border-0 border-b border-dashed border-primary/40 rounded-none px-1 text-sm bg-primary/5 flex-1"
+                                placeholder="Nieuwe regel..."
+                                autoFocus
+                              />
+                              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeInsertedParagraph(section.part, ip.id)}>
+                                <X className="h-3 w-3 text-destructive" />
+                              </Button>
+                            </div>
+                          ))
+                        }
+                        <div className="flex justify-center">
+                          <button
+                            type="button"
+                            onClick={() => addParagraph(section.part, p.index)}
+                            className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors opacity-0 hover:opacity-100 focus:opacity-100 py-0.5"
+                            title="Regel toevoegen"
+                          >
+                            <Plus className="h-3 w-3" /> regel toevoegen
+                          </button>
+                        </div>
+                      </div>
                     );
                   })}
                 </CardContent>
