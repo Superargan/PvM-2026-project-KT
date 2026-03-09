@@ -716,15 +716,23 @@ export default function RapportagesPage() {
   );
 }
 
-function ContractenOverzicht({ programs, programStaff, generatedDocs, areas }: {
+function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, docTemplates }: {
   programs: any[];
   programStaff: any[];
   generatedDocs: any[];
   areas: any[];
+  docTemplates: any[];
 }) {
   const [statusFilter, setStatusFilter] = useState<string>("alle");
   const [viewMode, setViewMode] = useState<"ontbrekend" | "overzicht">("ontbrekend");
+  const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
   const areaMap = useMemo(() => new Map(areas.map((a: any) => [a.id, a.name])), [areas]);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Find template by category
+  const voorovereenkomstTemplate = useMemo(() => docTemplates.find((t: any) => t.category === "voorovereenkomst"), [docTemplates]);
+  const overeenkomstTemplate = useMemo(() => docTemplates.find((t: any) => t.category === "overeenkomst"), [docTemplates]);
 
   const staffHasVoorovereenkomst = useMemo(() => {
     const set = new Set<string>();
@@ -778,10 +786,10 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas }: {
   }, [programs, programStaff, staffHasVoorovereenkomst, programStaffHasOvereenkomst, statusFilter, areaMap]);
 
   const missingVoor = useMemo(() => {
-    const seen = new Map<string, { name: string; tradeName: string; programs: string[] }>();
+    const seen = new Map<string, { staffId: string; name: string; tradeName: string; programs: string[] }>();
     rows.forEach((row) => row.trainers.forEach((t: any) => {
       if (!t.hasVoorovereenkomst && !t.exempt) {
-        if (!seen.has(t.staffId)) seen.set(t.staffId, { name: t.name, tradeName: t.tradeName, programs: [] });
+        if (!seen.has(t.staffId)) seen.set(t.staffId, { staffId: t.staffId, name: t.name, tradeName: t.tradeName, programs: [] });
         seen.get(t.staffId)!.programs.push(row.name);
       }
     }));
@@ -789,10 +797,10 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas }: {
   }, [rows]);
 
   const missingOvk = useMemo(() => {
-    const list: { programName: string; trainingNumber: string; trainerName: string; role: string }[] = [];
+    const list: { programId: string; programName: string; trainingNumber: string; staffId: string; trainerName: string; role: string }[] = [];
     rows.forEach((row) => row.trainers.forEach((t: any) => {
       if (!t.hasOvereenkomst && !t.exempt)
-        list.push({ programName: row.name, trainingNumber: row.trainingNumber, trainerName: t.name, role: t.role });
+        list.push({ programId: row.id, programName: row.name, trainingNumber: row.trainingNumber, staffId: t.staffId, trainerName: t.name, role: t.role });
     }));
     return list;
   }, [rows]);
@@ -802,6 +810,62 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas }: {
   const ovkOk = rows.reduce((s, r) => s + r.trainers.filter((t: any) => !t.exempt && t.hasOvereenkomst).length, 0);
 
   const statusLabels: Record<string, string> = { te_plannen: "Te plannen", ingepland: "Ingepland", gestart: "Gestart", afgerond: "Afgerond" };
+
+  const generateDocument = async (templateId: string, staffId: string, programId?: string) => {
+    const key = programId ? `ovk_${programId}_${staffId}` : `voor_${staffId}`;
+    setGeneratingIds((prev) => new Set(prev).add(key));
+    try {
+      const body: any = { template_id: templateId, staff_id: staffId, output_format: "docx" };
+      if (programId) body.program_id = programId;
+      const { data, error } = await supabase.functions.invoke("generate-document", { body });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      // Download the file
+      const { data: fileData, error: dlError } = await supabase.storage
+        .from("generated-documents")
+        .download(data.file_path);
+      if (!dlError && fileData) {
+        const url = URL.createObjectURL(fileData);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = data.file_name;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      toast({ title: "Document aangemaakt", description: data.file_name });
+      queryClient.invalidateQueries({ queryKey: ["rpt_generated_docs"] });
+    } catch (err: any) {
+      toast({ title: "Fout bij aanmaken", description: err.message, variant: "destructive" });
+    } finally {
+      setGeneratingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    }
+  };
+
+  const generateAllVoorovereenkomsten = async () => {
+    if (!voorovereenkomstTemplate) {
+      toast({ title: "Geen voorovereenkomst-template gevonden", variant: "destructive" });
+      return;
+    }
+    for (const item of missingVoor) {
+      await generateDocument(voorovereenkomstTemplate.id, item.staffId);
+    }
+  };
+
+  const generateAllOvereenkomsten = async () => {
+    if (!overeenkomstTemplate) {
+      toast({ title: "Geen overeenkomst-template gevonden", variant: "destructive" });
+      return;
+    }
+    for (const item of missingOvk) {
+      await generateDocument(overeenkomstTemplate.id, item.staffId, item.programId);
+    }
+  };
 
   const handleExport = () => {
     const exportRows = rows.flatMap((r: any) =>
@@ -864,53 +928,97 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas }: {
       {viewMode === "ontbrekend" ? (
         <div className="space-y-6">
           <div>
-            <h4 className="text-sm font-semibold text-card-foreground mb-2 flex items-center gap-2">
-              <span className="inline-block w-2 h-2 rounded-full bg-destructive" />
-              Ontbrekende voorovereenkomsten ({missingVoor.length})
-            </h4>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm font-semibold text-card-foreground flex items-center gap-2">
+                <span className="inline-block w-2 h-2 rounded-full bg-destructive" />
+                Ontbrekende voorovereenkomsten ({missingVoor.length})
+              </h4>
+              {missingVoor.length > 0 && voorovereenkomstTemplate && (
+                <Button size="sm" variant="outline" onClick={generateAllVoorovereenkomsten} disabled={generatingIds.size > 0}>
+                  <FileText className="h-3.5 w-3.5 mr-1" /> Alle aanmaken
+                </Button>
+              )}
+            </div>
             {missingVoor.length === 0 ? (
               <p className="text-sm text-muted-foreground py-3 pl-4">✓ Alle trainers hebben een voorovereenkomst</p>
             ) : (
               <div className="rounded-lg border border-border overflow-hidden">
                 <Table>
                   <TableHeader><TableRow className="bg-muted/50">
-                    <TableHead>Trainer</TableHead><TableHead>Handelsnaam</TableHead><TableHead>Gekoppeld aan trainingen</TableHead>
+                    <TableHead>Trainer</TableHead><TableHead>Handelsnaam</TableHead><TableHead>Gekoppeld aan trainingen</TableHead><TableHead className="w-[130px]"></TableHead>
                   </TableRow></TableHeader>
                   <TableBody>
-                    {missingVoor.map((item, i) => (
-                      <TableRow key={i}>
-                        <TableCell className="font-medium text-sm">{item.name}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{item.tradeName}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{item.programs.slice(0, 3).join(", ")}{item.programs.length > 3 ? ` +${item.programs.length - 3}` : ""}</TableCell>
-                      </TableRow>
-                    ))}
+                    {missingVoor.map((item, i) => {
+                      const key = `voor_${item.staffId}`;
+                      const isGenerating = generatingIds.has(key);
+                      return (
+                        <TableRow key={i}>
+                          <TableCell className="font-medium text-sm">{item.name}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{item.tradeName}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{item.programs.slice(0, 3).join(", ")}{item.programs.length > 3 ? ` +${item.programs.length - 3}` : ""}</TableCell>
+                          <TableCell>
+                            {voorovereenkomstTemplate ? (
+                              <Button size="sm" variant="ghost" className="h-7 text-xs" disabled={isGenerating}
+                                onClick={() => generateDocument(voorovereenkomstTemplate.id, item.staffId)}>
+                                {isGenerating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <FileText className="h-3 w-3 mr-1" />}
+                                Aanmaken
+                              </Button>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">Geen template</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
             )}
           </div>
           <div>
-            <h4 className="text-sm font-semibold text-card-foreground mb-2 flex items-center gap-2">
-              <span className="inline-block w-2 h-2 rounded-full bg-destructive" />
-              Ontbrekende overeenkomsten van opdracht ({missingOvk.length})
-            </h4>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm font-semibold text-card-foreground flex items-center gap-2">
+                <span className="inline-block w-2 h-2 rounded-full bg-destructive" />
+                Ontbrekende overeenkomsten van opdracht ({missingOvk.length})
+              </h4>
+              {missingOvk.length > 0 && overeenkomstTemplate && (
+                <Button size="sm" variant="outline" onClick={generateAllOvereenkomsten} disabled={generatingIds.size > 0}>
+                  <FileText className="h-3.5 w-3.5 mr-1" /> Alle aanmaken
+                </Button>
+              )}
+            </div>
             {missingOvk.length === 0 ? (
               <p className="text-sm text-muted-foreground py-3 pl-4">✓ Alle overeenkomsten van opdracht zijn aangemaakt</p>
             ) : (
               <div className="rounded-lg border border-border overflow-hidden">
                 <Table>
                   <TableHeader><TableRow className="bg-muted/50">
-                    <TableHead>Training</TableHead><TableHead>Nr.</TableHead><TableHead>Trainer</TableHead><TableHead>Rol</TableHead>
+                    <TableHead>Training</TableHead><TableHead>Nr.</TableHead><TableHead>Trainer</TableHead><TableHead>Rol</TableHead><TableHead className="w-[130px]"></TableHead>
                   </TableRow></TableHeader>
                   <TableBody>
-                    {missingOvk.map((item, i) => (
-                      <TableRow key={i}>
-                        <TableCell className="font-medium text-sm">{item.programName}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{item.trainingNumber}</TableCell>
-                        <TableCell className="text-sm">{item.trainerName}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground capitalize">{item.role}</TableCell>
-                      </TableRow>
-                    ))}
+                    {missingOvk.map((item, i) => {
+                      const key = `ovk_${item.programId}_${item.staffId}`;
+                      const isGenerating = generatingIds.has(key);
+                      return (
+                        <TableRow key={i}>
+                          <TableCell className="font-medium text-sm">{item.programName}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{item.trainingNumber}</TableCell>
+                          <TableCell className="text-sm">{item.trainerName}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground capitalize">{item.role}</TableCell>
+                          <TableCell>
+                            {overeenkomstTemplate ? (
+                              <Button size="sm" variant="ghost" className="h-7 text-xs" disabled={isGenerating}
+                                onClick={() => generateDocument(overeenkomstTemplate.id, item.staffId, item.programId)}>
+                                {isGenerating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <FileText className="h-3 w-3 mr-1" />}
+                                Aanmaken
+                              </Button>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">Geen template</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -950,12 +1058,22 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas }: {
                           <TableCell className="text-center">
                             {t.exempt ? <span className="text-xs text-muted-foreground">n.v.t.</span>
                               : t.hasVoorovereenkomst ? <span className="text-xs font-medium text-emerald-700">✓</span>
-                              : <span className="text-xs font-medium text-destructive">✗</span>}
+                              : (
+                                <Button size="sm" variant="ghost" className="h-6 text-xs text-destructive" disabled={!voorovereenkomstTemplate || generatingIds.has(`voor_${t.staffId}`)}
+                                  onClick={() => voorovereenkomstTemplate && generateDocument(voorovereenkomstTemplate.id, t.staffId)}>
+                                  {generatingIds.has(`voor_${t.staffId}`) ? <Loader2 className="h-3 w-3 animate-spin" /> : "✗ Aanmaken"}
+                                </Button>
+                              )}
                           </TableCell>
                           <TableCell className="text-center">
                             {t.exempt ? <span className="text-xs text-muted-foreground">n.v.t.</span>
                               : t.hasOvereenkomst ? <span className="text-xs font-medium text-emerald-700">✓</span>
-                              : <span className="text-xs font-medium text-destructive">✗</span>}
+                              : (
+                                <Button size="sm" variant="ghost" className="h-6 text-xs text-destructive" disabled={!overeenkomstTemplate || generatingIds.has(`ovk_${row.id}_${t.staffId}`)}
+                                  onClick={() => overeenkomstTemplate && generateDocument(overeenkomstTemplate.id, t.staffId, row.id)}>
+                                  {generatingIds.has(`ovk_${row.id}_${t.staffId}`) ? <Loader2 className="h-3 w-3 animate-spin" /> : "✗ Aanmaken"}
+                                </Button>
+                              )}
                           </TableCell>
                         </TableRow>
                       ))
@@ -977,8 +1095,6 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas }: {
     </div>
   );
 }
-
-
 function PivotTable({ data }: { data: { rows: Record<string, any>[]; categories: string[] } }) {
   if (data.rows.length === 0) {
     return <p className="py-6 text-center text-sm text-muted-foreground">Geen data beschikbaar.</p>;
