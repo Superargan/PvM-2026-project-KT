@@ -652,6 +652,20 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
                           data-index={p.index}
                           value={currentText}
                           onChange={(e) => handleTextChange(section.part, p.index, e.target.value)}
+                          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            const placeholder = e.dataTransfer.getData("text/plain");
+                            if (!placeholder) return;
+                            const input = e.currentTarget;
+                            const rect = input.getBoundingClientRect();
+                            // Approximate cursor position from drop location
+                            const charWidth = 7.5;
+                            const dropX = e.clientX - rect.left - 8;
+                            const approxPos = Math.max(0, Math.min(Math.round(dropX / charWidth), currentText.length));
+                            const newValue = currentText.substring(0, approxPos) + placeholder + currentText.substring(approxPos);
+                            handleTextChange(section.part, p.index, newValue);
+                          }}
                           className={`border-0 border-b border-transparent focus:border-primary rounded-none px-1 ${
                             styleClasses[p.style] ?? "text-sm"
                           } ${editedTexts[section.part]?.[p.index] !== undefined ? "bg-primary/5" : ""}`}
