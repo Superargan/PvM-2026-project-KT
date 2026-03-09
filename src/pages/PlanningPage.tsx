@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval, isSameDay, parseISO, startOfMonth, endOfMonth, addMonths, subMonths, isWithinInterval } from "date-fns";
 import { nl } from "date-fns/locale";
-import { CalendarDays, ChevronLeft, ChevronRight, Users, UserCog, Clock, MapPin, Filter, Plus, X, Loader2 } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Users, UserCog, Clock, MapPin, Filter, Plus, X, Loader2, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import GroupComposer from "@/components/GroupComposer";
 import AvailabilityManager from "@/components/AvailabilityManager";
+import PlanningImport from "@/components/PlanningImport";
 
 const trainerTypeLabels: Record<string, string> = {
   oudertrainer: "Oudertrainer",
@@ -42,6 +43,7 @@ export default function PlanningPage() {
   const [availDate, setAvailDate] = useState("");
   const [availStart, setAvailStart] = useState("09:00");
   const [availEnd, setAvailEnd] = useState("17:00");
+  const [importOpen, setImportOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -297,9 +299,14 @@ export default function PlanningPage() {
             Intakes, trainingen en beschikbaarheid van trainers
           </p>
         </div>
-        <Button onClick={() => setAvailabilityOpen(true)} size="sm">
-          <Plus className="h-4 w-4" /> Beschikbaarheid toevoegen
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+            <FileSpreadsheet className="h-4 w-4" /> Excel importeren
+          </Button>
+          <Button onClick={() => setAvailabilityOpen(true)} size="sm">
+            <Plus className="h-4 w-4" /> Beschikbaarheid toevoegen
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="agenda" className="space-y-4">
@@ -700,6 +707,8 @@ export default function PlanningPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <PlanningImport open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 }
