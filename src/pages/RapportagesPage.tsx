@@ -131,6 +131,27 @@ export default function RapportagesPage() {
     },
   });
 
+  const { data: generatedDocs = [] } = useQuery({
+    queryKey: ["rpt_generated_docs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("generated_documents")
+        .select("id, staff_id, template_id, file_name, created_at, document_templates(category)")
+        .not("staff_id", "is", null);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: docTemplates = [] } = useQuery({
+    queryKey: ["rpt_doc_templates"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("document_templates").select("id, name, category");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const loading = cl || pcl || prl || sl || al;
 
   // Lookup maps
