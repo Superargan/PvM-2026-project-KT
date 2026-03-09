@@ -153,7 +153,7 @@ serve(async (req) => {
         }
       }
 
-      const ext = wantPdf ? ".pdf" : ".docx";
+      const ext = ".docx";
       const category = (template.category ?? "").toLowerCase();
       const tradeName = staff.trade_name || staff.name || "Trainer";
       const dutchMonths = ["januari","februari","maart","april","mei","juni","juli","augustus","september","oktober","november","december"];
