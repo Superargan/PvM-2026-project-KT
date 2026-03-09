@@ -40,8 +40,15 @@ serve(async (req) => {
 
     const serviceSupabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const today = new Date();
+    const formatDateNL = (dateStr: string | null): string => {
+      if (!dateStr) return "";
+      try {
+        const d = new Date(dateStr + "T00:00:00");
+        return d.toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" });
+      } catch { return dateStr; }
+    };
     let replacements: Record<string, string> = {
-      "{{datum_vandaag}}": `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`,
+      "{{datum_vandaag}}": today.toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" }),
     };
     let outputFileName = "";
 
