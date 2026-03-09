@@ -276,6 +276,31 @@ export default function ClientDetailPage() {
     },
   });
 
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      // Delete related records first
+      await supabase.from("attendance").delete().in(
+        "client_id", [id!]
+      );
+      await supabase.from("program_clients").delete().eq("client_id", id!);
+      await supabase.from("client_assignments").delete().eq("client_id", id!);
+      await supabase.from("client_availability").delete().eq("client_id", id!);
+      await supabase.from("audit_log").delete().eq("client_id", id!);
+      const { error } = await supabase.from("clients").delete().eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Deelnemer verwijderd" });
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: ["aanmeldingen"] });
+      navigate("/clienten");
+    },
+    onError: (err: any) => {
+      toast({ title: "Fout bij verwijderen", description: err.message, variant: "destructive" });
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-20">
