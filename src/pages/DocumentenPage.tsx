@@ -815,7 +815,7 @@ function GenerateTab() {
   const [selectedEntity, setSelectedEntity] = useState("");
   const [selectedProgram, setSelectedProgram] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [outputFormat, setOutputFormat] = useState<"docx">("docx");
+  const [outputFormat, setOutputFormat] = useState<"docx" | "pdf">("docx");
   const [selectedTrainers, setSelectedTrainers] = useState<string[]>([]);
 
   const { data: templates = [] } = useQuery({
@@ -896,7 +896,7 @@ function GenerateTab() {
         const results = [];
         for (const staffId of trainersToGenerate) {
           const { data, error } = await supabase.functions.invoke("generate-document", {
-            body: { template_id: selectedTemplate, staff_id: staffId, program_id: selectedEntity },
+            body: { template_id: selectedTemplate, staff_id: staffId, program_id: selectedEntity, output_format: outputFormat },
           });
           if (error) throw error;
           if (data?.error) throw new Error(data.error);
@@ -914,6 +914,7 @@ function GenerateTab() {
       }
       if (entityType === "school") body.school_id = selectedEntity;
 
+      body.output_format = outputFormat;
       const { data, error } = await supabase.functions.invoke("generate-document", { body });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -1100,6 +1101,27 @@ function GenerateTab() {
               <p className="text-sm text-muted-foreground italic">Geen trainers gekoppeld aan deze training.</p>
             )}
 
+            {/* Step 4: Output format */}
+            <div>
+              <Label className="text-sm font-semibold">4. Uitvoerformaat</Label>
+              <div className="flex gap-2 mt-1">
+                <Button
+                  variant={outputFormat === "docx" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setOutputFormat("docx")}
+                >
+                  <FileText className="h-4 w-4" /> Word (.docx)
+                </Button>
+                <Button
+                  variant={outputFormat === "pdf" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setOutputFormat("pdf")}
+                >
+                  <File className="h-4 w-4" /> PDF
+                </Button>
+              </div>
+            </div>
+
             {/* Generate Button */}
             <Button
               className="w-full"
@@ -1110,7 +1132,7 @@ function GenerateTab() {
               {generateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
               {entityType === "program"
                 ? `Overeenkomst(en) Genereren (${selectedTrainers.length || programTrainers.length} trainer${(selectedTrainers.length || programTrainers.length) !== 1 ? "s" : ""})`
-                : "Document Genereren & Downloaden"}
+                : `Document Genereren & Downloaden (${outputFormat.toUpperCase()})`}
             </Button>
           </CardContent>
         </Card>
