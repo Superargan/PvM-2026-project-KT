@@ -392,6 +392,7 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
       if (data?.error) throw new Error(data.error);
       setSections(data.sections);
       setEditedTexts({});
+      setInsertedParagraphs({});
       setIsEditing(false);
     } catch (err: any) {
       toast({ title: "Fout bij laden", description: err.message, variant: "destructive" });
