@@ -181,7 +181,7 @@ export default function ClientenPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {clients.length === 0 && (
-                <tr><td colSpan={5} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen cliënten gevonden</td></tr>
+                <tr><td colSpan={5} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen deelnemers gevonden</td></tr>
               )}
               {clients.map((client: any) => {
                 const age = calculateAge(client.date_of_birth);

@@ -325,7 +325,7 @@ export default function ClientImport({ open, onOpenChange, onComplete }: ClientI
               </p>
 
               <Button onClick={handleImport} disabled={importing} className="w-full">
-                {importing ? <><Loader2 className="h-4 w-4 animate-spin" /> Importeren...</> : <><Upload className="h-4 w-4" /> {rows.length} cliënt(en) importeren</>}
+                {importing ? <><Loader2 className="h-4 w-4 animate-spin" /> Importeren...</> : <><Upload className="h-4 w-4" /> {rows.length} deelnemer(s) importeren</>}
               </Button>
             </div>
           )}
