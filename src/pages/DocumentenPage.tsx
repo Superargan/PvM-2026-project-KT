@@ -696,13 +696,13 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
 
         {/* Placeholder sidebar (only in edit mode) */}
         {isEditing && (
-          <div className="space-y-3">
+          <div className="lg:sticky lg:top-4 lg:self-start space-y-3">
             <Card>
               <CardHeader className="py-3 px-4">
                 <CardTitle className="text-sm">Placeholders</CardTitle>
-                <CardDescription className="text-xs">Klik om in te voegen op cursorpositie</CardDescription>
+                <CardDescription className="text-xs">Sleep naar een veld of klik om in te voegen</CardDescription>
               </CardHeader>
-              <CardContent className="px-4 pb-4 space-y-3 max-h-[60vh] overflow-y-auto">
+              <CardContent className="px-4 pb-4 space-y-3 max-h-[70vh] overflow-y-auto">
                 {PLACEHOLDER_GROUPS.map((group) => (
                   <div key={group.label}>
                     <p className="text-xs font-medium text-muted-foreground mb-1">{group.label}</p>
@@ -711,8 +711,13 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
                         <button
                           key={p}
                           type="button"
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData("text/plain", p);
+                            e.dataTransfer.effectAllowed = "copy";
+                          }}
                           onClick={() => insertPlaceholderAtCursor(p)}
-                          className="inline-flex items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono text-primary hover:bg-primary/20 transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono text-primary hover:bg-primary/20 active:scale-95 transition-all cursor-grab active:cursor-grabbing"
                         >
                           {p}<Copy className="h-2.5 w-2.5 opacity-50" />
                         </button>
