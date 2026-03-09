@@ -646,58 +646,65 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
                     // Edit mode
                     return (
                       <div key={p.index}>
-                        <Input
-                          data-section={section.part}
-                          data-index={p.index}
-                          value={currentText}
-                          onChange={(e) => handleTextChange(section.part, p.index, e.target.value)}
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            e.dataTransfer.dropEffect = "copy";
-                            const input = e.currentTarget as HTMLInputElement;
-                            const rect = input.getBoundingClientRect();
-                            const style = window.getComputedStyle(input);
-                            const fontSize = parseFloat(style.fontSize) || 14;
-                            const charWidth = fontSize * 0.6;
-                            const paddingLeft = parseFloat(style.paddingLeft) || 0;
-                            const dropX = e.clientX - rect.left - paddingLeft;
-                            const caretLeft = Math.max(0, Math.min(dropX, currentText.length * charWidth));
-                            setDropCaret({ section: section.part, index: p.index, left: paddingLeft + caretLeft });
-                          }}
-                          onDragLeave={() => setDropCaret(null)}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setDropCaret(null);
-                            const placeholder = e.dataTransfer.getData("text/plain");
-                            if (!placeholder) return;
+                        <div className="relative">
+                          <Input
+                            data-section={section.part}
+                            data-index={p.index}
+                            value={currentText}
+                            onChange={(e) => handleTextChange(section.part, p.index, e.target.value)}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              e.dataTransfer.dropEffect = "copy";
+                              const input = e.currentTarget as HTMLInputElement;
+                              const rect = input.getBoundingClientRect();
+                              const style = window.getComputedStyle(input);
+                              const fontSize = parseFloat(style.fontSize) || 14;
+                              const charWidth = fontSize * 0.6;
+                              const paddingLeft = parseFloat(style.paddingLeft) || 0;
+                              const dropX = e.clientX - rect.left - paddingLeft;
+                              const caretLeft = Math.max(0, Math.min(dropX, currentText.length * charWidth));
+                              setDropCaret({ section: section.part, index: p.index, left: paddingLeft + caretLeft });
+                            }}
+                            onDragLeave={() => setDropCaret(null)}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setDropCaret(null);
+                              const placeholder = e.dataTransfer.getData("text/plain");
+                              if (!placeholder) return;
 
-                            const input = e.currentTarget as HTMLInputElement;
-                            input.focus();
-
-                            const rect = input.getBoundingClientRect();
-                            const style = window.getComputedStyle(input);
-                            const fontSize = parseFloat(style.fontSize) || 14;
-                            const charWidth = fontSize * 0.6;
-                            const paddingLeft = parseFloat(style.paddingLeft) || 0;
-                            const dropX = e.clientX - rect.left - paddingLeft;
-                            const dropPos = Math.max(0, Math.min(Math.round(dropX / charWidth), currentText.length));
-
-                            const pos = Number.isFinite(dropPos) ? dropPos : (input.selectionStart ?? currentText.length);
-                            const newValue = currentText.substring(0, pos) + placeholder + currentText.substring(pos);
-                            handleTextChange(section.part, p.index, newValue);
-
-                            requestAnimationFrame(() => {
-                              const newPos = pos + placeholder.length;
-                              input.setSelectionRange(newPos, newPos);
+                              const input = e.currentTarget as HTMLInputElement;
                               input.focus();
-                            });
-                          }}
-                          className={`relative border-0 border-b border-transparent focus:border-primary rounded-none px-1 ${
-                            styleClasses[p.style] ?? "text-sm"
-                          } ${editedTexts[section.part]?.[p.index] !== undefined ? "bg-primary/5" : ""}`}
-                          placeholder="(leeg)"
-                        />
+
+                              const rect = input.getBoundingClientRect();
+                              const style = window.getComputedStyle(input);
+                              const fontSize = parseFloat(style.fontSize) || 14;
+                              const charWidth = fontSize * 0.6;
+                              const paddingLeft = parseFloat(style.paddingLeft) || 0;
+                              const dropX = e.clientX - rect.left - paddingLeft;
+                              const dropPos = Math.max(0, Math.min(Math.round(dropX / charWidth), currentText.length));
+
+                              const pos = Number.isFinite(dropPos) ? dropPos : (input.selectionStart ?? currentText.length);
+                              const newValue = currentText.substring(0, pos) + placeholder + currentText.substring(pos);
+                              handleTextChange(section.part, p.index, newValue);
+
+                              requestAnimationFrame(() => {
+                                const newPos = pos + placeholder.length;
+                                input.setSelectionRange(newPos, newPos);
+                                input.focus();
+                              });
+                            }}
+                            className={`border-0 border-b border-transparent focus:border-primary rounded-none px-1 ${
+                              styleClasses[p.style] ?? "text-sm"
+                            } ${editedTexts[section.part]?.[p.index] !== undefined ? "bg-primary/5" : ""}`}
+                            placeholder="(leeg)"
+                          />
+                          {dropCaret?.section === section.part && dropCaret?.index === p.index && (
+                            <div
+                              className="absolute top-1 bottom-1 w-0.5 bg-primary rounded-full pointer-events-none animate-pulse z-10"
+                              style={{ left: `${dropCaret.left}px` }}
+                            />
+                          )}
                         {/* Inserted paragraphs after this index */}
                         {(insertedParagraphs[section.part] ?? [])
                           .filter((ip) => ip.afterIndex === p.index)
