@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, UserCheck, UserPlus, CalendarDays } from "lucide-react";
+import { X, Plus, UserCheck, UserPlus, CalendarDays, ArrowLeftRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ProgramTrainersProps {
@@ -96,6 +96,21 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
     },
   });
 
+  const toggleRoleMutation = useMutation({
+    mutationFn: async ({ id, currentRole }: { id: string; currentRole: string }) => {
+      const newRole = currentRole === "oudertrainer" ? "kindtrainer" : "oudertrainer";
+      const { error } = await supabase.from("program_staff").update({ role: newRole }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["program_staff", programId] });
+      toast({ title: "Rol gewijzigd" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Fout", description: err.message, variant: "destructive" });
+    },
+  });
+
   const removeMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("program_staff").delete().eq("id", id);
@@ -143,6 +158,13 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
               {(a.role === "oudertrainer" || a.role === "kindtrainer") && (
                 <span className="text-muted-foreground text-[10px] ml-0.5">({a.role === "oudertrainer" ? "ouder" : "kind"})</span>
               )}
+              <button
+                onClick={() => toggleRoleMutation.mutate({ id: a.id, currentRole: a.role })}
+                className="ml-0.5 rounded-full p-0.5 hover:bg-muted"
+                title={`Wijzig naar ${a.role === "oudertrainer" ? "kindtrainer" : "oudertrainer"}`}
+              >
+                <ArrowLeftRight className="h-3 w-3" />
+              </button>
               <button
                 onClick={() => removeMutation.mutate(a.id)}
                 className="ml-0.5 rounded-full p-0.5 hover:bg-muted"
