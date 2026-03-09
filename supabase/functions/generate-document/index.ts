@@ -452,7 +452,35 @@ function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-// ── PDF generation helpers ─────────────────────────────────────
+/** Collapse all runs in a paragraph into a single run, then do text replacement */
+function collapseParagraphAndReplace(para: string, replacements: Record<string, string>): string {
+  // Extract the first run's rPr (formatting) to preserve it
+  const rPrMatch = para.match(/<w:rPr>([\s\S]*?)<\/w:rPr>/);
+  const rPr = rPrMatch ? `<w:rPr>${rPrMatch[1]}</w:rPr>` : "";
+
+  // Extract all text content
+  const texts: string[] = [];
+  para.replace(/<w:t[^>]*>([^<]*)<\/w:t>/g, (_m: string, t: string) => {
+    texts.push(t);
+    return _m;
+  });
+  let fullText = texts.join("");
+
+  // Apply replacements
+  for (const [placeholder, value] of Object.entries(replacements)) {
+    fullText = fullText.split(placeholder).join(escapeXml(value));
+  }
+
+  // Rebuild paragraph: keep pPr, replace all runs with single run
+  const pPrMatch = para.match(/<w:pPr>[\s\S]*?<\/w:pPr>/);
+  const pPr = pPrMatch ? pPrMatch[0] : "";
+  
+  // Get paragraph open/close tags
+  const openTag = para.match(/^<w:p\b[^>]*>/)?.[0] ?? "<w:p>";
+  
+  return `${openTag}${pPr}<w:r>${rPr}<w:t xml:space="preserve">${fullText}</w:t></w:r></w:p>`;
+}
+
 
 interface ParagraphInfo {
   text: string;
