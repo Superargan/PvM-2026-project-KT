@@ -55,7 +55,7 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
     },
   });
 
-  const mainTrainers = assignments.filter((a: any) => a.role === "trainer");
+  const mainTrainers = assignments.filter((a: any) => a.role === "trainer" || a.role === "oudertrainer" || a.role === "kindtrainer");
   const invallers = assignments.filter((a: any) => a.role === "invaller");
 
   // For invallers, don't filter out already assigned staff (they can sub on different sessions)
@@ -110,7 +110,7 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
     },
   });
 
-  const canAddMain = mainTrainers.length < 2;
+  const canAddMain = true;
 
   // Helper to get staff name by id
   const getStaffName = (staffId: string) => {
@@ -133,13 +133,16 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
       {/* Main trainers */}
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <UserCheck className="h-3.5 w-3.5" />
-        <span>Vaste trainers ({mainTrainers.length}/2)</span>
+        <span>Vaste trainers ({mainTrainers.length})</span>
       </div>
       {mainTrainers.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">
           {mainTrainers.map((a: any) => (
             <Badge key={a.id} variant="secondary" className="gap-1 pr-1">
               {a.staff?.name ?? "Onbekend"}
+              {(a.role === "oudertrainer" || a.role === "kindtrainer") && (
+                <span className="text-muted-foreground text-[10px] ml-0.5">({a.role === "oudertrainer" ? "ouder" : "kind"})</span>
+              )}
               <button
                 onClick={() => removeMutation.mutate(a.id)}
                 className="ml-0.5 rounded-full p-0.5 hover:bg-muted"
