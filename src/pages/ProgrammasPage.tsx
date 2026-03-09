@@ -83,6 +83,13 @@ export default function ProgrammasPage() {
     },
   });
 
+  const filteredPrograms = programs.filter((p: any) => {
+    const s = p.status ?? "te_plannen";
+    if (statusFilter === "alle") return true;
+    if (statusFilter === "actief") return s !== "afgerond";
+    return s === statusFilter;
+  });
+
   const handleAdd = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
