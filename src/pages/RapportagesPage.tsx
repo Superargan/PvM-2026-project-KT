@@ -1014,9 +1014,15 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
                   Ontbrekende voorovereenkomsten ({missingVoor.length})
                 </h4>
                 {missingVoor.length > 0 && voorovereenkomstTemplate && (
-                  <Button size="sm" variant="outline" onClick={generateAllVoorovereenkomsten} disabled={generatingIds.size > 0}>
-                    <FileText className="h-3.5 w-3.5 mr-1" /> Alle aanmaken
-                  </Button>
+                  bulkRunning === "voor" ? (
+                    <Button size="sm" variant="destructive" onClick={handleCancelBulk}>
+                      <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Stoppen
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="outline" onClick={generateAllVoorovereenkomsten} disabled={!!bulkRunning}>
+                      <FileText className="h-3.5 w-3.5 mr-1" /> Alle aanmaken
+                    </Button>
+                  )
                 )}
               </div>
               {missingVoor.length === 0 ? (
