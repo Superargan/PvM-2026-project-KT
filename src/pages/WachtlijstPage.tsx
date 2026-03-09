@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -35,6 +36,7 @@ export default function WachtlijstPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [assigningClient, setAssigningClient] = useState<string | null>(null);
   const [selectedProgram, setSelectedProgram] = useState("");
+  const navigate = useNavigate();
   const qc = useQueryClient();
 
   const { data: areas = [] } = useQuery({
@@ -223,7 +225,11 @@ export default function WachtlijstPage() {
                       onCheckedChange={() => toggleSelect(client.id)}
                     />
                   </TableCell>
-                  <TableCell className="font-medium">{client.first_name} {client.last_name}</TableCell>
+                  <TableCell className="font-medium">
+                    <button className="text-primary hover:underline text-left" onClick={() => navigate(`/clienten/${client.id}`)}>
+                      {client.first_name} {client.last_name}
+                    </button>
+                  </TableCell>
                   <TableCell className="text-sm text-card-foreground">{(() => { const age = calculateAge(client.date_of_birth); return age !== null ? `${age} jaar` : "—"; })()}</TableCell>
                   <TableCell>{(client as any).areas?.name ?? "—"}</TableCell>
                   <TableCell>
