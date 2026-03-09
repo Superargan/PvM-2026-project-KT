@@ -61,15 +61,42 @@ function findCol(row: ParsedRow, ...candidates: string[]): string | undefined {
 
 function parseExcelDate(val: any): string | null {
   if (!val) return null;
-  if (typeof val === "number") {
-    const d = XLSX.SSF.parse_date_code(val);
-    if (d) return `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
+
+  // Excel serial number (as number)
+  if (typeof val === "number" && val > 1 && val < 100000) {
+    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+    const date = new Date(excelEpoch.getTime() + val * 86400000);
+    if (!isNaN(date.getTime())) return date.toISOString().split("T")[0];
   }
+
   const s = String(val).trim();
-  const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+
+  // Excel serial as string (e.g. "45678")
+  if (/^\d{4,5}$/.test(s)) {
+    const num = parseInt(s);
+    if (num > 1 && num < 100000) {
+      const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+      const date = new Date(excelEpoch.getTime() + num * 86400000);
+      if (!isNaN(date.getTime())) return date.toISOString().split("T")[0];
+    }
+  }
+
+  // DD-MM-YYYY or DD/MM/YYYY (Dutch primary format)
+  const dmy = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
   if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, "0")}-${dmy[1].padStart(2, "0")}`;
+
+  // DD-MM-YY or DD/MM/YY (Dutch 2-digit year)
+  const dmyy = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2})$/);
+  if (dmyy) {
+    const yr = parseInt(dmyy[3]);
+    const fullYear = yr + (yr < 50 ? 2000 : 1900);
+    return `${fullYear}-${dmyy[2].padStart(2, "0")}-${dmyy[1].padStart(2, "0")}`;
+  }
+
+  // YYYY-MM-DD (ISO)
   const ymd = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
   if (ymd) return `${ymd[1]}-${ymd[2].padStart(2, "0")}-${ymd[3].padStart(2, "0")}`;
+
   return null;
 }
 
