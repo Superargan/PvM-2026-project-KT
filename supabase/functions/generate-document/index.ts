@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import JSZip from "https://esm.sh/jszip@3.10.1";
-import { PDFDocument, StandardFonts, rgb } from "https://esm.sh/pdf-lib@1.17.1";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,11 +27,9 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error("Niet geautoriseerd");
 
-    const { template_id, client_id, staff_id, school_id, program_id, output_format } = await req.json();
+    const { template_id, client_id, staff_id, school_id, program_id } = await req.json();
     if (!template_id) throw new Error("template_id is verplicht");
     if (!client_id && !staff_id && !school_id) throw new Error("client_id, staff_id of school_id is verplicht");
-
-    const wantPdf = output_format === "pdf";
 
     // Fetch template metadata
     const { data: template, error: tplErr } = await supabase
@@ -155,7 +153,7 @@ serve(async (req) => {
         }
       }
 
-      const ext = wantPdf ? ".pdf" : ".docx";
+      const ext = ".docx";
       const category = (template.category ?? "").toLowerCase();
       const tradeName = staff.trade_name || staff.name || "Trainer";
       const dutchMonths = ["januari","februari","maart","april","mei","juni","juli","augustus","september","oktober","november","december"];
@@ -192,8 +190,7 @@ serve(async (req) => {
         "{{school_gebied}}": (school as any).neighborhoods?.areas?.name ?? "",
       };
 
-      const ext = wantPdf ? ".pdf" : ".docx";
-      outputFileName = `${school.name ?? "School"}_${template.name}${ext}`.replace(/\s+/g, "_");
+      outputFileName = `${school.name ?? "School"}_${template.name}.docx`.replace(/\s+/g, "_");
     }
 
     if (client_id) {
@@ -298,8 +295,7 @@ serve(async (req) => {
         "{{intake_notities}}": client.intake_notes ?? "",
       };
 
-      const ext = wantPdf ? ".pdf" : ".docx";
-      outputFileName = `${client.first_name}_${client.last_name}_${template.name}${ext}`.replace(/\s+/g, "_");
+      outputFileName = `${client.first_name}_${client.last_name}_${template.name}.docx`.replace(/\s+/g, "_");
     }
 
     // Download template from storage
@@ -405,52 +401,8 @@ serve(async (req) => {
       zip.file(partName, xml);
     }
 
-    let outputBuffer: Uint8Array;
-    let contentType: string;
-
-    if (wantPdf) {
-      // Extract paragraphs from document AND headers/footers
-      const allParagraphs: ParagraphInfo[] = [];
-
-      // Headers first
-      for (const hdr of ["word/header1.xml", "word/header2.xml", "word/header3.xml"]) {
-        const hdrFile = zip.file(hdr);
-        if (hdrFile) {
-          const hdrXml = await hdrFile.async("string");
-          const hdrParas = extractParagraphs(hdrXml);
-          if (hdrParas.some(p => p.text.trim())) {
-            allParagraphs.push(...hdrParas);
-            allParagraphs.push({ text: "", bold: false, fontSize: 8, alignment: "left" }); // separator
-            break; // Use first non-empty header only
-          }
-        }
-      }
-
-      // Main document body
-      const docFile = zip.file("word/document.xml");
-      const docXml = docFile ? await docFile.async("string") : "";
-      allParagraphs.push(...extractParagraphs(docXml));
-
-      // Footers last
-      for (const ftr of ["word/footer1.xml", "word/footer2.xml", "word/footer3.xml"]) {
-        const ftrFile = zip.file(ftr);
-        if (ftrFile) {
-          const ftrXml = await ftrFile.async("string");
-          const ftrParas = extractParagraphs(ftrXml);
-          if (ftrParas.some(p => p.text.trim())) {
-            allParagraphs.push({ text: "", bold: false, fontSize: 8, alignment: "left" }); // separator
-            allParagraphs.push(...ftrParas);
-            break; // Use first non-empty footer only
-          }
-        }
-      }
-
-      outputBuffer = await renderPdf(allParagraphs);
-      contentType = "application/pdf";
-    } else {
-      outputBuffer = await zip.generateAsync({ type: "uint8array" });
-      contentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-    }
+    const outputBuffer = await zip.generateAsync({ type: "uint8array" });
+    const contentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
     const storagePath = client_id ? `${client_id}` : staff_id ? `trainers/${staff_id}` : `schools/${school_id}`;
     const outputPath = `${storagePath}/${crypto.randomUUID()}_${outputFileName}`;
@@ -561,156 +513,3 @@ function collapseParagraphAndReplace(para: string, replacements: Record<string, 
 }
 
 
-interface ParagraphInfo {
-  text: string;
-  bold: boolean;
-  fontSize: number;
-  alignment: "left" | "center" | "right";
-}
-
-function extractParagraphs(xml: string): ParagraphInfo[] {
-  const paragraphs: ParagraphInfo[] = [];
-  const paraRegex = /<w:p\b[^\/]*?>([\s\S]*?)<\/w:p>/g;
-  let match;
-
-  while ((match = paraRegex.exec(xml)) !== null) {
-    const paraContent = match[1];
-
-    // Check paragraph properties for alignment
-    let alignment: "left" | "center" | "right" = "left";
-    const jcMatch = paraContent.match(/<w:jc\s+w:val="([^"]+)"/);
-    if (jcMatch) {
-      const val = jcMatch[1];
-      if (val === "center") alignment = "center";
-      else if (val === "right" || val === "end") alignment = "right";
-    }
-
-    // Check for paragraph-level bold
-    const pprBold = /<w:pPr>[\s\S]*?<w:b\s*\/>[\s\S]*?<\/w:pPr>/.test(paraContent);
-
-    // Check paragraph-level font size
-    let pFontSize = 12;
-    const pSzMatch = paraContent.match(/<w:pPr>[\s\S]*?<w:sz\s+w:val="(\d+)"[\s\S]*?<\/w:pPr>/);
-    if (pSzMatch) pFontSize = parseInt(pSzMatch[1]) / 2; // half-points to points
-
-    // Extract text runs
-    const runs: { text: string; bold: boolean; fontSize: number }[] = [];
-    const runRegex = /<w:r\b[^>]*>([\s\S]*?)<\/w:r>/g;
-    let runMatch;
-
-    while ((runMatch = runRegex.exec(paraContent)) !== null) {
-      const runContent = runMatch[1];
-      // Extract text
-      const texts: string[] = [];
-      const tRegex = /<w:t[^>]*>([^<]*)<\/w:t>/g;
-      let tMatch;
-      while ((tMatch = tRegex.exec(runContent)) !== null) {
-        texts.push(unescapeXml(tMatch[1]));
-      }
-      if (texts.length === 0) continue;
-
-      // Check run properties
-      const runBold = /<w:rPr>[\s\S]*?<w:b\s*\/>[\s\S]*?<\/w:rPr>/.test(runContent) || pprBold;
-      let runFontSize = pFontSize;
-      const szMatch = runContent.match(/<w:rPr>[\s\S]*?<w:sz\s+w:val="(\d+)"/);
-      if (szMatch) runFontSize = parseInt(szMatch[1]) / 2;
-
-      runs.push({ text: texts.join(""), bold: runBold, fontSize: runFontSize });
-    }
-
-    const fullText = runs.map((r) => r.text).join("");
-    const isBold = runs.length > 0 ? runs.some((r) => r.bold && r.text.trim().length > 0) : pprBold;
-    const fontSize = runs.length > 0 ? Math.max(...runs.map((r) => r.fontSize)) : pFontSize;
-
-    paragraphs.push({ text: fullText, bold: isBold, fontSize, alignment });
-  }
-
-  return paragraphs;
-}
-
-function unescapeXml(str: string): string {
-  return str
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'");
-}
-
-async function renderPdf(paragraphs: ParagraphInfo[]): Promise<Uint8Array> {
-  const pdfDoc = await PDFDocument.create();
-  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-
-  const pageWidth = 595.28; // A4
-  const pageHeight = 841.89;
-  const marginLeft = 50;
-  const marginRight = 50;
-  const marginTop = 60;
-  const marginBottom = 50;
-  const usableWidth = pageWidth - marginLeft - marginRight;
-
-  let page = pdfDoc.addPage([pageWidth, pageHeight]);
-  let y = pageHeight - marginTop;
-
-  for (const para of paragraphs) {
-    const font = para.bold ? fontBold : fontRegular;
-    const size = Math.min(Math.max(para.fontSize, 8), 28);
-    const lineHeight = size * 1.4;
-
-    if (para.text.trim() === "") {
-      // Empty paragraph = line break
-      y -= lineHeight * 0.6;
-      if (y < marginBottom) {
-        page = pdfDoc.addPage([pageWidth, pageHeight]);
-        y = pageHeight - marginTop;
-      }
-      continue;
-    }
-
-    // Word-wrap text
-    const words = para.text.split(/\s+/);
-    const lines: string[] = [];
-    let currentLine = "";
-
-    for (const word of words) {
-      const testLine = currentLine ? `${currentLine} ${word}` : word;
-      const testWidth = font.widthOfTextAtSize(testLine, size);
-      if (testWidth > usableWidth && currentLine) {
-        lines.push(currentLine);
-        currentLine = word;
-      } else {
-        currentLine = testLine;
-      }
-    }
-    if (currentLine) lines.push(currentLine);
-
-    for (const line of lines) {
-      if (y < marginBottom) {
-        page = pdfDoc.addPage([pageWidth, pageHeight]);
-        y = pageHeight - marginTop;
-      }
-
-      let x = marginLeft;
-      if (para.alignment === "center") {
-        const lineWidth = font.widthOfTextAtSize(line, size);
-        x = marginLeft + (usableWidth - lineWidth) / 2;
-      } else if (para.alignment === "right") {
-        const lineWidth = font.widthOfTextAtSize(line, size);
-        x = pageWidth - marginRight - lineWidth;
-      }
-
-      page.drawText(line, {
-        x,
-        y,
-        size,
-        font,
-        color: rgb(0, 0, 0),
-      });
-
-      y -= lineHeight;
-    }
-  }
-
-  return await pdfDoc.save();
-}
