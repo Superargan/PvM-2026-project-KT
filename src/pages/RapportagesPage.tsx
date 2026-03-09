@@ -763,7 +763,7 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas }: {
           .map((ps: any) => {
             const name = (ps.staff as any)?.name ?? "Onbekend";
             const tradeName = (ps.staff as any)?.trade_name ?? "";
-            const isPraktijk4kids = tradeName.toLowerCase().includes("praktijk 4kids");
+            const isPraktijk4kids = tradeName.toLowerCase().replace(/\s/g, "").includes("praktijk4kids") || name.toLowerCase().replace(/\s/g, "").includes("praktijk4kids");
             const cats = staffDocCategories.get(ps.staff_id) ?? new Set();
             const hasVoorovereenkomst = isPraktijk4kids || cats.has("voorovereenkomst");
             const hasOvereenkomst = isPraktijk4kids || cats.has("overeenkomst");
