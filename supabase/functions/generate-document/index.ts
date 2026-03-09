@@ -300,13 +300,18 @@ serve(async (req) => {
       const file = zip.file(partName);
       if (!file) continue;
       let xml = await file.async("string");
+
+      // Normalize fancy curly braces to standard ones before replacement
+      xml = xml.replace(/\u201C/g, '"').replace(/\u201D/g, '"')
+               .replace(/\u2018/g, "'").replace(/\u2019/g, "'")
+               .replace(/\uFF5B/g, "{").replace(/\uFF5D/g, "}");
       
       // Pass 1: simple text replacement for non-split placeholders
       for (const [placeholder, value] of Object.entries(replacements)) {
         xml = xml.split(placeholder).join(escapeXml(value));
       }
       
-      // Pass 2: handle split placeholders SCOPED per paragraph to prevent cross-paragraph destruction
+      // Pass 2: handle split placeholders SCOPED per paragraph
       xml = xml.replace(/<w:p\b[^\/]*?>[\s\S]*?<\/w:p>/g, (para) => {
         const texts: string[] = [];
         para.replace(/<w:t[^>]*>([^<]*)<\/w:t>/g, (_m: string, t: string) => {
@@ -321,6 +326,23 @@ serve(async (req) => {
             modified = replaceSplitPlaceholder(modified, placeholder, escapeXml(value));
           }
         }
+
+        // Pass 3: if placeholders STILL remain after split handling, collapse all runs
+        // and do a simple text replace on the collapsed text
+        const textsAfter: string[] = [];
+        modified.replace(/<w:t[^>]*>([^<]*)<\/w:t>/g, (_m: string, t: string) => {
+          textsAfter.push(t);
+          return _m;
+        });
+        const joinedAfter = textsAfter.join("");
+        for (const [placeholder, value] of Object.entries(replacements)) {
+          if (joinedAfter.includes(placeholder)) {
+            // Nuclear option: collapse to single run
+            modified = collapseParagraphAndReplace(modified, replacements);
+            break;
+          }
+        }
+
         return modified;
       });
 
@@ -331,11 +353,43 @@ serve(async (req) => {
     let contentType: string;
 
     if (wantPdf) {
-      // Extract paragraphs from the processed document.xml and render to PDF
+      // Extract paragraphs from document AND headers/footers
+      const allParagraphs: ParagraphInfo[] = [];
+
+      // Headers first
+      for (const hdr of ["word/header1.xml", "word/header2.xml", "word/header3.xml"]) {
+        const hdrFile = zip.file(hdr);
+        if (hdrFile) {
+          const hdrXml = await hdrFile.async("string");
+          const hdrParas = extractParagraphs(hdrXml);
+          if (hdrParas.some(p => p.text.trim())) {
+            allParagraphs.push(...hdrParas);
+            allParagraphs.push({ text: "", bold: false, fontSize: 8, alignment: "left" }); // separator
+            break; // Use first non-empty header only
+          }
+        }
+      }
+
+      // Main document body
       const docFile = zip.file("word/document.xml");
       const docXml = docFile ? await docFile.async("string") : "";
-      const paragraphs = extractParagraphs(docXml);
-      outputBuffer = await renderPdf(paragraphs);
+      allParagraphs.push(...extractParagraphs(docXml));
+
+      // Footers last
+      for (const ftr of ["word/footer1.xml", "word/footer2.xml", "word/footer3.xml"]) {
+        const ftrFile = zip.file(ftr);
+        if (ftrFile) {
+          const ftrXml = await ftrFile.async("string");
+          const ftrParas = extractParagraphs(ftrXml);
+          if (ftrParas.some(p => p.text.trim())) {
+            allParagraphs.push({ text: "", bold: false, fontSize: 8, alignment: "left" }); // separator
+            allParagraphs.push(...ftrParas);
+            break; // Use first non-empty footer only
+          }
+        }
+      }
+
+      outputBuffer = await renderPdf(allParagraphs);
       contentType = "application/pdf";
     } else {
       outputBuffer = await zip.generateAsync({ type: "uint8array" });
@@ -398,7 +452,35 @@ function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-// ── PDF generation helpers ─────────────────────────────────────
+/** Collapse all runs in a paragraph into a single run, then do text replacement */
+function collapseParagraphAndReplace(para: string, replacements: Record<string, string>): string {
+  // Extract the first run's rPr (formatting) to preserve it
+  const rPrMatch = para.match(/<w:rPr>([\s\S]*?)<\/w:rPr>/);
+  const rPr = rPrMatch ? `<w:rPr>${rPrMatch[1]}</w:rPr>` : "";
+
+  // Extract all text content
+  const texts: string[] = [];
+  para.replace(/<w:t[^>]*>([^<]*)<\/w:t>/g, (_m: string, t: string) => {
+    texts.push(t);
+    return _m;
+  });
+  let fullText = texts.join("");
+
+  // Apply replacements
+  for (const [placeholder, value] of Object.entries(replacements)) {
+    fullText = fullText.split(placeholder).join(escapeXml(value));
+  }
+
+  // Rebuild paragraph: keep pPr, replace all runs with single run
+  const pPrMatch = para.match(/<w:pPr>[\s\S]*?<\/w:pPr>/);
+  const pPr = pPrMatch ? pPrMatch[0] : "";
+  
+  // Get paragraph open/close tags
+  const openTag = para.match(/^<w:p\b[^>]*>/)?.[0] ?? "<w:p>";
+  
+  return `${openTag}${pPr}<w:r>${rPr}<w:t xml:space="preserve">${fullText}</w:t></w:r></w:p>`;
+}
+
 
 interface ParagraphInfo {
   text: string;
