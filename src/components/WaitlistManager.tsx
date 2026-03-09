@@ -20,6 +20,7 @@ const statusColors: Record<string, string> = {
 
 export default function WaitlistManager() {
   const [filterArea, setFilterArea] = useState<string>("all");
+  const [importOpen, setImportOpen] = useState(false);
   const qc = useQueryClient();
 
   const { data: areas = [] } = useQuery({
