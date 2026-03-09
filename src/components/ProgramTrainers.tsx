@@ -55,7 +55,7 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
     },
   });
 
-  const mainTrainers = assignments.filter((a: any) => a.role === "trainer");
+  const mainTrainers = assignments.filter((a: any) => a.role === "trainer" || a.role === "oudertrainer" || a.role === "kindtrainer");
   const invallers = assignments.filter((a: any) => a.role === "invaller");
 
   // For invallers, don't filter out already assigned staff (they can sub on different sessions)
