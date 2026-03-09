@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import GroupComposer from "@/components/GroupComposer";
 import AvailabilityManager from "@/components/AvailabilityManager";
+import PlanningImport from "@/components/PlanningImport";
 
 const trainerTypeLabels: Record<string, string> = {
   oudertrainer: "Oudertrainer",
