@@ -815,7 +815,7 @@ function GenerateTab() {
   const [selectedEntity, setSelectedEntity] = useState("");
   const [selectedProgram, setSelectedProgram] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [outputFormat, setOutputFormat] = useState<"docx" | "pdf">("docx");
+  const outputFormat = "docx";
   const [selectedTrainers, setSelectedTrainers] = useState<string[]>([]);
 
   const { data: templates = [] } = useQuery({
