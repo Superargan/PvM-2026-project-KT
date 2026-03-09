@@ -71,6 +71,7 @@ const categoryLabels: Record<string, string> = {
   verslag: "Verslag",
   brief: "Brief",
   overeenkomst: "Overeenkomst",
+  voorovereenkomst: "Voorovereenkomst",
   overig: "Overig",
 };
 
