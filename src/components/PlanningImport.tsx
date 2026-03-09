@@ -120,15 +120,33 @@ function parseTime(val: any): string | null {
   return null;
 }
 
-/** Try to parse a column header as a date (e.g. "12-3", "ma 12/3", "2025-03-12", Excel serial) */
+const DUTCH_MONTHS: Record<string, string> = {
+  jan: "01", januari: "01", feb: "02", februari: "02", mrt: "03", maart: "03",
+  apr: "04", april: "04", mei: "05", jun: "06", juni: "06", jul: "07", juli: "07",
+  aug: "08", augustus: "08", sep: "09", september: "09", okt: "10", oktober: "10",
+  nov: "11", november: "11", dec: "12", december: "12",
+};
+
+/** Try to parse a column header as a date (e.g. "12-3", "ma 12/3", "2025-03-12", "12-mrt", Excel serial) */
 function parseDateFromHeader(header: string, referenceYear?: number): string | null {
   if (!header) return null;
   const h = String(header).trim();
 
-  // Excel serial number in header
-  if (/^\d{5}$/.test(h)) {
-    const d = XLSX.SSF.parse_date_code(parseInt(h));
-    if (d) return `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
+  // If it's a JS Date object (XLSX sometimes returns these)
+  if (header instanceof Date || (typeof header === "object" && header !== null)) {
+    try {
+      const d = new Date(header as any);
+      if (!isNaN(d.getTime())) return d.toISOString().split("T")[0];
+    } catch { /* ignore */ }
+  }
+
+  // Excel serial number in header (4 or 5 digits)
+  if (/^\d{4,5}$/.test(h)) {
+    const num = parseInt(h);
+    if (num > 1 && num < 100000) {
+      const d = XLSX.SSF.parse_date_code(num);
+      if (d) return `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
+    }
   }
 
   // Full date
@@ -138,10 +156,11 @@ function parseDateFromHeader(header: string, referenceYear?: number): string | n
   // Strip day name prefix: "ma 12-3", "di 12/3", "woensdag 12-3"
   const stripped = h.replace(/^(ma|di|wo|do|vr|za|zo|maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|zondag)\s*/i, "");
 
+  const year = referenceYear || new Date().getFullYear();
+
   // d-m or d/m format (without year)
   const dm = stripped.match(/^(\d{1,2})[\/\-\.](\d{1,2})$/);
   if (dm) {
-    const year = referenceYear || new Date().getFullYear();
     return `${year}-${dm[2].padStart(2, "0")}-${dm[1].padStart(2, "0")}`;
   }
 
@@ -151,6 +170,37 @@ function parseDateFromHeader(header: string, referenceYear?: number): string | n
     const yr = parseInt(dmyy[3]) + 2000;
     return `${yr}-${dmyy[2].padStart(2, "0")}-${dmyy[1].padStart(2, "0")}`;
   }
+
+  // Dutch month formats: "12-mrt", "12 mrt", "1-apr-26", "mrt-26", "12 maart 2026"
+  const lc = stripped.toLowerCase();
+
+  // d-month or d month (e.g., "12-mrt", "12 maart", "1 apr")
+  const dMonth = lc.match(/^(\d{1,2})[\/\-\.\s]+(jan|feb|mrt|maart|apr|april|mei|jun|juni|jul|juli|aug|augustus|sep|september|okt|oktober|nov|november|dec|december)(?:[\/\-\.\s]+(\d{2,4}))?$/);
+  if (dMonth) {
+    const day = dMonth[1].padStart(2, "0");
+    const month = DUTCH_MONTHS[dMonth[2]];
+    let y = year;
+    if (dMonth[3]) {
+      y = parseInt(dMonth[3]);
+      if (y < 100) y += 2000;
+    }
+    if (month) return `${y}-${month}-${day}`;
+  }
+
+  // month-d format: "mrt-12", "apr 1"
+  const monthD = lc.match(/^(jan|feb|mrt|maart|apr|april|mei|jun|juni|jul|juli|aug|augustus|sep|september|okt|oktober|nov|november|dec|december)[\/\-\.\s]+(\d{1,2})(?:[\/\-\.\s]+(\d{2,4}))?$/);
+  if (monthD) {
+    const month = DUTCH_MONTHS[monthD[1]];
+    const day = monthD[2].padStart(2, "0");
+    let y = year;
+    if (monthD[3]) {
+      y = parseInt(monthD[3]);
+      if (y < 100) y += 2000;
+    }
+    if (month) return `${y}-${month}-${day}`;
+  }
+
+  // month-yy only: "mrt-26" → first of month (less common, skip)
 
   return null;
 }
@@ -185,6 +235,9 @@ function parseCellAvailability(val: any): { available: boolean; startTime: strin
   return null;
 }
 
+/** Name column candidates (normalized) */
+const NAME_COL_ALIASES = ["naam", "name", "deelnemer", "kind", "leerling", "voornaam", "trainer", "medewerker", "participant"];
+
 /**
  * Detect if the sheet is in grid/matrix format:
  * First column = names, other columns = dates, cells = x or times
@@ -194,14 +247,22 @@ function detectGridFormat(rows: ParsedRow[]): { isGrid: boolean; nameKey: string
   const keys = Object.keys(rows[0]);
   if (keys.length < 3) return { isGrid: false, nameKey: "", dateColumns: [] };
 
-  // First column is likely the name column
-  const nameKey = keys[0];
+  // Find the name column: try to identify by header name first, fallback to first column
+  let nameKey = keys[0];
+  for (const k of keys) {
+    const norm = normalizeKey(k);
+    if (NAME_COL_ALIASES.some(alias => norm.includes(alias))) {
+      nameKey = k;
+      break;
+    }
+  }
 
   // Check remaining columns for date-like headers
   const dateColumns: { key: string; date: string }[] = [];
-  for (let i = 1; i < keys.length; i++) {
-    const date = parseDateFromHeader(keys[i]);
-    if (date) dateColumns.push({ key: keys[i], date });
+  for (const k of keys) {
+    if (k === nameKey) continue;
+    const date = parseDateFromHeader(k);
+    if (date) dateColumns.push({ key: k, date });
   }
 
   // If at least 2 columns parse as dates, it's a grid format
