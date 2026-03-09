@@ -20,6 +20,7 @@ import ClientDetailPage from "./pages/ClientDetailPage";
 import ProgramDetailPage from "./pages/ProgramDetailPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import PlanningPage from "./pages/PlanningPage";
+import WachtlijstPage from "./pages/WachtlijstPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
