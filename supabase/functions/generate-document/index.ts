@@ -27,11 +27,9 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error("Niet geautoriseerd");
 
-    const { template_id, client_id, staff_id, school_id, program_id, output_format } = await req.json();
+    const { template_id, client_id, staff_id, school_id, program_id } = await req.json();
     if (!template_id) throw new Error("template_id is verplicht");
     if (!client_id && !staff_id && !school_id) throw new Error("client_id, staff_id of school_id is verplicht");
-
-    const wantPdf = output_format === "pdf";
 
     // Fetch template metadata
     const { data: template, error: tplErr } = await supabase
