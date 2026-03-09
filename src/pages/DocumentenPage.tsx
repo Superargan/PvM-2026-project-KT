@@ -487,31 +487,22 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
   };
 
   const insertPlaceholderAtCursor = (placeholder: string) => {
-    // Insert into the currently focused input
     const activeEl = document.activeElement;
     if (activeEl && activeEl instanceof HTMLInputElement) {
       const start = activeEl.selectionStart ?? activeEl.value.length;
       const end = activeEl.selectionEnd ?? start;
       const newValue = activeEl.value.substring(0, start) + placeholder + activeEl.value.substring(end);
 
-      // Find which section/paragraph this input belongs to
       const sectionPart = activeEl.getAttribute("data-section");
       const paragraphIndex = activeEl.getAttribute("data-index");
       if (sectionPart && paragraphIndex != null) {
         handleTextChange(sectionPart, parseInt(paragraphIndex), newValue);
       }
 
-      // Trigger React state update via native event
-      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-        window.HTMLInputElement.prototype, 'value'
-      )?.set;
-      nativeInputValueSetter?.call(activeEl, newValue);
-      activeEl.dispatchEvent(new Event('input', { bubbles: true }));
-
       requestAnimationFrame(() => {
         const newPos = start + placeholder.length;
-        activeEl.setSelectionRange(newPos, newPos);
         activeEl.focus();
+        activeEl.setSelectionRange(newPos, newPos);
       });
     }
   };
