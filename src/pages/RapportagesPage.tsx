@@ -137,7 +137,7 @@ export default function RapportagesPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("generated_documents")
-        .select("id, staff_id, program_id, template_id, file_name, created_at, document_templates(category)")
+        .select("id, staff_id, program_id, template_id, file_name, created_at, signed_file_path, document_templates(category)")
         .not("staff_id", "is", null);
       if (error) throw error;
       return data ?? [];
