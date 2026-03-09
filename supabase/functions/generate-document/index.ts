@@ -86,11 +86,20 @@ serve(async (req) => {
         if (ps && ps.length > 0) {
           const prog = (ps[0] as any).programs;
           if (prog) {
+            const programName = prog.name ?? "";
+            const programStart = formatDateNL(prog.start_date);
+            const programEnd = formatDateNL(prog.end_date);
             replacements = {
               ...replacements,
-              "{{programma_naam}}": prog.name ?? "",
-              "{{programma_start}}": formatDateNL(prog.start_date),
-              "{{programma_eind}}": formatDateNL(prog.end_date),
+              "{{programma_naam}}": programName,
+              "{{programmanaam}}": programName,
+              "{{programmanummer}}": programName,
+              "{{programma_nummer}}": programName,
+              "{{trajectnummer}}": programName,
+              "{{programma_start}}": programStart,
+              "{{startdatum}}": programStart,
+              "{{programma_eind}}": programEnd,
+              "{{einddatum}}": programEnd,
               "{{programma_school}}": prog.schools?.name ?? "",
               "{{programma_wijk}}": prog.neighborhoods?.name ?? "",
               "{{programma_gebied}}": prog.neighborhoods?.areas?.name ?? "",
