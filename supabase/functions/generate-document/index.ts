@@ -47,6 +47,7 @@ serve(async (req) => {
       .eq("id", template_id)
       .single();
     if (tplErr || !template) throw new Error("Template niet gevonden");
+    console.log(`Generating document: template="${template.name}", category="${template.category}", file_path="${template.file_path}", staff_id=${staff_id}, program_id=${program_id}`);
 
     const serviceSupabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const today = new Date();
