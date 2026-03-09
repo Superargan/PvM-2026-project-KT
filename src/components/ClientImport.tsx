@@ -60,9 +60,11 @@ interface ClientImportProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onComplete?: () => void;
+  /** When "waitlist", imported clients get waitlist_status='waiting' and intake_status='wachtlijst' */
+  mode?: "default" | "waitlist";
 }
 
-export default function ClientImport({ open, onOpenChange, onComplete }: ClientImportProps) {
+export default function ClientImport({ open, onOpenChange, onComplete, mode = "default" }: ClientImportProps) {
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [fileName, setFileName] = useState("");
   const [importing, setImporting] = useState(false);
@@ -238,8 +240,9 @@ export default function ClientImport({ open, onOpenChange, onComplete }: ClientI
         postal_code,
         guardian_phone,
         intake_date,
-        intake_status,
+        intake_status: mode === "waitlist" ? "wachtlijst" : intake_status,
         referral_reason: referral,
+        ...(mode === "waitlist" ? { waitlist_status: "waiting" } : {}),
         ...(enrollDate ? { created_at: `${enrollDate}T00:00:00Z` } : {}),
       });
     }
@@ -261,7 +264,8 @@ export default function ClientImport({ open, onOpenChange, onComplete }: ClientI
     if (added > 0) {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       queryClient.invalidateQueries({ queryKey: ["aanmeldingen"] });
-      toast({ title: `${added} deelnemer(s) geïmporteerd` });
+      queryClient.invalidateQueries({ queryKey: ["waitlist-clients"] });
+      toast({ title: `${added} deelnemer(s) geïmporteerd${mode === "waitlist" ? " op wachtlijst" : ""}` });
       onComplete?.();
     }
   };
@@ -277,7 +281,7 @@ export default function ClientImport({ open, onOpenChange, onComplete }: ClientI
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Deelnemers importeren uit Excel</DialogTitle>
+          <DialogTitle>{mode === "waitlist" ? "Wachtlijst importeren uit Excel" : "Deelnemers importeren uit Excel"}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">

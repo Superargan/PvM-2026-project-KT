@@ -6,7 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, UserPlus, Clock, XCircle } from "lucide-react";
+import { Loader2, UserPlus, Clock, XCircle, Upload } from "lucide-react";
+import ClientImport from "@/components/ClientImport";
 
 const statusLabels: Record<string, string> = {
   waiting: "Wachtend",
@@ -19,6 +20,7 @@ const statusColors: Record<string, string> = {
 
 export default function WaitlistManager() {
   const [filterArea, setFilterArea] = useState<string>("all");
+  const [importOpen, setImportOpen] = useState(false);
   const qc = useQueryClient();
 
   const { data: areas = [] } = useQuery({
@@ -89,19 +91,24 @@ export default function WaitlistManager() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <h2 className="font-display text-lg font-bold text-card-foreground">Wachtlijst</h2>
-        <Select value={filterArea} onValueChange={setFilterArea}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Filter op gebied" />
-          </SelectTrigger>
-          <SelectContent className="bg-popover">
-            <SelectItem value="all">Alle gebieden</SelectItem>
-            {areas.map((a: any) => (
-              <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4" /> Importeren
+          </Button>
+          <Select value={filterArea} onValueChange={setFilterArea}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Filter op gebied" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover">
+              <SelectItem value="all">Alle gebieden</SelectItem>
+              {areas.map((a: any) => (
+                <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {isLoading ? (
@@ -177,6 +184,8 @@ export default function WaitlistManager() {
           </Table>
         </div>
       )}
+
+      <ClientImport open={importOpen} onOpenChange={setImportOpen} mode="waitlist" />
     </div>
   );
 }
