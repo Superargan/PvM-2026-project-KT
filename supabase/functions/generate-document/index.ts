@@ -289,7 +289,19 @@ serve(async (req) => {
         }
         return modified;
       });
-      
+      const debugNeedles = [
+        replacements["{{trainer_naam}}"],
+        replacements["{{trainer_handelsnaam}}"],
+        replacements["{{trainer_kvk}}"],
+        replacements["{{programma_naam}}"],
+        replacements["{{programma_start}}"],
+      ].filter(Boolean);
+      for (const needle of debugNeedles) {
+        if (xml.includes(needle)) {
+          console.log(`[${partName}] Value present after replacement: ${needle}`);
+        }
+      }
+
       zip.file(partName, xml);
     }
 
