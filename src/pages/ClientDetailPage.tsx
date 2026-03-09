@@ -69,6 +69,8 @@ function IntakeProgress({ client }: { client: any }) {
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab") ?? "gegevens";
   const { session } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
