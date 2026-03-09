@@ -721,138 +721,132 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas }: {
   areas: any[];
 }) {
   const [statusFilter, setStatusFilter] = useState<string>("alle");
+  const [viewMode, setViewMode] = useState<"ontbrekend" | "overzicht">("ontbrekend");
   const areaMap = useMemo(() => new Map(areas.map((a: any) => [a.id, a.name])), [areas]);
 
-  // Build a map: staffId -> set of doc categories
-  const staffDocCategories = useMemo(() => {
-    const map = new Map<string, Set<string>>();
+  const staffHasVoorovereenkomst = useMemo(() => {
+    const set = new Set<string>();
     generatedDocs.forEach((doc: any) => {
       if (!doc.staff_id) return;
-      if (!map.has(doc.staff_id)) map.set(doc.staff_id, new Set());
       const cat = (doc.document_templates as any)?.category?.toLowerCase() ?? "";
-      if (cat) map.get(doc.staff_id)!.add(cat);
+      if (cat === "voorovereenkomst") set.add(doc.staff_id);
     });
-    return map;
+    return set;
   }, [generatedDocs]);
 
-  // Build a map: programId+staffId -> has overeenkomst
-  const programStaffDocs = useMemo(() => {
-    const map = new Map<string, boolean>();
+  const programStaffHasOvereenkomst = useMemo(() => {
+    const set = new Set<string>();
     generatedDocs.forEach((doc: any) => {
       if (!doc.staff_id) return;
       const cat = (doc.document_templates as any)?.category?.toLowerCase() ?? "";
-      // Check file_name for program-specific indicators
-      if (cat === "overeenkomst") {
-        // Overeenkomst docs are program-specific
-        map.set(doc.staff_id, true);
+      if (cat === "overeenkomst" && doc.program_id) {
+        set.add(`${doc.program_id}_${doc.staff_id}`);
       }
     });
-    return map;
+    return set;
   }, [generatedDocs]);
 
-  // Build program rows with trainers
+  const checkExempt = (name: string, tradeName: string) =>
+    tradeName.toLowerCase().replace(/\s/g, "").includes("praktijk4kids") ||
+    name.toLowerCase().replace(/\s/g, "").includes("praktijk4kids");
+
   const rows = useMemo(() => {
     return programs
-      .filter((p: any) => {
-        if (statusFilter === "alle") return true;
-        return (p.status ?? "te_plannen") === statusFilter;
-      })
+      .filter((p: any) => statusFilter === "alle" ? true : (p.status ?? "te_plannen") === statusFilter)
       .map((prog: any) => {
         const trainers = programStaff
           .filter((ps: any) => ps.program_id === prog.id && ps.role !== "invaller")
           .map((ps: any) => {
             const name = (ps.staff as any)?.name ?? "Onbekend";
             const tradeName = (ps.staff as any)?.trade_name ?? "";
-            const isPraktijk4kids = tradeName.toLowerCase().replace(/\s/g, "").includes("praktijk4kids") || name.toLowerCase().replace(/\s/g, "").includes("praktijk4kids");
-            const cats = staffDocCategories.get(ps.staff_id) ?? new Set();
-            const hasVoorovereenkomst = isPraktijk4kids || cats.has("voorovereenkomst");
-            const hasOvereenkomst = isPraktijk4kids || cats.has("overeenkomst");
+            const exempt = checkExempt(name, tradeName);
             return {
-              staffId: ps.staff_id,
-              name,
-              role: ps.role ?? "trainer",
-              hasVoorovereenkomst,
-              hasOvereenkomst,
-              isPraktijk4kids,
+              staffId: ps.staff_id, name, tradeName, role: ps.role ?? "trainer", exempt,
+              hasVoorovereenkomst: exempt || staffHasVoorovereenkomst.has(ps.staff_id),
+              hasOvereenkomst: exempt || programStaffHasOvereenkomst.has(`${prog.id}_${ps.staff_id}`),
             };
           });
         return {
-          id: prog.id,
-          name: prog.name,
-          trainingNumber: (prog as any).training_number ?? "",
-          status: prog.status ?? "te_plannen",
-          area: areaMap.get(prog.area_id) ?? "",
-          startDate: prog.start_date,
-          trainers,
-          allVoorovereenkomsten: trainers.length > 0 && trainers.every((t: any) => t.hasVoorovereenkomst),
-          allOvereenkomsten: trainers.length > 0 && trainers.every((t: any) => t.hasOvereenkomst),
+          id: prog.id, name: prog.name, trainingNumber: (prog as any).training_number ?? "",
+          status: prog.status ?? "te_plannen", area: areaMap.get(prog.area_id) ?? "", trainers,
         };
       })
-      .filter((row: any) => {
-        const s = row.status;
-        // Always show gestart and afgerond
-        if (s === "gestart" || s === "afgerond") return true;
-        // For te_plannen and ingepland, only show if trainers are linked
-        return row.trainers.length > 0;
-      })
-      .sort((a: any, b: any) => (a.name ?? "").localeCompare(b.name ?? ""));
-  }, [programs, programStaff, staffDocCategories, statusFilter, areaMap]);
+      .filter((r) => r.status === "gestart" || r.status === "afgerond" || r.trainers.length > 0)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [programs, programStaff, staffHasVoorovereenkomst, programStaffHasOvereenkomst, statusFilter, areaMap]);
 
-  const statusLabels: Record<string, string> = {
-    te_plannen: "Te plannen",
-    ingepland: "Ingepland",
-    gestart: "Gestart",
-    afgerond: "Afgerond",
-  };
+  const missingVoor = useMemo(() => {
+    const seen = new Map<string, { name: string; tradeName: string; programs: string[] }>();
+    rows.forEach((row) => row.trainers.forEach((t: any) => {
+      if (!t.hasVoorovereenkomst && !t.exempt) {
+        if (!seen.has(t.staffId)) seen.set(t.staffId, { name: t.name, tradeName: t.tradeName, programs: [] });
+        seen.get(t.staffId)!.programs.push(row.name);
+      }
+    }));
+    return Array.from(seen.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [rows]);
+
+  const missingOvk = useMemo(() => {
+    const list: { programName: string; trainingNumber: string; trainerName: string; role: string }[] = [];
+    rows.forEach((row) => row.trainers.forEach((t: any) => {
+      if (!t.hasOvereenkomst && !t.exempt)
+        list.push({ programName: row.name, trainingNumber: row.trainingNumber, trainerName: t.name, role: t.role });
+    }));
+    return list;
+  }, [rows]);
+
+  const totalSlots = rows.reduce((s, r) => s + r.trainers.filter((t: any) => !t.exempt).length, 0);
+  const voorOk = rows.reduce((s, r) => s + r.trainers.filter((t: any) => !t.exempt && t.hasVoorovereenkomst).length, 0);
+  const ovkOk = rows.reduce((s, r) => s + r.trainers.filter((t: any) => !t.exempt && t.hasOvereenkomst).length, 0);
+
+  const statusLabels: Record<string, string> = { te_plannen: "Te plannen", ingepland: "Ingepland", gestart: "Gestart", afgerond: "Afgerond" };
 
   const handleExport = () => {
     const exportRows = rows.flatMap((r: any) =>
       r.trainers.length > 0
         ? r.trainers.map((t: any) => ({
-            training: r.name,
-            nummer: r.trainingNumber,
-            status: statusLabels[r.status] ?? r.status,
-            gebied: r.area,
-            trainer: t.name,
-            rol: t.role,
-            voorovereenkomst: t.hasVoorovereenkomst ? "Ja" : "Nee",
-            overeenkomst: t.hasOvereenkomst ? "Ja" : "Nee",
+            training: r.name, nummer: r.trainingNumber, status: statusLabels[r.status] ?? r.status, gebied: r.area,
+            trainer: t.name, rol: t.role,
+            voorovereenkomst: t.exempt ? "N.v.t." : t.hasVoorovereenkomst ? "Ja" : "Nee",
+            overeenkomst: t.exempt ? "N.v.t." : t.hasOvereenkomst ? "Ja" : "Nee",
           }))
-        : [{
-            training: r.name,
-            nummer: r.trainingNumber,
-            status: statusLabels[r.status] ?? r.status,
-            gebied: r.area,
-            trainer: "—",
-            rol: "—",
-            voorovereenkomst: "—",
-            overeenkomst: "—",
-          }]
+        : [{ training: r.name, nummer: r.trainingNumber, status: statusLabels[r.status] ?? r.status, gebied: r.area, trainer: "—", rol: "—", voorovereenkomst: "—", overeenkomst: "—" }]
     );
     downloadExport("contracten_overzicht.xlsx", [
-      { key: "training", label: "Training" },
-      { key: "nummer", label: "Nummer" },
-      { key: "status", label: "Status" },
-      { key: "gebied", label: "Gebied" },
-      { key: "trainer", label: "Trainer" },
-      { key: "rol", label: "Rol" },
-      { key: "voorovereenkomst", label: "Voorovereenkomst" },
-      { key: "overeenkomst", label: "Overeenkomst" },
+      { key: "training", label: "Training" }, { key: "nummer", label: "Nummer" }, { key: "status", label: "Status" },
+      { key: "gebied", label: "Gebied" }, { key: "trainer", label: "Trainer" }, { key: "rol", label: "Rol" },
+      { key: "voorovereenkomst", label: "Voorovereenkomst" }, { key: "overeenkomst", label: "Overeenkomst" },
     ] as ExportColumn[], exportRows, "xlsx");
   };
 
   return (
     <div className="space-y-4">
+      <div className="grid grid-cols-3 gap-3">
+        <div className="rounded-lg border border-border bg-card p-3">
+          <p className="text-xs text-muted-foreground">Voorovereenkomsten</p>
+          <p className="text-xl font-bold text-card-foreground">{voorOk} <span className="text-sm font-normal text-muted-foreground">/ {totalSlots}</span></p>
+          {missingVoor.length > 0 && <p className="text-xs text-destructive mt-1">{missingVoor.length} trainer(s) mist voorovereenkomst</p>}
+        </div>
+        <div className="rounded-lg border border-border bg-card p-3">
+          <p className="text-xs text-muted-foreground">Overeenkomsten van opdracht</p>
+          <p className="text-xl font-bold text-card-foreground">{ovkOk} <span className="text-sm font-normal text-muted-foreground">/ {totalSlots}</span></p>
+          {missingOvk.length > 0 && <p className="text-xs text-destructive mt-1">{missingOvk.length} ontbrekend</p>}
+        </div>
+        <div className="rounded-lg border border-border bg-card p-3">
+          <p className="text-xs text-muted-foreground">Trainingen</p>
+          <p className="text-xl font-bold text-card-foreground">{rows.length}</p>
+          <p className="text-xs text-muted-foreground mt-1">{rows.filter(r => r.trainers.length === 0).length} zonder trainers</p>
+        </div>
+      </div>
+
       <div className="flex items-center justify-between">
-        <div>
-          <h3 className="font-display text-base font-bold text-card-foreground">Contracten Overzicht</h3>
-          <p className="text-xs text-muted-foreground">Programma's met trainers en contractstatus</p>
+        <div className="flex items-center gap-2">
+          <Button variant={viewMode === "ontbrekend" ? "default" : "outline"} size="sm" onClick={() => setViewMode("ontbrekend")}>Ontbrekende contracten</Button>
+          <Button variant={viewMode === "overzicht" ? "default" : "outline"} size="sm" onClick={() => setViewMode("overzicht")}>Volledig overzicht</Button>
         </div>
         <div className="flex items-center gap-2">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[160px]">
-              <SelectValue />
-            </SelectTrigger>
+            <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
             <SelectContent className="bg-popover">
               <SelectItem value="alle">Alle statussen</SelectItem>
               <SelectItem value="te_plannen">Te plannen</SelectItem>
@@ -861,82 +855,122 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas }: {
               <SelectItem value="afgerond">Afgerond</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="h-4 w-4" /> Excel
-          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport}><Download className="h-4 w-4" /> Excel</Button>
         </div>
       </div>
 
-      {rows.length === 0 ? (
-        <p className="py-6 text-center text-sm text-muted-foreground">Geen programma's gevonden.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Training</TableHead>
-                <TableHead>Nr.</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Gebied</TableHead>
-                <TableHead>Trainer</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead className="text-center">Voorovereenkomst</TableHead>
-                <TableHead className="text-center">Overeenkomst</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((row: any) =>
-                row.trainers.length > 0
-                  ? row.trainers.map((t: any, i: number) => (
-                      <TableRow key={`${row.id}-${t.staffId}-${i}`}>
-                        {i === 0 && (
-                          <>
-                            <TableCell rowSpan={row.trainers.length} className="font-medium align-top">{row.name}</TableCell>
-                            <TableCell rowSpan={row.trainers.length} className="align-top text-xs text-muted-foreground">{row.trainingNumber}</TableCell>
-                            <TableCell rowSpan={row.trainers.length} className="align-top">
-                              <span className={`status-indicator ${
-                                row.status === "afgerond" ? "status-groen" :
-                                row.status === "gestart" ? "status-groen" :
-                                row.status === "ingepland" ? "status-oranje" : "status-rood"
-                              }`}>{statusLabels[row.status] ?? row.status}</span>
-                            </TableCell>
-                            <TableCell rowSpan={row.trainers.length} className="align-top text-sm">{row.area}</TableCell>
-                          </>
-                        )}
-                        <TableCell className="text-sm">{t.name}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground capitalize">{t.role}</TableCell>
-                        <TableCell className="text-center">
-                          {t.hasVoorovereenkomst
-                            ? <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">✓</span>
-                            : <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive">✗</span>
-                          }
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {t.hasOvereenkomst
-                            ? <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">✓</span>
-                            : <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive">✗</span>
-                          }
-                        </TableCell>
+      {viewMode === "ontbrekend" ? (
+        <div className="space-y-6">
+          <div>
+            <h4 className="text-sm font-semibold text-card-foreground mb-2 flex items-center gap-2">
+              <span className="inline-block w-2 h-2 rounded-full bg-destructive" />
+              Ontbrekende voorovereenkomsten ({missingVoor.length})
+            </h4>
+            {missingVoor.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-3 pl-4">✓ Alle trainers hebben een voorovereenkomst</p>
+            ) : (
+              <div className="rounded-lg border border-border overflow-hidden">
+                <Table>
+                  <TableHeader><TableRow className="bg-muted/50">
+                    <TableHead>Trainer</TableHead><TableHead>Handelsnaam</TableHead><TableHead>Gekoppeld aan trainingen</TableHead>
+                  </TableRow></TableHeader>
+                  <TableBody>
+                    {missingVoor.map((item, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="font-medium text-sm">{item.name}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{item.tradeName}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{item.programs.slice(0, 3).join(", ")}{item.programs.length > 3 ? ` +${item.programs.length - 3}` : ""}</TableCell>
                       </TableRow>
-                    ))
-                  : (
-                      <TableRow key={row.id}>
-                        <TableCell className="font-medium">{row.name}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{row.trainingNumber}</TableCell>
-                        <TableCell>
-                          <span className={`status-indicator ${
-                            row.status === "afgerond" || row.status === "gestart" ? "status-groen" :
-                            row.status === "ingepland" ? "status-oranje" : "status-rood"
-                          }`}>{statusLabels[row.status] ?? row.status}</span>
-                        </TableCell>
-                        <TableCell className="text-sm">{row.area}</TableCell>
-                        <TableCell colSpan={4} className="text-sm text-muted-foreground italic">Geen trainers gekoppeld</TableCell>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+          <div>
+            <h4 className="text-sm font-semibold text-card-foreground mb-2 flex items-center gap-2">
+              <span className="inline-block w-2 h-2 rounded-full bg-destructive" />
+              Ontbrekende overeenkomsten van opdracht ({missingOvk.length})
+            </h4>
+            {missingOvk.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-3 pl-4">✓ Alle overeenkomsten van opdracht zijn aangemaakt</p>
+            ) : (
+              <div className="rounded-lg border border-border overflow-hidden">
+                <Table>
+                  <TableHeader><TableRow className="bg-muted/50">
+                    <TableHead>Training</TableHead><TableHead>Nr.</TableHead><TableHead>Trainer</TableHead><TableHead>Rol</TableHead>
+                  </TableRow></TableHeader>
+                  <TableBody>
+                    {missingOvk.map((item, i) => (
+                      <TableRow key={i}>
+                        <TableCell className="font-medium text-sm">{item.programName}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{item.trainingNumber}</TableCell>
+                        <TableCell className="text-sm">{item.trainerName}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground capitalize">{item.role}</TableCell>
                       </TableRow>
-                    )
-              )}
-            </TableBody>
-          </Table>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
         </div>
+      ) : (
+        rows.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">Geen programma's gevonden.</p>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-border">
+            <Table>
+              <TableHeader><TableRow className="bg-muted/50">
+                <TableHead>Training</TableHead><TableHead>Nr.</TableHead><TableHead>Status</TableHead>
+                <TableHead>Gebied</TableHead><TableHead>Trainer</TableHead><TableHead>Rol</TableHead>
+                <TableHead className="text-center">Voorovereenkomst</TableHead><TableHead className="text-center">Overeenkomst</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {rows.map((row: any) =>
+                  row.trainers.length > 0
+                    ? row.trainers.map((t: any, i: number) => (
+                        <TableRow key={`${row.id}-${t.staffId}-${i}`}>
+                          {i === 0 && (
+                            <>
+                              <TableCell rowSpan={row.trainers.length} className="font-medium align-top">{row.name}</TableCell>
+                              <TableCell rowSpan={row.trainers.length} className="align-top text-xs text-muted-foreground">{row.trainingNumber}</TableCell>
+                              <TableCell rowSpan={row.trainers.length} className="align-top">
+                                <span className={`status-indicator ${row.status === "afgerond" || row.status === "gestart" ? "status-groen" : row.status === "ingepland" ? "status-oranje" : "status-rood"}`}>
+                                  {statusLabels[row.status] ?? row.status}
+                                </span>
+                              </TableCell>
+                              <TableCell rowSpan={row.trainers.length} className="align-top text-sm">{row.area}</TableCell>
+                            </>
+                          )}
+                          <TableCell className="text-sm">{t.name}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground capitalize">{t.role}</TableCell>
+                          <TableCell className="text-center">
+                            {t.exempt ? <span className="text-xs text-muted-foreground">n.v.t.</span>
+                              : t.hasVoorovereenkomst ? <span className="text-xs font-medium text-emerald-700">✓</span>
+                              : <span className="text-xs font-medium text-destructive">✗</span>}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {t.exempt ? <span className="text-xs text-muted-foreground">n.v.t.</span>
+                              : t.hasOvereenkomst ? <span className="text-xs font-medium text-emerald-700">✓</span>
+                              : <span className="text-xs font-medium text-destructive">✗</span>}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    : (
+                        <TableRow key={row.id}>
+                          <TableCell className="font-medium">{row.name}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{row.trainingNumber}</TableCell>
+                          <TableCell><span className={`status-indicator ${row.status === "afgerond" || row.status === "gestart" ? "status-groen" : row.status === "ingepland" ? "status-oranje" : "status-rood"}`}>{statusLabels[row.status] ?? row.status}</span></TableCell>
+                          <TableCell className="text-sm">{row.area}</TableCell>
+                          <TableCell colSpan={4} className="text-sm text-muted-foreground italic">Geen trainers gekoppeld</TableCell>
+                        </TableRow>
+                      )
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )
       )}
     </div>
   );
