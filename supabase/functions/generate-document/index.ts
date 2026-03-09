@@ -89,8 +89,8 @@ serve(async (req) => {
             replacements = {
               ...replacements,
               "{{programma_naam}}": prog.name ?? "",
-              "{{programma_start}}": prog.start_date ?? "",
-              "{{programma_eind}}": prog.end_date ?? "",
+              "{{programma_start}}": formatDateNL(prog.start_date),
+              "{{programma_eind}}": formatDateNL(prog.end_date),
               "{{programma_school}}": prog.schools?.name ?? "",
               "{{programma_wijk}}": prog.neighborhoods?.name ?? "",
               "{{programma_gebied}}": prog.neighborhoods?.areas?.name ?? "",
