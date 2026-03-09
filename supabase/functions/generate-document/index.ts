@@ -86,11 +86,20 @@ serve(async (req) => {
         if (ps && ps.length > 0) {
           const prog = (ps[0] as any).programs;
           if (prog) {
+            const programName = prog.name ?? "";
+            const programStart = formatDateNL(prog.start_date);
+            const programEnd = formatDateNL(prog.end_date);
             replacements = {
               ...replacements,
-              "{{programma_naam}}": prog.name ?? "",
-              "{{programma_start}}": formatDateNL(prog.start_date),
-              "{{programma_eind}}": formatDateNL(prog.end_date),
+              "{{programma_naam}}": programName,
+              "{{programmanaam}}": programName,
+              "{{programmanummer}}": programName,
+              "{{programma_nummer}}": programName,
+              "{{trajectnummer}}": programName,
+              "{{programma_start}}": programStart,
+              "{{startdatum}}": programStart,
+              "{{programma_eind}}": programEnd,
+              "{{einddatum}}": programEnd,
               "{{programma_school}}": prog.schools?.name ?? "",
               "{{programma_wijk}}": prog.neighborhoods?.name ?? "",
               "{{programma_gebied}}": prog.neighborhoods?.areas?.name ?? "",
@@ -104,11 +113,20 @@ serve(async (req) => {
           .eq("id", programToFetch)
           .single();
         if (prog) {
+          const programName = prog.name ?? "";
+          const programStart = formatDateNL(prog.start_date);
+          const programEnd = formatDateNL(prog.end_date);
           replacements = {
             ...replacements,
-            "{{programma_naam}}": prog.name ?? "",
-            "{{programma_start}}": formatDateNL(prog.start_date),
-            "{{programma_eind}}": formatDateNL(prog.end_date),
+            "{{programma_naam}}": programName,
+            "{{programmanaam}}": programName,
+            "{{programmanummer}}": programName,
+            "{{programma_nummer}}": programName,
+            "{{trajectnummer}}": programName,
+            "{{programma_start}}": programStart,
+            "{{startdatum}}": programStart,
+            "{{programma_eind}}": programEnd,
+            "{{einddatum}}": programEnd,
             "{{programma_school}}": (prog as any).schools?.name ?? "",
             "{{programma_wijk}}": (prog as any).neighborhoods?.name ?? "",
             "{{programma_gebied}}": (prog as any).neighborhoods?.areas?.name ?? "",
@@ -253,8 +271,6 @@ serve(async (req) => {
     const zip = await JSZip.loadAsync(await fileData.arrayBuffer());
     const xmlParts = ["word/document.xml", "word/header1.xml", "word/header2.xml", "word/header3.xml", "word/footer1.xml", "word/footer2.xml", "word/footer3.xml"];
 
-    console.log("Replacements to apply:", JSON.stringify(replacements));
-    
     for (const partName of xmlParts) {
       const file = zip.file(partName);
       if (!file) continue;
@@ -262,34 +278,27 @@ serve(async (req) => {
       
       // Pass 1: simple text replacement for non-split placeholders
       for (const [placeholder, value] of Object.entries(replacements)) {
-        if (xml.includes(placeholder)) {
-          console.log(`[${partName}] Direct match found for ${placeholder}`);
-        }
         xml = xml.split(placeholder).join(escapeXml(value));
       }
       
       // Pass 2: handle split placeholders SCOPED per paragraph to prevent cross-paragraph destruction
       xml = xml.replace(/<w:p\b[^\/]*?>[\s\S]*?<\/w:p>/g, (para) => {
-        // Extract concatenated text from all w:t elements in this paragraph
         const texts: string[] = [];
-        para.replace(/<w:t[^>]*>([^<]*)<\/w:t>/g, (_m: string, t: string) => { texts.push(t); return _m; });
+        para.replace(/<w:t[^>]*>([^<]*)<\/w:t>/g, (_m: string, t: string) => {
+          texts.push(t);
+          return _m;
+        });
         const joined = texts.join("");
-        
-        // Log paragraphs that contain {{ to see what placeholders look like
-        if (joined.includes("{{")) {
-          console.log(`[${partName}] Paragraph text: "${joined}"`);
-        }
-        
+
         let modified = para;
         for (const [placeholder, value] of Object.entries(replacements)) {
           if (joined.includes(placeholder)) {
-            console.log(`[${partName}] Split match found for ${placeholder} in: "${joined}"`);
             modified = replaceSplitPlaceholder(modified, placeholder, escapeXml(value));
           }
         }
         return modified;
       });
-      
+
       zip.file(partName, xml);
     }
 
