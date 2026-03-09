@@ -362,12 +362,20 @@ interface DocSection {
   paragraphs: DocParagraph[];
 }
 
+interface InsertedParagraph {
+  id: string;
+  afterIndex: number; // -1 = at the very beginning
+  text: string;
+  style: string;
+}
+
 function TemplateEditor({ template, onClose }: { template: any; onClose: () => void }) {
   const { toast } = useToast();
   const [sections, setSections] = useState<DocSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editedTexts, setEditedTexts] = useState<Record<string, Record<number, string>>>({});
+  const [insertedParagraphs, setInsertedParagraphs] = useState<Record<string, InsertedParagraph[]>>({});
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
