@@ -262,16 +262,29 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
       const dobRaw = findCol(row, "Geboortedatum", "geboortedatum", "date_of_birth", "Geboorte datum");
       let date_of_birth: string | null = parseExcelDate(dobRaw);
 
-      // If no DOB but we have age, estimate
-      if (!date_of_birth) {
-        const ageStr = findCol(row, "Leeftijd", "leeftijd", "age", "Leeftijdsgroep", "leeftijdsgroep");
-        if (ageStr) {
-          const age = parseInt(ageStr, 10);
-          if (!isNaN(age) && age > 0 && age < 100) {
-            const now = new Date();
-            date_of_birth = `${now.getFullYear() - age}-06-15`;
-          }
+      // Read age from dedicated "Leeftijd" column (NOT "Leeftijdsgroep")
+      const ageKeys = Object.keys(row);
+      const ageColKey = ageKeys.find(k => {
+        const nk = normalizeKey(k);
+        return (nk === "leeftijd" || nk === "age") && !nk.includes("groep");
+      });
+      const ageStr = ageColKey ? String(row[ageColKey]).trim() : undefined;
+      const parsedAge = ageStr ? parseInt(ageStr, 10) : NaN;
+
+      if (date_of_birth && !isNaN(parsedAge) && parsedAge > 0 && parsedAge < 100) {
+        // Cross-check: verify age matches DOB
+        const birth = new Date(date_of_birth);
+        const today = new Date();
+        let calcAge = today.getFullYear() - birth.getFullYear();
+        if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) calcAge--;
+        if (Math.abs(calcAge - parsedAge) > 1) {
+          // Age and DOB don't match — trust DOB but log discrepancy
+          console.warn(`Import: leeftijd (${parsedAge}) komt niet overeen met geboortedatum (${date_of_birth}, berekend ${calcAge}) voor ${first_name} ${last_name}`);
         }
+      } else if (!date_of_birth && !isNaN(parsedAge) && parsedAge > 0 && parsedAge < 100) {
+        // No DOB, estimate from age
+        const now = new Date();
+        date_of_birth = `${now.getFullYear() - parsedAge}-06-15`;
       }
 
       // Deduplicate: check name+dob first, then name-only
