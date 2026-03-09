@@ -264,10 +264,10 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
 
       // If no DOB but we have age, estimate
       if (!date_of_birth) {
-        const ageStr = findCol(row, "Leeftijd", "leeftijd", "age");
+        const ageStr = findCol(row, "Leeftijd", "leeftijd", "age", "Leeftijdsgroep", "leeftijdsgroep");
         if (ageStr) {
           const age = parseInt(ageStr, 10);
-          if (!isNaN(age)) {
+          if (!isNaN(age) && age > 0 && age < 100) {
             const now = new Date();
             date_of_birth = `${now.getFullYear() - age}-06-15`;
           }
@@ -302,8 +302,20 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
       // Gender
       const gender = mapGender(findCol(row, "Geslacht", "geslacht", "Gender"));
 
-      // Class/group
-      const class_group = findCol(row, "Groep", "groep", "Klas", "klas", "Class") ?? null;
+      // Class/group — avoid matching "leeftijdsgroep" which is age category
+      const classGroupRaw = findCol(row, "Klas", "klas", "Class");
+      // Only use "Groep"/"groep" if the actual matching key does NOT contain "leeftijd"
+      let class_group: string | null = classGroupRaw ?? null;
+      if (!class_group) {
+        const keys = Object.keys(row);
+        const groepKey = keys.find(k => {
+          const nk = normalizeKey(k);
+          return (nk === "groep" || nk.startsWith("groep")) && !nk.includes("leeftijd");
+        });
+        if (groepKey && row[groepKey] !== undefined && row[groepKey] !== "") {
+          class_group = String(row[groepKey]).trim();
+        }
+      }
 
       // Phone
       const guardian_phone = findCol(row, "Telefoonnummer", "telefoon", "Telefoon", "Tel", "phone") ?? null;
