@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2, Save, User, ClipboardList, BookOpen, Shield, FileText, Download, CalendarDays } from "lucide-react";
+import { ArrowLeft, Loader2, Save, User, ClipboardList, BookOpen, Shield, FileText, Download, CalendarDays, Trash2 } from "lucide-react";
 import AvailabilityManager from "@/components/AvailabilityManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 
@@ -275,6 +276,31 @@ export default function ClientDetailPage() {
     },
   });
 
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      // Delete related records first
+      await supabase.from("attendance").delete().in(
+        "client_id", [id!]
+      );
+      await supabase.from("program_clients").delete().eq("client_id", id!);
+      await supabase.from("client_assignments").delete().eq("client_id", id!);
+      await supabase.from("client_availability").delete().eq("client_id", id!);
+      await supabase.from("audit_log").delete().eq("client_id", id!);
+      const { error } = await supabase.from("clients").delete().eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Deelnemer verwijderd" });
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: ["aanmeldingen"] });
+      navigate("/clienten");
+    },
+    onError: (err: any) => {
+      toast({ title: "Fout bij verwijderen", description: err.message, variant: "destructive" });
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-20">
@@ -320,10 +346,36 @@ export default function ClientDetailPage() {
             {age !== null ? `${age} jaar` : ""} {client.schools?.name ? `• ${client.schools.name}` : ""}
           </p>
         </div>
-        <Button onClick={() => saveMutation.mutate()} disabled={!dirty || saveMutation.isPending}>
-          {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Opslaan
-        </Button>
+        <div className="flex items-center gap-2">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="icon" className="text-destructive hover:bg-destructive/10">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Deelnemer verwijderen?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Weet je zeker dat je <strong>{client.first_name} {client.last_name}</strong> wilt verwijderen? Dit verwijdert ook alle gekoppelde gegevens (presentie, programma-koppelingen, beschikbaarheid). Deze actie kan niet ongedaan worden gemaakt.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => deleteMutation.mutate()}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verwijderen"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <Button onClick={() => saveMutation.mutate()} disabled={!dirty || saveMutation.isPending}>
+            {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Opslaan
+          </Button>
+        </div>
       </div>
 
       {/* Intake progress */}
