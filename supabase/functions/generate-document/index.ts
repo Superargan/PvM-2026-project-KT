@@ -301,7 +301,8 @@ function replaceSplitPlaceholder(xml: string, placeholder: string, replacement: 
   for (let i = 0; i < chars.length; i++) {
     pattern += escapeRegex(chars[i]);
     if (i < chars.length - 1) {
-      pattern += "(?:</w:t></w:r><w:r[^>]*><w:rPr>[^<]*</w:rPr><w:t[^>]*>|</w:t></w:r><w:r[^>]*><w:t[^>]*>|</w:t><w:t[^>]*>)?";
+      // Allow any combination of closing/opening w:t and w:r tags with optional w:rPr (which may contain nested XML elements)
+      pattern += "(?:</w:t></w:r><w:r[^>]*>(?:<w:rPr>(?:[^<]|<(?!/w:rPr>))*</w:rPr>)?<w:t[^>]*>|</w:t></w:r><w:r[^>]*><w:t[^>]*>|</w:t><w:t[^>]*>|<w:rPr>(?:[^<]|<(?!/w:rPr>))*</w:rPr>)?";
     }
   }
   try {
