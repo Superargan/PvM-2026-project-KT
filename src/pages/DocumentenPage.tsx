@@ -960,7 +960,7 @@ function GenerateTab() {
     : entityType === "staff"
     ? staffList.map((s: any) => ({ id: s.id, label: s.name || s.trade_name || "Onbekend" }))
     : entityType === "program"
-    ? programs.map((p: any) => ({ id: p.id, label: p.name }))
+    ? programs.map((p: any) => ({ id: p.id, label: `${p.name}${p.training_number ? ` (${p.training_number})` : ""}` }))
     : schools.map((s: any) => ({ id: s.id, label: s.name }));
 
   const filteredEntities = entities.filter((e) =>
