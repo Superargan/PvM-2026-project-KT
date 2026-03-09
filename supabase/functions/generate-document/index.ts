@@ -304,7 +304,7 @@ serve(async (req) => {
         "{{intake_notities}}": client.intake_notes ?? "",
       };
 
-      outputFileName = `${client.first_name}_${client.last_name}_${template.name}.docx`.replace(/\s+/g, "_");
+      outputFileName = sanitizeFileName(`${client.first_name}_${client.last_name}_${template.name}`) + ".docx";
     }
 
     // Download template from storage
