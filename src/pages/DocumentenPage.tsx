@@ -408,7 +408,32 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
     }));
   };
 
-  const hasChanges = Object.values(editedTexts).some((section) => Object.keys(section).length > 0);
+  const hasChanges = Object.values(editedTexts).some((section) => Object.keys(section).length > 0) ||
+    Object.values(insertedParagraphs).some((arr) => arr.length > 0);
+
+  const addParagraph = (sectionPart: string, afterIndex: number) => {
+    setInsertedParagraphs((prev) => ({
+      ...prev,
+      [sectionPart]: [
+        ...(prev[sectionPart] ?? []),
+        { id: crypto.randomUUID(), afterIndex, text: "", style: "normal" },
+      ],
+    }));
+  };
+
+  const updateInsertedText = (sectionPart: string, id: string, text: string) => {
+    setInsertedParagraphs((prev) => ({
+      ...prev,
+      [sectionPart]: (prev[sectionPart] ?? []).map((p) => p.id === id ? { ...p, text } : p),
+    }));
+  };
+
+  const removeInsertedParagraph = (sectionPart: string, id: string) => {
+    setInsertedParagraphs((prev) => ({
+      ...prev,
+      [sectionPart]: (prev[sectionPart] ?? []).filter((p) => p.id !== id),
+    }));
+  };
 
   const handleSave = async () => {
     if (!hasChanges) return;
