@@ -201,16 +201,11 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
   }, [existingGrid]);
 
   // Auto-load when existing data changes
-  // NOTE: must be useEffect, not useMemo – we're setting state as a side-effect
-  const [lastLoadedKey, setLastLoadedKey] = useState("");
-  const loadKey = `${selectedPersonId}-${JSON.stringify(existingGrid.grid)}`;
-
-  if (selectedPersonId && loadKey !== lastLoadedKey) {
-    setLastLoadedKey(loadKey);
-    setSelections(existingGrid.grid);
-    setCustomTimes(existingGrid.times);
-    setEditingTime(null);
-  }
+  useEffect(() => {
+    if (selectedPersonId) {
+      loadExisting();
+    }
+  }, [selectedPersonId, loadExisting]);
 
   const toggleCell = (dow: number, dagdeel: Dagdeel) => {
     const key = `${dow}-${dagdeel}`;
