@@ -264,10 +264,10 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
 
       // If no DOB but we have age, estimate
       if (!date_of_birth) {
-        const ageStr = findCol(row, "Leeftijd", "leeftijd", "age");
+        const ageStr = findCol(row, "Leeftijd", "leeftijd", "age", "Leeftijdsgroep", "leeftijdsgroep");
         if (ageStr) {
           const age = parseInt(ageStr, 10);
-          if (!isNaN(age)) {
+          if (!isNaN(age) && age > 0 && age < 100) {
             const now = new Date();
             date_of_birth = `${now.getFullYear() - age}-06-15`;
           }
