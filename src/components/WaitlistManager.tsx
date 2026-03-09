@@ -6,7 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, UserPlus, Clock, XCircle } from "lucide-react";
+import { Loader2, UserPlus, Clock, XCircle, Upload } from "lucide-react";
+import ClientImport from "@/components/ClientImport";
 
 const statusLabels: Record<string, string> = {
   waiting: "Wachtend",
