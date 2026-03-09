@@ -140,6 +140,9 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
           {mainTrainers.map((a: any) => (
             <Badge key={a.id} variant="secondary" className="gap-1 pr-1">
               {a.staff?.name ?? "Onbekend"}
+              {(a.role === "oudertrainer" || a.role === "kindtrainer") && (
+                <span className="text-muted-foreground text-[10px] ml-0.5">({a.role === "oudertrainer" ? "ouder" : "kind"})</span>
+              )}
               <button
                 onClick={() => removeMutation.mutate(a.id)}
                 className="ml-0.5 rounded-full p-0.5 hover:bg-muted"
