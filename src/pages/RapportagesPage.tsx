@@ -762,15 +762,18 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas }: {
           .filter((ps: any) => ps.program_id === prog.id && ps.role !== "invaller")
           .map((ps: any) => {
             const name = (ps.staff as any)?.name ?? "Onbekend";
+            const tradeName = (ps.staff as any)?.trade_name ?? "";
+            const isPraktijk4kids = tradeName.toLowerCase().includes("praktijk 4kids");
             const cats = staffDocCategories.get(ps.staff_id) ?? new Set();
-            const hasVoorovereenkomst = cats.has("voorovereenkomst");
-            const hasOvereenkomst = cats.has("overeenkomst");
+            const hasVoorovereenkomst = isPraktijk4kids || cats.has("voorovereenkomst");
+            const hasOvereenkomst = isPraktijk4kids || cats.has("overeenkomst");
             return {
               staffId: ps.staff_id,
               name,
               role: ps.role ?? "trainer",
               hasVoorovereenkomst,
               hasOvereenkomst,
+              isPraktijk4kids,
             };
           });
         return {
