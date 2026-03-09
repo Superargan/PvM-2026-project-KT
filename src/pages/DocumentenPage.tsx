@@ -809,12 +809,13 @@ function GenerateTab() {
                   { value: "client", label: "Cliënt", icon: UserCircle },
                   { value: "staff", label: "Trainer", icon: GraduationCap },
                   { value: "school", label: "School", icon: Building2 },
+                  { value: "program", label: "Training", icon: Calendar },
                 ] as const).map(({ value, label, icon: Icon }) => (
                   <Button
                     key={value}
                     variant={entityType === value ? "default" : "outline"}
                     size="sm"
-                    onClick={() => { setEntityType(value); setSelectedEntity(""); setSearchTerm(""); }}
+                    onClick={() => { setEntityType(value); setSelectedEntity(""); setSearchTerm(""); setSelectedTrainers([]); }}
                   >
                     <Icon className="h-4 w-4" /> {label}
                   </Button>
