@@ -110,7 +110,7 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
     },
   });
 
-  const canAddMain = mainTrainers.length < 2;
+  const canAddMain = true;
 
   // Helper to get staff name by id
   const getStaffName = (staffId: string) => {
