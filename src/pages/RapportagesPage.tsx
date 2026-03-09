@@ -540,6 +540,7 @@ export default function RapportagesPage() {
           <TabsTrigger value="aanwezigheid">Aanwezigheid &lt;80%</TabsTrigger>
           <TabsTrigger value="monitoringslijst">Monitoringslijst</TabsTrigger>
           <TabsTrigger value="facturen">Facturen</TabsTrigger>
+          <TabsTrigger value="contracten">Contracten</TabsTrigger>
         </TabsList>
 
         {/* Aanmeldingen tab */}
