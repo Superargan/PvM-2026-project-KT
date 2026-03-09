@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -727,6 +727,8 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
   const [viewMode, setViewMode] = useState<"ontbrekend" | "overzicht">("ontbrekend");
   const [ontbrekendTab, setOntbrekendTab] = useState<"voorovereenkomst" | "overeenkomst">("voorovereenkomst");
   const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
+  const [bulkRunning, setBulkRunning] = useState<string | null>(null);
+  const cancelRef = useRef(false);
   const areaMap = useMemo(() => new Map(areas.map((a: any) => [a.id, a.name])), [areas]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -890,8 +892,17 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
       toast({ title: "Geen voorovereenkomst-template gevonden", variant: "destructive" });
       return;
     }
+    cancelRef.current = false;
+    setBulkRunning("voor");
+    let count = 0;
     for (const item of missingVoor) {
+      if (cancelRef.current) break;
       await generateDocument(voorovereenkomstTemplate.id, item.staffId);
+      count++;
+    }
+    setBulkRunning(null);
+    if (cancelRef.current) {
+      toast({ title: "Generatie gestopt", description: `${count} van ${missingVoor.length} voorovereenkomsten aangemaakt.` });
     }
   };
 
@@ -900,9 +911,22 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
       toast({ title: "Geen overeenkomst-template gevonden", variant: "destructive" });
       return;
     }
+    cancelRef.current = false;
+    setBulkRunning("ovk");
+    let count = 0;
     for (const item of missingOvk) {
+      if (cancelRef.current) break;
       await generateDocument(overeenkomstTemplate.id, item.staffId, item.programId);
+      count++;
     }
+    setBulkRunning(null);
+    if (cancelRef.current) {
+      toast({ title: "Generatie gestopt", description: `${count} van ${missingOvk.length} overeenkomsten aangemaakt.` });
+    }
+  };
+
+  const handleCancelBulk = () => {
+    cancelRef.current = true;
   };
 
   const handleExport = () => {
@@ -990,9 +1014,15 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
                   Ontbrekende voorovereenkomsten ({missingVoor.length})
                 </h4>
                 {missingVoor.length > 0 && voorovereenkomstTemplate && (
-                  <Button size="sm" variant="outline" onClick={generateAllVoorovereenkomsten} disabled={generatingIds.size > 0}>
-                    <FileText className="h-3.5 w-3.5 mr-1" /> Alle aanmaken
-                  </Button>
+                  bulkRunning === "voor" ? (
+                    <Button size="sm" variant="destructive" onClick={handleCancelBulk}>
+                      <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Stoppen
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="outline" onClick={generateAllVoorovereenkomsten} disabled={!!bulkRunning}>
+                      <FileText className="h-3.5 w-3.5 mr-1" /> Alle aanmaken
+                    </Button>
+                  )
                 )}
               </div>
               {missingVoor.length === 0 ? (
@@ -1039,9 +1069,15 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
                   Ontbrekende overeenkomsten van opdracht ({missingOvk.length})
                 </h4>
                 {missingOvk.length > 0 && overeenkomstTemplate && (
-                  <Button size="sm" variant="outline" onClick={generateAllOvereenkomsten} disabled={generatingIds.size > 0}>
-                    <FileText className="h-3.5 w-3.5 mr-1" /> Alle aanmaken
-                  </Button>
+                  bulkRunning === "ovk" ? (
+                    <Button size="sm" variant="destructive" onClick={handleCancelBulk}>
+                      <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> Stoppen
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="outline" onClick={generateAllOvereenkomsten} disabled={!!bulkRunning}>
+                      <FileText className="h-3.5 w-3.5 mr-1" /> Alle aanmaken
+                    </Button>
+                  )
                 )}
               </div>
               {missingOvk.length === 0 ? (
