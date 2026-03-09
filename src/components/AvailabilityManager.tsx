@@ -69,6 +69,13 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
         end: endOfWeek(currentDate, { weekStartsOn: 1 }),
       };
     }
+    if (periodMode === "kwartaal") {
+      const start = startOfMonth(currentDate);
+      return {
+        start,
+        end: endOfMonth(addMonths(start, 2)),
+      };
+    }
     return {
       start: startOfMonth(currentDate),
       end: endOfMonth(currentDate),
