@@ -705,6 +705,7 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
                               style={{ left: `${dropCaret.left}px` }}
                             />
                           )}
+                        </div>
                         {/* Inserted paragraphs after this index */}
                         {(insertedParagraphs[section.part] ?? [])
                           .filter((ip) => ip.afterIndex === p.index)
