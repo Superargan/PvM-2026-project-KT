@@ -197,6 +197,7 @@ serve(async (req) => {
       const program = (programClients as any)?.[0]?.programs;
 
       let programSchoolName = "";
+      let programLocation = "";
       let programWijk = "";
       let programGebied = "";
       if (program?.name) {
