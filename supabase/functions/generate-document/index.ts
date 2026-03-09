@@ -174,9 +174,9 @@ serve(async (req) => {
         outputFileName = sanitizeFileName(`Voorovereenkomst ${tradeName} ${currentMonth} ${currentYear}`) + ext;
       } else if (category === "overeenkomst") {
         const trainingNum = replacements["{{programma_nummer}}"] || replacements["{{programma_naam}}"]?.replace(/\D+/g, "").trim() || "";
-        const programName = replacements["{{programma_naam}}"] || "";
+        const locatie = replacements["{{locatie}}"] || "";
         const prefix = trainingNum ? `${trainingNum} ` : "";
-        outputFileName = sanitizeFileName(`${prefix}${programName} ${tradeName}`) + ext;
+        outputFileName = sanitizeFileName(`${prefix}KT ${locatie} ${tradeName}`) + ext;
       } else {
         outputFileName = sanitizeFileName(`${staff.name ?? "Trainer"}_${template.name}`) + ext;
       }
