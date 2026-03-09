@@ -124,17 +124,17 @@ serve(async (req) => {
     const hasInserts = inserts && Object.keys(inserts).length > 0;
     if (!hasUpdates && !hasInserts) throw new Error("Geen wijzigingen meegegeven");
 
-    const { data: template, error: tplErr } = await supabase
+    const { data: template, error: tplErr } = await serviceSupabase
       .from("document_templates")
       .select("*")
       .eq("id", template_id)
-      .single();
-    if (tplErr || !template) throw new Error("Template niet gevonden");
+      .maybeSingle();
+    if (tplErr || !template) throw new Error("Template niet gevonden: " + (tplErr?.message || "niet gevonden"));
 
-    const { data: fileData, error: dlErr } = await supabase.storage
+    const { data: fileData, error: dlErr } = await serviceSupabase.storage
       .from("document-templates")
       .download(template.file_path);
-    if (dlErr || !fileData) throw new Error("Bestand niet gevonden");
+    if (dlErr || !fileData) throw new Error("Bestand niet gevonden: " + dlErr?.message);
 
     const zip = await JSZip.loadAsync(await fileData.arrayBuffer());
 
