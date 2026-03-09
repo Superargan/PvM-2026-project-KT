@@ -362,12 +362,20 @@ interface DocSection {
   paragraphs: DocParagraph[];
 }
 
+interface InsertedParagraph {
+  id: string;
+  afterIndex: number; // -1 = at the very beginning
+  text: string;
+  style: string;
+}
+
 function TemplateEditor({ template, onClose }: { template: any; onClose: () => void }) {
   const { toast } = useToast();
   const [sections, setSections] = useState<DocSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editedTexts, setEditedTexts] = useState<Record<string, Record<number, string>>>({});
+  const [insertedParagraphs, setInsertedParagraphs] = useState<Record<string, InsertedParagraph[]>>({});
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
@@ -384,6 +392,7 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
       if (data?.error) throw new Error(data.error);
       setSections(data.sections);
       setEditedTexts({});
+      setInsertedParagraphs({});
       setIsEditing(false);
     } catch (err: any) {
       toast({ title: "Fout bij laden", description: err.message, variant: "destructive" });
@@ -399,14 +408,47 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
     }));
   };
 
-  const hasChanges = Object.values(editedTexts).some((section) => Object.keys(section).length > 0);
+  const hasChanges = Object.values(editedTexts).some((section) => Object.keys(section).length > 0) ||
+    Object.values(insertedParagraphs).some((arr) => arr.length > 0);
+
+  const addParagraph = (sectionPart: string, afterIndex: number) => {
+    setInsertedParagraphs((prev) => ({
+      ...prev,
+      [sectionPart]: [
+        ...(prev[sectionPart] ?? []),
+        { id: crypto.randomUUID(), afterIndex, text: "", style: "normal" },
+      ],
+    }));
+  };
+
+  const updateInsertedText = (sectionPart: string, id: string, text: string) => {
+    setInsertedParagraphs((prev) => ({
+      ...prev,
+      [sectionPart]: (prev[sectionPart] ?? []).map((p) => p.id === id ? { ...p, text } : p),
+    }));
+  };
+
+  const removeInsertedParagraph = (sectionPart: string, id: string) => {
+    setInsertedParagraphs((prev) => ({
+      ...prev,
+      [sectionPart]: (prev[sectionPart] ?? []).filter((p) => p.id !== id),
+    }));
+  };
 
   const handleSave = async () => {
     if (!hasChanges) return;
     setSaving(true);
     try {
+      // Convert inserted paragraphs to inserts format: { sectionPart: [{ afterIndex, text }] }
+      const inserts: Record<string, { afterIndex: number; text: string }[]> = {};
+      for (const [part, paragraphs] of Object.entries(insertedParagraphs)) {
+        if (paragraphs.length > 0) {
+          inserts[part] = paragraphs.map((p) => ({ afterIndex: p.afterIndex, text: p.text }));
+        }
+      }
+
       const { data, error } = await supabase.functions.invoke("update-template", {
-        body: { template_id: template.id, updates: editedTexts },
+        body: { template_id: template.id, updates: editedTexts, inserts },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -494,7 +536,7 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
         <div className="flex gap-2">
           {isEditing ? (
             <>
-              <Button variant="outline" size="sm" onClick={() => { setIsEditing(false); setEditedTexts({}); }}>
+              <Button variant="outline" size="sm" onClick={() => { setIsEditing(false); setEditedTexts({}); setInsertedParagraphs({}); }}>
                 <X className="h-4 w-4" /> Annuleren
               </Button>
               <Button size="sm" onClick={handleSave} disabled={!hasChanges || saving}>
@@ -522,6 +564,36 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
               )}
               <Card>
                 <CardContent className="p-6 space-y-1">
+                  {isEditing && (
+                    <div className="flex justify-center -mb-1">
+                      <button
+                        type="button"
+                        onClick={() => addParagraph(section.part, -1)}
+                        className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors opacity-0 hover:opacity-100 focus:opacity-100 py-0.5"
+                        title="Regel toevoegen bovenaan"
+                      >
+                        <Plus className="h-3 w-3" /> regel toevoegen
+                      </button>
+                    </div>
+                  )}
+                  {/* Render inserted paragraphs before index 0 (afterIndex === -1) */}
+                  {isEditing && (insertedParagraphs[section.part] ?? [])
+                    .filter((ip) => ip.afterIndex === -1)
+                    .map((ip) => (
+                      <div key={ip.id} className="flex items-center gap-1">
+                        <Input
+                          value={ip.text}
+                          onChange={(e) => updateInsertedText(section.part, ip.id, e.target.value)}
+                          className="border-0 border-b border-dashed border-primary/40 rounded-none px-1 text-sm bg-primary/5 flex-1"
+                          placeholder="Nieuwe regel..."
+                          autoFocus
+                        />
+                        <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeInsertedParagraph(section.part, ip.id)}>
+                          <X className="h-3 w-3 text-destructive" />
+                        </Button>
+                      </div>
+                    ))
+                  }
                   {section.paragraphs.map((p) => {
                     const currentText = editedTexts[section.part]?.[p.index] ?? p.text;
 
@@ -541,17 +613,46 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
 
                     // Edit mode
                     return (
-                      <Input
-                        key={p.index}
-                        data-section={section.part}
-                        data-index={p.index}
-                        value={currentText}
-                        onChange={(e) => handleTextChange(section.part, p.index, e.target.value)}
-                        className={`border-0 border-b border-transparent focus:border-primary rounded-none px-1 ${
-                          styleClasses[p.style] ?? "text-sm"
-                        } ${editedTexts[section.part]?.[p.index] !== undefined ? "bg-primary/5" : ""}`}
-                        placeholder="(leeg)"
-                      />
+                      <div key={p.index}>
+                        <Input
+                          data-section={section.part}
+                          data-index={p.index}
+                          value={currentText}
+                          onChange={(e) => handleTextChange(section.part, p.index, e.target.value)}
+                          className={`border-0 border-b border-transparent focus:border-primary rounded-none px-1 ${
+                            styleClasses[p.style] ?? "text-sm"
+                          } ${editedTexts[section.part]?.[p.index] !== undefined ? "bg-primary/5" : ""}`}
+                          placeholder="(leeg)"
+                        />
+                        {/* Inserted paragraphs after this index */}
+                        {(insertedParagraphs[section.part] ?? [])
+                          .filter((ip) => ip.afterIndex === p.index)
+                          .map((ip) => (
+                            <div key={ip.id} className="flex items-center gap-1 mt-1">
+                              <Input
+                                value={ip.text}
+                                onChange={(e) => updateInsertedText(section.part, ip.id, e.target.value)}
+                                className="border-0 border-b border-dashed border-primary/40 rounded-none px-1 text-sm bg-primary/5 flex-1"
+                                placeholder="Nieuwe regel..."
+                                autoFocus
+                              />
+                              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeInsertedParagraph(section.part, ip.id)}>
+                                <X className="h-3 w-3 text-destructive" />
+                              </Button>
+                            </div>
+                          ))
+                        }
+                        <div className="flex justify-center">
+                          <button
+                            type="button"
+                            onClick={() => addParagraph(section.part, p.index)}
+                            className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-primary transition-colors opacity-0 hover:opacity-100 focus:opacity-100 py-0.5"
+                            title="Regel toevoegen"
+                          >
+                            <Plus className="h-3 w-3" /> regel toevoegen
+                          </button>
+                        </div>
+                      </div>
                     );
                   })}
                 </CardContent>
