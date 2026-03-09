@@ -1,4 +1,4 @@
-import { ClipboardList, Search, Pencil, Loader2, ExternalLink, Clock, UserPlus, X, CalendarDays } from "lucide-react";
+import { ClipboardList, Search, Pencil, Loader2, ExternalLink, Clock, UserPlus, X, CalendarDays, Upload } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import WaitlistManager from "@/components/WaitlistManager";
+import ClientImport from "@/components/ClientImport";
 
 const editSchema = z.object({
   first_name: z.string().trim().min(1, "Voornaam is verplicht").max(100),
