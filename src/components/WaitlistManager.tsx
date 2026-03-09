@@ -109,7 +109,7 @@ export default function WaitlistManager() {
       ) : waitlistClients.length === 0 ? (
         <div className="flex flex-col items-center py-12 text-muted-foreground">
           <Clock className="h-8 w-8 mb-2" />
-          <p className="text-sm">Geen cliënten op de wachtlijst{filterArea !== "all" ? " voor dit gebied" : ""}</p>
+          <p className="text-sm">Geen deelnemers op de wachtlijst{filterArea !== "all" ? " voor dit gebied" : ""}</p>
         </div>
       ) : (
         <div className="overflow-x-auto">

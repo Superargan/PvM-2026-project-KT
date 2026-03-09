@@ -191,7 +191,7 @@ export default function ProgramDetailPage() {
             <div className="flex gap-2">
               <Select value={selectedClientId} onValueChange={setSelectedClientId}>
                 <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Selecteer een cliënt" />
+                  <SelectValue placeholder="Selecteer een deelnemer" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover">
                   {availableClients.map((c: any) => (

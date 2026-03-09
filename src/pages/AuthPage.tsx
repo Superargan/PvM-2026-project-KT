@@ -59,7 +59,7 @@ export default function AuthPage() {
             Kanjertraining OS
           </h1>
           <p className="mt-2 max-w-md text-sm leading-relaxed text-sidebar-foreground/70">
-            Het complete operatiesysteem voor het beheren van cliënten, trainingen, scholen en medewerkers.
+            Het complete operatiesysteem voor het beheren van deelnemers, trainingen, scholen en medewerkers.
           </p>
         </div>
         <p className="text-xs text-sidebar-foreground/40">
