@@ -128,11 +128,30 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
     reader.readAsBinaryString(file);
   };
 
+  /** Fuzzy school name matching: exact → contains → best partial */
   const findSchoolId = (name: string | undefined): string | null => {
     if (!name) return null;
-    const norm = name.toLowerCase().trim();
-    const match = schools.find((s) => s.name.toLowerCase().trim() === norm);
-    return match?.id ?? null;
+    const norm = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
+    // Exact match
+    const exact = schools.find((s) => s.name.toLowerCase().trim() === norm);
+    if (exact) return exact.id;
+
+    // Contains: school name contains search or search contains school name
+    const contains = schools.find((s) => {
+      const sNorm = s.name.toLowerCase().trim();
+      return sNorm.includes(norm) || norm.includes(sNorm);
+    });
+    if (contains) return contains.id;
+
+    // Starts-with match (first significant word)
+    const firstWord = norm.split(/\s+/)[0];
+    if (firstWord.length >= 3) {
+      const startsWith = schools.find((s) => s.name.toLowerCase().trim().startsWith(firstWord));
+      if (startsWith) return startsWith.id;
+    }
+
+    return null;
   };
 
   const findAreaId = (name: string | undefined): string | null => {
