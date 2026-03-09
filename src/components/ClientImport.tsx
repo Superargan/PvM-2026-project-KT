@@ -281,7 +281,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Deelnemers importeren uit Excel</DialogTitle>
+          <DialogTitle>{mode === "waitlist" ? "Wachtlijst importeren uit Excel" : "Deelnemers importeren uit Excel"}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
