@@ -378,6 +378,7 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
   const [editedTexts, setEditedTexts] = useState<Record<string, Record<number, string>>>({});
   const [insertedParagraphs, setInsertedParagraphs] = useState<Record<string, InsertedParagraph[]>>({});
   const [newInsertedFocusId, setNewInsertedFocusId] = useState<string | null>(null);
+  const [dropCaret, setDropCaret] = useState<{ section: string; index: number; left: number } | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editCategory, setEditCategory] = useState(template.category ?? "overig");
 
