@@ -109,7 +109,7 @@ export default function ClientenPage() {
                 avg: c.consent_data_processing ?? false,
                 whatsapp: c.whatsapp_consent ?? false,
               }));
-              downloadExport(`clienten.${fmt}`, [
+              downloadExport(`deelnemers.${fmt}`, [
                 { key: "voornaam", label: "Voornaam" },
                 { key: "achternaam", label: "Achternaam" },
                 { key: "leeftijd", label: "Leeftijd" },
