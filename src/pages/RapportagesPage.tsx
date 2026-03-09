@@ -1,13 +1,14 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
-import { Loader2, BarChart3, Download, FileSpreadsheet } from "lucide-react";
+import { Loader2, BarChart3, Download, FileSpreadsheet, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { downloadExport, ExportColumn } from "@/lib/csvExport";
+import { useToast } from "@/hooks/use-toast";
 import {
   startOfWeek, startOfMonth, startOfYear, format, getISOWeek, differenceInYears, parseISO,
 } from "date-fns";
