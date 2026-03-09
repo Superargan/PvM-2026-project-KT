@@ -11,6 +11,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Trash2, Clock, XCircle, UserPlus, Upload } from "lucide-react";
 import ClientImport from "@/components/ClientImport";
 
+function calculateAge(dob: string | null): number | null {
+  if (!dob) return null;
+  const birth = new Date(dob);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+
 const statusLabels: Record<string, string> = {
   waiting: "Wachtend",
   dropped_out: "Uitgevallen",
@@ -198,6 +207,7 @@ export default function WachtlijstPage() {
                   />
                 </TableHead>
                 <TableHead>Naam</TableHead>
+                <TableHead>Leeftijd</TableHead>
                 <TableHead>Gebied</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Reden</TableHead>
@@ -214,6 +224,7 @@ export default function WachtlijstPage() {
                     />
                   </TableCell>
                   <TableCell className="font-medium">{client.first_name} {client.last_name}</TableCell>
+                  <TableCell className="text-sm text-card-foreground">{(() => { const age = calculateAge(client.date_of_birth); return age !== null ? `${age} jaar` : "—"; })()}</TableCell>
                   <TableCell>{(client as any).areas?.name ?? "—"}</TableCell>
                   <TableCell>
                     <Badge className={statusColors[client.waitlist_status] ?? ""}>
