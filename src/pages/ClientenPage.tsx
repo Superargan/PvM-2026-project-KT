@@ -43,6 +43,7 @@ const statusLabels: Record<string, string> = {
 export default function ClientenPage() {
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
