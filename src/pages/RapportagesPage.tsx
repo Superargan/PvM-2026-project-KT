@@ -933,6 +933,7 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas }: {
 }
 
 
+function PivotTable({ data }: { data: { rows: Record<string, any>[]; categories: string[] } }) {
   if (data.rows.length === 0) {
     return <p className="py-6 text-center text-sm text-muted-foreground">Geen data beschikbaar.</p>;
   }
