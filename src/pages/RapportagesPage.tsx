@@ -725,6 +725,7 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
 }) {
   const [statusFilter, setStatusFilter] = useState<string>("alle");
   const [viewMode, setViewMode] = useState<"ontbrekend" | "overzicht">("ontbrekend");
+  const [ontbrekendTab, setOntbrekendTab] = useState<"voorovereenkomst" | "overeenkomst">("voorovereenkomst");
   const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
   const areaMap = useMemo(() => new Map(areas.map((a: any) => [a.id, a.name])), [areas]);
   const { toast } = useToast();
