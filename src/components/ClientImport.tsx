@@ -290,8 +290,12 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
       const enrollDateRaw = findCol(row, "Datum inschrijving", "Inschrijfdatum", "datum inschrijving");
       const enrollDate = parseExcelDate(enrollDateRaw);
 
-      // Referral
-      const referral = findCol(row, "Hoe aan de KT gekomen", "Verwijzer", "Verwezen door", "referral") ?? null;
+      // Referral source (how they found the program)
+      const referral = findCol(row, "Hoe aan de KT gekomen", "Verwezen door", "Verwijzing", "referral") ?? null;
+
+      // Referrer (person who referred) - avoid matching "Verwijzer geïnformeerd"
+      const referrerName = findCol(row, "Verwijzer naam", "Naam verwijzer", "Verwijzende leerkracht") ?? null;
+      const referrer_id = findReferrerId(referrerName, school_id);
 
       // Intake status
       const intakeFormulier = findCol(row, "Intakeformulier", "Intake formulier");
@@ -312,6 +316,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
         intake_date,
         intake_status: mode === "waitlist" ? "wachtlijst" : intake_status,
         referral_reason: referral,
+        referrer_id,
         ...(mode === "waitlist" ? { waitlist_status: "waiting" } : {}),
         ...(enrollDate ? { created_at: `${enrollDate}T00:00:00Z` } : {}),
       });
