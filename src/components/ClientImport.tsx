@@ -175,6 +175,23 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
     return contains?.id ?? null;
   };
 
+  const findReferrerId = (name: string | undefined, schoolId: string | null): string | null => {
+    if (!name) return null;
+    const norm = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    // Try match with same school first
+    if (schoolId) {
+      const sameSchool = referrers.find((r) => r.school_id === schoolId && r.name.toLowerCase().trim() === norm);
+      if (sameSchool) return sameSchool.id;
+    }
+    const exact = referrers.find((r) => r.name.toLowerCase().trim() === norm);
+    if (exact) return exact.id;
+    const contains = referrers.find((r) => {
+      const rNorm = r.name.toLowerCase().trim();
+      return rNorm.includes(norm) || norm.includes(rNorm);
+    });
+    return contains?.id ?? null;
+  };
+
   const handleImport = async () => {
     setImporting(true);
     const errors: string[] = [];
