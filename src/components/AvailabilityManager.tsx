@@ -387,7 +387,9 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
         <span className="text-sm font-semibold text-foreground capitalize">
           {periodMode === "week"
             ? `${format(dateRange.start, "d MMM", { locale: nl })} – ${format(dateRange.end, "d MMM yyyy", { locale: nl })}`
-            : format(currentDate, "MMMM yyyy", { locale: nl })}
+            : periodMode === "kwartaal"
+              ? `${format(dateRange.start, "MMM yyyy", { locale: nl })} – ${format(dateRange.end, "MMM yyyy", { locale: nl })}`
+              : format(currentDate, "MMMM yyyy", { locale: nl })}
         </span>
       </div>
 
