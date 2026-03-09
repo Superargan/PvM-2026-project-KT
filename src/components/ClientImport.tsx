@@ -264,7 +264,8 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
     if (added > 0) {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       queryClient.invalidateQueries({ queryKey: ["aanmeldingen"] });
-      toast({ title: `${added} deelnemer(s) geïmporteerd` });
+      queryClient.invalidateQueries({ queryKey: ["waitlist-clients"] });
+      toast({ title: `${added} deelnemer(s) geïmporteerd${mode === "waitlist" ? " op wachtlijst" : ""}` });
       onComplete?.();
     }
   };
