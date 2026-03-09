@@ -71,10 +71,22 @@ function splitName(fullName: string): { first_name: string; last_name: string } 
 function mapGender(val: string | undefined): string | null {
   if (!val) return null;
   const lower = val.toLowerCase().trim();
-  if (lower === "jongen" || lower === "m" || lower === "man") return "Jongen";
-  if (lower === "meisje" || lower === "v" || lower === "vrouw") return "Meisje";
+  if (["jongen", "j", "m", "man", "male", "boy"].includes(lower)) return "Jongen";
+  if (["meisje", "meid", "v", "vrouw", "female", "girl"].includes(lower)) return "Meisje";
+  if (["anders", "x", "overig", "other"].includes(lower)) return "Anders";
   return val;
 }
+
+/** Known non-person referral sources — stored as referral_reason, not as referrer_id */
+const NON_PERSON_REFERRAL_SOURCES = [
+  "flyer", "folder", "internet", "website", "social media", "facebook", "instagram",
+  "whatsapp", "mond-tot-mond", "mond tot mond", "via via", "buurthuis", "wijkteam",
+  "huisarts", "ggd", "school", "leerkracht", "juf", "meester", "intern",
+  "poster", "krant", "buurtwerk", "wijkcentrum", "speeltuin", "ouder",
+  "buren", "kennissen", "familie", "vrienden", "tv", "radio", "kerk", "moskee",
+  "sportvereniging", "club", "bibliotheek", "consultatiebureau", "jeugdzorg",
+  "zelfstandig", "eigen initiatief", "onbekend", "anders", "overig",
+];
 
 interface ClientImportProps {
   open: boolean;
