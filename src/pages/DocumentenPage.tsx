@@ -378,6 +378,7 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
   const [editedTexts, setEditedTexts] = useState<Record<string, Record<number, string>>>({});
   const [insertedParagraphs, setInsertedParagraphs] = useState<Record<string, InsertedParagraph[]>>({});
   const [isEditing, setIsEditing] = useState(false);
+  const [editCategory, setEditCategory] = useState(template.category ?? "overig");
 
   useEffect(() => {
     loadTemplate();
@@ -409,8 +410,10 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
     }));
   };
 
+  const categoryChanged = editCategory !== (template.category ?? "overig");
   const hasChanges = Object.values(editedTexts).some((section) => Object.keys(section).length > 0) ||
-    Object.values(insertedParagraphs).some((arr) => arr.length > 0);
+    Object.values(insertedParagraphs).some((arr) => arr.length > 0) ||
+    categoryChanged;
 
   const addParagraph = (sectionPart: string, afterIndex: number) => {
     setInsertedParagraphs((prev) => ({
@@ -448,13 +451,29 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
         }
       }
 
-      const { data, error } = await supabase.functions.invoke("update-template", {
-        body: { template_id: template.id, updates: editedTexts, inserts },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      toast({ title: "Template opgeslagen", description: "Wijzigingen zijn opgeslagen met behoud van opmaak." });
-      // Reload to reflect changes
+      // Save category change if needed
+      if (categoryChanged) {
+        const { error: catErr } = await supabase
+          .from("document_templates")
+          .update({ category: editCategory })
+          .eq("id", template.id);
+        if (catErr) throw catErr;
+        template.category = editCategory;
+      }
+
+      // Save content changes if any
+      const hasContentChanges = Object.values(editedTexts).some((s) => Object.keys(s).length > 0) ||
+        Object.values(insertedParagraphs).some((arr) => arr.length > 0);
+
+      if (hasContentChanges) {
+        const { data, error } = await supabase.functions.invoke("update-template", {
+          body: { template_id: template.id, updates: editedTexts, inserts },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+      }
+
+      toast({ title: "Template opgeslagen", description: "Wijzigingen zijn opgeslagen." });
       await loadTemplate();
     } catch (err: any) {
       toast({ title: "Opslaan mislukt", description: err.message, variant: "destructive" });
@@ -529,7 +548,20 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
           <div>
             <h2 className="text-lg font-bold text-foreground">{template.name}</h2>
             <div className="flex items-center gap-2 mt-0.5">
-              <Badge variant="secondary">{categoryLabels[template.category] ?? template.category}</Badge>
+              {isEditing ? (
+                <Select value={editCategory} onValueChange={setEditCategory}>
+                  <SelectTrigger className="h-7 w-auto text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    {Object.entries(categoryLabels).map(([val, label]) => (
+                      <SelectItem key={val} value={val}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Badge variant="secondary">{categoryLabels[template.category] ?? template.category}</Badge>
+              )}
               <span className="text-xs text-muted-foreground">{template.placeholder_fields?.length ?? 0} placeholders</span>
             </div>
           </div>
@@ -537,7 +569,7 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
         <div className="flex gap-2">
           {isEditing ? (
             <>
-              <Button variant="outline" size="sm" onClick={() => { setIsEditing(false); setEditedTexts({}); setInsertedParagraphs({}); }}>
+              <Button variant="outline" size="sm" onClick={() => { setIsEditing(false); setEditedTexts({}); setInsertedParagraphs({}); setEditCategory(template.category ?? "overig"); }}>
                 <X className="h-4 w-4" /> Annuleren
               </Button>
               <Button size="sm" onClick={handleSave} disabled={!hasChanges || saving}>
