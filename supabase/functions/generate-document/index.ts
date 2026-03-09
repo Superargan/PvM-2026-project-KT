@@ -79,7 +79,7 @@ serve(async (req) => {
         // Try to find the most recent program for this trainer
         const { data: ps } = await supabase
           .from("program_staff")
-          .select("program_id, programs(id, name, start_date, end_date, schools(name), neighborhoods(name, areas(name)))")
+          .select("program_id, programs(id, name, training_number, start_date, end_date, schools(name), neighborhoods(name, areas(name)))")
           .eq("staff_id", staff_id)
           .order("created_at", { ascending: false })
           .limit(1);
@@ -87,15 +87,16 @@ serve(async (req) => {
           const prog = (ps[0] as any).programs;
           if (prog) {
             const programName = prog.name ?? "";
+            const programNumber = prog.training_number ?? "";
             const programStart = formatDateNL(prog.start_date);
             const programEnd = formatDateNL(prog.end_date);
             replacements = {
               ...replacements,
               "{{programma_naam}}": programName,
               "{{programmanaam}}": programName,
-              "{{programmanummer}}": programName,
-              "{{programma_nummer}}": programName,
-              "{{trajectnummer}}": programName,
+              "{{programma_nummer}}": programNumber,
+              "{{programmanummer}}": programNumber,
+              "{{trajectnummer}}": programNumber,
               "{{programma_start}}": programStart,
               "{{startdatum}}": programStart,
               "{{programma_eind}}": programEnd,
@@ -114,15 +115,16 @@ serve(async (req) => {
           .single();
         if (prog) {
           const programName = prog.name ?? "";
+          const programNumber = (prog as any).training_number ?? "";
           const programStart = formatDateNL(prog.start_date);
           const programEnd = formatDateNL(prog.end_date);
           replacements = {
             ...replacements,
             "{{programma_naam}}": programName,
             "{{programmanaam}}": programName,
-            "{{programmanummer}}": programName,
-            "{{programma_nummer}}": programName,
-            "{{trajectnummer}}": programName,
+            "{{programma_nummer}}": programNumber,
+            "{{programmanummer}}": programNumber,
+            "{{trajectnummer}}": programNumber,
             "{{programma_start}}": programStart,
             "{{startdatum}}": programStart,
             "{{programma_eind}}": programEnd,
@@ -170,7 +172,7 @@ serve(async (req) => {
 
       const { data: programClients } = await supabase
         .from("program_clients")
-        .select("programs(name, start_date, end_date, program_staff(staff(id, name, user_id)))")
+        .select("program_id, programs(name, training_number, start_date, end_date, program_staff(staff(id, name, user_id)))")
         .eq("client_id", client_id)
         .limit(1);
 
@@ -249,6 +251,9 @@ serve(async (req) => {
         "{{intake_datum}}": formatDateNL(client.intake_date),
         "{{trainer_naam}}": replacements["{{trainer_naam}}"] || trainerName,
         "{{programma_naam}}": program?.name ?? "",
+        "{{programma_nummer}}": program?.training_number ?? "",
+        "{{programmanummer}}": program?.training_number ?? "",
+        "{{trajectnummer}}": program?.training_number ?? "",
         "{{programma_start}}": formatDateNL(program?.start_date),
         "{{programma_eind}}": formatDateNL(program?.end_date),
         "{{programma_school}}": programSchoolName,

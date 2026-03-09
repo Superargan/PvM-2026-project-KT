@@ -139,6 +139,9 @@ export default function ProgramDetailPage() {
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <h1 className="font-display text-2xl font-extrabold text-foreground">{program.name}</h1>
+            {(program as any).training_number && (
+              <Badge variant="outline" className="text-xs">{(program as any).training_number}</Badge>
+            )}
             <span className={`status-indicator ${statusInfo.css}`}>{statusInfo.label}</span>
           </div>
           <p className="text-sm text-muted-foreground">
