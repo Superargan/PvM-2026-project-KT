@@ -131,6 +131,27 @@ export default function RapportagesPage() {
     },
   });
 
+  const { data: generatedDocs = [] } = useQuery({
+    queryKey: ["rpt_generated_docs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("generated_documents")
+        .select("id, staff_id, template_id, file_name, created_at, document_templates(category)")
+        .not("staff_id", "is", null);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: docTemplates = [] } = useQuery({
+    queryKey: ["rpt_doc_templates"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("document_templates").select("id, name, category");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const loading = cl || pcl || prl || sl || al;
 
   // Lookup maps
@@ -540,6 +561,7 @@ export default function RapportagesPage() {
           <TabsTrigger value="aanwezigheid">Aanwezigheid &lt;80%</TabsTrigger>
           <TabsTrigger value="monitoringslijst">Monitoringslijst</TabsTrigger>
           <TabsTrigger value="facturen">Facturen</TabsTrigger>
+          <TabsTrigger value="contracten">Contracten</TabsTrigger>
         </TabsList>
 
         {/* Aanmeldingen tab */}
@@ -675,10 +697,241 @@ export default function RapportagesPage() {
             <InvoiceManager />
           </Card>
         </TabsContent>
+
+        {/* Contracten tab */}
+        <TabsContent value="contracten">
+          <Card className="p-4">
+            <ContractenOverzicht
+              programs={programs}
+              programStaff={programStaff}
+              generatedDocs={generatedDocs}
+              areas={areas}
+            />
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );
 }
+
+function ContractenOverzicht({ programs, programStaff, generatedDocs, areas }: {
+  programs: any[];
+  programStaff: any[];
+  generatedDocs: any[];
+  areas: any[];
+}) {
+  const [statusFilter, setStatusFilter] = useState<string>("alle");
+  const areaMap = useMemo(() => new Map(areas.map((a: any) => [a.id, a.name])), [areas]);
+
+  // Build a map: staffId -> set of doc categories
+  const staffDocCategories = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    generatedDocs.forEach((doc: any) => {
+      if (!doc.staff_id) return;
+      if (!map.has(doc.staff_id)) map.set(doc.staff_id, new Set());
+      const cat = (doc.document_templates as any)?.category?.toLowerCase() ?? "";
+      if (cat) map.get(doc.staff_id)!.add(cat);
+    });
+    return map;
+  }, [generatedDocs]);
+
+  // Build a map: programId+staffId -> has overeenkomst
+  const programStaffDocs = useMemo(() => {
+    const map = new Map<string, boolean>();
+    generatedDocs.forEach((doc: any) => {
+      if (!doc.staff_id) return;
+      const cat = (doc.document_templates as any)?.category?.toLowerCase() ?? "";
+      // Check file_name for program-specific indicators
+      if (cat === "overeenkomst") {
+        // Overeenkomst docs are program-specific
+        map.set(doc.staff_id, true);
+      }
+    });
+    return map;
+  }, [generatedDocs]);
+
+  // Build program rows with trainers
+  const rows = useMemo(() => {
+    return programs
+      .filter((p: any) => {
+        if (statusFilter === "alle") return true;
+        return (p.status ?? "te_plannen") === statusFilter;
+      })
+      .map((prog: any) => {
+        const trainers = programStaff
+          .filter((ps: any) => ps.program_id === prog.id && ps.role !== "invaller")
+          .map((ps: any) => {
+            const name = (ps.staff as any)?.name ?? "Onbekend";
+            const cats = staffDocCategories.get(ps.staff_id) ?? new Set();
+            const hasVoorovereenkomst = cats.has("voorovereenkomst");
+            const hasOvereenkomst = cats.has("overeenkomst");
+            return {
+              staffId: ps.staff_id,
+              name,
+              role: ps.role ?? "trainer",
+              hasVoorovereenkomst,
+              hasOvereenkomst,
+            };
+          });
+        return {
+          id: prog.id,
+          name: prog.name,
+          trainingNumber: (prog as any).training_number ?? "",
+          status: prog.status ?? "te_plannen",
+          area: areaMap.get(prog.area_id) ?? "",
+          startDate: prog.start_date,
+          trainers,
+          allVoorovereenkomsten: trainers.length > 0 && trainers.every((t: any) => t.hasVoorovereenkomst),
+          allOvereenkomsten: trainers.length > 0 && trainers.every((t: any) => t.hasOvereenkomst),
+        };
+      })
+      .sort((a: any, b: any) => (a.name ?? "").localeCompare(b.name ?? ""));
+  }, [programs, programStaff, staffDocCategories, statusFilter, areaMap]);
+
+  const statusLabels: Record<string, string> = {
+    te_plannen: "Te plannen",
+    ingepland: "Ingepland",
+    gestart: "Gestart",
+    afgerond: "Afgerond",
+  };
+
+  const handleExport = () => {
+    const exportRows = rows.flatMap((r: any) =>
+      r.trainers.length > 0
+        ? r.trainers.map((t: any) => ({
+            training: r.name,
+            nummer: r.trainingNumber,
+            status: statusLabels[r.status] ?? r.status,
+            gebied: r.area,
+            trainer: t.name,
+            rol: t.role,
+            voorovereenkomst: t.hasVoorovereenkomst ? "Ja" : "Nee",
+            overeenkomst: t.hasOvereenkomst ? "Ja" : "Nee",
+          }))
+        : [{
+            training: r.name,
+            nummer: r.trainingNumber,
+            status: statusLabels[r.status] ?? r.status,
+            gebied: r.area,
+            trainer: "—",
+            rol: "—",
+            voorovereenkomst: "—",
+            overeenkomst: "—",
+          }]
+    );
+    downloadExport("contracten_overzicht.xlsx", [
+      { key: "training", label: "Training" },
+      { key: "nummer", label: "Nummer" },
+      { key: "status", label: "Status" },
+      { key: "gebied", label: "Gebied" },
+      { key: "trainer", label: "Trainer" },
+      { key: "rol", label: "Rol" },
+      { key: "voorovereenkomst", label: "Voorovereenkomst" },
+      { key: "overeenkomst", label: "Overeenkomst" },
+    ] as ExportColumn[], exportRows, "xlsx");
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-display text-base font-bold text-card-foreground">Contracten Overzicht</h3>
+          <p className="text-xs text-muted-foreground">Programma's met trainers en contractstatus</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-popover">
+              <SelectItem value="alle">Alle statussen</SelectItem>
+              <SelectItem value="te_plannen">Te plannen</SelectItem>
+              <SelectItem value="ingepland">Ingepland</SelectItem>
+              <SelectItem value="gestart">Gestart</SelectItem>
+              <SelectItem value="afgerond">Afgerond</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download className="h-4 w-4" /> Excel
+          </Button>
+        </div>
+      </div>
+
+      {rows.length === 0 ? (
+        <p className="py-6 text-center text-sm text-muted-foreground">Geen programma's gevonden.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Training</TableHead>
+                <TableHead>Nr.</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Gebied</TableHead>
+                <TableHead>Trainer</TableHead>
+                <TableHead>Rol</TableHead>
+                <TableHead className="text-center">Voorovereenkomst</TableHead>
+                <TableHead className="text-center">Overeenkomst</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((row: any) =>
+                row.trainers.length > 0
+                  ? row.trainers.map((t: any, i: number) => (
+                      <TableRow key={`${row.id}-${t.staffId}-${i}`}>
+                        {i === 0 && (
+                          <>
+                            <TableCell rowSpan={row.trainers.length} className="font-medium align-top">{row.name}</TableCell>
+                            <TableCell rowSpan={row.trainers.length} className="align-top text-xs text-muted-foreground">{row.trainingNumber}</TableCell>
+                            <TableCell rowSpan={row.trainers.length} className="align-top">
+                              <span className={`status-indicator ${
+                                row.status === "afgerond" ? "status-groen" :
+                                row.status === "gestart" ? "status-groen" :
+                                row.status === "ingepland" ? "status-oranje" : "status-rood"
+                              }`}>{statusLabels[row.status] ?? row.status}</span>
+                            </TableCell>
+                            <TableCell rowSpan={row.trainers.length} className="align-top text-sm">{row.area}</TableCell>
+                          </>
+                        )}
+                        <TableCell className="text-sm">{t.name}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground capitalize">{t.role}</TableCell>
+                        <TableCell className="text-center">
+                          {t.hasVoorovereenkomst
+                            ? <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">✓</span>
+                            : <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive">✗</span>
+                          }
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {t.hasOvereenkomst
+                            ? <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700">✓</span>
+                            : <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive">✗</span>
+                          }
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  : (
+                      <TableRow key={row.id}>
+                        <TableCell className="font-medium">{row.name}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{row.trainingNumber}</TableCell>
+                        <TableCell>
+                          <span className={`status-indicator ${
+                            row.status === "afgerond" || row.status === "gestart" ? "status-groen" :
+                            row.status === "ingepland" ? "status-oranje" : "status-rood"
+                          }`}>{statusLabels[row.status] ?? row.status}</span>
+                        </TableCell>
+                        <TableCell className="text-sm">{row.area}</TableCell>
+                        <TableCell colSpan={4} className="text-sm text-muted-foreground italic">Geen trainers gekoppeld</TableCell>
+                      </TableRow>
+                    )
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 function PivotTable({ data }: { data: { rows: Record<string, any>[]; categories: string[] } }) {
   if (data.rows.length === 0) {
