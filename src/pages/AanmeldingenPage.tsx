@@ -81,6 +81,7 @@ export default function AanmeldingenPage() {
   const [errors, setErrors] = useState<Partial<Record<keyof EditForm, string>>>({});
   const [saving, setSaving] = useState(false);
   const [selectedProgramId, setSelectedProgramId] = useState<string>("");
+  const [importOpen, setImportOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
