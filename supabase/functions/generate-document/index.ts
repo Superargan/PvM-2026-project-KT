@@ -295,8 +295,7 @@ serve(async (req) => {
         "{{intake_notities}}": client.intake_notes ?? "",
       };
 
-      const ext = wantPdf ? ".pdf" : ".docx";
-      outputFileName = `${client.first_name}_${client.last_name}_${template.name}${ext}`.replace(/\s+/g, "_");
+      outputFileName = `${client.first_name}_${client.last_name}_${template.name}.docx`.replace(/\s+/g, "_");
     }
 
     // Download template from storage
