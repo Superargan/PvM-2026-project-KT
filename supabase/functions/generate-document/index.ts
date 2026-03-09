@@ -190,8 +190,7 @@ serve(async (req) => {
         "{{school_gebied}}": (school as any).neighborhoods?.areas?.name ?? "",
       };
 
-      const ext = wantPdf ? ".pdf" : ".docx";
-      outputFileName = `${school.name ?? "School"}_${template.name}${ext}`.replace(/\s+/g, "_");
+      outputFileName = `${school.name ?? "School"}_${template.name}.docx`.replace(/\s+/g, "_");
     }
 
     if (client_id) {
