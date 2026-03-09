@@ -727,6 +727,8 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
   const [viewMode, setViewMode] = useState<"ontbrekend" | "overzicht">("ontbrekend");
   const [ontbrekendTab, setOntbrekendTab] = useState<"voorovereenkomst" | "overeenkomst">("voorovereenkomst");
   const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
+  const [bulkRunning, setBulkRunning] = useState<string | null>(null);
+  const cancelRef = useRef(false);
   const areaMap = useMemo(() => new Map(areas.map((a: any) => [a.id, a.name])), [areas]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
