@@ -172,7 +172,7 @@ serve(async (req) => {
 
       const { data: programClients } = await supabase
         .from("program_clients")
-        .select("programs(name, start_date, end_date, program_staff(staff(id, name, user_id)))")
+        .select("program_id, programs(name, training_number, start_date, end_date, program_staff(staff(id, name, user_id)))")
         .eq("client_id", client_id)
         .limit(1);
 
