@@ -353,11 +353,43 @@ serve(async (req) => {
     let contentType: string;
 
     if (wantPdf) {
-      // Extract paragraphs from the processed document.xml and render to PDF
+      // Extract paragraphs from document AND headers/footers
+      const allParagraphs: ParagraphInfo[] = [];
+
+      // Headers first
+      for (const hdr of ["word/header1.xml", "word/header2.xml", "word/header3.xml"]) {
+        const hdrFile = zip.file(hdr);
+        if (hdrFile) {
+          const hdrXml = await hdrFile.async("string");
+          const hdrParas = extractParagraphs(hdrXml);
+          if (hdrParas.some(p => p.text.trim())) {
+            allParagraphs.push(...hdrParas);
+            allParagraphs.push({ text: "", bold: false, fontSize: 8, alignment: "left" }); // separator
+            break; // Use first non-empty header only
+          }
+        }
+      }
+
+      // Main document body
       const docFile = zip.file("word/document.xml");
       const docXml = docFile ? await docFile.async("string") : "";
-      const paragraphs = extractParagraphs(docXml);
-      outputBuffer = await renderPdf(paragraphs);
+      allParagraphs.push(...extractParagraphs(docXml));
+
+      // Footers last
+      for (const ftr of ["word/footer1.xml", "word/footer2.xml", "word/footer3.xml"]) {
+        const ftrFile = zip.file(ftr);
+        if (ftrFile) {
+          const ftrXml = await ftrFile.async("string");
+          const ftrParas = extractParagraphs(ftrXml);
+          if (ftrParas.some(p => p.text.trim())) {
+            allParagraphs.push({ text: "", bold: false, fontSize: 8, alignment: "left" }); // separator
+            allParagraphs.push(...ftrParas);
+            break; // Use first non-empty footer only
+          }
+        }
+      }
+
+      outputBuffer = await renderPdf(allParagraphs);
       contentType = "application/pdf";
     } else {
       outputBuffer = await zip.generateAsync({ type: "uint8array" });
