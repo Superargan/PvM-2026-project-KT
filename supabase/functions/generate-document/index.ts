@@ -79,7 +79,7 @@ serve(async (req) => {
         // Try to find the most recent program for this trainer
         const { data: ps } = await supabase
           .from("program_staff")
-          .select("program_id, programs(id, name, start_date, end_date, schools(name), neighborhoods(name, areas(name)))")
+          .select("program_id, programs(id, name, training_number, start_date, end_date, schools(name), neighborhoods(name, areas(name)))")
           .eq("staff_id", staff_id)
           .order("created_at", { ascending: false })
           .limit(1);
