@@ -363,10 +363,11 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
         <div className="space-y-1.5">
           <Label>Periode</Label>
           <Select value={periodMode} onValueChange={(v) => setPeriodMode(v as PeriodMode)}>
-            <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
             <SelectContent className="bg-popover">
               <SelectItem value="week">Week</SelectItem>
               <SelectItem value="maand">Maand</SelectItem>
+              <SelectItem value="kwartaal">3 Maanden</SelectItem>
             </SelectContent>
           </Select>
         </div>
