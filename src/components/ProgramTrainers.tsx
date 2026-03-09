@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, UserCheck, UserPlus, CalendarDays } from "lucide-react";
+import { X, Plus, UserCheck, UserPlus, CalendarDays, ArrowLeftRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ProgramTrainersProps {
