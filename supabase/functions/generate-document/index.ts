@@ -170,12 +170,12 @@ serve(async (req) => {
       const currentYear = today.getFullYear();
 
       if (category === "voorovereenkomst") {
-        outputFileName = `Voorovereenkomst ${tradeName} ${currentMonth} ${currentYear}${ext}`.replace(/\s+/g, "_");
+        outputFileName = sanitizeFileName(`Voorovereenkomst ${tradeName} ${currentMonth} ${currentYear}`) + ext;
       } else if (category === "overeenkomst") {
         const trainingNum = replacements["{{programma_nummer}}"] || "";
-        outputFileName = `${trainingNum} ${tradeName} ${staff.name || ""}${ext}`.replace(/\s+/g, "_").replace(/^_+/, "");
+        outputFileName = sanitizeFileName(`${trainingNum} ${tradeName} ${staff.name || ""}`) + ext;
       } else {
-        outputFileName = `${staff.name ?? "Trainer"}_${template.name}${ext}`.replace(/\s+/g, "_");
+        outputFileName = sanitizeFileName(`${staff.name ?? "Trainer"}_${template.name}`) + ext;
       }
     }
 
