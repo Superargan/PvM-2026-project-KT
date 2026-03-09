@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   Menu,
   CalendarDays,
+  Clock,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,7 @@ const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/" },
   { label: "Deelnemers", icon: Users, path: "/clienten" },
   { label: "Aanmeldingen", icon: ClipboardList, path: "/aanmeldingen" },
+  { label: "Wachtlijst", icon: Clock, path: "/wachtlijst" },
   { label: "Planning", icon: CalendarDays, path: "/planning" },
   { label: "Programma's", icon: GraduationCap, path: "/programmas" },
   { label: "Scholen", icon: School, path: "/scholen" },

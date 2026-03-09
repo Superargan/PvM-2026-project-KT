@@ -1,4 +1,4 @@
-import { Users, GraduationCap, School, ClipboardList, ArrowRight, UserCog } from "lucide-react";
+import { Users, GraduationCap, School, ClipboardList, ArrowRight, UserCog, Clock } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -59,6 +59,17 @@ export default function Dashboard() {
     },
   });
 
+  const { data: waitlistCount = 0 } = useQuery({
+    queryKey: ["dashboard-waitlist"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("clients")
+        .select("*", { count: "exact", head: true })
+        .not("waitlist_status", "is", null);
+      return count ?? 0;
+    },
+  });
+
   const { data: recentClients = [] } = useQuery({
     queryKey: ["dashboard-recent-clients"],
     queryFn: async () => {
@@ -112,6 +123,7 @@ export default function Dashboard() {
         <StatCard title="Trainers" value={trainerCount} icon={<UserCog className="h-5 w-5" />} color="blauw" to="/medewerkers" />
         <StatCard title="Geplande intakes" value={intakeGeplandCount} icon={<ClipboardList className="h-5 w-5" />} color="oranje" to="/aanmeldingen" />
         <StatCard title="Nieuwe Aanmeldingen" value={newClientCount} subtitle="Afgelopen 7 dagen" icon={<ClipboardList className="h-5 w-5" />} color="rood" to="/aanmeldingen" />
+        <StatCard title="Wachtlijst" value={waitlistCount} icon={<Clock className="h-5 w-5" />} color="oranje" to="/wachtlijst" />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
