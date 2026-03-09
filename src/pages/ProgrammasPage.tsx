@@ -186,7 +186,20 @@ export default function ProgrammasPage() {
           <h1 className="font-display text-2xl font-extrabold text-foreground">Programma's</h1>
           <p className="text-sm text-muted-foreground">Trainingsgroepen en individuele trajecten</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap items-center">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-popover">
+              <SelectItem value="alle">Alle statussen</SelectItem>
+              <SelectItem value="actief">Actief (niet afgerond)</SelectItem>
+              <SelectItem value="te_plannen">Te plannen</SelectItem>
+              <SelectItem value="ingepland">Ingepland</SelectItem>
+              <SelectItem value="gestart">Gestart</SelectItem>
+              <SelectItem value="afgerond">Afgerond</SelectItem>
+            </SelectContent>
+          </Select>
           {(["csv", "xlsx"] as const).map((fmt) => (
             <Button key={fmt} variant="outline" size="sm" onClick={() => {
               const rows = programs.map((p: any) => ({
