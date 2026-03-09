@@ -451,13 +451,29 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
         }
       }
 
-      const { data, error } = await supabase.functions.invoke("update-template", {
-        body: { template_id: template.id, updates: editedTexts, inserts },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      toast({ title: "Template opgeslagen", description: "Wijzigingen zijn opgeslagen met behoud van opmaak." });
-      // Reload to reflect changes
+      // Save category change if needed
+      if (categoryChanged) {
+        const { error: catErr } = await supabase
+          .from("document_templates")
+          .update({ category: editCategory })
+          .eq("id", template.id);
+        if (catErr) throw catErr;
+        template.category = editCategory;
+      }
+
+      // Save content changes if any
+      const hasContentChanges = Object.values(editedTexts).some((s) => Object.keys(s).length > 0) ||
+        Object.values(insertedParagraphs).some((arr) => arr.length > 0);
+
+      if (hasContentChanges) {
+        const { data, error } = await supabase.functions.invoke("update-template", {
+          body: { template_id: template.id, updates: editedTexts, inserts },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+      }
+
+      toast({ title: "Template opgeslagen", description: "Wijzigingen zijn opgeslagen." });
       await loadTemplate();
     } catch (err: any) {
       toast({ title: "Opslaan mislukt", description: err.message, variant: "destructive" });
