@@ -896,7 +896,7 @@ function GenerateTab() {
         const results = [];
         for (const staffId of trainersToGenerate) {
           const { data, error } = await supabase.functions.invoke("generate-document", {
-            body: { template_id: selectedTemplate, staff_id: staffId, program_id: selectedEntity },
+            body: { template_id: selectedTemplate, staff_id: staffId, program_id: selectedEntity, output_format: outputFormat },
           });
           if (error) throw error;
           if (data?.error) throw new Error(data.error);
