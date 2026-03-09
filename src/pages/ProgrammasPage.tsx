@@ -45,6 +45,7 @@ export default function ProgrammasPage() {
   const [selectedArea, setSelectedArea] = useState<string>("");
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
   const [selectedAgeCategory, setSelectedAgeCategory] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("actief");
   const { toast } = useToast();
 
   const { data: areas = [] } = useQuery({
