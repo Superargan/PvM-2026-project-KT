@@ -377,6 +377,7 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
   const [saving, setSaving] = useState(false);
   const [editedTexts, setEditedTexts] = useState<Record<string, Record<number, string>>>({});
   const [insertedParagraphs, setInsertedParagraphs] = useState<Record<string, InsertedParagraph[]>>({});
+  const [newInsertedFocusId, setNewInsertedFocusId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editCategory, setEditCategory] = useState(template.category ?? "overig");
 
@@ -395,6 +396,7 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
       setSections(data.sections);
       setEditedTexts({});
       setInsertedParagraphs({});
+      setNewInsertedFocusId(null);
       setIsEditing(false);
     } catch (err: any) {
       toast({ title: "Fout bij laden", description: err.message, variant: "destructive" });
@@ -416,11 +418,13 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
     categoryChanged;
 
   const addParagraph = (sectionPart: string, afterIndex: number) => {
+    const id = crypto.randomUUID();
+    setNewInsertedFocusId(id);
     setInsertedParagraphs((prev) => ({
       ...prev,
       [sectionPart]: [
         ...(prev[sectionPart] ?? []),
-        { id: crypto.randomUUID(), afterIndex, text: "", style: "normal" },
+        { id, afterIndex, text: "", style: "normal" },
       ],
     }));
   };
