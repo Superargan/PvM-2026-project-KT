@@ -964,104 +964,124 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
       </div>
 
       {viewMode === "ontbrekend" ? (
-        <div className="space-y-6">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="text-sm font-semibold text-card-foreground flex items-center gap-2">
-                <span className="inline-block w-2 h-2 rounded-full bg-destructive" />
-                Ontbrekende voorovereenkomsten ({missingVoor.length})
-              </h4>
-              {missingVoor.length > 0 && voorovereenkomstTemplate && (
-                <Button size="sm" variant="outline" onClick={generateAllVoorovereenkomsten} disabled={generatingIds.size > 0}>
-                  <FileText className="h-3.5 w-3.5 mr-1" /> Alle aanmaken
-                </Button>
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Button
+              variant={ontbrekendTab === "voorovereenkomst" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setOntbrekendTab("voorovereenkomst")}
+            >
+              Voorovereenkomsten ({missingVoor.length})
+            </Button>
+            <Button
+              variant={ontbrekendTab === "overeenkomst" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setOntbrekendTab("overeenkomst")}
+            >
+              Overeenkomsten van opdracht ({missingOvk.length})
+            </Button>
+          </div>
+
+          {ontbrekendTab === "voorovereenkomst" ? (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-semibold text-card-foreground flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 rounded-full bg-destructive" />
+                  Ontbrekende voorovereenkomsten ({missingVoor.length})
+                </h4>
+                {missingVoor.length > 0 && voorovereenkomstTemplate && (
+                  <Button size="sm" variant="outline" onClick={generateAllVoorovereenkomsten} disabled={generatingIds.size > 0}>
+                    <FileText className="h-3.5 w-3.5 mr-1" /> Alle aanmaken
+                  </Button>
+                )}
+              </div>
+              {missingVoor.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-3 pl-4">✓ Alle trainers hebben een voorovereenkomst</p>
+              ) : (
+                <div className="rounded-lg border border-border overflow-hidden">
+                  <Table>
+                    <TableHeader><TableRow className="bg-muted/50">
+                      <TableHead>Trainer</TableHead><TableHead>Handelsnaam</TableHead><TableHead>Gekoppeld aan trainingen</TableHead><TableHead className="w-[130px]"></TableHead>
+                    </TableRow></TableHeader>
+                    <TableBody>
+                      {missingVoor.map((item, i) => {
+                        const key = `voor_${item.staffId}`;
+                        const isGenerating = generatingIds.has(key);
+                        return (
+                          <TableRow key={i}>
+                            <TableCell className="font-medium text-sm">{item.name}</TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{item.tradeName}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{item.programs.slice(0, 3).join(", ")}{item.programs.length > 3 ? ` +${item.programs.length - 3}` : ""}</TableCell>
+                            <TableCell>
+                              {voorovereenkomstTemplate ? (
+                                <Button size="sm" variant="ghost" className="h-7 text-xs" disabled={isGenerating}
+                                  onClick={() => generateDocument(voorovereenkomstTemplate.id, item.staffId)}>
+                                  {isGenerating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <FileText className="h-3 w-3 mr-1" />}
+                                  Aanmaken
+                                </Button>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">Geen template</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </div>
-            {missingVoor.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-3 pl-4">✓ Alle trainers hebben een voorovereenkomst</p>
-            ) : (
-              <div className="rounded-lg border border-border overflow-hidden">
-                <Table>
-                  <TableHeader><TableRow className="bg-muted/50">
-                    <TableHead>Trainer</TableHead><TableHead>Handelsnaam</TableHead><TableHead>Gekoppeld aan trainingen</TableHead><TableHead className="w-[130px]"></TableHead>
-                  </TableRow></TableHeader>
-                  <TableBody>
-                    {missingVoor.map((item, i) => {
-                      const key = `voor_${item.staffId}`;
-                      const isGenerating = generatingIds.has(key);
-                      return (
-                        <TableRow key={i}>
-                          <TableCell className="font-medium text-sm">{item.name}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{item.tradeName}</TableCell>
-                          <TableCell className="text-xs text-muted-foreground">{item.programs.slice(0, 3).join(", ")}{item.programs.length > 3 ? ` +${item.programs.length - 3}` : ""}</TableCell>
-                          <TableCell>
-                            {voorovereenkomstTemplate ? (
-                              <Button size="sm" variant="ghost" className="h-7 text-xs" disabled={isGenerating}
-                                onClick={() => generateDocument(voorovereenkomstTemplate.id, item.staffId)}>
-                                {isGenerating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <FileText className="h-3 w-3 mr-1" />}
-                                Aanmaken
-                              </Button>
-                            ) : (
-                              <span className="text-xs text-muted-foreground">Geen template</span>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+          ) : (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-semibold text-card-foreground flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 rounded-full bg-destructive" />
+                  Ontbrekende overeenkomsten van opdracht ({missingOvk.length})
+                </h4>
+                {missingOvk.length > 0 && overeenkomstTemplate && (
+                  <Button size="sm" variant="outline" onClick={generateAllOvereenkomsten} disabled={generatingIds.size > 0}>
+                    <FileText className="h-3.5 w-3.5 mr-1" /> Alle aanmaken
+                  </Button>
+                )}
               </div>
-            )}
-          </div>
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="text-sm font-semibold text-card-foreground flex items-center gap-2">
-                <span className="inline-block w-2 h-2 rounded-full bg-destructive" />
-                Ontbrekende overeenkomsten van opdracht ({missingOvk.length})
-              </h4>
-              {missingOvk.length > 0 && overeenkomstTemplate && (
-                <Button size="sm" variant="outline" onClick={generateAllOvereenkomsten} disabled={generatingIds.size > 0}>
-                  <FileText className="h-3.5 w-3.5 mr-1" /> Alle aanmaken
-                </Button>
+              {missingOvk.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-3 pl-4">✓ Alle overeenkomsten van opdracht zijn aangemaakt</p>
+              ) : (
+                <div className="rounded-lg border border-border overflow-hidden">
+                  <Table>
+                    <TableHeader><TableRow className="bg-muted/50">
+                      <TableHead>Training</TableHead><TableHead>Nr.</TableHead><TableHead>Trainer</TableHead><TableHead>Rol</TableHead><TableHead className="w-[130px]"></TableHead>
+                    </TableRow></TableHeader>
+                    <TableBody>
+                      {missingOvk.map((item, i) => {
+                        const key = `ovk_${item.programId}_${item.staffId}`;
+                        const isGenerating = generatingIds.has(key);
+                        return (
+                          <TableRow key={i}>
+                            <TableCell className="font-medium text-sm">{item.programName}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">{item.trainingNumber}</TableCell>
+                            <TableCell className="text-sm">{item.trainerName}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground capitalize">{item.role}</TableCell>
+                            <TableCell>
+                              {overeenkomstTemplate ? (
+                                <Button size="sm" variant="ghost" className="h-7 text-xs" disabled={isGenerating}
+                                  onClick={() => generateDocument(overeenkomstTemplate.id, item.staffId, item.programId)}>
+                                  {isGenerating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <FileText className="h-3 w-3 mr-1" />}
+                                  Aanmaken
+                                </Button>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">Geen template</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </div>
-            {missingOvk.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-3 pl-4">✓ Alle overeenkomsten van opdracht zijn aangemaakt</p>
-            ) : (
-              <div className="rounded-lg border border-border overflow-hidden">
-                <Table>
-                  <TableHeader><TableRow className="bg-muted/50">
-                    <TableHead>Training</TableHead><TableHead>Nr.</TableHead><TableHead>Trainer</TableHead><TableHead>Rol</TableHead><TableHead className="w-[130px]"></TableHead>
-                  </TableRow></TableHeader>
-                  <TableBody>
-                    {missingOvk.map((item, i) => {
-                      const key = `ovk_${item.programId}_${item.staffId}`;
-                      const isGenerating = generatingIds.has(key);
-                      return (
-                        <TableRow key={i}>
-                          <TableCell className="font-medium text-sm">{item.programName}</TableCell>
-                          <TableCell className="text-xs text-muted-foreground">{item.trainingNumber}</TableCell>
-                          <TableCell className="text-sm">{item.trainerName}</TableCell>
-                          <TableCell className="text-xs text-muted-foreground capitalize">{item.role}</TableCell>
-                          <TableCell>
-                            {overeenkomstTemplate ? (
-                              <Button size="sm" variant="ghost" className="h-7 text-xs" disabled={isGenerating}
-                                onClick={() => generateDocument(overeenkomstTemplate.id, item.staffId, item.programId)}>
-                                {isGenerating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <FileText className="h-3 w-3 mr-1" />}
-                                Aanmaken
-                              </Button>
-                            ) : (
-                              <span className="text-xs text-muted-foreground">Geen template</span>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </div>
+          )}
         </div>
       ) : (
         rows.length === 0 ? (
