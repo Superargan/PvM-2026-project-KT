@@ -253,7 +253,7 @@ function TemplatesTab() {
                       <div className="flex flex-wrap gap-1">
                         {group.items.map((p) => (
                           <button key={p} type="button" onClick={() => insertPlaceholder(p)} className="inline-flex items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono text-primary hover:bg-primary/20 transition-colors cursor-pointer">
-                            {p.replace(/\{\{|\}\}/g, "")}<Copy className="h-2.5 w-2.5 opacity-50" />
+                            {p}<Copy className="h-2.5 w-2.5 opacity-50" />
                           </button>
                         ))}
                       </div>
