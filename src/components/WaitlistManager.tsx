@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, UserPlus, Clock, XCircle, Upload } from "lucide-react";
 import ClientImport from "@/components/ClientImport";
+import { format, differenceInYears } from "date-fns";
+import { nl } from "date-fns/locale";
 
 const statusLabels: Record<string, string> = {
   waiting: "Wachtend",
