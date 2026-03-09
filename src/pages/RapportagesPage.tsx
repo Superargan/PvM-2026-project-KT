@@ -697,6 +697,18 @@ export default function RapportagesPage() {
             <InvoiceManager />
           </Card>
         </TabsContent>
+
+        {/* Contracten tab */}
+        <TabsContent value="contracten">
+          <Card className="p-4">
+            <ContractenOverzicht
+              programs={programs}
+              programStaff={programStaff}
+              generatedDocs={generatedDocs}
+              areas={areas}
+            />
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );
