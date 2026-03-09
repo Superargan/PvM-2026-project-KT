@@ -450,16 +450,36 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
       } else if (importType === "deelnemer_beschikbaarheid") {
         const { data: clients } = await supabase.from("clients").select("id, first_name, last_name").eq("archived", false);
         const clientMap = new Map<string, string>();
+        const clientFirstNames = new Map<string, { id: string; count: number }>();
         clients?.forEach((c) => {
-          clientMap.set(`${c.first_name} ${c.last_name}`.toLowerCase().trim(), c.id);
-          clientMap.set(c.last_name.toLowerCase().trim(), c.id);
+          const fullName = `${c.first_name} ${c.last_name}`.toLowerCase().trim();
+          clientMap.set(fullName, c.id);
+          if (c.last_name) clientMap.set(c.last_name.toLowerCase().trim(), c.id);
+          // Track first names (only use if unique)
+          const fn = c.first_name.toLowerCase().trim();
+          const existing = clientFirstNames.get(fn);
+          if (existing) {
+            existing.count++;
+          } else {
+            clientFirstNames.set(fn, { id: c.id, count: 1 });
+          }
         });
 
         const findClient = (name: string): string | undefined => {
           const lower = name.toLowerCase().trim();
           if (clientMap.has(lower)) return clientMap.get(lower);
+          // Partial match (contains)
           for (const [key, id] of clientMap) {
             if (key.includes(lower) || lower.includes(key)) return id;
+          }
+          // First name only match (if unique)
+          const firstNameMatch = clientFirstNames.get(lower);
+          if (firstNameMatch && firstNameMatch.count === 1) return firstNameMatch.id;
+          // Try first word of input as first name
+          const firstWord = lower.split(/\s+/)[0];
+          if (firstWord !== lower) {
+            const fwMatch = clientFirstNames.get(firstWord);
+            if (fwMatch && fwMatch.count === 1) return fwMatch.id;
           }
           return undefined;
         };
