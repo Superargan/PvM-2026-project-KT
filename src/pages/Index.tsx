@@ -1,4 +1,4 @@
-import { Users, GraduationCap, School, ClipboardList, ArrowRight, UserCog } from "lucide-react";
+import { Users, GraduationCap, School, ClipboardList, ArrowRight, UserCog, Clock } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
