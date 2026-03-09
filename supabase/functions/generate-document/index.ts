@@ -327,11 +327,18 @@ serve(async (req) => {
         xml = xml.split(placeholder).join(escapeXml(value));
       }
 
+      // Pass 1a: also replace malformed single-brace variants like {{datum_vandaag}
+      for (const [placeholder, value] of Object.entries(replacements)) {
+        const singleBrace = placeholder.replace(/\}\}$/, "}");
+        xml = xml.split(singleBrace).join(escapeXml(value));
+      }
+
       // Pass 1b: catch-all for any remaining datum-like placeholders in plain text nodes
+      // Match both {{datum...}} and {{datum...} (malformed single closing brace)
       const todaySafe = escapeXml(todayFormatted);
       xml = xml.replace(/<w:t[^>]*>([^<]*)<\/w:t>/g, (fullMatch, textContent) => {
-        if (/\{\{[^}]*datum[^}]*\}\}/i.test(textContent)) {
-          const replaced = textContent.replace(/\{\{[^}]*datum[^}]*\}\}/gi, todaySafe);
+        if (/\{\{[^}]*datum[^}]*\}\}?/i.test(textContent)) {
+          const replaced = textContent.replace(/\{\{[^}]*datum[^}]*?\}?\}/gi, todaySafe);
           return fullMatch.replace(textContent, replaced);
         }
         return fullMatch;
@@ -516,28 +523,31 @@ function collapseParagraphAndReplace(para: string, replacements: Record<string, 
   });
   let fullText = texts.join("");
 
-  // Apply replacements
+  // Apply replacements (both double and single closing brace variants)
   for (const [placeholder, value] of Object.entries(replacements)) {
     fullText = fullText.split(placeholder).join(value);
+    // Also handle malformed single closing brace: {{datum_vandaag}
+    const singleBrace = placeholder.replace(/\}\}$/, "}");
+    fullText = fullText.split(singleBrace).join(value);
   }
 
   // Also try whitespace-normalized matching for any remaining {{ }}
-  if (/\{\{[^}]+\}\}/.test(fullText)) {
+  if (/\{\{[^}]+\}\}?/.test(fullText)) {
     for (const [placeholder, value] of Object.entries(replacements)) {
-      // Create a regex that allows flexible whitespace within the placeholder
       const inner = placeholder.replace(/^\{\{/, "").replace(/\}\}$/, "").trim();
       const flexPattern = inner.replace(/[\s_]+/g, "[\\s_]*");
       try {
-        const re = new RegExp("\\{\\{\\s*" + flexPattern + "\\s*\\}\\}", "gi");
+        // Match both {{...}} and {{...}
+        const re = new RegExp("\\{\\{\\s*" + flexPattern + "\\s*\\}\\}?", "gi");
         fullText = fullText.replace(re, value);
       } catch { /* ignore */ }
     }
   }
 
-  // Final catch-all: replace any remaining datum-like placeholders with today's date
-  if (/\{\{[^}]*datum[^}]*\}\}/i.test(fullText)) {
+  // Final catch-all: replace any remaining datum-like placeholders (1 or 2 closing braces)
+  if (/\{\{[^}]*datum[^}]*\}/.test(fullText)) {
     const todayNL = new Date().toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" });
-    fullText = fullText.replace(/\{\{[^}]*datum[^}]*\}\}/gi, todayNL);
+    fullText = fullText.replace(/\{\{[^}]*datum[^}]*?\}?\}/gi, todayNL);
   }
 
   // Rebuild paragraph: keep pPr, replace all runs with single run
