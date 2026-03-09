@@ -50,8 +50,15 @@ serve(async (req) => {
         return d.toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" });
       } catch { return dateStr; }
     };
+    const todayFormatted = today.toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" });
     let replacements: Record<string, string> = {
-      "{{datum_vandaag}}": today.toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" }),
+      "{{datum_vandaag}}": todayFormatted,
+      "{{datum vandaag}}": todayFormatted,
+      "{{datumvandaag}}": todayFormatted,
+      "{{huidige_datum}}": todayFormatted,
+      "{{huidige datum}}": todayFormatted,
+      "{{Datum vandaag}}": todayFormatted,
+      "{{Datum_vandaag}}": todayFormatted,
     };
     let outputFileName = "";
 
