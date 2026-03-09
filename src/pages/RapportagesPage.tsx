@@ -892,8 +892,17 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
       toast({ title: "Geen voorovereenkomst-template gevonden", variant: "destructive" });
       return;
     }
+    cancelRef.current = false;
+    setBulkRunning("voor");
+    let count = 0;
     for (const item of missingVoor) {
+      if (cancelRef.current) break;
       await generateDocument(voorovereenkomstTemplate.id, item.staffId);
+      count++;
+    }
+    setBulkRunning(null);
+    if (cancelRef.current) {
+      toast({ title: "Generatie gestopt", description: `${count} van ${missingVoor.length} voorovereenkomsten aangemaakt.` });
     }
   };
 
@@ -902,9 +911,22 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
       toast({ title: "Geen overeenkomst-template gevonden", variant: "destructive" });
       return;
     }
+    cancelRef.current = false;
+    setBulkRunning("ovk");
+    let count = 0;
     for (const item of missingOvk) {
+      if (cancelRef.current) break;
       await generateDocument(overeenkomstTemplate.id, item.staffId, item.programId);
+      count++;
     }
+    setBulkRunning(null);
+    if (cancelRef.current) {
+      toast({ title: "Generatie gestopt", description: `${count} van ${missingOvk.length} overeenkomsten aangemaakt.` });
+    }
+  };
+
+  const handleCancelBulk = () => {
+    cancelRef.current = true;
   };
 
   const handleExport = () => {
