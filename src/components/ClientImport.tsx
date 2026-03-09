@@ -316,12 +316,37 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
       const enrollDateRaw = findCol(row, "Datum inschrijving", "Inschrijfdatum", "datum inschrijving");
       const enrollDate = parseExcelDate(enrollDateRaw);
 
-      // Referral source (how they found the program)
-      const referral = findCol(row, "Hoe aan de KT gekomen", "Verwezen door", "Verwijzing", "referral") ?? null;
+      // Referral source (how they found the program) — check multiple column names
+      const referralRaw = findCol(row, "Hoe aan de KT gekomen", "Verwezen door", "Verwijzing", "Verwijzer", "Hoe bij KT gekomen", "referral", "Bron") ?? null;
 
-      // Referrer (person who referred) - avoid matching "Verwijzer geïnformeerd"
-      const referrerName = findCol(row, "Verwijzer naam", "Naam verwijzer", "Verwijzende leerkracht") ?? null;
-      const referrer_id = findReferrerId(referrerName, school_id);
+      // Determine if this is a person-referrer or a generic source
+      let referral_reason = referralRaw;
+      let referrer_id: string | null = null;
+
+      if (referralRaw) {
+        const normalizedRef = referralRaw.toLowerCase().trim();
+        const isNonPerson = NON_PERSON_REFERRAL_SOURCES.some(
+          (src) => normalizedRef === src || normalizedRef.includes(src)
+        );
+
+        if (isNonPerson) {
+          // It's a generic source like "flyer", "internet" — store as reason only
+          referral_reason = referralRaw;
+        } else {
+          // Could be a person's name — try to match to a referrer record
+          referrer_id = findReferrerId(referralRaw, school_id);
+          if (!referrer_id) {
+            // Couldn't match to a known referrer, keep as referral_reason text
+            referral_reason = referralRaw;
+          }
+        }
+      }
+
+      // Also check dedicated referrer-name column (separate from source)
+      const referrerNameCol = findCol(row, "Verwijzer naam", "Naam verwijzer", "Verwijzende leerkracht") ?? null;
+      if (referrerNameCol && !referrer_id) {
+        referrer_id = findReferrerId(referrerNameCol, school_id);
+      }
 
       // Intake status
       const intakeFormulier = findCol(row, "Intakeformulier", "Intake formulier");
