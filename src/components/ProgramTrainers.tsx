@@ -159,6 +159,13 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
                 <span className="text-muted-foreground text-[10px] ml-0.5">({a.role === "oudertrainer" ? "ouder" : "kind"})</span>
               )}
               <button
+                onClick={() => toggleRoleMutation.mutate({ id: a.id, currentRole: a.role })}
+                className="ml-0.5 rounded-full p-0.5 hover:bg-muted"
+                title={`Wijzig naar ${a.role === "oudertrainer" ? "kindtrainer" : "oudertrainer"}`}
+              >
+                <ArrowLeftRight className="h-3 w-3" />
+              </button>
+              <button
                 onClick={() => removeMutation.mutate(a.id)}
                 className="ml-0.5 rounded-full p-0.5 hover:bg-muted"
               >
