@@ -1003,7 +1003,7 @@ function GenerateTab() {
               <Label className="text-sm font-semibold">2. Gegevens van</Label>
               <div className="flex gap-2 mt-1">
                 {([
-                  { value: "client", label: "Cliënt", icon: UserCircle },
+                  { value: "client", label: "Deelnemer", icon: UserCircle },
                   { value: "staff", label: "Trainer", icon: GraduationCap },
                   { value: "school", label: "School", icon: Building2 },
                   { value: "program", label: "Training", icon: Calendar },
