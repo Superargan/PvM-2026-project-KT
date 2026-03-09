@@ -1184,6 +1184,8 @@ function GenerateTab() {
 function GeneratedDocsTab() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const signedFileRef = useRef<HTMLInputElement>(null);
 
   const { data: documents = [], isLoading } = useQuery({
     queryKey: ["generated-documents"],
@@ -1198,13 +1200,13 @@ function GeneratedDocsTab() {
     },
   });
 
-  const handleDownload = async (doc: any) => {
-    const { data, error } = await supabase.storage.from("generated-documents").download(doc.file_path);
+  const handleDownload = async (filePath: string, fileName: string) => {
+    const { data, error } = await supabase.storage.from("generated-documents").download(filePath);
     if (error || !data) { toast({ title: "Download mislukt", variant: "destructive" }); return; }
     const url = URL.createObjectURL(data);
     const a = document.createElement("a");
     a.href = url;
-    a.download = doc.file_name;
+    a.download = fileName;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -1212,11 +1214,81 @@ function GeneratedDocsTab() {
   const deleteMutation = useMutation({
     mutationFn: async (doc: any) => {
       await supabase.storage.from("generated-documents").remove([doc.file_path]);
+      if (doc.signed_file_path) {
+        await supabase.storage.from("generated-documents").remove([doc.signed_file_path]);
+      }
       const { error } = await supabase.from("generated_documents").delete().eq("id", doc.id);
       if (error) throw error;
     },
     onSuccess: () => {
       toast({ title: "Document verwijderd" });
+      queryClient.invalidateQueries({ queryKey: ["generated-documents"] });
+    },
+    onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
+  });
+
+  const uploadSignedMutation = useMutation({
+    mutationFn: async ({ docId, file, doc }: { docId: string; file: File; doc: any }) => {
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      if (ext !== "pdf") throw new Error("Alleen PDF-bestanden toegestaan");
+
+      const storagePath = doc.client_id ? `${doc.client_id}` : doc.staff_id ? `trainers/${doc.staff_id}` : `schools/${doc.school_id}`;
+      const signedPath = `${storagePath}/signed_${crypto.randomUUID()}.pdf`;
+      const signedName = file.name;
+
+      const { error: uploadErr } = await supabase.storage
+        .from("generated-documents")
+        .upload(signedPath, file, { contentType: "application/pdf" });
+      if (uploadErr) throw uploadErr;
+
+      const { error: updateErr } = await supabase
+        .from("generated_documents")
+        .update({
+          signed_file_path: signedPath,
+          signed_file_name: signedName,
+          signed_at: new Date().toISOString(),
+        } as any)
+        .eq("id", docId);
+      if (updateErr) throw updateErr;
+    },
+    onSuccess: () => {
+      toast({ title: "Ondertekend document geüpload" });
+      setUploadingId(null);
+      queryClient.invalidateQueries({ queryKey: ["generated-documents"] });
+    },
+    onError: (err: any) => {
+      toast({ title: "Upload mislukt", description: err.message, variant: "destructive" });
+      setUploadingId(null);
+    },
+  });
+
+  const handleSignedUpload = (doc: any) => {
+    setUploadingId(doc.id);
+    signedFileRef.current?.click();
+  };
+
+  const handleSignedFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !uploadingId) { setUploadingId(null); return; }
+    const doc = documents.find((d: any) => d.id === uploadingId);
+    if (!doc) return;
+    uploadSignedMutation.mutate({ docId: uploadingId, file, doc });
+    e.target.value = "";
+  };
+
+  const removeSignedMutation = useMutation({
+    mutationFn: async (doc: any) => {
+      if (doc.signed_file_path) {
+        await supabase.storage.from("generated-documents").remove([doc.signed_file_path]);
+      }
+      const { error } = await supabase
+        .from("generated_documents")
+        .update({ signed_file_path: null, signed_file_name: null, signed_at: null } as any)
+        .eq("id", doc.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Ondertekend document verwijderd" });
       queryClient.invalidateQueries({ queryKey: ["generated-documents"] });
     },
     onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
@@ -1242,40 +1314,90 @@ function GeneratedDocsTab() {
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-muted/50">
-            <TableHead>Document</TableHead>
-            <TableHead>Template</TableHead>
-            <TableHead>Voor</TableHead>
-            <TableHead>Datum</TableHead>
-            <TableHead className="text-right">Acties</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {documents.map((doc: any) => (
-            <TableRow key={doc.id}>
-              <TableCell>
-                <button onClick={() => handleDownload(doc)} className="flex items-center gap-2 text-sm font-medium hover:underline">
-                  <File className="h-4 w-4 text-primary" />{doc.file_name}
-                </button>
-              </TableCell>
-              <TableCell className="text-sm text-muted-foreground">{doc.document_templates?.name ?? "-"}</TableCell>
-              <TableCell className="text-sm">{getEntityLabel(doc)}</TableCell>
-              <TableCell className="text-sm text-muted-foreground">{format(new Date(doc.created_at), "d MMM yyyy HH:mm", { locale: nl })}</TableCell>
-              <TableCell className="text-right">
-                <div className="flex gap-1 justify-end">
-                  <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)} title="Download"><Download className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => { if (confirm("Document verwijderen?")) deleteMutation.mutate(doc); }}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              </TableCell>
+    <div className="space-y-2">
+      <input
+        ref={signedFileRef}
+        type="file"
+        accept=".pdf"
+        className="hidden"
+        onChange={handleSignedFileChange}
+      />
+      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50">
+              <TableHead>Document</TableHead>
+              <TableHead>Template</TableHead>
+              <TableHead>Voor</TableHead>
+              <TableHead>Ondertekend</TableHead>
+              <TableHead>Datum</TableHead>
+              <TableHead className="text-right">Acties</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {documents.map((doc: any) => (
+              <TableRow key={doc.id}>
+                <TableCell>
+                  <button onClick={() => handleDownload(doc.file_path, doc.file_name)} className="flex items-center gap-2 text-sm font-medium hover:underline">
+                    <FileText className="h-4 w-4 text-primary" />{doc.file_name}
+                  </button>
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">{doc.document_templates?.name ?? "-"}</TableCell>
+                <TableCell className="text-sm">{getEntityLabel(doc)}</TableCell>
+                <TableCell>
+                  {doc.signed_file_path ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleDownload(doc.signed_file_path, doc.signed_file_name || "ondertekend.pdf")}
+                        className="flex items-center gap-1 text-sm text-green-600 hover:underline"
+                      >
+                        <Badge variant="secondary" className="bg-green-100 text-green-700 text-[10px]">
+                          PDF ✓
+                        </Badge>
+                      </button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => { if (confirm("Ondertekend PDF verwijderen?")) removeSignedMutation.mutate(doc); }}
+                        title="Ondertekend bestand verwijderen"
+                      >
+                        <X className="h-3 w-3 text-destructive" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs text-muted-foreground"
+                      onClick={() => handleSignedUpload(doc)}
+                      disabled={uploadSignedMutation.isPending}
+                    >
+                      {uploadSignedMutation.isPending && uploadingId === doc.id ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <><Upload className="h-3 w-3 mr-1" /> PDF uploaden</>
+                      )}
+                    </Button>
+                  )}
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">{format(new Date(doc.created_at), "d MMM yyyy HH:mm", { locale: nl })}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex gap-1 justify-end">
+                    <Button variant="ghost" size="icon" onClick={() => handleDownload(doc.file_path, doc.file_name)} title="Download DOCX"><Download className="h-4 w-4" /></Button>
+                    {doc.signed_file_path && (
+                      <Button variant="ghost" size="icon" onClick={() => handleDownload(doc.signed_file_path, doc.signed_file_name || "ondertekend.pdf")} title="Download ondertekend PDF"><File className="h-4 w-4 text-green-600" /></Button>
+                    )}
+                    <Button variant="ghost" size="icon" onClick={() => { if (confirm("Document verwijderen?")) deleteMutation.mutate(doc); }}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

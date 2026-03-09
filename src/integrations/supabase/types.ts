@@ -344,6 +344,9 @@ export type Database = {
           id: string
           program_id: string | null
           school_id: string | null
+          signed_at: string | null
+          signed_file_name: string | null
+          signed_file_path: string | null
           staff_id: string | null
           template_id: string | null
         }
@@ -356,6 +359,9 @@ export type Database = {
           id?: string
           program_id?: string | null
           school_id?: string | null
+          signed_at?: string | null
+          signed_file_name?: string | null
+          signed_file_path?: string | null
           staff_id?: string | null
           template_id?: string | null
         }
@@ -368,6 +374,9 @@ export type Database = {
           id?: string
           program_id?: string | null
           school_id?: string | null
+          signed_at?: string | null
+          signed_file_name?: string | null
+          signed_file_path?: string | null
           staff_id?: string | null
           template_id?: string | null
         }
