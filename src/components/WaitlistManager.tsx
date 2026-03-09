@@ -91,19 +91,24 @@ export default function WaitlistManager() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <h2 className="font-display text-lg font-bold text-card-foreground">Wachtlijst</h2>
-        <Select value={filterArea} onValueChange={setFilterArea}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Filter op gebied" />
-          </SelectTrigger>
-          <SelectContent className="bg-popover">
-            <SelectItem value="all">Alle gebieden</SelectItem>
-            {areas.map((a: any) => (
-              <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4" /> Importeren
+          </Button>
+          <Select value={filterArea} onValueChange={setFilterArea}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Filter op gebied" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover">
+              <SelectItem value="all">Alle gebieden</SelectItem>
+              {areas.map((a: any) => (
+                <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {isLoading ? (
