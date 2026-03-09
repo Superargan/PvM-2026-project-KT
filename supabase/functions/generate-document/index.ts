@@ -205,11 +205,12 @@ serve(async (req) => {
         if (programId) {
           const { data: fullProgram } = await supabase
             .from("programs")
-            .select("schools(name), neighborhoods(name, areas(name))")
+            .select("location, schools(name), neighborhoods(name, areas(name))")
             .eq("id", programId)
             .single();
           if (fullProgram) {
             programSchoolName = (fullProgram as any).schools?.name ?? "";
+            programLocation = (fullProgram as any).location || programSchoolName;
             programWijk = (fullProgram as any).neighborhoods?.name ?? "";
             programGebied = (fullProgram as any).neighborhoods?.areas?.name ?? "";
           }
