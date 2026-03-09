@@ -439,8 +439,16 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
     if (!hasChanges) return;
     setSaving(true);
     try {
+      // Convert inserted paragraphs to inserts format: { sectionPart: [{ afterIndex, text }] }
+      const inserts: Record<string, { afterIndex: number; text: string }[]> = {};
+      for (const [part, paragraphs] of Object.entries(insertedParagraphs)) {
+        if (paragraphs.length > 0) {
+          inserts[part] = paragraphs.map((p) => ({ afterIndex: p.afterIndex, text: p.text }));
+        }
+      }
+
       const { data, error } = await supabase.functions.invoke("update-template", {
-        body: { template_id: template.id, updates: editedTexts },
+        body: { template_id: template.id, updates: editedTexts, inserts },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
