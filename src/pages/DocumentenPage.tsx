@@ -650,30 +650,33 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
                           onDragOver={(e) => {
                             e.preventDefault();
                             e.dataTransfer.dropEffect = "copy";
-                            // Move caret to drop position so user sees where it will land
-                            const input = e.currentTarget as HTMLInputElement;
-                            if (document.caretRangeFromPoint) {
-                              // Place cursor at nearest character using selectionStart
-                              const rect = input.getBoundingClientRect();
-                              const style = window.getComputedStyle(input);
-                              const fontSize = parseFloat(style.fontSize) || 14;
-                              const charWidth = fontSize * 0.6;
-                              const paddingLeft = parseFloat(style.paddingLeft) || 0;
-                              const dropX = e.clientX - rect.left - paddingLeft;
-                              const pos = Math.max(0, Math.min(Math.round(dropX / charWidth), currentText.length));
-                              input.setSelectionRange(pos, pos);
-                            }
                           }}
                           onDrop={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             const placeholder = e.dataTransfer.getData("text/plain");
                             if (!placeholder) return;
+
                             const input = e.currentTarget as HTMLInputElement;
-                            // Use the caret position that was set during dragOver
-                            const pos = input.selectionStart ?? currentText.length;
+                            input.focus();
+
+                            const rect = input.getBoundingClientRect();
+                            const style = window.getComputedStyle(input);
+                            const fontSize = parseFloat(style.fontSize) || 14;
+                            const charWidth = fontSize * 0.6;
+                            const paddingLeft = parseFloat(style.paddingLeft) || 0;
+                            const dropX = e.clientX - rect.left - paddingLeft;
+                            const dropPos = Math.max(0, Math.min(Math.round(dropX / charWidth), currentText.length));
+
+                            const pos = Number.isFinite(dropPos) ? dropPos : (input.selectionStart ?? currentText.length);
                             const newValue = currentText.substring(0, pos) + placeholder + currentText.substring(pos);
                             handleTextChange(section.part, p.index, newValue);
+
+                            requestAnimationFrame(() => {
+                              const newPos = pos + placeholder.length;
+                              input.setSelectionRange(newPos, newPos);
+                              input.focus();
+                            });
                           }}
                           className={`border-0 border-b border-transparent focus:border-primary rounded-none px-1 ${
                             styleClasses[p.style] ?? "text-sm"
