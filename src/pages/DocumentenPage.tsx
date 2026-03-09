@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
   FileText, Upload, Trash2, Loader2, File, Plus, Copy, Download,
-  Search, UserCircle, Building2, GraduationCap, Eye, Pencil, Save, ArrowLeft, X
+  Search, UserCircle, Building2, GraduationCap, Eye, Pencil, Save, ArrowLeft, X, Calendar
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -615,11 +615,12 @@ function GenerateTab() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedTemplate, setSelectedTemplate] = useState("");
-  const [entityType, setEntityType] = useState<"client" | "staff" | "school">("client");
+  const [entityType, setEntityType] = useState<"client" | "staff" | "school" | "program">("client");
   const [selectedEntity, setSelectedEntity] = useState("");
   const [selectedProgram, setSelectedProgram] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [outputFormat, setOutputFormat] = useState<"docx">("docx");
+  const [selectedTrainers, setSelectedTrainers] = useState<string[]>([]);
 
   const { data: templates = [] } = useQuery({
     queryKey: ["document-templates"],
@@ -667,14 +668,48 @@ function GenerateTab() {
       if (error) throw error;
       return data;
     },
-    enabled: entityType === "staff",
+    enabled: entityType === "staff" || entityType === "program",
+  });
+
+  // Fetch trainers for selected program
+  const { data: programTrainers = [] } = useQuery({
+    queryKey: ["program-trainers-for-doc", selectedEntity],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("program_staff")
+        .select("staff_id, role, staff:staff!program_staff_staff_id_fkey(id, name, trade_name)")
+        .eq("program_id", selectedEntity)
+        .in("role", ["trainer", "oudertrainer", "kindtrainer"]);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: entityType === "program" && !!selectedEntity,
   });
 
   const generateMutation = useMutation({
     mutationFn: async () => {
       if (!selectedTemplate) throw new Error("Selecteer een template");
-      if (!selectedEntity) throw new Error("Selecteer een entiteit");
 
+      if (entityType === "program") {
+        if (!selectedEntity) throw new Error("Selecteer een training");
+        const trainersToGenerate = selectedTrainers.length > 0
+          ? selectedTrainers
+          : programTrainers.map((t: any) => t.staff_id);
+        if (trainersToGenerate.length === 0) throw new Error("Geen trainers gekoppeld aan deze training");
+
+        const results = [];
+        for (const staffId of trainersToGenerate) {
+          const { data, error } = await supabase.functions.invoke("generate-document", {
+            body: { template_id: selectedTemplate, staff_id: staffId, program_id: selectedEntity },
+          });
+          if (error) throw error;
+          if (data?.error) throw new Error(data.error);
+          results.push(data);
+        }
+        return results;
+      }
+
+      if (!selectedEntity) throw new Error("Selecteer een entiteit");
       const body: any = { template_id: selectedTemplate };
       if (entityType === "client") body.client_id = selectedEntity;
       if (entityType === "staff") {
@@ -689,21 +724,36 @@ function GenerateTab() {
       return data;
     },
     onSuccess: async (data) => {
-      toast({ title: "Document gegenereerd", description: data.file_name });
-      queryClient.invalidateQueries({ queryKey: ["generated-documents"] });
-
-      // Auto-download
-      const { data: fileData, error } = await supabase.storage
-        .from("generated-documents")
-        .download(data.file_path);
-      if (!error && fileData) {
-        const url = URL.createObjectURL(fileData);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = data.file_name;
-        a.click();
-        URL.revokeObjectURL(url);
+      if (Array.isArray(data)) {
+        toast({ title: `${data.length} overeenkomst(en) gegenereerd` });
+        for (const doc of data) {
+          const { data: fileData, error } = await supabase.storage
+            .from("generated-documents")
+            .download(doc.file_path);
+          if (!error && fileData) {
+            const url = URL.createObjectURL(fileData);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = doc.file_name;
+            a.click();
+            URL.revokeObjectURL(url);
+          }
+        }
+      } else {
+        toast({ title: "Document gegenereerd", description: data.file_name });
+        const { data: fileData, error } = await supabase.storage
+          .from("generated-documents")
+          .download(data.file_path);
+        if (!error && fileData) {
+          const url = URL.createObjectURL(fileData);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = data.file_name;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
       }
+      queryClient.invalidateQueries({ queryKey: ["generated-documents"] });
     },
     onError: (err: any) => toast({ title: "Fout bij genereren", description: err.message, variant: "destructive" }),
   });
@@ -712,6 +762,8 @@ function GenerateTab() {
     ? clients.map((c: any) => ({ id: c.id, label: `${c.first_name} ${c.last_name}` }))
     : entityType === "staff"
     ? staffList.map((s: any) => ({ id: s.id, label: s.name || s.trade_name || "Onbekend" }))
+    : entityType === "program"
+    ? programs.map((p: any) => ({ id: p.id, label: p.name }))
     : schools.map((s: any) => ({ id: s.id, label: s.name }));
 
   const filteredEntities = entities.filter((e) =>
@@ -757,12 +809,13 @@ function GenerateTab() {
                   { value: "client", label: "Cliënt", icon: UserCircle },
                   { value: "staff", label: "Trainer", icon: GraduationCap },
                   { value: "school", label: "School", icon: Building2 },
+                  { value: "program", label: "Training", icon: Calendar },
                 ] as const).map(({ value, label, icon: Icon }) => (
                   <Button
                     key={value}
                     variant={entityType === value ? "default" : "outline"}
                     size="sm"
-                    onClick={() => { setEntityType(value); setSelectedEntity(""); setSearchTerm(""); }}
+                    onClick={() => { setEntityType(value); setSelectedEntity(""); setSearchTerm(""); setSelectedTrainers([]); }}
                   >
                     <Icon className="h-4 w-4" /> {label}
                   </Button>
@@ -773,7 +826,7 @@ function GenerateTab() {
             {/* Step 3: Select Entity */}
             <div>
               <Label className="text-sm font-semibold">
-                3. {entityType === "client" ? "Cliënt" : entityType === "staff" ? "Trainer" : "School"} selecteren
+                3. {entityType === "client" ? "Cliënt" : entityType === "staff" ? "Trainer" : entityType === "program" ? "Training" : "School"} selecteren
               </Label>
               <div className="relative mt-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -818,15 +871,50 @@ function GenerateTab() {
               </div>
             )}
 
+            {/* Step 3b: Trainer selection for program type */}
+            {entityType === "program" && selectedEntity && programTrainers.length > 0 && (
+              <div>
+                <Label className="text-sm font-semibold">3b. Trainers selecteren</Label>
+                <p className="text-xs text-muted-foreground mb-2">Selecteer trainers of laat leeg om voor alle trainers te genereren.</p>
+                <div className="flex flex-wrap gap-2">
+                  {programTrainers.map((pt: any) => {
+                    const name = pt.staff?.name || pt.staff?.trade_name || "Onbekend";
+                    const roleLabel = pt.role === "oudertrainer" ? "ouder" : pt.role === "kindtrainer" ? "kind" : "";
+                    const isSelected = selectedTrainers.includes(pt.staff_id);
+                    return (
+                      <Button
+                        key={pt.staff_id}
+                        variant={isSelected ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          setSelectedTrainers((prev) =>
+                            isSelected ? prev.filter((id) => id !== pt.staff_id) : [...prev, pt.staff_id]
+                          );
+                        }}
+                      >
+                        {name}{roleLabel && <span className="ml-1 text-xs opacity-70">({roleLabel})</span>}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {entityType === "program" && selectedEntity && programTrainers.length === 0 && (
+              <p className="text-sm text-muted-foreground italic">Geen trainers gekoppeld aan deze training.</p>
+            )}
+
             {/* Generate Button */}
             <Button
               className="w-full"
               size="lg"
               onClick={() => generateMutation.mutate()}
-              disabled={!selectedTemplate || !selectedEntity || generateMutation.isPending}
+              disabled={!selectedTemplate || !selectedEntity || (entityType === "program" && programTrainers.length === 0) || generateMutation.isPending}
             >
               {generateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-              Document Genereren & Downloaden
+              {entityType === "program"
+                ? `Overeenkomst(en) Genereren (${selectedTrainers.length || programTrainers.length} trainer${(selectedTrainers.length || programTrainers.length) !== 1 ? "s" : ""})`
+                : "Document Genereren & Downloaden"}
             </Button>
           </CardContent>
         </Card>

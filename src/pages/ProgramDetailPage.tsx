@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, Loader2, Users, UserPlus, X, GraduationCap, Calendar, MapPin, Settings, ClipboardList,
+  ArrowLeft, Loader2, Users, UserPlus, X, GraduationCap, Calendar, MapPin, Settings, ClipboardList, FileText,
 } from "lucide-react";
 import ProgramTrainers from "@/components/ProgramTrainers";
 import ProgramAttendance from "@/components/ProgramAttendance";
@@ -250,10 +250,11 @@ export default function ProgramDetailPage() {
         </TabsContent>
 
         {/* Trainers tab */}
-        <TabsContent value="trainers">
+        <TabsContent value="trainers" className="space-y-4">
           <div className="rounded-xl border border-border bg-card p-6">
             <ProgramTrainers programId={id!} />
           </div>
+          <ProgramDocumentGenerator programId={id!} />
         </TabsContent>
 
         {/* Sessies tab */}
@@ -263,6 +264,90 @@ export default function ProgramDetailPage() {
           </div>
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function ProgramDocumentGenerator({ programId }: { programId: string }) {
+  const { toast } = useToast();
+
+  const { data: templates = [] } = useQuery({
+    queryKey: ["overeenkomst-templates"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("document_templates").select("*").order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: trainers = [] } = useQuery({
+    queryKey: ["program_staff_for_docs", programId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("program_staff")
+        .select("staff_id, role, staff:staff!program_staff_staff_id_fkey(id, name, trade_name)")
+        .eq("program_id", programId)
+        .in("role", ["trainer", "oudertrainer", "kindtrainer"]);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [generating, setGenerating] = useState(false);
+
+  const handleGenerate = async () => {
+    if (!selectedTemplate || trainers.length === 0) return;
+    setGenerating(true);
+    try {
+      for (const t of trainers) {
+        const { data, error } = await supabase.functions.invoke("generate-document", {
+          body: { template_id: selectedTemplate, staff_id: t.staff_id, program_id: programId },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+
+        const { data: fileData, error: dlErr } = await supabase.storage
+          .from("generated-documents")
+          .download(data.file_path);
+        if (!dlErr && fileData) {
+          const url = URL.createObjectURL(fileData);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = data.file_name;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+      }
+      toast({ title: `${trainers.length} overeenkomst(en) gegenereerd en gedownload` });
+    } catch (err: any) {
+      toast({ title: "Fout bij genereren", description: err.message, variant: "destructive" });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  if (trainers.length === 0) return null;
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-4">
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Overeenkomst van Opdracht</p>
+      <div className="flex gap-2">
+        <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+          <SelectTrigger className="flex-1">
+            <SelectValue placeholder="Kies een template..." />
+          </SelectTrigger>
+          <SelectContent className="bg-popover">
+            {templates.map((t: any) => (
+              <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button disabled={!selectedTemplate || generating} onClick={handleGenerate}>
+          {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+          Genereer ({trainers.length} trainer{trainers.length !== 1 ? "s" : ""})
+        </Button>
+      </div>
     </div>
   );
 }
