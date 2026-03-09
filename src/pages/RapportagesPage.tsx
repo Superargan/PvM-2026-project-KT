@@ -1094,7 +1094,8 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
                           <TableCell className="text-xs text-muted-foreground capitalize">{t.role}</TableCell>
                           <TableCell className="text-center">
                             {t.exempt ? <span className="text-xs text-muted-foreground">n.v.t.</span>
-                              : t.hasVoorovereenkomst ? <span className="text-xs font-medium text-emerald-700">✓</span>
+                              : t.hasVoorovereenkomst ? <span className="text-xs font-medium text-emerald-700">✓ Getekend</span>
+                              : t.voorovereenkomstGenerated ? <span className="text-xs font-medium text-amber-600">⏳ Niet getekend</span>
                               : (
                                 <Button size="sm" variant="ghost" className="h-6 text-xs text-destructive" disabled={!voorovereenkomstTemplate || generatingIds.has(`voor_${t.staffId}`)}
                                   onClick={() => voorovereenkomstTemplate && generateDocument(voorovereenkomstTemplate.id, t.staffId)}>
@@ -1104,7 +1105,8 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
                           </TableCell>
                           <TableCell className="text-center">
                             {t.exempt ? <span className="text-xs text-muted-foreground">n.v.t.</span>
-                              : t.hasOvereenkomst ? <span className="text-xs font-medium text-emerald-700">✓</span>
+                              : t.hasOvereenkomst ? <span className="text-xs font-medium text-emerald-700">✓ Getekend</span>
+                              : t.overeenkomstGenerated ? <span className="text-xs font-medium text-amber-600">⏳ Niet getekend</span>
                               : (
                                 <Button size="sm" variant="ghost" className="h-6 text-xs text-destructive" disabled={!overeenkomstTemplate || generatingIds.has(`ovk_${row.id}_${t.staffId}`)}
                                   onClick={() => overeenkomstTemplate && generateDocument(overeenkomstTemplate.id, t.staffId, row.id)}>
