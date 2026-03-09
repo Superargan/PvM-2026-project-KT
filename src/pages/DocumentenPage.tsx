@@ -735,7 +735,12 @@ function renderWithPlaceholders(text: string) {
   return parts.map((part, i) => {
     if (/^\{\{[a-z_]+\}\}$/.test(part)) {
       return (
-        <span key={i} className="inline-flex items-center rounded bg-primary/10 px-1 py-0.5 text-[11px] font-mono text-primary mx-0.5">
+        <span
+          key={i}
+          className="inline-flex items-center rounded bg-primary/10 px-1 py-0.5 text-[11px] font-mono text-primary mx-0.5 cursor-pointer hover:bg-primary/20 transition-colors"
+          onClick={() => navigator.clipboard.writeText(part)}
+          title={`Klik om ${part} te kopiëren`}
+        >
           {part}
         </span>
       );
