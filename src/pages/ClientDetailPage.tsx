@@ -330,7 +330,7 @@ export default function ClientDetailPage() {
       <IntakeProgress client={{ ...client, ...form }} />
 
       {/* Tabs */}
-      <Tabs defaultValue="gegevens" className="space-y-4">
+      <Tabs defaultValue={initialTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="gegevens" className="gap-1.5"><User className="h-3.5 w-3.5" /> Gegevens</TabsTrigger>
           <TabsTrigger value="intake" className="gap-1.5"><ClipboardList className="h-3.5 w-3.5" /> Intake</TabsTrigger>
