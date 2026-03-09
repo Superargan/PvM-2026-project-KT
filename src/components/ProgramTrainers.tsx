@@ -133,7 +133,7 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
       {/* Main trainers */}
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <UserCheck className="h-3.5 w-3.5" />
-        <span>Vaste trainers ({mainTrainers.length}/2)</span>
+        <span>Vaste trainers ({mainTrainers.length})</span>
       </div>
       {mainTrainers.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">
