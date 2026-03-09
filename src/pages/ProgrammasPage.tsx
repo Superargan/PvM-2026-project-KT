@@ -45,6 +45,7 @@ export default function ProgrammasPage() {
   const [selectedArea, setSelectedArea] = useState<string>("");
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
   const [selectedAgeCategory, setSelectedAgeCategory] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("actief");
   const { toast } = useToast();
 
   const { data: areas = [] } = useQuery({
@@ -80,6 +81,13 @@ export default function ProgrammasPage() {
       if (error) throw error;
       return data ?? [];
     },
+  });
+
+  const filteredPrograms = programs.filter((p: any) => {
+    const s = p.status ?? "te_plannen";
+    if (statusFilter === "alle") return true;
+    if (statusFilter === "actief") return s !== "afgerond";
+    return s === statusFilter;
   });
 
   const handleAdd = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -185,10 +193,23 @@ export default function ProgrammasPage() {
           <h1 className="font-display text-2xl font-extrabold text-foreground">Programma's</h1>
           <p className="text-sm text-muted-foreground">Trainingsgroepen en individuele trajecten</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap items-center">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-popover">
+              <SelectItem value="alle">Alle statussen</SelectItem>
+              <SelectItem value="actief">Actief (niet afgerond)</SelectItem>
+              <SelectItem value="te_plannen">Te plannen</SelectItem>
+              <SelectItem value="ingepland">Ingepland</SelectItem>
+              <SelectItem value="gestart">Gestart</SelectItem>
+              <SelectItem value="afgerond">Afgerond</SelectItem>
+            </SelectContent>
+          </Select>
           {(["csv", "xlsx"] as const).map((fmt) => (
             <Button key={fmt} variant="outline" size="sm" onClick={() => {
-              const rows = programs.map((p: any) => ({
+              const rows = filteredPrograms.map((p: any) => ({
                 naam: p.name,
                 beschrijving: p.description ?? "",
                 school: p.schools?.name ?? "",
@@ -277,14 +298,14 @@ export default function ProgrammasPage() {
 
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-      ) : programs.length === 0 ? (
+      ) : filteredPrograms.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border bg-card py-16">
           <GraduationCap className="h-10 w-10 text-muted-foreground" />
-          <p className="mt-3 text-sm text-muted-foreground">Nog geen programma's aangemaakt</p>
+          <p className="mt-3 text-sm text-muted-foreground">Geen programma's gevonden{statusFilter !== "alle" ? " voor deze status" : ""}</p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {programs.map((prog: any) => {
+          {filteredPrograms.map((prog: any) => {
             const enrolled = prog.program_clients?.[0]?.count ?? 0;
             const max = prog.max_participants ?? 10;
             const status = prog.status ?? "te_plannen";
