@@ -145,6 +145,7 @@ export default function ProgramDetailPage() {
             <span className={`status-indicator ${statusInfo.css}`}>{statusInfo.label}</span>
           </div>
           <p className="text-sm text-muted-foreground">
+            {(program as any).location && <>{(program as any).location} • </>}
             {program.schools?.name && <>{program.schools.name} • </>}
             {program.areas?.name && <>{program.areas.name}</>}
             {program.neighborhoods?.name && <> — {program.neighborhoods.name}</>}
