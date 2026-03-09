@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { format } from "date-fns";
+import { nl } from "date-fns/locale";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -53,7 +55,7 @@ export default function WachtlijstPage() {
     queryFn: async () => {
       let query = supabase
         .from("clients")
-        .select("id, first_name, last_name, date_of_birth, school_id, waitlist_status, waitlist_area_id, dropout_reason, dropout_action, schools(name), areas:waitlist_area_id(name)")
+        .select("id, first_name, last_name, date_of_birth, school_id, waitlist_status, waitlist_area_id, dropout_reason, dropout_action, intake_date, created_at, schools(name), areas:waitlist_area_id(name)")
         .not("waitlist_status", "is", null);
 
       if (filterArea !== "all") {
@@ -211,8 +213,9 @@ export default function WachtlijstPage() {
                 <TableHead>Naam</TableHead>
                 <TableHead>Leeftijd</TableHead>
                 <TableHead>Gebied</TableHead>
+                <TableHead>Inschrijving</TableHead>
+                <TableHead>Intake</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Reden</TableHead>
                 <TableHead className="text-right">Actie</TableHead>
               </TableRow>
             </TableHeader>
@@ -232,14 +235,17 @@ export default function WachtlijstPage() {
                   </TableCell>
                   <TableCell className="text-sm text-card-foreground">{(() => { const age = calculateAge(client.date_of_birth); return age !== null ? `${age} jaar` : "—"; })()}</TableCell>
                   <TableCell>{(client as any).areas?.name ?? "—"}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {client.created_at ? format(new Date(client.created_at), "d MMM yyyy", { locale: nl }) : "—"}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {client.intake_date ? format(new Date(client.intake_date), "d MMM yyyy", { locale: nl }) : "—"}
+                  </TableCell>
                   <TableCell>
                     <Badge className={statusColors[client.waitlist_status] ?? ""}>
                       {client.waitlist_status === "waiting" ? <Clock className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
                       {statusLabels[client.waitlist_status] ?? client.waitlist_status}
                     </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
-                    {client.dropout_reason ?? "—"}
                   </TableCell>
                   <TableCell className="text-right">
                     {assigningClient === client.id ? (
