@@ -299,9 +299,14 @@ export default function PlanningPage() {
             Intakes, trainingen en beschikbaarheid van trainers
           </p>
         </div>
-        <Button onClick={() => setAvailabilityOpen(true)} size="sm">
-          <Plus className="h-4 w-4" /> Beschikbaarheid toevoegen
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+            <FileSpreadsheet className="h-4 w-4" /> Excel importeren
+          </Button>
+          <Button onClick={() => setAvailabilityOpen(true)} size="sm">
+            <Plus className="h-4 w-4" /> Beschikbaarheid toevoegen
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="agenda" className="space-y-4">
