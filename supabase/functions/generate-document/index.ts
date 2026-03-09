@@ -103,7 +103,7 @@ serve(async (req) => {
               "{{programma_eind}}": programEnd,
               "{{einddatum}}": programEnd,
               "{{programma_school}}": prog.schools?.name ?? "",
-              "{{locatie}}": prog.schools?.name ?? "",
+              "{{locatie}}": prog.location || prog.schools?.name || "",
               "{{programma_wijk}}": prog.neighborhoods?.name ?? "",
               "{{programma_gebied}}": prog.neighborhoods?.areas?.name ?? "",
             };
