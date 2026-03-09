@@ -304,7 +304,22 @@ function ProgramDocumentGenerator({ programId }: { programId: string }) {
     if (!selectedTemplate || trainers.length === 0) return;
     setGenerating(true);
     try {
-      for (const t of trainers) {
+      const isPraktijk4Kids = (name: string, tradeName: string) =>
+        (tradeName || "").toLowerCase().replace(/\s/g, "").includes("praktijk4kids") ||
+        (name || "").toLowerCase().replace(/\s/g, "").includes("praktijk4kids");
+
+      const eligibleTrainers = trainers.filter((t: any) => {
+        const staff = t.staff as any;
+        return !isPraktijk4Kids(staff?.name ?? "", staff?.trade_name ?? "");
+      });
+
+      if (eligibleTrainers.length === 0) {
+        toast({ title: "Geen trainers om documenten voor te genereren", description: "Praktijk4Kids trainers worden overgeslagen" });
+        setGenerating(false);
+        return;
+      }
+
+      for (const t of eligibleTrainers) {
         const { data, error } = await supabase.functions.invoke("generate-document", {
           body: { template_id: selectedTemplate, staff_id: t.staff_id, program_id: programId },
         });
@@ -323,7 +338,7 @@ function ProgramDocumentGenerator({ programId }: { programId: string }) {
           URL.revokeObjectURL(url);
         }
       }
-      toast({ title: `${trainers.length} overeenkomst(en) gegenereerd en gedownload` });
+      toast({ title: `${eligibleTrainers.length} overeenkomst(en) gegenereerd en gedownload` });
     } catch (err: any) {
       toast({ title: "Fout bij genereren", description: err.message, variant: "destructive" });
     } finally {
