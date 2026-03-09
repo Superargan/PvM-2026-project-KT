@@ -78,7 +78,7 @@ export default function WaitlistManager() {
       if (updateError) throw updateError;
     },
     onSuccess: () => {
-      toast.success("Cliënt toegewezen aan programma");
+      toast.success("Deelnemer toegewezen aan programma");
       qc.invalidateQueries({ queryKey: ["waitlist-clients"] });
     },
     onError: (err: any) => toast.error(err.message),
