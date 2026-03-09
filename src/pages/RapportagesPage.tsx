@@ -707,6 +707,7 @@ export default function RapportagesPage() {
               programStaff={programStaff}
               generatedDocs={generatedDocs}
               areas={areas}
+              docTemplates={docTemplates}
             />
           </Card>
         </TabsContent>
