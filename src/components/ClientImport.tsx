@@ -366,7 +366,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
         guardian_phone,
         intake_date,
         intake_status: mode === "waitlist" ? "wachtlijst" : intake_status,
-        referral_reason: referral,
+        referral_reason: referral_reason,
         referrer_id,
         ...(mode === "waitlist" ? { waitlist_status: "waiting" } : {}),
         ...(enrollDate ? { created_at: `${enrollDate}T00:00:00Z` } : {}),
