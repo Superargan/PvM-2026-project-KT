@@ -377,6 +377,7 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
   const [saving, setSaving] = useState(false);
   const [editedTexts, setEditedTexts] = useState<Record<string, Record<number, string>>>({});
   const [insertedParagraphs, setInsertedParagraphs] = useState<Record<string, InsertedParagraph[]>>({});
+  const [newInsertedFocusId, setNewInsertedFocusId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editCategory, setEditCategory] = useState(template.category ?? "overig");
 
@@ -395,6 +396,7 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
       setSections(data.sections);
       setEditedTexts({});
       setInsertedParagraphs({});
+      setNewInsertedFocusId(null);
       setIsEditing(false);
     } catch (err: any) {
       toast({ title: "Fout bij laden", description: err.message, variant: "destructive" });
@@ -416,11 +418,13 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
     categoryChanged;
 
   const addParagraph = (sectionPart: string, afterIndex: number) => {
+    const id = crypto.randomUUID();
+    setNewInsertedFocusId(id);
     setInsertedParagraphs((prev) => ({
       ...prev,
       [sectionPart]: [
         ...(prev[sectionPart] ?? []),
-        { id: crypto.randomUUID(), afterIndex, text: "", style: "normal" },
+        { id, afterIndex, text: "", style: "normal" },
       ],
     }));
   };
@@ -483,31 +487,22 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
   };
 
   const insertPlaceholderAtCursor = (placeholder: string) => {
-    // Insert into the currently focused input
     const activeEl = document.activeElement;
     if (activeEl && activeEl instanceof HTMLInputElement) {
       const start = activeEl.selectionStart ?? activeEl.value.length;
       const end = activeEl.selectionEnd ?? start;
       const newValue = activeEl.value.substring(0, start) + placeholder + activeEl.value.substring(end);
 
-      // Find which section/paragraph this input belongs to
       const sectionPart = activeEl.getAttribute("data-section");
       const paragraphIndex = activeEl.getAttribute("data-index");
       if (sectionPart && paragraphIndex != null) {
         handleTextChange(sectionPart, parseInt(paragraphIndex), newValue);
       }
 
-      // Trigger React state update via native event
-      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-        window.HTMLInputElement.prototype, 'value'
-      )?.set;
-      nativeInputValueSetter?.call(activeEl, newValue);
-      activeEl.dispatchEvent(new Event('input', { bubbles: true }));
-
       requestAnimationFrame(() => {
         const newPos = start + placeholder.length;
-        activeEl.setSelectionRange(newPos, newPos);
         activeEl.focus();
+        activeEl.setSelectionRange(newPos, newPos);
       });
     }
   };
@@ -619,7 +614,10 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
                           onChange={(e) => updateInsertedText(section.part, ip.id, e.target.value)}
                           className="border-0 border-b border-dashed border-primary/40 rounded-none px-1 text-sm bg-primary/5 flex-1"
                           placeholder="Nieuwe regel..."
-                          autoFocus
+                          autoFocus={newInsertedFocusId === ip.id}
+                          onFocus={() => {
+                            if (newInsertedFocusId === ip.id) setNewInsertedFocusId(null);
+                          }}
                         />
                         <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeInsertedParagraph(section.part, ip.id)}>
                           <X className="h-3 w-3 text-destructive" />
@@ -655,30 +653,33 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
                           onDragOver={(e) => {
                             e.preventDefault();
                             e.dataTransfer.dropEffect = "copy";
-                            // Move caret to drop position so user sees where it will land
-                            const input = e.currentTarget as HTMLInputElement;
-                            if (document.caretRangeFromPoint) {
-                              // Place cursor at nearest character using selectionStart
-                              const rect = input.getBoundingClientRect();
-                              const style = window.getComputedStyle(input);
-                              const fontSize = parseFloat(style.fontSize) || 14;
-                              const charWidth = fontSize * 0.6;
-                              const paddingLeft = parseFloat(style.paddingLeft) || 0;
-                              const dropX = e.clientX - rect.left - paddingLeft;
-                              const pos = Math.max(0, Math.min(Math.round(dropX / charWidth), currentText.length));
-                              input.setSelectionRange(pos, pos);
-                            }
                           }}
                           onDrop={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             const placeholder = e.dataTransfer.getData("text/plain");
                             if (!placeholder) return;
+
                             const input = e.currentTarget as HTMLInputElement;
-                            // Use the caret position that was set during dragOver
-                            const pos = input.selectionStart ?? currentText.length;
+                            input.focus();
+
+                            const rect = input.getBoundingClientRect();
+                            const style = window.getComputedStyle(input);
+                            const fontSize = parseFloat(style.fontSize) || 14;
+                            const charWidth = fontSize * 0.6;
+                            const paddingLeft = parseFloat(style.paddingLeft) || 0;
+                            const dropX = e.clientX - rect.left - paddingLeft;
+                            const dropPos = Math.max(0, Math.min(Math.round(dropX / charWidth), currentText.length));
+
+                            const pos = Number.isFinite(dropPos) ? dropPos : (input.selectionStart ?? currentText.length);
                             const newValue = currentText.substring(0, pos) + placeholder + currentText.substring(pos);
                             handleTextChange(section.part, p.index, newValue);
+
+                            requestAnimationFrame(() => {
+                              const newPos = pos + placeholder.length;
+                              input.setSelectionRange(newPos, newPos);
+                              input.focus();
+                            });
                           }}
                           className={`border-0 border-b border-transparent focus:border-primary rounded-none px-1 ${
                             styleClasses[p.style] ?? "text-sm"
@@ -695,7 +696,10 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
                                 onChange={(e) => updateInsertedText(section.part, ip.id, e.target.value)}
                                 className="border-0 border-b border-dashed border-primary/40 rounded-none px-1 text-sm bg-primary/5 flex-1"
                                 placeholder="Nieuwe regel..."
-                                autoFocus
+                                autoFocus={newInsertedFocusId === ip.id}
+                                onFocus={() => {
+                                  if (newInsertedFocusId === ip.id) setNewInsertedFocusId(null);
+                                }}
                               />
                               <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeInsertedParagraph(section.part, ip.id)}>
                                 <X className="h-3 w-3 text-destructive" />
