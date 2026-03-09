@@ -59,6 +59,15 @@ serve(async (req) => {
       "{{huidige datum}}": todayFormatted,
       "{{Datum vandaag}}": todayFormatted,
       "{{Datum_vandaag}}": todayFormatted,
+      "{{datum_ondertekening}}": todayFormatted,
+      "{{datum ondertekening}}": todayFormatted,
+      "{{datumondertekening}}": todayFormatted,
+      "{{Datum_ondertekening}}": todayFormatted,
+      "{{Datum ondertekening}}": todayFormatted,
+      "{{ondertekeningsdatum}}": todayFormatted,
+      "{{Ondertekeningsdatum}}": todayFormatted,
+      "{{datum}}": todayFormatted,
+      "{{Datum}}": todayFormatted,
     };
     let outputFileName = "";
 
@@ -317,6 +326,16 @@ serve(async (req) => {
       for (const [placeholder, value] of Object.entries(replacements)) {
         xml = xml.split(placeholder).join(escapeXml(value));
       }
+
+      // Pass 1b: catch-all for any remaining datum-like placeholders in plain text nodes
+      const todaySafe = escapeXml(todayFormatted);
+      xml = xml.replace(/<w:t[^>]*>([^<]*)<\/w:t>/g, (fullMatch, textContent) => {
+        if (/\{\{[^}]*datum[^}]*\}\}/i.test(textContent)) {
+          const replaced = textContent.replace(/\{\{[^}]*datum[^}]*\}\}/gi, todaySafe);
+          return fullMatch.replace(textContent, replaced);
+        }
+        return fullMatch;
+      });
       
       // Pass 2: handle split placeholders SCOPED per paragraph
       xml = xml.replace(/<w:p\b[^\/]*?>[\s\S]*?<\/w:p>/g, (para) => {
@@ -513,6 +532,12 @@ function collapseParagraphAndReplace(para: string, replacements: Record<string, 
         fullText = fullText.replace(re, value);
       } catch { /* ignore */ }
     }
+  }
+
+  // Final catch-all: replace any remaining datum-like placeholders with today's date
+  if (/\{\{[^}]*datum[^}]*\}\}/i.test(fullText)) {
+    const todayNL = new Date().toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" });
+    fullText = fullText.replace(/\{\{[^}]*datum[^}]*\}\}/gi, todayNL);
   }
 
   // Rebuild paragraph: keep pPr, replace all runs with single run
