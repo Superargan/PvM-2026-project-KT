@@ -209,7 +209,7 @@ export default function ProgrammasPage() {
           </Select>
           {(["csv", "xlsx"] as const).map((fmt) => (
             <Button key={fmt} variant="outline" size="sm" onClick={() => {
-              const rows = programs.map((p: any) => ({
+              const rows = filteredPrograms.map((p: any) => ({
                 naam: p.name,
                 beschrijving: p.description ?? "",
                 school: p.schools?.name ?? "",
