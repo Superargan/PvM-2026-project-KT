@@ -134,7 +134,7 @@ export default function ClientenPage() {
             </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Nieuwe Cliënt</DialogTitle>
+              <DialogTitle>Nieuwe Deelnemer</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleAddClient} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
