@@ -37,7 +37,7 @@ export default function WaitlistManager() {
     queryFn: async () => {
       let query = supabase
         .from("clients")
-        .select("id, first_name, last_name, date_of_birth, school_id, waitlist_status, waitlist_area_id, dropout_reason, dropout_action, schools(name), areas:waitlist_area_id(name)")
+        .select("id, first_name, last_name, date_of_birth, created_at, intake_date, school_id, waitlist_status, waitlist_area_id, dropout_reason, dropout_action, schools(name), areas:waitlist_area_id(name)")
         .not("waitlist_status", "is", null);
 
       if (filterArea !== "all") {
