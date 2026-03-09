@@ -89,6 +89,7 @@ export default function ProgrammasPage() {
       name: form.get("name") as string,
       description: (form.get("description") as string) || null,
       training_number: (form.get("training_number") as string) || null,
+      location: (form.get("location") as string) || null,
       start_date: (form.get("start_date") as string) || null,
       end_date: (form.get("end_date") as string) || null,
       max_participants: Number(form.get("max_participants")) || 10,
