@@ -548,7 +548,20 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
           <div>
             <h2 className="text-lg font-bold text-foreground">{template.name}</h2>
             <div className="flex items-center gap-2 mt-0.5">
-              <Badge variant="secondary">{categoryLabels[template.category] ?? template.category}</Badge>
+              {isEditing ? (
+                <Select value={editCategory} onValueChange={setEditCategory}>
+                  <SelectTrigger className="h-7 w-auto text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    {Object.entries(categoryLabels).map(([val, label]) => (
+                      <SelectItem key={val} value={val}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Badge variant="secondary">{categoryLabels[template.category] ?? template.category}</Badge>
+              )}
               <span className="text-xs text-muted-foreground">{template.placeholder_fields?.length ?? 0} placeholders</span>
             </div>
           </div>
