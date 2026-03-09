@@ -1,4 +1,4 @@
-import { ClipboardList, Search, Pencil, Loader2, ExternalLink, Clock, UserPlus, X, CalendarDays } from "lucide-react";
+import { ClipboardList, Search, Pencil, Loader2, ExternalLink, Clock, UserPlus, X, CalendarDays, Upload } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import WaitlistManager from "@/components/WaitlistManager";
+import ClientImport from "@/components/ClientImport";
 
 const editSchema = z.object({
   first_name: z.string().trim().min(1, "Voornaam is verplicht").max(100),
@@ -80,6 +81,7 @@ export default function AanmeldingenPage() {
   const [errors, setErrors] = useState<Partial<Record<keyof EditForm, string>>>({});
   const [saving, setSaving] = useState(false);
   const [selectedProgramId, setSelectedProgramId] = useState<string>("");
+  const [importOpen, setImportOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -313,9 +315,14 @@ export default function AanmeldingenPage() {
           <h1 className="font-display text-2xl font-extrabold text-foreground">Aanmeldingen</h1>
           <p className="text-sm text-muted-foreground">{clients.length} aanmeldingen in het systeem</p>
         </div>
-        <Button variant="outline" onClick={() => navigate("/aanmelden")}>
-          <ExternalLink className="h-4 w-4" /> Aanmeldformulier openen
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4" /> Importeren
+          </Button>
+          <Button variant="outline" onClick={() => navigate("/aanmelden")}>
+            <ExternalLink className="h-4 w-4" /> Aanmeldformulier openen
+          </Button>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
@@ -672,6 +679,8 @@ export default function AanmeldingenPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ClientImport open={importOpen} onOpenChange={setImportOpen} onComplete={() => refetch()} />
     </div>
   );
 }

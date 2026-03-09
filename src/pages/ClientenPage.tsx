@@ -1,4 +1,4 @@
-import { Users, Search, Filter, Eye, Plus, Loader2, Download } from "lucide-react";
+import { Users, Search, Filter, Eye, Plus, Loader2, Download, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { downloadExport, ExportColumn } from "@/lib/csvExport";
+import ClientImport from "@/components/ClientImport";
 
 function calculateAge(dob: string | null): number | null {
   if (!dob) return null;
@@ -42,6 +43,7 @@ const statusLabels: Record<string, string> = {
 export default function ClientenPage() {
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -123,6 +125,9 @@ export default function ClientenPage() {
               <Download className="h-4 w-4" /> {fmt.toUpperCase()}
             </Button>
           ))}
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4" /> Importeren
+          </Button>
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
               <Button><Plus className="h-4 w-4" /> Cliënt Toevoegen</Button>
@@ -208,6 +213,8 @@ export default function ClientenPage() {
           </table>
         </div>
       )}
+
+      <ClientImport open={importOpen} onOpenChange={setImportOpen} onComplete={() => refetch()} />
     </div>
   );
 }
