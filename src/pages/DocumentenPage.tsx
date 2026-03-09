@@ -536,7 +536,7 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
         <div className="flex gap-2">
           {isEditing ? (
             <>
-              <Button variant="outline" size="sm" onClick={() => { setIsEditing(false); setEditedTexts({}); }}>
+              <Button variant="outline" size="sm" onClick={() => { setIsEditing(false); setEditedTexts({}); setInsertedParagraphs({}); }}>
                 <X className="h-4 w-4" /> Annuleren
               </Button>
               <Button size="sm" onClick={handleSave} disabled={!hasChanges || saving}>
