@@ -213,6 +213,8 @@ export default function ClientenPage() {
           </table>
         </div>
       )}
+
+      <ClientImport open={importOpen} onOpenChange={setImportOpen} onComplete={() => refetch()} />
     </div>
   );
 }
