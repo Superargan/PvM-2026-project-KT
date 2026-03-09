@@ -202,7 +202,8 @@ export default function WaitlistManager() {
                     )}
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </div>
