@@ -679,6 +679,8 @@ export default function AanmeldingenPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <ClientImport open={importOpen} onOpenChange={setImportOpen} onComplete={() => refetch()} />
     </div>
   );
 }
