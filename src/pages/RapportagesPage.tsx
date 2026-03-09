@@ -798,6 +798,8 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
               staffId: ps.staff_id, name, tradeName, role: ps.role ?? "trainer", exempt,
               hasVoorovereenkomst: exempt || staffHasVoorovereenkomst.has(ps.staff_id),
               hasOvereenkomst: exempt || programStaffHasOvereenkomst.has(`${prog.id}_${ps.staff_id}`),
+              voorovereenkomstGenerated: staffHasVoorovereenkomstGenerated.has(ps.staff_id),
+              overeenkomstGenerated: programStaffHasOvereenkomstGenerated.has(`${prog.id}_${ps.staff_id}`),
             };
           });
         return {
