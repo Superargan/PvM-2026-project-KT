@@ -2,6 +2,15 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import JSZip from "https://esm.sh/jszip@3.10.1";
 
+// Sanitize filenames: remove diacritics, replace special chars
+function sanitizeFileName(name: string): string {
+  return name
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // strip diacritics
+    .replace(/[&]/g, "en")                             // & -> en
+    .replace(/[^a-zA-Z0-9._\-]/g, "_")                // remaining special chars -> _
+    .replace(/_+/g, "_")                                // collapse multiple _
+    .replace(/^_+|_+$/g, "");                           // trim leading/trailing _
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
