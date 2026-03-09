@@ -315,9 +315,14 @@ export default function AanmeldingenPage() {
           <h1 className="font-display text-2xl font-extrabold text-foreground">Aanmeldingen</h1>
           <p className="text-sm text-muted-foreground">{clients.length} aanmeldingen in het systeem</p>
         </div>
-        <Button variant="outline" onClick={() => navigate("/aanmelden")}>
-          <ExternalLink className="h-4 w-4" /> Aanmeldformulier openen
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4" /> Importeren
+          </Button>
+          <Button variant="outline" onClick={() => navigate("/aanmelden")}>
+            <ExternalLink className="h-4 w-4" /> Aanmeldformulier openen
+          </Button>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
