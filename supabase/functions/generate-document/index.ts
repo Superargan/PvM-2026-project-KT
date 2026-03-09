@@ -59,6 +59,15 @@ serve(async (req) => {
       "{{huidige datum}}": todayFormatted,
       "{{Datum vandaag}}": todayFormatted,
       "{{Datum_vandaag}}": todayFormatted,
+      "{{datum_ondertekening}}": todayFormatted,
+      "{{datum ondertekening}}": todayFormatted,
+      "{{datumondertekening}}": todayFormatted,
+      "{{Datum_ondertekening}}": todayFormatted,
+      "{{Datum ondertekening}}": todayFormatted,
+      "{{ondertekeningsdatum}}": todayFormatted,
+      "{{Ondertekeningsdatum}}": todayFormatted,
+      "{{datum}}": todayFormatted,
+      "{{Datum}}": todayFormatted,
     };
     let outputFileName = "";
 
