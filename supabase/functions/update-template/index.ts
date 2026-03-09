@@ -115,10 +115,14 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error("Niet geautoriseerd");
 
-    const { template_id, updates } = await req.json();
+    const { template_id, updates, inserts } = await req.json();
     // updates: { document?: Record<number, string>, header1?: ..., footer1?: ... }
+    // inserts: { document?: [{ afterIndex: number, text: string }], ... }
     if (!template_id) throw new Error("template_id is verplicht");
-    if (!updates || Object.keys(updates).length === 0) throw new Error("Geen wijzigingen meegegeven");
+    
+    const hasUpdates = updates && Object.keys(updates).length > 0;
+    const hasInserts = inserts && Object.keys(inserts).length > 0;
+    if (!hasUpdates && !hasInserts) throw new Error("Geen wijzigingen meegegeven");
 
     const { data: template, error: tplErr } = await supabase
       .from("document_templates")
@@ -142,16 +146,34 @@ serve(async (req) => {
       footer2: "word/footer2.xml",
     };
 
-    for (const [section, paragraphUpdates] of Object.entries(updates)) {
-      const partName = partMapping[section];
-      if (!partName) continue;
-      
-      const file = zip.file(partName);
-      if (!file) continue;
-      
-      let xml = await file.async("string");
-      xml = updateParagraphTexts(xml, paragraphUpdates as Record<number, string>);
-      zip.file(partName, xml);
+    // Apply text updates first
+    if (hasUpdates) {
+      for (const [section, paragraphUpdates] of Object.entries(updates)) {
+        const partName = partMapping[section];
+        if (!partName) continue;
+        
+        const file = zip.file(partName);
+        if (!file) continue;
+        
+        let xml = await file.async("string");
+        xml = updateParagraphTexts(xml, paragraphUpdates as Record<number, string>);
+        zip.file(partName, xml);
+      }
+    }
+
+    // Apply paragraph inserts
+    if (hasInserts) {
+      for (const [section, sectionInserts] of Object.entries(inserts)) {
+        const partName = partMapping[section];
+        if (!partName) continue;
+        
+        const file = zip.file(partName);
+        if (!file) continue;
+        
+        let xml = await file.async("string");
+        xml = insertParagraphs(xml, sectionInserts as { afterIndex: number; text: string }[]);
+        zip.file(partName, xml);
+      }
     }
 
     // Re-detect placeholders
