@@ -50,8 +50,15 @@ serve(async (req) => {
         return d.toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" });
       } catch { return dateStr; }
     };
+    const todayFormatted = today.toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" });
     let replacements: Record<string, string> = {
-      "{{datum_vandaag}}": today.toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" }),
+      "{{datum_vandaag}}": todayFormatted,
+      "{{datum vandaag}}": todayFormatted,
+      "{{datumvandaag}}": todayFormatted,
+      "{{huidige_datum}}": todayFormatted,
+      "{{huidige datum}}": todayFormatted,
+      "{{Datum vandaag}}": todayFormatted,
+      "{{Datum_vandaag}}": todayFormatted,
     };
     let outputFileName = "";
 
@@ -320,6 +327,24 @@ serve(async (req) => {
         });
         const joined = texts.join("");
 
+        // Check if any placeholder exists in the joined text
+        let hasPlaceholder = false;
+        for (const placeholder of Object.keys(replacements)) {
+          if (joined.includes(placeholder)) { hasPlaceholder = true; break; }
+        }
+        // Also check for any remaining {{ ... }} pattern
+        if (!hasPlaceholder && /\{\{[^}]+\}\}/.test(joined)) {
+          // Try case-insensitive / whitespace-normalized matching
+          const normalized = joined.replace(/\s+/g, " ");
+          for (const placeholder of Object.keys(replacements)) {
+            const normPlaceholder = placeholder.replace(/\s+/g, " ");
+            if (normalized.includes(normPlaceholder)) { hasPlaceholder = true; break; }
+          }
+        }
+
+        if (!hasPlaceholder) return para;
+
+        // Try split replacement first
         let modified = para;
         for (const [placeholder, value] of Object.entries(replacements)) {
           if (joined.includes(placeholder)) {
@@ -327,20 +352,25 @@ serve(async (req) => {
           }
         }
 
-        // Pass 3: if placeholders STILL remain after split handling, collapse all runs
-        // and do a simple text replace on the collapsed text
+        // If any placeholder still remains, collapse to single run
         const textsAfter: string[] = [];
         modified.replace(/<w:t[^>]*>([^<]*)<\/w:t>/g, (_m: string, t: string) => {
           textsAfter.push(t);
           return _m;
         });
         const joinedAfter = textsAfter.join("");
-        for (const [placeholder, value] of Object.entries(replacements)) {
-          if (joinedAfter.includes(placeholder)) {
-            // Nuclear option: collapse to single run
-            modified = collapseParagraphAndReplace(modified, replacements);
-            break;
-          }
+        
+        // Check for remaining placeholders (including by normalized matching)
+        let stillHasPlaceholder = false;
+        for (const placeholder of Object.keys(replacements)) {
+          if (joinedAfter.includes(placeholder)) { stillHasPlaceholder = true; break; }
+        }
+        if (!stillHasPlaceholder && /\{\{[^}]+\}\}/.test(joinedAfter)) {
+          stillHasPlaceholder = true;
+        }
+
+        if (stillHasPlaceholder) {
+          modified = collapseParagraphAndReplace(modified, replacements);
         }
 
         return modified;
@@ -469,7 +499,20 @@ function collapseParagraphAndReplace(para: string, replacements: Record<string, 
 
   // Apply replacements
   for (const [placeholder, value] of Object.entries(replacements)) {
-    fullText = fullText.split(placeholder).join(escapeXml(value));
+    fullText = fullText.split(placeholder).join(value);
+  }
+
+  // Also try whitespace-normalized matching for any remaining {{ }}
+  if (/\{\{[^}]+\}\}/.test(fullText)) {
+    for (const [placeholder, value] of Object.entries(replacements)) {
+      // Create a regex that allows flexible whitespace within the placeholder
+      const inner = placeholder.replace(/^\{\{/, "").replace(/\}\}$/, "").trim();
+      const flexPattern = inner.replace(/[\s_]+/g, "[\\s_]*");
+      try {
+        const re = new RegExp("\\{\\{\\s*" + flexPattern + "\\s*\\}\\}", "gi");
+        fullText = fullText.replace(re, value);
+      } catch { /* ignore */ }
+    }
   }
 
   // Rebuild paragraph: keep pPr, replace all runs with single run
@@ -479,7 +522,7 @@ function collapseParagraphAndReplace(para: string, replacements: Record<string, 
   // Get paragraph open/close tags
   const openTag = para.match(/^<w:p\b[^>]*>/)?.[0] ?? "<w:p>";
   
-  return `${openTag}${pPr}<w:r>${rPr}<w:t xml:space="preserve">${fullText}</w:t></w:r></w:p>`;
+  return `${openTag}${pPr}<w:r>${rPr}<w:t xml:space="preserve">${escapeXml(fullText)}</w:t></w:r></w:p>`;
 }
 
 
