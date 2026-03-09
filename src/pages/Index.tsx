@@ -59,6 +59,17 @@ export default function Dashboard() {
     },
   });
 
+  const { data: waitlistCount = 0 } = useQuery({
+    queryKey: ["dashboard-waitlist"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("clients")
+        .select("*", { count: "exact", head: true })
+        .not("waitlist_status", "is", null);
+      return count ?? 0;
+    },
+  });
+
   const { data: recentClients = [] } = useQuery({
     queryKey: ["dashboard-recent-clients"],
     queryFn: async () => {
