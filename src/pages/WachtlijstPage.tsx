@@ -225,7 +225,11 @@ export default function WachtlijstPage() {
                       onCheckedChange={() => toggleSelect(client.id)}
                     />
                   </TableCell>
-                  <TableCell className="font-medium">{client.first_name} {client.last_name}</TableCell>
+                  <TableCell className="font-medium">
+                    <button className="text-primary hover:underline text-left" onClick={() => navigate(`/clienten/${client.id}`)}>
+                      {client.first_name} {client.last_name}
+                    </button>
+                  </TableCell>
                   <TableCell className="text-sm text-card-foreground">{(() => { const age = calculateAge(client.date_of_birth); return age !== null ? `${age} jaar` : "—"; })()}</TableCell>
                   <TableCell>{(client as any).areas?.name ?? "—"}</TableCell>
                   <TableCell>
