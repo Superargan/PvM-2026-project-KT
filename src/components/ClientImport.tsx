@@ -60,9 +60,11 @@ interface ClientImportProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onComplete?: () => void;
+  /** When "waitlist", imported clients get waitlist_status='waiting' and intake_status='wachtlijst' */
+  mode?: "default" | "waitlist";
 }
 
-export default function ClientImport({ open, onOpenChange, onComplete }: ClientImportProps) {
+export default function ClientImport({ open, onOpenChange, onComplete, mode = "default" }: ClientImportProps) {
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [fileName, setFileName] = useState("");
   const [importing, setImporting] = useState(false);
