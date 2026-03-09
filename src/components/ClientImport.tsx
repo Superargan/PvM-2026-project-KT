@@ -197,16 +197,26 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
     const errors: string[] = [];
     let added = 0;
     let skipped = 0;
+    let updated = 0;
 
     // Fetch existing clients to deduplicate
     const { data: existingClients } = await supabase
       .from("clients")
-      .select("first_name, last_name, date_of_birth");
-    const existingSet = new Set(
-      (existingClients ?? []).map((c) =>
-        `${c.first_name?.toLowerCase().trim()}|${c.last_name?.toLowerCase().trim()}|${c.date_of_birth ?? ""}`
-      )
-    );
+      .select("id, first_name, last_name, date_of_birth, school_id, gender, class_group, guardian_phone, postal_code");
+
+    // Build lookup maps: name-only key and name+dob key
+    const existingByName = new Map<string, any>();
+    const existingByNameDob = new Map<string, any>();
+    for (const c of existingClients ?? []) {
+      const nameKey = `${c.first_name?.toLowerCase().trim()}|${c.last_name?.toLowerCase().trim()}`;
+      existingByName.set(nameKey, c);
+      if (c.date_of_birth) {
+        existingByNameDob.set(`${nameKey}|${c.date_of_birth}`, c);
+      }
+    }
+
+    // Track keys within this import batch to avoid intra-batch duplicates
+    const batchKeys = new Set<string>();
 
     const inserts: any[] = [];
 
