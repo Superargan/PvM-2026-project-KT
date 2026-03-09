@@ -689,8 +689,27 @@ function GenerateTab() {
   const generateMutation = useMutation({
     mutationFn: async () => {
       if (!selectedTemplate) throw new Error("Selecteer een template");
-      if (!selectedEntity) throw new Error("Selecteer een entiteit");
 
+      if (entityType === "program") {
+        if (!selectedEntity) throw new Error("Selecteer een training");
+        const trainersToGenerate = selectedTrainers.length > 0
+          ? selectedTrainers
+          : programTrainers.map((t: any) => t.staff_id);
+        if (trainersToGenerate.length === 0) throw new Error("Geen trainers gekoppeld aan deze training");
+
+        const results = [];
+        for (const staffId of trainersToGenerate) {
+          const { data, error } = await supabase.functions.invoke("generate-document", {
+            body: { template_id: selectedTemplate, staff_id: staffId, program_id: selectedEntity },
+          });
+          if (error) throw error;
+          if (data?.error) throw new Error(data.error);
+          results.push(data);
+        }
+        return results;
+      }
+
+      if (!selectedEntity) throw new Error("Selecteer een entiteit");
       const body: any = { template_id: selectedTemplate };
       if (entityType === "client") body.client_id = selectedEntity;
       if (entityType === "staff") {
@@ -705,21 +724,36 @@ function GenerateTab() {
       return data;
     },
     onSuccess: async (data) => {
-      toast({ title: "Document gegenereerd", description: data.file_name });
-      queryClient.invalidateQueries({ queryKey: ["generated-documents"] });
-
-      // Auto-download
-      const { data: fileData, error } = await supabase.storage
-        .from("generated-documents")
-        .download(data.file_path);
-      if (!error && fileData) {
-        const url = URL.createObjectURL(fileData);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = data.file_name;
-        a.click();
-        URL.revokeObjectURL(url);
+      if (Array.isArray(data)) {
+        toast({ title: `${data.length} overeenkomst(en) gegenereerd` });
+        for (const doc of data) {
+          const { data: fileData, error } = await supabase.storage
+            .from("generated-documents")
+            .download(doc.file_path);
+          if (!error && fileData) {
+            const url = URL.createObjectURL(fileData);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = doc.file_name;
+            a.click();
+            URL.revokeObjectURL(url);
+          }
+        }
+      } else {
+        toast({ title: "Document gegenereerd", description: data.file_name });
+        const { data: fileData, error } = await supabase.storage
+          .from("generated-documents")
+          .download(data.file_path);
+        if (!error && fileData) {
+          const url = URL.createObjectURL(fileData);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = data.file_name;
+          a.click();
+          URL.revokeObjectURL(url);
+        }
       }
+      queryClient.invalidateQueries({ queryKey: ["generated-documents"] });
     },
     onError: (err: any) => toast({ title: "Fout bij genereren", description: err.message, variant: "destructive" }),
   });
@@ -728,6 +762,8 @@ function GenerateTab() {
     ? clients.map((c: any) => ({ id: c.id, label: `${c.first_name} ${c.last_name}` }))
     : entityType === "staff"
     ? staffList.map((s: any) => ({ id: s.id, label: s.name || s.trade_name || "Onbekend" }))
+    : entityType === "program"
+    ? programs.map((p: any) => ({ id: p.id, label: p.name }))
     : schools.map((s: any) => ({ id: s.id, label: s.name }));
 
   const filteredEntities = entities.filter((e) =>
