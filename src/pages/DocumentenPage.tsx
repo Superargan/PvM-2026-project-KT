@@ -652,18 +652,32 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
                           data-index={p.index}
                           value={currentText}
                           onChange={(e) => handleTextChange(section.part, p.index, e.target.value)}
-                          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = "copy";
+                            // Move caret to drop position so user sees where it will land
+                            const input = e.currentTarget as HTMLInputElement;
+                            if (document.caretRangeFromPoint) {
+                              // Place cursor at nearest character using selectionStart
+                              const rect = input.getBoundingClientRect();
+                              const style = window.getComputedStyle(input);
+                              const fontSize = parseFloat(style.fontSize) || 14;
+                              const charWidth = fontSize * 0.6;
+                              const paddingLeft = parseFloat(style.paddingLeft) || 0;
+                              const dropX = e.clientX - rect.left - paddingLeft;
+                              const pos = Math.max(0, Math.min(Math.round(dropX / charWidth), currentText.length));
+                              input.setSelectionRange(pos, pos);
+                            }
+                          }}
                           onDrop={(e) => {
                             e.preventDefault();
+                            e.stopPropagation();
                             const placeholder = e.dataTransfer.getData("text/plain");
                             if (!placeholder) return;
-                            const input = e.currentTarget;
-                            const rect = input.getBoundingClientRect();
-                            // Approximate cursor position from drop location
-                            const charWidth = 7.5;
-                            const dropX = e.clientX - rect.left - 8;
-                            const approxPos = Math.max(0, Math.min(Math.round(dropX / charWidth), currentText.length));
-                            const newValue = currentText.substring(0, approxPos) + placeholder + currentText.substring(approxPos);
+                            const input = e.currentTarget as HTMLInputElement;
+                            // Use the caret position that was set during dragOver
+                            const pos = input.selectionStart ?? currentText.length;
+                            const newValue = currentText.substring(0, pos) + placeholder + currentText.substring(pos);
                             handleTextChange(section.part, p.index, newValue);
                           }}
                           className={`border-0 border-b border-transparent focus:border-primary rounded-none px-1 ${
