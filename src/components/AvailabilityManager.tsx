@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 
-type PeriodMode = "week" | "maand";
+type PeriodMode = "week" | "maand" | "kwartaal";
 type Dagdeel = "ochtend" | "middag";
 
 const DAGDELEN: { key: Dagdeel; label: string; icon: React.ReactNode; start: string; end: string }[] = [
@@ -69,6 +69,13 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
         end: endOfWeek(currentDate, { weekStartsOn: 1 }),
       };
     }
+    if (periodMode === "kwartaal") {
+      const start = startOfMonth(currentDate);
+      return {
+        start,
+        end: endOfMonth(addMonths(start, 2)),
+      };
+    }
     return {
       start: startOfMonth(currentDate),
       end: endOfMonth(currentDate),
@@ -78,6 +85,8 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
   const navigatePeriod = (dir: "prev" | "next") => {
     if (periodMode === "week") {
       setCurrentDate(dir === "prev" ? subWeeks(currentDate, 1) : addWeeks(currentDate, 1));
+    } else if (periodMode === "kwartaal") {
+      setCurrentDate(dir === "prev" ? subMonths(currentDate, 3) : addMonths(currentDate, 3));
     } else {
       setCurrentDate(dir === "prev" ? subMonths(currentDate, 1) : addMonths(currentDate, 1));
     }
@@ -354,10 +363,11 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
         <div className="space-y-1.5">
           <Label>Periode</Label>
           <Select value={periodMode} onValueChange={(v) => setPeriodMode(v as PeriodMode)}>
-            <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
             <SelectContent className="bg-popover">
               <SelectItem value="week">Week</SelectItem>
               <SelectItem value="maand">Maand</SelectItem>
+              <SelectItem value="kwartaal">3 Maanden</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -377,7 +387,9 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
         <span className="text-sm font-semibold text-foreground capitalize">
           {periodMode === "week"
             ? `${format(dateRange.start, "d MMM", { locale: nl })} – ${format(dateRange.end, "d MMM yyyy", { locale: nl })}`
-            : format(currentDate, "MMMM yyyy", { locale: nl })}
+            : periodMode === "kwartaal"
+              ? `${format(dateRange.start, "MMM yyyy", { locale: nl })} – ${format(dateRange.end, "MMM yyyy", { locale: nl })}`
+              : format(currentDate, "MMMM yyyy", { locale: nl })}
         </span>
       </div>
 
