@@ -54,7 +54,7 @@ const PLACEHOLDER_GROUPS = [
   {
     label: "Programma",
     items: [
-      "{{programma_naam}}", "{{programma_start}}", "{{programma_eind}}",
+      "{{programma_naam}}", "{{programma_nummer}}", "{{programma_start}}", "{{programma_eind}}",
       "{{programma_school}}", "{{programma_wijk}}", "{{programma_gebied}}",
     ],
   },
