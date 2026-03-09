@@ -125,6 +125,9 @@ export default function ClientenPage() {
               <Download className="h-4 w-4" /> {fmt.toUpperCase()}
             </Button>
           ))}
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4" /> Importeren
+          </Button>
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
               <Button><Plus className="h-4 w-4" /> Cliënt Toevoegen</Button>
