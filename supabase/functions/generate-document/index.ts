@@ -2,6 +2,15 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import JSZip from "https://esm.sh/jszip@3.10.1";
 
+// Sanitize filenames: remove diacritics, replace special chars
+function sanitizeFileName(name: string): string {
+  return name
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // strip diacritics
+    .replace(/[&]/g, "en")                             // & -> en
+    .replace(/[^a-zA-Z0-9._\-]/g, "_")                // remaining special chars -> _
+    .replace(/_+/g, "_")                                // collapse multiple _
+    .replace(/^_+|_+$/g, "");                           // trim leading/trailing _
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -161,12 +170,12 @@ serve(async (req) => {
       const currentYear = today.getFullYear();
 
       if (category === "voorovereenkomst") {
-        outputFileName = `Voorovereenkomst ${tradeName} ${currentMonth} ${currentYear}${ext}`.replace(/\s+/g, "_");
+        outputFileName = sanitizeFileName(`Voorovereenkomst ${tradeName} ${currentMonth} ${currentYear}`) + ext;
       } else if (category === "overeenkomst") {
         const trainingNum = replacements["{{programma_nummer}}"] || "";
-        outputFileName = `${trainingNum} ${tradeName} ${staff.name || ""}${ext}`.replace(/\s+/g, "_").replace(/^_+/, "");
+        outputFileName = sanitizeFileName(`${trainingNum} ${tradeName} ${staff.name || ""}`) + ext;
       } else {
-        outputFileName = `${staff.name ?? "Trainer"}_${template.name}${ext}`.replace(/\s+/g, "_");
+        outputFileName = sanitizeFileName(`${staff.name ?? "Trainer"}_${template.name}`) + ext;
       }
     }
 
@@ -190,7 +199,7 @@ serve(async (req) => {
         "{{school_gebied}}": (school as any).neighborhoods?.areas?.name ?? "",
       };
 
-      outputFileName = `${school.name ?? "School"}_${template.name}.docx`.replace(/\s+/g, "_");
+      outputFileName = sanitizeFileName(`${school.name ?? "School"}_${template.name}`) + ".docx";
     }
 
     if (client_id) {
@@ -295,7 +304,7 @@ serve(async (req) => {
         "{{intake_notities}}": client.intake_notes ?? "",
       };
 
-      outputFileName = `${client.first_name}_${client.last_name}_${template.name}.docx`.replace(/\s+/g, "_");
+      outputFileName = sanitizeFileName(`${client.first_name}_${client.last_name}_${template.name}`) + ".docx";
     }
 
     // Download template from storage
