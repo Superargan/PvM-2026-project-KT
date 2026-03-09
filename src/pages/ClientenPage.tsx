@@ -130,7 +130,7 @@ export default function ClientenPage() {
           </Button>
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
-              <Button><Plus className="h-4 w-4" /> Cliënt Toevoegen</Button>
+              <Button><Plus className="h-4 w-4" /> Deelnemer Toevoegen</Button>
             </DialogTrigger>
           <DialogContent>
             <DialogHeader>
