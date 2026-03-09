@@ -615,11 +615,12 @@ function GenerateTab() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedTemplate, setSelectedTemplate] = useState("");
-  const [entityType, setEntityType] = useState<"client" | "staff" | "school">("client");
+  const [entityType, setEntityType] = useState<"client" | "staff" | "school" | "program">("client");
   const [selectedEntity, setSelectedEntity] = useState("");
   const [selectedProgram, setSelectedProgram] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [outputFormat, setOutputFormat] = useState<"docx">("docx");
+  const [selectedTrainers, setSelectedTrainers] = useState<string[]>([]);
 
   const { data: templates = [] } = useQuery({
     queryKey: ["document-templates"],
@@ -667,7 +668,22 @@ function GenerateTab() {
       if (error) throw error;
       return data;
     },
-    enabled: entityType === "staff",
+    enabled: entityType === "staff" || entityType === "program",
+  });
+
+  // Fetch trainers for selected program
+  const { data: programTrainers = [] } = useQuery({
+    queryKey: ["program-trainers-for-doc", selectedEntity],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("program_staff")
+        .select("staff_id, role, staff:staff!program_staff_staff_id_fkey(id, name, trade_name)")
+        .eq("program_id", selectedEntity)
+        .in("role", ["trainer", "oudertrainer", "kindtrainer"]);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: entityType === "program" && !!selectedEntity,
   });
 
   const generateMutation = useMutation({
