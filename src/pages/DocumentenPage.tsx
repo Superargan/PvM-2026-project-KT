@@ -1182,7 +1182,7 @@ function GenerateTab() {
           </CardHeader>
           <CardContent className="text-xs text-muted-foreground space-y-2">
             <p><strong>1.</strong> Kies een template (Word-bestand met placeholders)</p>
-            <p><strong>2.</strong> Selecteer het type gegevens (cliënt, trainer of school)</p>
+            <p><strong>2.</strong> Selecteer het type gegevens (deelnemer, trainer of school)</p>
             <p><strong>3.</strong> Kies de specifieke persoon/organisatie</p>
             <p><strong>4.</strong> Het document wordt gegenereerd met alle gegevens ingevuld, met behoud van de originele Word-opmaak</p>
           </CardContent>
