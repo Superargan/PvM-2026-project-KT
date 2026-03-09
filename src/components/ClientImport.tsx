@@ -88,7 +88,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [fileName, setFileName] = useState("");
   const [importing, setImporting] = useState(false);
-  const [result, setResult] = useState<{ added: number; skipped: number; errors: string[] } | null>(null);
+  const [result, setResult] = useState<{ added: number; skipped: number; updated: number; errors: string[] } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -197,19 +197,29 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
     const errors: string[] = [];
     let added = 0;
     let skipped = 0;
+    let updated = 0;
 
     // Fetch existing clients to deduplicate
     const { data: existingClients } = await supabase
       .from("clients")
-      .select("first_name, last_name, date_of_birth");
-    const existingSet = new Set(
-      (existingClients ?? []).map((c) =>
-        `${c.first_name?.toLowerCase().trim()}|${c.last_name?.toLowerCase().trim()}|${c.date_of_birth ?? ""}`
-      )
-    );
+      .select("id, first_name, last_name, date_of_birth, school_id, gender, class_group, guardian_phone, postal_code");
+
+    // Build lookup maps: name-only key and name+dob key
+    const existingByName = new Map<string, any>();
+    const existingByNameDob = new Map<string, any>();
+    for (const c of existingClients ?? []) {
+      const nameKey = `${c.first_name?.toLowerCase().trim()}|${c.last_name?.toLowerCase().trim()}`;
+      existingByName.set(nameKey, c);
+      if (c.date_of_birth) {
+        existingByNameDob.set(`${nameKey}|${c.date_of_birth}`, c);
+      }
+    }
+
+    // Track keys within this import batch to avoid intra-batch duplicates
+    const batchKeys = new Set<string>();
 
     const inserts: any[] = [];
-
+    const updates: { id: string; data: any }[] = [];
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const rowNum = i + 2; // Excel row (header = 1)
@@ -252,13 +262,17 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
         }
       }
 
-      // Deduplicate
-      const key = `${first_name.toLowerCase().trim()}|${last_name.toLowerCase().trim()}|${date_of_birth ?? ""}`;
-      if (existingSet.has(key)) {
+      // Deduplicate: check name+dob first, then name-only
+      const nameKey = `${first_name.toLowerCase().trim()}|${last_name.toLowerCase().trim()}`;
+      const nameDobKey = date_of_birth ? `${nameKey}|${date_of_birth}` : null;
+
+      // Check intra-batch duplicates
+      const batchKey = nameDobKey ?? nameKey;
+      if (batchKeys.has(batchKey)) {
         skipped++;
         continue;
       }
-      existingSet.add(key);
+      batchKeys.add(batchKey);
 
       // School
       const schoolName = findCol(row, "School", "school", "Schoolnaam");
@@ -303,7 +317,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
       if (intake_date) intake_status = "intake_gepland";
       if (intakeFormulier && intakeFormulier.toLowerCase() === "ja") intake_status = "intake";
 
-      inserts.push({
+      const recordData: any = {
         first_name,
         last_name,
         date_of_birth,
@@ -319,28 +333,70 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
         referrer_id,
         ...(mode === "waitlist" ? { waitlist_status: "waiting" } : {}),
         ...(enrollDate ? { created_at: `${enrollDate}T00:00:00Z` } : {}),
-      });
+      };
+
+      // Check if record already exists
+      const existingRecord = (nameDobKey && existingByNameDob.get(nameDobKey)) || existingByName.get(nameKey);
+
+      if (existingRecord) {
+        // Update existing record with non-null imported values
+        const updateData: any = {};
+        for (const [key, value] of Object.entries(recordData)) {
+          if (key === "created_at") continue; // Don't overwrite created_at
+          if (value !== null && value !== undefined && value !== "") {
+            // Only update if existing value is empty/null
+            if (!existingRecord[key] || existingRecord[key] === "") {
+              updateData[key] = value;
+            }
+          }
+        }
+        // Always update these if provided (even if existing has value)
+        if (gender) updateData.gender = gender;
+        if (school_id) updateData.school_id = school_id;
+        if (class_group) updateData.class_group = class_group;
+
+        if (Object.keys(updateData).length > 0) {
+          updates.push({ id: existingRecord.id, data: updateData });
+        } else {
+          skipped++;
+        }
+      } else {
+        inserts.push(recordData);
+      }
     }
 
-    // Batch insert (chunks of 50)
+    // Batch insert new records (chunks of 50)
     for (let i = 0; i < inserts.length; i += 50) {
       const chunk = inserts.slice(i, i + 50);
       const { error } = await supabase.from("clients").insert(chunk);
       if (error) {
-        errors.push(`Rij ${i + 2}-${i + chunk.length + 1}: ${error.message}`);
+        errors.push(`Nieuwe rijen ${i + 2}: ${error.message}`);
       } else {
         added += chunk.length;
       }
     }
 
-    setResult({ added, skipped, errors });
+    // Update existing records one by one
+    for (const upd of updates) {
+      const { error } = await supabase.from("clients").update(upd.data).eq("id", upd.id);
+      if (error) {
+        errors.push(`Update ${upd.id}: ${error.message}`);
+      } else {
+        updated++;
+      }
+    }
+
+    setResult({ added, skipped, updated, errors });
     setImporting(false);
 
-    if (added > 0) {
+    if (added > 0 || updated > 0) {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       queryClient.invalidateQueries({ queryKey: ["aanmeldingen"] });
       queryClient.invalidateQueries({ queryKey: ["waitlist-clients"] });
-      toast({ title: `${added} deelnemer(s) geïmporteerd${mode === "waitlist" ? " op wachtlijst" : ""}` });
+      const parts = [];
+      if (added > 0) parts.push(`${added} toegevoegd`);
+      if (updated > 0) parts.push(`${updated} bijgewerkt`);
+      toast({ title: `${parts.join(", ")}${mode === "waitlist" ? " (wachtlijst)" : ""}` });
       onComplete?.();
     }
   };
@@ -412,11 +468,14 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
           {/* Result */}
           {result && (
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex flex-wrap items-center gap-2 text-sm">
                 <CheckCircle2 className="h-5 w-5 text-green-600" />
                 <span><strong>{result.added}</strong> toegevoegd</span>
+                {result.updated > 0 && (
+                  <span className="text-muted-foreground">• {result.updated} bijgewerkt</span>
+                )}
                 {result.skipped > 0 && (
-                  <span className="text-muted-foreground">• {result.skipped} overgeslagen (duplicaat of geen naam)</span>
+                  <span className="text-muted-foreground">• {result.skipped} overgeslagen</span>
                 )}
               </div>
               {result.errors.length > 0 && (
