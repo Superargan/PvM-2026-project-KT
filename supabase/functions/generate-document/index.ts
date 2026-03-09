@@ -138,7 +138,20 @@ serve(async (req) => {
       }
 
       const ext = wantPdf ? ".pdf" : ".docx";
-      outputFileName = `${staff.name ?? "Trainer"}_${template.name}${ext}`.replace(/\s+/g, "_");
+      const category = (template.category ?? "").toLowerCase();
+      const tradeName = staff.trade_name || staff.name || "Trainer";
+      const dutchMonths = ["januari","februari","maart","april","mei","juni","juli","augustus","september","oktober","november","december"];
+      const currentMonth = dutchMonths[today.getMonth()];
+      const currentYear = today.getFullYear();
+
+      if (category === "voorovereenkomst") {
+        outputFileName = `Voorovereenkomst ${tradeName} ${currentMonth} ${currentYear}${ext}`.replace(/\s+/g, "_");
+      } else if (category === "overeenkomst") {
+        const trainingNum = replacements["{{programma_nummer}}"] || "";
+        outputFileName = `${trainingNum} ${tradeName} ${staff.name || ""}${ext}`.replace(/\s+/g, "_").replace(/^_+/, "");
+      } else {
+        outputFileName = `${staff.name ?? "Trainer"}_${template.name}${ext}`.replace(/\s+/g, "_");
+      }
     }
 
     if (school_id) {
