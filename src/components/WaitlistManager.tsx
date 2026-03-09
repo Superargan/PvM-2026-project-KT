@@ -184,6 +184,8 @@ export default function WaitlistManager() {
           </Table>
         </div>
       )}
+
+      <ClientImport open={importOpen} onOpenChange={setImportOpen} mode="waitlist" />
     </div>
   );
 }
