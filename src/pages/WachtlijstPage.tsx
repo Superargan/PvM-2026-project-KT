@@ -36,6 +36,7 @@ export default function WachtlijstPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [assigningClient, setAssigningClient] = useState<string | null>(null);
   const [selectedProgram, setSelectedProgram] = useState("");
+  const navigate = useNavigate();
   const qc = useQueryClient();
 
   const { data: areas = [] } = useQuery({
