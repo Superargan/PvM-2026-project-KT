@@ -326,6 +326,16 @@ serve(async (req) => {
       for (const [placeholder, value] of Object.entries(replacements)) {
         xml = xml.split(placeholder).join(escapeXml(value));
       }
+
+      // Pass 1b: catch-all for any remaining datum-like placeholders in plain text nodes
+      const todaySafe = escapeXml(todayFormatted);
+      xml = xml.replace(/<w:t[^>]*>([^<]*)<\/w:t>/g, (fullMatch, textContent) => {
+        if (/\{\{[^}]*datum[^}]*\}\}/i.test(textContent)) {
+          const replaced = textContent.replace(/\{\{[^}]*datum[^}]*\}\}/gi, todaySafe);
+          return fullMatch.replace(textContent, replaced);
+        }
+        return fullMatch;
+      });
       
       // Pass 2: handle split placeholders SCOPED per paragraph
       xml = xml.replace(/<w:p\b[^\/]*?>[\s\S]*?<\/w:p>/g, (para) => {
