@@ -91,8 +91,8 @@ export default function ClientenPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-extrabold text-foreground">Cliënten</h1>
-          <p className="text-sm text-muted-foreground">{clients.length} cliënten in het systeem</p>
+          <h1 className="font-display text-2xl font-extrabold text-foreground">Deelnemers</h1>
+          <p className="text-sm text-muted-foreground">{clients.length} deelnemers in het systeem</p>
         </div>
         <div className="flex gap-2">
           {(["csv", "xlsx"] as const).map((fmt) => (
