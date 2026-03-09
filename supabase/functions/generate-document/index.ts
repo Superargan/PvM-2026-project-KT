@@ -115,15 +115,16 @@ serve(async (req) => {
           .single();
         if (prog) {
           const programName = prog.name ?? "";
+          const programNumber = (prog as any).training_number ?? "";
           const programStart = formatDateNL(prog.start_date);
           const programEnd = formatDateNL(prog.end_date);
           replacements = {
             ...replacements,
             "{{programma_naam}}": programName,
             "{{programmanaam}}": programName,
-            "{{programmanummer}}": programName,
-            "{{programma_nummer}}": programName,
-            "{{trajectnummer}}": programName,
+            "{{programma_nummer}}": programNumber,
+            "{{programmanummer}}": programNumber,
+            "{{trajectnummer}}": programNumber,
             "{{programma_start}}": programStart,
             "{{startdatum}}": programStart,
             "{{programma_eind}}": programEnd,
