@@ -826,7 +826,7 @@ function GenerateTab() {
             {/* Step 3: Select Entity */}
             <div>
               <Label className="text-sm font-semibold">
-                3. {entityType === "client" ? "Cliënt" : entityType === "staff" ? "Trainer" : "School"} selecteren
+                3. {entityType === "client" ? "Cliënt" : entityType === "staff" ? "Trainer" : entityType === "program" ? "Training" : "School"} selecteren
               </Label>
               <div className="relative mt-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
