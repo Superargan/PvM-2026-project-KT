@@ -240,8 +240,9 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
         postal_code,
         guardian_phone,
         intake_date,
-        intake_status,
+        intake_status: mode === "waitlist" ? "wachtlijst" : intake_status,
         referral_reason: referral,
+        ...(mode === "waitlist" ? { waitlist_status: "waiting" } : {}),
         ...(enrollDate ? { created_at: `${enrollDate}T00:00:00Z` } : {}),
       });
     }
