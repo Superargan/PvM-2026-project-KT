@@ -40,8 +40,15 @@ serve(async (req) => {
 
     const serviceSupabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const today = new Date();
+    const formatDateNL = (dateStr: string | null): string => {
+      if (!dateStr) return "";
+      try {
+        const d = new Date(dateStr + "T00:00:00");
+        return d.toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" });
+      } catch { return dateStr; }
+    };
     let replacements: Record<string, string> = {
-      "{{datum_vandaag}}": `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`,
+      "{{datum_vandaag}}": today.toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" }),
     };
     let outputFileName = "";
 
@@ -82,8 +89,8 @@ serve(async (req) => {
             replacements = {
               ...replacements,
               "{{programma_naam}}": prog.name ?? "",
-              "{{programma_start}}": prog.start_date ?? "",
-              "{{programma_eind}}": prog.end_date ?? "",
+              "{{programma_start}}": formatDateNL(prog.start_date),
+              "{{programma_eind}}": formatDateNL(prog.end_date),
               "{{programma_school}}": prog.schools?.name ?? "",
               "{{programma_wijk}}": prog.neighborhoods?.name ?? "",
               "{{programma_gebied}}": prog.neighborhoods?.areas?.name ?? "",
@@ -100,8 +107,8 @@ serve(async (req) => {
           replacements = {
             ...replacements,
             "{{programma_naam}}": prog.name ?? "",
-            "{{programma_start}}": prog.start_date ?? "",
-            "{{programma_eind}}": prog.end_date ?? "",
+            "{{programma_start}}": formatDateNL(prog.start_date),
+            "{{programma_eind}}": formatDateNL(prog.end_date),
             "{{programma_school}}": (prog as any).schools?.name ?? "",
             "{{programma_wijk}}": (prog as any).neighborhoods?.name ?? "",
             "{{programma_gebied}}": (prog as any).neighborhoods?.areas?.name ?? "",
@@ -206,7 +213,7 @@ serve(async (req) => {
         ...replacements,
         "{{client_voornaam}}": client.first_name ?? "",
         "{{client_achternaam}}": client.last_name ?? "",
-        "{{client_geboortedatum}}": client.date_of_birth ?? "",
+        "{{client_geboortedatum}}": formatDateNL(client.date_of_birth),
         "{{client_leeftijd}}": age,
         "{{client_adres}}": client.address ?? "",
         "{{client_postcode}}": client.postal_code ?? "",
@@ -221,11 +228,11 @@ serve(async (req) => {
         "{{verwijzer_naam}}": (client as any).referrers?.name ?? "",
         "{{verwijzer_functie}}": (client as any).referrers?.function_title ?? "",
         "{{verwijsreden}}": client.referral_reason ?? "",
-        "{{intake_datum}}": client.intake_date ?? "",
+        "{{intake_datum}}": formatDateNL(client.intake_date),
         "{{trainer_naam}}": replacements["{{trainer_naam}}"] || trainerName,
         "{{programma_naam}}": program?.name ?? "",
-        "{{programma_start}}": program?.start_date ?? "",
-        "{{programma_eind}}": program?.end_date ?? "",
+        "{{programma_start}}": formatDateNL(program?.start_date),
+        "{{programma_eind}}": formatDateNL(program?.end_date),
         "{{programma_school}}": programSchoolName,
         "{{programma_wijk}}": programWijk,
         "{{programma_gebied}}": programGebied,
