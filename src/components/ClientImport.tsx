@@ -156,9 +156,14 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
 
   const findAreaId = (name: string | undefined): string | null => {
     if (!name) return null;
-    const norm = name.toLowerCase().trim();
-    const match = areas.find((a) => a.name.toLowerCase().trim() === norm);
-    return match?.id ?? null;
+    const norm = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const exact = areas.find((a) => a.name.toLowerCase().trim() === norm);
+    if (exact) return exact.id;
+    const contains = areas.find((a) => {
+      const aNorm = a.name.toLowerCase().trim();
+      return aNorm.includes(norm) || norm.includes(aNorm);
+    });
+    return contains?.id ?? null;
   };
 
   const handleImport = async () => {
