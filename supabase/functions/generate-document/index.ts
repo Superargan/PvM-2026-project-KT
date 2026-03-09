@@ -327,6 +327,24 @@ serve(async (req) => {
         });
         const joined = texts.join("");
 
+        // Check if any placeholder exists in the joined text
+        let hasPlaceholder = false;
+        for (const placeholder of Object.keys(replacements)) {
+          if (joined.includes(placeholder)) { hasPlaceholder = true; break; }
+        }
+        // Also check for any remaining {{ ... }} pattern
+        if (!hasPlaceholder && /\{\{[^}]+\}\}/.test(joined)) {
+          // Try case-insensitive / whitespace-normalized matching
+          const normalized = joined.replace(/\s+/g, " ");
+          for (const placeholder of Object.keys(replacements)) {
+            const normPlaceholder = placeholder.replace(/\s+/g, " ");
+            if (normalized.includes(normPlaceholder)) { hasPlaceholder = true; break; }
+          }
+        }
+
+        if (!hasPlaceholder) return para;
+
+        // Try split replacement first
         let modified = para;
         for (const [placeholder, value] of Object.entries(replacements)) {
           if (joined.includes(placeholder)) {
@@ -334,20 +352,25 @@ serve(async (req) => {
           }
         }
 
-        // Pass 3: if placeholders STILL remain after split handling, collapse all runs
-        // and do a simple text replace on the collapsed text
+        // If any placeholder still remains, collapse to single run
         const textsAfter: string[] = [];
         modified.replace(/<w:t[^>]*>([^<]*)<\/w:t>/g, (_m: string, t: string) => {
           textsAfter.push(t);
           return _m;
         });
         const joinedAfter = textsAfter.join("");
-        for (const [placeholder, value] of Object.entries(replacements)) {
-          if (joinedAfter.includes(placeholder)) {
-            // Nuclear option: collapse to single run
-            modified = collapseParagraphAndReplace(modified, replacements);
-            break;
-          }
+        
+        // Check for remaining placeholders (including by normalized matching)
+        let stillHasPlaceholder = false;
+        for (const placeholder of Object.keys(replacements)) {
+          if (joinedAfter.includes(placeholder)) { stillHasPlaceholder = true; break; }
+        }
+        if (!stillHasPlaceholder && /\{\{[^}]+\}\}/.test(joinedAfter)) {
+          stillHasPlaceholder = true;
+        }
+
+        if (stillHasPlaceholder) {
+          modified = collapseParagraphAndReplace(modified, replacements);
         }
 
         return modified;
