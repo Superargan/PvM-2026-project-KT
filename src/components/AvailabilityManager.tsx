@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -201,11 +201,11 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
   }, [existingGrid]);
 
   // Auto-load when existing data changes
-  useMemo(() => {
+  useEffect(() => {
     if (selectedPersonId) {
       loadExisting();
     }
-  }, [existingGrid, selectedPersonId]);
+  }, [selectedPersonId, loadExisting]);
 
   const toggleCell = (dow: number, dagdeel: Dagdeel) => {
     const key = `${dow}-${dagdeel}`;
