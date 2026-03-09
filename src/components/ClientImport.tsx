@@ -261,7 +261,7 @@ export default function ClientImport({ open, onOpenChange, onComplete }: ClientI
     if (added > 0) {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       queryClient.invalidateQueries({ queryKey: ["aanmeldingen"] });
-      toast({ title: `${added} cliënt(en) geïmporteerd` });
+      toast({ title: `${added} deelnemer(s) geïmporteerd` });
       onComplete?.();
     }
   };
