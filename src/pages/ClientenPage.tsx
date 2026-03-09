@@ -1,4 +1,4 @@
-import { Users, Search, Filter, Eye, Plus, Loader2, Download } from "lucide-react";
+import { Users, Search, Filter, Eye, Plus, Loader2, Download, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { downloadExport, ExportColumn } from "@/lib/csvExport";
+import ClientImport from "@/components/ClientImport";
 
 function calculateAge(dob: string | null): number | null {
   if (!dob) return null;
