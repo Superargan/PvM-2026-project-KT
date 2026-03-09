@@ -111,6 +111,15 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
     enabled: open,
   });
 
+  const { data: referrers = [] } = useQuery({
+    queryKey: ["referrers-import"],
+    queryFn: async () => {
+      const { data } = await supabase.from("referrers").select("id, name, school_id").order("name");
+      return data ?? [];
+    },
+    enabled: open,
+  });
+
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
