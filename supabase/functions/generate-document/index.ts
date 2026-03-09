@@ -103,6 +103,7 @@ serve(async (req) => {
               "{{programma_eind}}": programEnd,
               "{{einddatum}}": programEnd,
               "{{programma_school}}": prog.schools?.name ?? "",
+              "{{locatie}}": prog.schools?.name ?? "",
               "{{programma_wijk}}": prog.neighborhoods?.name ?? "",
               "{{programma_gebied}}": prog.neighborhoods?.areas?.name ?? "",
             };
@@ -131,6 +132,7 @@ serve(async (req) => {
             "{{programma_eind}}": programEnd,
             "{{einddatum}}": programEnd,
             "{{programma_school}}": (prog as any).schools?.name ?? "",
+            "{{locatie}}": (prog as any).schools?.name ?? "",
             "{{programma_wijk}}": (prog as any).neighborhoods?.name ?? "",
             "{{programma_gebied}}": (prog as any).neighborhoods?.areas?.name ?? "",
           };
@@ -271,6 +273,7 @@ serve(async (req) => {
         "{{programma_start}}": formatDateNL(program?.start_date),
         "{{programma_eind}}": formatDateNL(program?.end_date),
         "{{programma_school}}": programSchoolName,
+        "{{locatie}}": programSchoolName,
         "{{programma_wijk}}": programWijk,
         "{{programma_gebied}}": programGebied,
         "{{doelen}}": client.goals ?? "",
