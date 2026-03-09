@@ -1,0 +1,1 @@
+ALTER TABLE public.programs ADD COLUMN training_number text DEFAULT NULL;
