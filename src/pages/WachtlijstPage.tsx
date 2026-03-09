@@ -211,8 +211,9 @@ export default function WachtlijstPage() {
                 <TableHead>Naam</TableHead>
                 <TableHead>Leeftijd</TableHead>
                 <TableHead>Gebied</TableHead>
+                <TableHead>Inschrijving</TableHead>
+                <TableHead>Intake</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Reden</TableHead>
                 <TableHead className="text-right">Actie</TableHead>
               </TableRow>
             </TableHeader>
