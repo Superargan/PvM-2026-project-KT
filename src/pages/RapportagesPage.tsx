@@ -797,7 +797,6 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas }: {
       })
       .sort((a: any, b: any) => (a.name ?? "").localeCompare(b.name ?? ""));
   }, [programs, programStaff, staffDocCategories, statusFilter, areaMap]);
-  }, [programs, programStaff, staffDocCategories, statusFilter, areaMap]);
 
   const statusLabels: Record<string, string> = {
     te_plannen: "Te plannen",
