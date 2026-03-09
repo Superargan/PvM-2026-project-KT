@@ -614,7 +614,10 @@ function TemplateEditor({ template, onClose }: { template: any; onClose: () => v
                           onChange={(e) => updateInsertedText(section.part, ip.id, e.target.value)}
                           className="border-0 border-b border-dashed border-primary/40 rounded-none px-1 text-sm bg-primary/5 flex-1"
                           placeholder="Nieuwe regel..."
-                          autoFocus
+                          autoFocus={newInsertedFocusId === ip.id}
+                          onFocus={() => {
+                            if (newInsertedFocusId === ip.id) setNewInsertedFocusId(null);
+                          }}
                         />
                         <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeInsertedParagraph(section.part, ip.id)}>
                           <X className="h-3 w-3 text-destructive" />
