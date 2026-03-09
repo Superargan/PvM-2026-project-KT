@@ -327,11 +327,18 @@ serve(async (req) => {
         xml = xml.split(placeholder).join(escapeXml(value));
       }
 
+      // Pass 1a: also replace malformed single-brace variants like {{datum_vandaag}
+      for (const [placeholder, value] of Object.entries(replacements)) {
+        const singleBrace = placeholder.replace(/\}\}$/, "}");
+        xml = xml.split(singleBrace).join(escapeXml(value));
+      }
+
       // Pass 1b: catch-all for any remaining datum-like placeholders in plain text nodes
+      // Match both {{datum...}} and {{datum...} (malformed single closing brace)
       const todaySafe = escapeXml(todayFormatted);
       xml = xml.replace(/<w:t[^>]*>([^<]*)<\/w:t>/g, (fullMatch, textContent) => {
-        if (/\{\{[^}]*datum[^}]*\}\}/i.test(textContent)) {
-          const replaced = textContent.replace(/\{\{[^}]*datum[^}]*\}\}/gi, todaySafe);
+        if (/\{\{[^}]*datum[^}]*\}\}?/i.test(textContent)) {
+          const replaced = textContent.replace(/\{\{[^}]*datum[^}]*?\}?\}/gi, todaySafe);
           return fullMatch.replace(textContent, replaced);
         }
         return fullMatch;
