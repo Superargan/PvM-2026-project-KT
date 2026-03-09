@@ -207,6 +207,7 @@ export default function WachtlijstPage() {
                   />
                 </TableHead>
                 <TableHead>Naam</TableHead>
+                <TableHead>Leeftijd</TableHead>
                 <TableHead>Gebied</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Reden</TableHead>
