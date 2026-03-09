@@ -860,7 +860,7 @@ function GenerateTab() {
   const { data: programs = [] } = useQuery({
     queryKey: ["programs-for-generate"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("programs").select("id, name").eq("archived", false).order("name");
+      const { data, error } = await supabase.from("programs").select("id, name, training_number, status").order("name");
       if (error) throw error;
       return data;
     },
