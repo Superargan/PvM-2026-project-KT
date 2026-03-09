@@ -16,18 +16,26 @@ interface ParsedRow {
   [key: string]: any;
 }
 
+interface AvailabilityEntry {
+  name: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  notes?: string;
+}
+
 const IMPORT_TYPES: { value: ImportType; label: string; description: string; columns: string }[] = [
   {
     value: "trainer_beschikbaarheid",
     label: "Beschikbaarheid trainers",
     description: "Importeer beschikbaarheid van trainers",
-    columns: "Naam, Datum, Starttijd, Eindtijd, Notities",
+    columns: "Naam + Datum/Starttijd/Eindtijd OF Naam + dagkolommen (x = hele dag, tijd = vanaf-tijd)",
   },
   {
     value: "deelnemer_beschikbaarheid",
     label: "Beschikbaarheid deelnemers",
     description: "Importeer beschikbaarheid van deelnemers",
-    columns: "Voornaam, Achternaam, Datum, Starttijd, Eindtijd, Notities",
+    columns: "Voornaam, Achternaam, Datum, Starttijd, Eindtijd OF naam + dagkolommen",
   },
   {
     value: "sessies",
@@ -37,7 +45,6 @@ const IMPORT_TYPES: { value: ImportType; label: string; description: string; col
   },
 ];
 
-// Normalize column names for flexible matching
 function normalizeKey(key: string): string {
   return key.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
@@ -55,15 +62,12 @@ function findCol(row: ParsedRow, ...candidates: string[]): string | undefined {
 function parseExcelDate(val: any): string | null {
   if (!val) return null;
   if (typeof val === "number") {
-    // Excel serial date
     const d = XLSX.SSF.parse_date_code(val);
     if (d) return `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
   }
   const s = String(val).trim();
-  // Try dd-mm-yyyy or dd/mm/yyyy
   const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
   if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, "0")}-${dmy[1].padStart(2, "0")}`;
-  // Try yyyy-mm-dd
   const ymd = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
   if (ymd) return `${ymd[1]}-${ymd[2].padStart(2, "0")}-${ymd[3].padStart(2, "0")}`;
   return null;
@@ -72,16 +76,149 @@ function parseExcelDate(val: any): string | null {
 function parseTime(val: any): string | null {
   if (!val) return null;
   if (typeof val === "number") {
-    // Excel time fraction
     const totalMinutes = Math.round(val * 24 * 60);
     const h = Math.floor(totalMinutes / 60);
     const m = totalMinutes % 60;
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
   }
   const s = String(val).trim();
-  const match = s.match(/^(\d{1,2}):(\d{2})/);
+  const match = s.match(/^(\d{1,2})[:\.](\d{2})/);
   if (match) return `${match[1].padStart(2, "0")}:${match[2]}`;
+  // Just an hour number like "14" or "9"
+  const hourOnly = s.match(/^(\d{1,2})$/);
+  if (hourOnly) {
+    const h = parseInt(hourOnly[1]);
+    if (h >= 0 && h <= 23) return `${String(h).padStart(2, "0")}:00`;
+  }
   return null;
+}
+
+/** Try to parse a column header as a date (e.g. "12-3", "ma 12/3", "2025-03-12", Excel serial) */
+function parseDateFromHeader(header: string, referenceYear?: number): string | null {
+  if (!header) return null;
+  const h = String(header).trim();
+
+  // Excel serial number in header
+  if (/^\d{5}$/.test(h)) {
+    const d = XLSX.SSF.parse_date_code(parseInt(h));
+    if (d) return `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
+  }
+
+  // Full date
+  const full = parseExcelDate(h);
+  if (full) return full;
+
+  // Strip day name prefix: "ma 12-3", "di 12/3", "woensdag 12-3"
+  const stripped = h.replace(/^(ma|di|wo|do|vr|za|zo|maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|zondag)\s*/i, "");
+
+  // d-m or d/m format (without year)
+  const dm = stripped.match(/^(\d{1,2})[\/\-\.](\d{1,2})$/);
+  if (dm) {
+    const year = referenceYear || new Date().getFullYear();
+    return `${year}-${dm[2].padStart(2, "0")}-${dm[1].padStart(2, "0")}`;
+  }
+
+  // d-m-yy
+  const dmyy = stripped.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2})$/);
+  if (dmyy) {
+    const yr = parseInt(dmyy[3]) + 2000;
+    return `${yr}-${dmyy[2].padStart(2, "0")}-${dmyy[1].padStart(2, "0")}`;
+  }
+
+  return null;
+}
+
+/** Check if a cell value represents availability: "x", "X", "✓", "ja", or a time */
+function parseCellAvailability(val: any): { available: boolean; startTime: string; endTime: string } | null {
+  if (val === undefined || val === null || val === "") return null;
+  const s = String(val).trim().toLowerCase();
+  if (!s) return null;
+
+  // Cross / check mark = whole day
+  if (["x", "✓", "✔", "ja", "yes", "v", "√"].includes(s)) {
+    return { available: true, startTime: "09:00", endTime: "17:00" };
+  }
+
+  // Time value = start time (from that time, assume 4h block or until 17:00)
+  const time = parseTime(val);
+  if (time) {
+    const [h] = time.split(":").map(Number);
+    const endH = Math.min(h + 4, 17);
+    return { available: true, startTime: time, endTime: `${String(endH).padStart(2, "0")}:00` };
+  }
+
+  // Time range "9:00-12:00" or "9-12"
+  const range = s.match(/^(\d{1,2}[:\.]?\d{0,2})\s*[-–]\s*(\d{1,2}[:\.]?\d{0,2})$/);
+  if (range) {
+    const start = parseTime(range[1]);
+    const end = parseTime(range[2]);
+    if (start && end) return { available: true, startTime: start, endTime: end };
+  }
+
+  return null;
+}
+
+/**
+ * Detect if the sheet is in grid/matrix format:
+ * First column = names, other columns = dates, cells = x or times
+ */
+function detectGridFormat(rows: ParsedRow[]): { isGrid: boolean; nameKey: string; dateColumns: { key: string; date: string }[] } {
+  if (rows.length === 0) return { isGrid: false, nameKey: "", dateColumns: [] };
+  const keys = Object.keys(rows[0]);
+  if (keys.length < 3) return { isGrid: false, nameKey: "", dateColumns: [] };
+
+  // First column is likely the name column
+  const nameKey = keys[0];
+
+  // Check remaining columns for date-like headers
+  const dateColumns: { key: string; date: string }[] = [];
+  for (let i = 1; i < keys.length; i++) {
+    const date = parseDateFromHeader(keys[i]);
+    if (date) dateColumns.push({ key: keys[i], date });
+  }
+
+  // If at least 2 columns parse as dates, it's a grid format
+  const isGrid = dateColumns.length >= 2;
+  return { isGrid, nameKey, dateColumns };
+}
+
+/** Convert grid format to flat availability entries */
+function gridToEntries(rows: ParsedRow[], nameKey: string, dateColumns: { key: string; date: string }[]): AvailabilityEntry[] {
+  const entries: AvailabilityEntry[] = [];
+  for (const row of rows) {
+    const name = String(row[nameKey] ?? "").trim();
+    if (!name) continue;
+    for (const dc of dateColumns) {
+      const cell = row[dc.key];
+      const parsed = parseCellAvailability(cell);
+      if (parsed?.available) {
+        entries.push({ name, date: dc.date, startTime: parsed.startTime, endTime: parsed.endTime });
+      }
+    }
+  }
+  return entries;
+}
+
+/** Convert standard row format to flat availability entries */
+function rowsToEntries(rows: ParsedRow[], isTrainer: boolean): AvailabilityEntry[] {
+  const entries: AvailabilityEntry[] = [];
+  for (const row of rows) {
+    let name: string | undefined;
+    if (isTrainer) {
+      name = findCol(row, "naam", "name", "trainer", "medewerker");
+    } else {
+      const firstName = findCol(row, "voornaam", "firstname", "first_name", "naam");
+      const lastName = findCol(row, "achternaam", "lastname", "last_name");
+      name = lastName ? `${firstName} ${lastName}` : firstName;
+    }
+    const date = parseExcelDate(findCol(row, "datum", "date", "dag") ?? row["Datum"] ?? row["datum"]);
+    const start = parseTime(findCol(row, "starttijd", "van", "start", "starttime", "start_time") ?? row["Starttijd"]);
+    const end = parseTime(findCol(row, "eindtijd", "tot", "end", "eindtime", "end_time", "eind") ?? row["Eindtijd"]);
+    if (name && date) {
+      entries.push({ name, date, startTime: start ?? "09:00", endTime: end ?? "17:00" });
+    }
+  }
+  return entries;
 }
 
 interface PlanningImportProps {
@@ -92,6 +229,8 @@ interface PlanningImportProps {
 export default function PlanningImport({ open, onOpenChange }: PlanningImportProps) {
   const [importType, setImportType] = useState<ImportType>("trainer_beschikbaarheid");
   const [parsedData, setParsedData] = useState<ParsedRow[]>([]);
+  const [parsedEntries, setParsedEntries] = useState<AvailabilityEntry[]>([]);
+  const [detectedFormat, setDetectedFormat] = useState<string>("");
   const [fileName, setFileName] = useState("");
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<{ success: number; errors: string[] } | null>(null);
@@ -101,6 +240,8 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
 
   const reset = () => {
     setParsedData([]);
+    setParsedEntries([]);
+    setDetectedFormat("");
     setFileName("");
     setResult(null);
   };
@@ -116,49 +257,106 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
       const data = new Uint8Array(ev.target?.result as ArrayBuffer);
       const wb = XLSX.read(data, { type: "array", cellDates: false });
       const ws = wb.Sheets[wb.SheetNames[0]];
-      const json: ParsedRow[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+      // Try default parsing
+      let json: ParsedRow[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+      // If first row appears empty or has no useful data, try with header on row 2
+      if (json.length > 0) {
+        const firstRowValues = Object.values(json[0]).filter((v) => v !== "" && v !== undefined && v !== null);
+        const keys = Object.keys(json[0]);
+        // If all keys look like generic "EMPTY" or "__EMPTY_1" etc., or first row has no values
+        const hasGenericKeys = keys.every((k) => /^(__EMPTY|__EMPTY_\d+|Column\d+)$/i.test(k) || /^\d+$/.test(k));
+        if (firstRowValues.length === 0 || hasGenericKeys) {
+          // Re-parse with range starting from row 2
+          const range = XLSX.utils.decode_range(ws["!ref"] || "A1");
+          range.s.r = 1; // Skip first row
+          json = XLSX.utils.sheet_to_json(ws, { defval: "", range });
+
+          // If still generic, try row 3
+          if (json.length > 0) {
+            const keys2 = Object.keys(json[0]);
+            const stillGeneric = keys2.every((k) => /^(__EMPTY|__EMPTY_\d+|Column\d+)$/i.test(k) || /^\d+$/.test(k));
+            if (stillGeneric) {
+              range.s.r = 2;
+              json = XLSX.utils.sheet_to_json(ws, { defval: "", range });
+            }
+          }
+        }
+      }
+
+      // Filter out completely empty rows
+      json = json.filter((row) => {
+        const vals = Object.values(row).filter((v) => v !== "" && v !== undefined && v !== null);
+        return vals.length > 0;
+      });
+
       setParsedData(json);
+
+      // For availability types, detect format and pre-process
+      if (importType !== "sessies" && json.length > 0) {
+        const grid = detectGridFormat(json);
+        if (grid.isGrid) {
+          const entries = gridToEntries(json, grid.nameKey, grid.dateColumns);
+          setParsedEntries(entries);
+          setDetectedFormat(`Grid-formaat gedetecteerd: ${grid.dateColumns.length} dagkolommen, ${entries.length} beschikbaarheden`);
+        } else {
+          const isTrainer = importType === "trainer_beschikbaarheid";
+          const entries = rowsToEntries(json, isTrainer);
+          setParsedEntries(entries);
+          setDetectedFormat(`Rij-formaat: ${entries.length} beschikbaarheden gevonden`);
+        }
+      } else {
+        setParsedEntries([]);
+        setDetectedFormat("");
+      }
     };
     reader.readAsArrayBuffer(file);
-    // Reset file input
     e.target.value = "";
   };
 
   const doImport = async () => {
-    if (parsedData.length === 0) return;
     setImporting(true);
     const errors: string[] = [];
     let success = 0;
 
     try {
       if (importType === "trainer_beschikbaarheid") {
-        // Fetch trainers to match by name
-        const { data: trainers } = await supabase.from("staff").select("id, name").eq("archived", false);
+        const { data: trainers } = await supabase.from("staff").select("id, name, trade_name").eq("archived", false);
         const trainerMap = new Map<string, string>();
         trainers?.forEach((t) => {
           if (t.name) trainerMap.set(t.name.toLowerCase().trim(), t.id);
+          if (t.trade_name) trainerMap.set(t.trade_name.toLowerCase().trim(), t.id);
         });
 
-        for (let i = 0; i < parsedData.length; i++) {
-          const row = parsedData[i];
-          const name = findCol(row, "naam", "name", "trainer", "medewerker");
-          const date = parseExcelDate(findCol(row, "datum", "date", "dag") ?? row["Datum"] ?? row["datum"]);
-          const start = parseTime(findCol(row, "starttijd", "van", "start", "starttime", "start_time") ?? row["Starttijd"]);
-          const end = parseTime(findCol(row, "eindtijd", "tot", "end", "eindtime", "end_time", "eind") ?? row["Eindtijd"]);
+        // Fuzzy match helper
+        const findTrainer = (name: string): string | undefined => {
+          const lower = name.toLowerCase().trim();
+          if (trainerMap.has(lower)) return trainerMap.get(lower);
+          // Partial match
+          for (const [key, id] of trainerMap) {
+            if (key.includes(lower) || lower.includes(key)) return id;
+          }
+          // Last name match
+          const parts = lower.split(/\s+/);
+          const lastName = parts[parts.length - 1];
+          for (const [key, id] of trainerMap) {
+            if (key.split(/\s+/).pop() === lastName) return id;
+          }
+          return undefined;
+        };
 
-          if (!name) { errors.push(`Rij ${i + 2}: geen naam gevonden`); continue; }
-          if (!date) { errors.push(`Rij ${i + 2}: ongeldige datum`); continue; }
-
-          const staffId = trainerMap.get(name.toLowerCase());
-          if (!staffId) { errors.push(`Rij ${i + 2}: trainer "${name}" niet gevonden`); continue; }
+        for (const entry of parsedEntries) {
+          const staffId = findTrainer(entry.name);
+          if (!staffId) { errors.push(`Trainer "${entry.name}" niet gevonden`); continue; }
 
           const { error } = await supabase.from("staff_availability").upsert({
             staff_id: staffId,
-            available_date: date,
-            start_time: start ?? "09:00",
-            end_time: end ?? "17:00",
+            available_date: entry.date,
+            start_time: entry.startTime,
+            end_time: entry.endTime,
           } as any, { onConflict: "staff_id,available_date" });
-          if (error) { errors.push(`Rij ${i + 2}: ${error.message}`); continue; }
+          if (error) { errors.push(`${entry.name} ${entry.date}: ${error.message}`); continue; }
           success++;
         }
       } else if (importType === "deelnemer_beschikbaarheid") {
@@ -166,30 +364,29 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
         const clientMap = new Map<string, string>();
         clients?.forEach((c) => {
           clientMap.set(`${c.first_name} ${c.last_name}`.toLowerCase().trim(), c.id);
+          clientMap.set(c.last_name.toLowerCase().trim(), c.id);
         });
 
-        for (let i = 0; i < parsedData.length; i++) {
-          const row = parsedData[i];
-          const firstName = findCol(row, "voornaam", "firstname", "first_name", "naam");
-          const lastName = findCol(row, "achternaam", "lastname", "last_name");
-          const fullName = lastName ? `${firstName} ${lastName}` : firstName;
-          const date = parseExcelDate(findCol(row, "datum", "date", "dag") ?? row["Datum"]);
-          const start = parseTime(findCol(row, "starttijd", "van", "start") ?? row["Starttijd"]);
-          const end = parseTime(findCol(row, "eindtijd", "tot", "end", "eind") ?? row["Eindtijd"]);
+        const findClient = (name: string): string | undefined => {
+          const lower = name.toLowerCase().trim();
+          if (clientMap.has(lower)) return clientMap.get(lower);
+          for (const [key, id] of clientMap) {
+            if (key.includes(lower) || lower.includes(key)) return id;
+          }
+          return undefined;
+        };
 
-          if (!fullName) { errors.push(`Rij ${i + 2}: geen naam gevonden`); continue; }
-          if (!date) { errors.push(`Rij ${i + 2}: ongeldige datum`); continue; }
-
-          const clientId = clientMap.get(fullName.toLowerCase());
-          if (!clientId) { errors.push(`Rij ${i + 2}: deelnemer "${fullName}" niet gevonden`); continue; }
+        for (const entry of parsedEntries) {
+          const clientId = findClient(entry.name);
+          if (!clientId) { errors.push(`Deelnemer "${entry.name}" niet gevonden`); continue; }
 
           const { error } = await supabase.from("client_availability").upsert({
             client_id: clientId,
-            available_date: date,
-            start_time: start ?? "09:00",
-            end_time: end ?? "17:00",
+            available_date: entry.date,
+            start_time: entry.startTime,
+            end_time: entry.endTime,
           } as any, { onConflict: "client_id,available_date" });
-          if (error) { errors.push(`Rij ${i + 2}: ${error.message}`); continue; }
+          if (error) { errors.push(`${entry.name} ${entry.date}: ${error.message}`); continue; }
           success++;
         }
       } else if (importType === "sessies") {
@@ -237,6 +434,7 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
   };
 
   const typeInfo = IMPORT_TYPES.find((t) => t.value === importType)!;
+  const importCount = importType === "sessies" ? parsedData.length : parsedEntries.length;
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) reset(); onOpenChange(o); }}>
@@ -262,8 +460,8 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
 
           <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm space-y-1">
             <p className="font-medium text-foreground">{typeInfo.description}</p>
-            <p className="text-muted-foreground">Verwachte kolommen: <span className="font-mono text-xs">{typeInfo.columns}</span></p>
-            <p className="text-xs text-muted-foreground">Datumformaat: dd-mm-jjjj of jjjj-mm-dd. Tijden: uu:mm. Namen worden gematcht op bestaande records.</p>
+            <p className="text-muted-foreground text-xs">{typeInfo.columns}</p>
+            <p className="text-xs text-muted-foreground">Kruisje (x) = hele dag • Tijd = vanaf-tijd • Lege cel = niet beschikbaar</p>
           </div>
 
           <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleFile} />
@@ -274,41 +472,75 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
 
           {parsedData.length > 0 && !result && (
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-foreground font-medium">{parsedData.length} rij(en) gevonden</p>
-                <Badge variant="outline" className="text-xs">
-                  Kolommen: {Object.keys(parsedData[0]).join(", ")}
-                </Badge>
-              </div>
-
-              {/* Preview */}
-              <div className="max-h-48 overflow-auto rounded border border-border">
-                <table className="w-full text-xs">
-                  <thead className="bg-muted/50 sticky top-0">
-                    <tr>
-                      {Object.keys(parsedData[0]).map((k) => (
-                        <th key={k} className="px-2 py-1 text-left font-semibold text-muted-foreground whitespace-nowrap">{k}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {parsedData.slice(0, 10).map((row, i) => (
-                      <tr key={i}>
-                        {Object.keys(parsedData[0]).map((k) => (
-                          <td key={k} className="px-2 py-1 whitespace-nowrap text-foreground">{String(row[k] ?? "")}</td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {parsedData.length > 10 && (
-                  <p className="text-xs text-muted-foreground text-center py-1">... en {parsedData.length - 10} meer</p>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-foreground font-medium">{parsedData.length} rij(en) ingelezen</p>
+                  {detectedFormat && <Badge variant="secondary" className="text-[10px]">{detectedFormat}</Badge>}
+                </div>
+                {importCount > 0 && importType !== "sessies" && (
+                  <p className="text-xs text-muted-foreground">→ {importCount} beschikbaarheden herkend</p>
                 )}
               </div>
 
-              <Button className="w-full" onClick={doImport} disabled={importing}>
+              {/* Preview for availability entries */}
+              {importType !== "sessies" && parsedEntries.length > 0 && (
+                <div className="max-h-48 overflow-auto rounded border border-border">
+                  <table className="w-full text-xs">
+                    <thead className="bg-muted/50 sticky top-0">
+                      <tr>
+                        <th className="px-2 py-1 text-left font-semibold text-muted-foreground">Naam</th>
+                        <th className="px-2 py-1 text-left font-semibold text-muted-foreground">Datum</th>
+                        <th className="px-2 py-1 text-left font-semibold text-muted-foreground">Van</th>
+                        <th className="px-2 py-1 text-left font-semibold text-muted-foreground">Tot</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {parsedEntries.slice(0, 15).map((entry, i) => (
+                        <tr key={i}>
+                          <td className="px-2 py-1 whitespace-nowrap text-foreground">{entry.name}</td>
+                          <td className="px-2 py-1 whitespace-nowrap text-foreground">{entry.date}</td>
+                          <td className="px-2 py-1 text-foreground">{entry.startTime}</td>
+                          <td className="px-2 py-1 text-foreground">{entry.endTime}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {parsedEntries.length > 15 && (
+                    <p className="text-xs text-muted-foreground text-center py-1">... en {parsedEntries.length - 15} meer</p>
+                  )}
+                </div>
+              )}
+
+              {/* Preview for sessies (raw rows) */}
+              {importType === "sessies" && (
+                <div className="max-h-48 overflow-auto rounded border border-border">
+                  <table className="w-full text-xs">
+                    <thead className="bg-muted/50 sticky top-0">
+                      <tr>
+                        {Object.keys(parsedData[0]).map((k) => (
+                          <th key={k} className="px-2 py-1 text-left font-semibold text-muted-foreground whitespace-nowrap">{k}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {parsedData.slice(0, 10).map((row, i) => (
+                        <tr key={i}>
+                          {Object.keys(parsedData[0]).map((k) => (
+                            <td key={k} className="px-2 py-1 whitespace-nowrap text-foreground">{String(row[k] ?? "")}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {parsedData.length > 10 && (
+                    <p className="text-xs text-muted-foreground text-center py-1">... en {parsedData.length - 10} meer</p>
+                  )}
+                </div>
+              )}
+
+              <Button className="w-full" onClick={doImport} disabled={importing || importCount === 0}>
                 {importing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-                {importing ? "Importeren..." : `Importeer ${parsedData.length} rij(en)`}
+                {importing ? "Importeren..." : `Importeer ${importCount} ${importType === "sessies" ? "sessie(s)" : "beschikbaar(heden)"}`}
               </Button>
             </div>
           )}
