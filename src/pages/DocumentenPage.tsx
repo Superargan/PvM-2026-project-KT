@@ -735,7 +735,12 @@ function renderWithPlaceholders(text: string) {
   return parts.map((part, i) => {
     if (/^\{\{[a-z_]+\}\}$/.test(part)) {
       return (
-        <span key={i} className="inline-flex items-center rounded bg-primary/10 px-1 py-0.5 text-[11px] font-mono text-primary mx-0.5">
+        <span
+          key={i}
+          className="inline-flex items-center rounded bg-primary/10 px-1 py-0.5 text-[11px] font-mono text-primary mx-0.5 cursor-pointer hover:bg-primary/20 transition-colors"
+          onClick={() => navigator.clipboard.writeText(part)}
+          title={`Klik om ${part} te kopiëren`}
+        >
           {part}
         </span>
       );
@@ -1071,7 +1076,17 @@ function GenerateTab() {
                   <p className="text-xs font-medium text-muted-foreground mb-1">Placeholders ({selectedTemplateMeta.placeholder_fields?.length ?? 0}):</p>
                   <div className="flex flex-wrap gap-1">
                     {(selectedTemplateMeta.placeholder_fields ?? []).map((p: string) => (
-                      <Badge key={p} variant="outline" className="text-[9px] font-mono">{p}</Badge>
+                      <Badge
+                        key={p}
+                        variant="outline"
+                        className="text-[9px] font-mono cursor-pointer hover:bg-primary/10 transition-colors"
+                        onClick={() => {
+                          navigator.clipboard.writeText(p);
+                          toast({ title: "Gekopieerd", description: `${p} is naar het klembord gekopieerd.` });
+                        }}
+                      >
+                        {p} <Copy className="h-2.5 w-2.5 ml-0.5 opacity-50" />
+                      </Badge>
                     ))}
                   </div>
                 </div>
