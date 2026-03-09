@@ -13,16 +13,36 @@ interface ParsedRow {
 }
 
 function normalizeKey(key: string): string {
-  return key.toLowerCase().replace(/[^a-z0-9]/g, "");
+  return key
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
 }
 
 function findCol(row: ParsedRow, ...candidates: string[]): string | undefined {
   const keys = Object.keys(row);
-  for (const c of candidates) {
-    const norm = normalizeKey(c);
-    const found = keys.find((k) => normalizeKey(k) === norm);
+  const normalizedCandidates = candidates.map(normalizeKey);
+
+  // Priority 1: exact normalized match
+  for (const c of normalizedCandidates) {
+    const found = keys.find((k) => normalizeKey(k) === c);
     if (found && row[found] !== undefined && row[found] !== "") return String(row[found]).trim();
   }
+
+  // Priority 2: starts-with match
+  for (const c of normalizedCandidates) {
+    const found = keys.find((k) => normalizeKey(k).startsWith(c));
+    if (found && row[found] !== undefined && row[found] !== "") return String(row[found]).trim();
+  }
+
+  // Priority 3: contains match
+  for (const c of normalizedCandidates) {
+    if (c.length < 3) continue; // avoid too short matches
+    const found = keys.find((k) => normalizeKey(k).includes(c));
+    if (found && row[found] !== undefined && row[found] !== "") return String(row[found]).trim();
+  }
+
   return undefined;
 }
 
@@ -108,18 +128,42 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
     reader.readAsBinaryString(file);
   };
 
+  /** Fuzzy school name matching: exact → contains → best partial */
   const findSchoolId = (name: string | undefined): string | null => {
     if (!name) return null;
-    const norm = name.toLowerCase().trim();
-    const match = schools.find((s) => s.name.toLowerCase().trim() === norm);
-    return match?.id ?? null;
+    const norm = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
+    // Exact match
+    const exact = schools.find((s) => s.name.toLowerCase().trim() === norm);
+    if (exact) return exact.id;
+
+    // Contains: school name contains search or search contains school name
+    const contains = schools.find((s) => {
+      const sNorm = s.name.toLowerCase().trim();
+      return sNorm.includes(norm) || norm.includes(sNorm);
+    });
+    if (contains) return contains.id;
+
+    // Starts-with match (first significant word)
+    const firstWord = norm.split(/\s+/)[0];
+    if (firstWord.length >= 3) {
+      const startsWith = schools.find((s) => s.name.toLowerCase().trim().startsWith(firstWord));
+      if (startsWith) return startsWith.id;
+    }
+
+    return null;
   };
 
   const findAreaId = (name: string | undefined): string | null => {
     if (!name) return null;
-    const norm = name.toLowerCase().trim();
-    const match = areas.find((a) => a.name.toLowerCase().trim() === norm);
-    return match?.id ?? null;
+    const norm = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const exact = areas.find((a) => a.name.toLowerCase().trim() === norm);
+    if (exact) return exact.id;
+    const contains = areas.find((a) => {
+      const aNorm = a.name.toLowerCase().trim();
+      return aNorm.includes(norm) || norm.includes(aNorm);
+    });
+    return contains?.id ?? null;
   };
 
   const handleImport = async () => {
