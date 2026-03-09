@@ -888,10 +888,18 @@ function GenerateTab() {
 
       if (entityType === "program") {
         if (!selectedEntity) throw new Error("Selecteer een training");
+
+        const isPraktijk4Kids = (staff: any) =>
+          (staff?.trade_name || "").toLowerCase().replace(/\s/g, "").includes("praktijk4kids") ||
+          (staff?.name || "").toLowerCase().replace(/\s/g, "").includes("praktijk4kids");
+
+        // Filter out Praktijk4Kids trainers
+        const eligibleTrainers = programTrainers.filter((t: any) => !isPraktijk4Kids(t.staff));
+
         const trainersToGenerate = selectedTrainers.length > 0
-          ? selectedTrainers
-          : programTrainers.map((t: any) => t.staff_id);
-        if (trainersToGenerate.length === 0) throw new Error("Geen trainers gekoppeld aan deze training");
+          ? selectedTrainers.filter((id: string) => eligibleTrainers.some((t: any) => t.staff_id === id))
+          : eligibleTrainers.map((t: any) => t.staff_id);
+        if (trainersToGenerate.length === 0) throw new Error("Geen trainers om documenten voor te genereren (Praktijk4Kids wordt overgeslagen)");
 
         const results = [];
         for (const staffId of trainersToGenerate) {
