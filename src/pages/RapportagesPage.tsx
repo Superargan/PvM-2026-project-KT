@@ -901,7 +901,7 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
       <div className="grid grid-cols-3 gap-3">
         <div className="rounded-lg border border-border bg-card p-3">
           <p className="text-xs text-muted-foreground">Voorovereenkomsten</p>
-          <p className="text-xl font-bold text-card-foreground">{voorOk} <span className="text-sm font-normal text-muted-foreground">/ {totalSlots}</span></p>
+          <p className="text-xl font-bold text-card-foreground">{voorOk} <span className="text-sm font-normal text-muted-foreground">/ {totalUniqueTrainers}</span></p>
           {missingVoor.length > 0 && <p className="text-xs text-destructive mt-1">{missingVoor.length} trainer(s) mist voorovereenkomst</p>}
         </div>
         <div className="rounded-lg border border-border bg-card p-3">
