@@ -734,7 +734,31 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
   const voorovereenkomstTemplate = useMemo(() => docTemplates.find((t: any) => t.category === "voorovereenkomst"), [docTemplates]);
   const overeenkomstTemplate = useMemo(() => docTemplates.find((t: any) => t.category === "overeenkomst"), [docTemplates]);
 
+  // Only count as "done" when the document has a signed version
   const staffHasVoorovereenkomst = useMemo(() => {
+    const set = new Set<string>();
+    generatedDocs.forEach((doc: any) => {
+      if (!doc.staff_id) return;
+      const cat = (doc.document_templates as any)?.category?.toLowerCase() ?? "";
+      if (cat === "voorovereenkomst" && doc.signed_file_path) set.add(doc.staff_id);
+    });
+    return set;
+  }, [generatedDocs]);
+
+  const programStaffHasOvereenkomst = useMemo(() => {
+    const set = new Set<string>();
+    generatedDocs.forEach((doc: any) => {
+      if (!doc.staff_id) return;
+      const cat = (doc.document_templates as any)?.category?.toLowerCase() ?? "";
+      if (cat === "overeenkomst" && doc.program_id && doc.signed_file_path) {
+        set.add(`${doc.program_id}_${doc.staff_id}`);
+      }
+    });
+    return set;
+  }, [generatedDocs]);
+
+  // Track whether a document has been generated (but not yet signed)
+  const staffHasVoorovereenkomstGenerated = useMemo(() => {
     const set = new Set<string>();
     generatedDocs.forEach((doc: any) => {
       if (!doc.staff_id) return;
@@ -744,7 +768,7 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
     return set;
   }, [generatedDocs]);
 
-  const programStaffHasOvereenkomst = useMemo(() => {
+  const programStaffHasOvereenkomstGenerated = useMemo(() => {
     const set = new Set<string>();
     generatedDocs.forEach((doc: any) => {
       if (!doc.staff_id) return;
