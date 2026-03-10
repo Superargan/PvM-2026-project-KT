@@ -203,6 +203,7 @@ export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => 
                         Toewijzen
                       </Button>
                     )}
+                  </div>
                   </TableCell>
                 </TableRow>
                 );
