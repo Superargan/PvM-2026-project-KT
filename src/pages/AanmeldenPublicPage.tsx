@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,7 @@ const aanmeldSchema = z.object({
   last_name: z.string().trim().min(1, "Achternaam is verplicht").max(100),
   date_of_birth: z.string().min(1, "Geboortedatum is verplicht"),
   school_id: z.string().min(1, "School is verplicht"),
+  waitlist_area_id: z.string().optional(),
   guardian_name: z.string().trim().min(1, "Naam ouder/verzorger is verplicht").max(200),
   guardian_phone: z.string().trim().min(1, "Telefoonnummer is verplicht").max(20),
   guardian_email: z.string().trim().email("Ongeldig e-mailadres").max(255),
@@ -34,12 +35,35 @@ export default function AanmeldenPublicPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("schools")
+        .select("id, name, neighborhood_id, neighborhoods(area_id)")
+        .order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: areas = [] } = useQuery({
+    queryKey: ["public-areas"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("areas")
         .select("id, name")
         .order("name");
       if (error) throw error;
       return data ?? [];
     },
   });
+
+  // Auto-fill area from selected school
+  useEffect(() => {
+    if (form.school_id && !form.waitlist_area_id) {
+      const school = schools.find((s) => s.id === form.school_id);
+      const areaId = (school as any)?.neighborhoods?.area_id;
+      if (areaId) {
+        setForm((prev) => ({ ...prev, waitlist_area_id: areaId }));
+      }
+    }
+  }, [form.school_id, schools]);
 
   const updateField = (field: keyof AanmeldForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -62,7 +86,7 @@ export default function AanmeldenPublicPage() {
     }
 
     setSubmitting(true);
-    const { error } = await supabase.from("clients").insert({
+    const insertData: any = {
       first_name: result.data.first_name,
       last_name: result.data.last_name,
       date_of_birth: result.data.date_of_birth,
@@ -73,7 +97,11 @@ export default function AanmeldenPublicPage() {
       referral_reason: result.data.referral_reason,
       intake_status: "nieuw",
       registration_date: new Date().toISOString().split("T")[0],
-    } as any);
+    };
+    if (result.data.waitlist_area_id) {
+      insertData.waitlist_area_id = result.data.waitlist_area_id;
+    }
+    const { error } = await supabase.from("clients").insert(insertData);
     setSubmitting(false);
 
     if (error) {
@@ -125,16 +153,28 @@ export default function AanmeldenPublicPage() {
             <DateInput value={form.date_of_birth ?? ""} onChange={(v) => updateField("date_of_birth", v)} max={new Date().toISOString().split("T")[0]} />
           </FieldWrapper>
 
-          <FieldWrapper label="School *" error={errors.school_id}>
-            <Select value={form.school_id ?? ""} onValueChange={(v) => updateField("school_id", v)}>
-              <SelectTrigger><SelectValue placeholder="Selecteer school" /></SelectTrigger>
-              <SelectContent>
-                {schools.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FieldWrapper>
+          <div className="grid grid-cols-2 gap-4">
+            <FieldWrapper label="School *" error={errors.school_id}>
+              <Select value={form.school_id ?? ""} onValueChange={(v) => updateField("school_id", v)}>
+                <SelectTrigger><SelectValue placeholder="Selecteer school" /></SelectTrigger>
+                <SelectContent>
+                  {schools.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FieldWrapper>
+            <FieldWrapper label="Gebied">
+              <Select value={form.waitlist_area_id ?? ""} onValueChange={(v) => updateField("waitlist_area_id", v)}>
+                <SelectTrigger><SelectValue placeholder="Automatisch via school" /></SelectTrigger>
+                <SelectContent>
+                  {areas.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FieldWrapper>
+          </div>
 
           <div className="border-t border-border pt-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Gegevens ouder/verzorger</p>

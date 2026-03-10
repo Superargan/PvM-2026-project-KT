@@ -96,11 +96,11 @@ export default function ClientDetailPage() {
     enabled: !!id,
   });
 
-  // Fetch schools for dropdown
+  // Fetch schools for dropdown (include neighborhood→area for auto-fill)
   const { data: schools = [] } = useQuery({
     queryKey: ["schools-list"],
     queryFn: async () => {
-      const { data } = await supabase.from("schools").select("id, name").order("name");
+      const { data } = await supabase.from("schools").select("id, name, neighborhood_id, neighborhoods(area_id)").order("name");
       return data ?? [];
     },
   });
@@ -110,6 +110,15 @@ export default function ClientDetailPage() {
     queryKey: ["referrers-list"],
     queryFn: async () => {
       const { data } = await supabase.from("referrers").select("id, name, function_title, school_id").order("name");
+      return data ?? [];
+    },
+  });
+
+  // Fetch areas for dropdown
+  const { data: areas = [] } = useQuery({
+    queryKey: ["areas-list"],
+    queryFn: async () => {
+      const { data } = await supabase.from("areas").select("id, name").order("name");
       return data ?? [];
     },
   });
@@ -243,13 +252,23 @@ export default function ClientDetailPage() {
         notes: client.notes ?? "",
         dropout_reason: client.dropout_reason ?? "",
         dropout_action: client.dropout_action ?? "",
+        waitlist_area_id: client.waitlist_area_id ?? "",
       });
       setDirty(false);
     }
   }, [client]);
 
   const updateField = (field: string, value: any) => {
-    setForm((prev: any) => ({ ...prev, [field]: value }));
+    setForm((prev: any) => {
+      const next = { ...prev, [field]: value };
+      // Auto-fill area from school if not already set
+      if (field === "school_id" && !prev.waitlist_area_id) {
+        const school = schools.find((s: any) => s.id === value);
+        const areaId = (school as any)?.neighborhoods?.area_id;
+        if (areaId) next.waitlist_area_id = areaId;
+      }
+      return next;
+    });
     setDirty(true);
   };
 
@@ -430,13 +449,23 @@ export default function ClientDetailPage() {
             </div>
 
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t border-border pt-4">School & Verwijzer</p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <Field label="School">
                 <Select value={form.school_id ?? ""} onValueChange={(v) => updateField("school_id", v)}>
                   <SelectTrigger><SelectValue placeholder="Selecteer school" /></SelectTrigger>
                   <SelectContent className="bg-popover">
                     {schools.map((s: any) => (
                       <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Gebied">
+                <Select value={form.waitlist_area_id ?? ""} onValueChange={(v) => updateField("waitlist_area_id", v)}>
+                  <SelectTrigger><SelectValue placeholder="Automatisch via school" /></SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    {areas.map((a: any) => (
+                      <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

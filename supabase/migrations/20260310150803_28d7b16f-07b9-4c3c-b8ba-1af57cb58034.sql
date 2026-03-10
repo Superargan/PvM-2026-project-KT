@@ -1,0 +1,1 @@
+CREATE POLICY "Anon read areas" ON public.areas FOR SELECT TO anon USING (true);
