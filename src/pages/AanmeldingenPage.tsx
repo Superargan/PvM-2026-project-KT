@@ -41,6 +41,8 @@ const editSchema = z.object({
   consent_data_processing: z.boolean().optional(),
   whatsapp_consent: z.boolean().optional(),
   notes: z.string().max(5000).optional(),
+  dropout_reason: z.string().optional(),
+  dropout_action: z.string().max(2000).optional(),
 });
 
 type EditForm = z.infer<typeof editSchema>;
