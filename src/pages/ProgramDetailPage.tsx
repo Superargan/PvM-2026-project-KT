@@ -125,6 +125,42 @@ export default function ProgramDetailPage() {
     onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
 
+  // Mark dropout
+  const dropoutMutation = useMutation({
+    mutationFn: async ({ enrollmentId, reason, action }: { enrollmentId: string; reason: string; action: string }) => {
+      const { error } = await supabase
+        .from("program_clients")
+        .update({ early_dropout: true, dropout_reason: reason || null, dropout_action: action || null } as any)
+        .eq("id", enrollmentId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      refetchEnrolled();
+      toast({ title: "Uitval geregistreerd" });
+      setDropoutOpen(false);
+      setDropoutTarget(null);
+      setDropoutReason("");
+      setDropoutAction("");
+    },
+    onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
+  });
+
+  // Undo dropout
+  const undoDropoutMutation = useMutation({
+    mutationFn: async (enrollmentId: string) => {
+      const { error } = await supabase
+        .from("program_clients")
+        .update({ early_dropout: false, dropout_reason: null, dropout_action: null } as any)
+        .eq("id", enrollmentId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      refetchEnrolled();
+      toast({ title: "Uitval ongedaan gemaakt" });
+    },
+    onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
+  });
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-20">
