@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, Save, User, ClipboardList, BookOpen, Shield, FileText, Download, CalendarDays, Trash2 } from "lucide-react";
 import AvailabilityManager from "@/components/AvailabilityManager";
+import AreaPreferencesEditor from "@/components/AreaPreferencesEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateInput } from "@/components/DateInput";
