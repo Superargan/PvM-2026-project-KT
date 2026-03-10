@@ -483,6 +483,15 @@ export default function ClientDetailPage() {
               </Field>
             </div>
 
+            {/* Reserve area preferences */}
+            <AreaPreferencesEditor
+              clientId={id!}
+              primaryAreaId={form.waitlist_area_id || null}
+              allAreasFlexible={form.all_areas_flexible ?? false}
+              onAllAreasFlexibleChange={(v) => updateField("all_areas_flexible", v)}
+              areas={areas}
+            />
+
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t border-border pt-4">Ouder/Verzorger</p>
             <Field label="Naam">
               <Input value={form.guardian_name ?? ""} onChange={(e) => updateField("guardian_name", e.target.value)} />
