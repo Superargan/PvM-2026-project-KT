@@ -140,6 +140,9 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
   const [fileName, setFileName] = useState("");
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<{ added: number; skipped: number; updated: number; errors: string[] } | null>(null);
+  const [unmatchedSchools, setUnmatchedSchools] = useState<string[]>([]);
+  const [schoolResolutions, setSchoolResolutions] = useState<Record<string, string>>({});
+  const [showResolution, setShowResolution] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
