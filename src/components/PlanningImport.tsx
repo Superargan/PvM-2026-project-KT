@@ -222,15 +222,124 @@ function parseDateFromHeader(header: string, referenceYear?: number): string | n
 /** Check if a cell value represents availability: "x", "X", "✓", "ja", or a time */
 function parseCellAvailability(val: any): { available: boolean; startTime: string; endTime: string } | null {
   if (val === undefined || val === null || val === "") return null;
-  const s = String(val).trim().toLowerCase();
+  const s = String(val).trim();
   if (!s) return null;
+  const lower = s.toLowerCase().replace(/\s+/g, " ");
 
-  // Cross / check mark = whole day
-  if (["x", "✓", "✔", "ja", "yes", "v", "√"].includes(s)) {
+  // Skip clearly non-availability values
+  if (["nee", "no", "-", "n/a", "nvt"].includes(lower)) return null;
+
+  // Cross / check mark = whole day (09:00-17:00)
+  if (["x", "✓", "✔", "ja", "yes", "v", "√"].includes(lower)) {
     return { available: true, startTime: "09:00", endTime: "17:00" };
   }
 
-  // Time value = start time (from that time, assume 4h block or until 17:00)
+  // "X (15.00 uur)" or "X (13.00 uur)" or "X (12:15)" or "X (voorkeur)"
+  const xWithTime = lower.match(/^x\s*\((\d{1,2}[:\.]?\d{0,2})\s*(?:uur)?\s*\)/);
+  if (xWithTime) {
+    const t = parseTime(xWithTime[1]);
+    if (t) {
+      const [h] = t.split(":").map(Number);
+      return { available: true, startTime: t, endTime: `${String(Math.min(h + 4, 17)).padStart(2, "0")}:00` };
+    }
+  }
+  // "X (voorkeur)" or similar X with text
+  if (/^x\s*\(/.test(lower)) {
+    return { available: true, startTime: "09:00", endTime: "17:00" };
+  }
+
+  // "Ochtend" / "morgen" → 09:00-12:30
+  if (["ochtend", "morgen", "ochtends", "s ochtends", "'s ochtends"].includes(lower)) {
+    return { available: true, startTime: "09:00", endTime: "12:30" };
+  }
+  // "Middag" → 13:00-17:00
+  if (["middag", "s middags", "'s middags", "namiddag"].includes(lower)) {
+    return { available: true, startTime: "13:00", endTime: "17:00" };
+  }
+  // "Voorkeur" = available (preference)
+  if (lower === "voorkeur") {
+    return { available: true, startTime: "09:00", endTime: "17:00" };
+  }
+
+  // "io" or "in overleg" = available (to be discussed)
+  if (lower === "io" || lower === "in overleg") {
+    return { available: true, startTime: "09:00", endTime: "17:00" };
+  }
+
+  // "Onder schooltijd" = available during school hours
+  if (lower.includes("onder schooltijd") || lower.includes("schooltijd")) {
+    return { available: true, startTime: "08:30", endTime: "15:00" };
+  }
+
+  // "vanaf 15.00 uur" / "vanaf 14.00" / "Vanaf 15u" / "Vanaf 15:00"
+  const vanafMatch = lower.match(/^vanaf\s+(\d{1,2})[:\.]?(\d{0,2})\s*(?:uur|u)?/);
+  if (vanafMatch) {
+    const h = parseInt(vanafMatch[1]);
+    const m = vanafMatch[2] ? parseInt(vanafMatch[2]) : 0;
+    const startTime = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    return { available: true, startTime, endTime: "17:00" };
+  }
+
+  // "na 14.45" / "na 15:00"
+  const naMatch = lower.match(/^na\s+(\d{1,2})[:\.]?(\d{0,2})/);
+  if (naMatch) {
+    const h = parseInt(naMatch[1]);
+    const m = naMatch[2] ? parseInt(naMatch[2]) : 0;
+    const startTime = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    return { available: true, startTime, endTime: "17:00" };
+  }
+
+  // "Tot 1630" / "Tot 15:45 ivm zwemles" / "Tot 1545 ivm zwemles"
+  const totMatch = lower.match(/^tot\s+(\d{1,2})[:\.]?(\d{0,2})/);
+  if (totMatch) {
+    const h = parseInt(totMatch[1]);
+    let m = totMatch[2] ? parseInt(totMatch[2]) : 0;
+    // Handle "1630" as 16:30
+    if (h > 23 && h < 2400) {
+      const hh = Math.floor(h / 100);
+      const mm = h % 100;
+      return { available: true, startTime: "09:00", endTime: `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}` };
+    }
+    return { available: true, startTime: "09:00", endTime: `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}` };
+  }
+
+  // "14.15uur" / "15.00 uur" / "12.00 uur"
+  const timeUur = lower.match(/^(\d{1,2})[:\.](\d{2})\s*(?:uur|u)?$/);
+  if (timeUur) {
+    const h = parseInt(timeUur[1]);
+    const m = parseInt(timeUur[2]);
+    const startTime = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    return { available: true, startTime, endTime: `${String(Math.min(h + 4, 17)).padStart(2, "0")}:00` };
+  }
+
+  // Time range with dash: "11-1630", "9:00-12:00", "8.30-15.00"
+  const range = lower.match(/^(\d{1,2}[:\.]?\d{0,2})\s*[-–]\s*(\d{1,2}[:\.]?\d{0,2})$/);
+  if (range) {
+    let startStr = range[1], endStr = range[2];
+    // Handle "1630" as "16:30"
+    const parseCompact = (v: string): string | null => {
+      if (/^\d{3,4}$/.test(v)) {
+        const n = parseInt(v);
+        return `${String(Math.floor(n / 100)).padStart(2, "0")}:${String(n % 100).padStart(2, "0")}`;
+      }
+      return parseTime(v);
+    };
+    const start = parseCompact(startStr) || parseTime(startStr);
+    const end = parseCompact(endStr) || parseTime(endStr);
+    if (start && end) return { available: true, startTime: start, endTime: end };
+  }
+
+  // "8.30 of 12.15" - multiple options, take first
+  const ofMatch = lower.match(/^(\d{1,2}[:\.]?\d{0,2})\s+of\s+/);
+  if (ofMatch) {
+    const t = parseTime(ofMatch[1]);
+    if (t) {
+      const [h] = t.split(":").map(Number);
+      return { available: true, startTime: t, endTime: `${String(Math.min(h + 4, 17)).padStart(2, "0")}:00` };
+    }
+  }
+
+  // Plain time value as fallback
   const time = parseTime(val);
   if (time) {
     const [h] = time.split(":").map(Number);
@@ -238,12 +347,9 @@ function parseCellAvailability(val: any): { available: boolean; startTime: strin
     return { available: true, startTime: time, endTime: `${String(endH).padStart(2, "0")}:00` };
   }
 
-  // Time range "9:00-12:00" or "9-12"
-  const range = s.match(/^(\d{1,2}[:\.]?\d{0,2})\s*[-–]\s*(\d{1,2}[:\.]?\d{0,2})$/);
-  if (range) {
-    const start = parseTime(range[1]);
-    const end = parseTime(range[2]);
-    if (start && end) return { available: true, startTime: start, endTime: end };
+  // Any remaining text that starts with a known availability indicator
+  if (lower.startsWith("x ") || lower.startsWith("x,")) {
+    return { available: true, startTime: "09:00", endTime: "17:00" };
   }
 
   return null;
