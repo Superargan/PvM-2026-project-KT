@@ -89,7 +89,7 @@ export default function WachtlijstPage() {
     },
     onSuccess: () => {
       toast.success("Deelnemer toegewezen aan programma");
-      qc.invalidateQueries({ queryKey: ["waitlist-clients"] });
+      qc.invalidateQueries({ queryKey: ["clients"] });
     },
     onError: (err: any) => toast.error(err.message),
   });
