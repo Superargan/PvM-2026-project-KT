@@ -44,7 +44,7 @@ export default function WachtlijstPage() {
   });
 
   const { data: waitlistClients = [], isLoading } = useQuery({
-    queryKey: ["waitlist-clients"],
+    queryKey: ["clients", "waitlist"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
