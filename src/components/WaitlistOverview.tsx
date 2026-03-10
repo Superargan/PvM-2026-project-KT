@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 
-type AgeCategory = "5-7 jaar" | "8-12 jaar";
+type AgeCategory = "4-7 jaar" | "8-12 jaar";
 
 function getAgeCategory(dob: string | null): AgeCategory | null {
   if (!dob) return null;
   const age = differenceInYears(new Date(), parseISO(dob));
-  if (age >= 5 && age <= 7) return "5-7 jaar";
+  if (age >= 4 && age <= 7) return "4-7 jaar";
   if (age >= 8 && age <= 12) return "8-12 jaar";
   return null;
 }
