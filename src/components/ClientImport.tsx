@@ -505,7 +505,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       const parts = [];
       if (added > 0) parts.push(`${added} toegevoegd`);
       if (updated > 0) parts.push(`${updated} bijgewerkt`);
-      toast({ title: `${parts.join(", ")}${mode === "waitlist" ? " (wachtlijst)" : ""}` });
+      toast({ title: `${parts.join(", ")}${selectedMode === "waitlist" ? " (wachtlijst)" : selectedMode === "intake_afgerond" ? " (intakes afgerond)" : ""}` });
       onComplete?.();
     }
   };
