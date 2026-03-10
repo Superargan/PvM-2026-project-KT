@@ -1,59 +1,86 @@
 
 
-# Plan: Testomgeving 2025 met Kanjertrainingen
+# Plan: Reserve-gebieden en geoptimaliseerde planningsmodule
 
-## Huidige situatie
+## Overzicht
 
-| Gegeven | Aantal |
-|---------|--------|
-| Programma's (2026, KT) | 28 (te_plannen) + 3 (ingepland) |
-| Trainers | 1 (Patrick van Mastricht) |
-| Scholen | 162 |
-| Gebieden | 14 (alle Rotterdamse gebieden) |
-| Cliënten | 1 |
-| Sessies | 10 |
+Deelnemers krijgen tot 3 extra "reserve" gebieden naast hun primaire gebied, plus een optie "alle gebieden". De planningsmodule (WaitlistOverview + GroupComposer) zoekt automatisch op deze reserves en toont per deelnemer vanuit welke voorkeur ze gematcht zijn.
 
-Er bestaan nog geen 2025-programma's. Alle huidige KT-nummers beginnen met 26xxx.
+## Database-wijzigingen
 
-## Wat er nodig is
+Nieuwe tabel `client_area_preferences` voor de reserve-gebieden:
 
-Om realistisch te testen hebben we voor 5 Kanjertrainingen (2025) het volgende nodig:
+```sql
+CREATE TABLE public.client_area_preferences (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id uuid NOT NULL REFERENCES public.clients(id) ON DELETE CASCADE,
+  area_id uuid NOT NULL REFERENCES public.areas(id) ON DELETE CASCADE,
+  preference_order integer NOT NULL DEFAULT 1, -- 1, 2 of 3
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (client_id, area_id)
+);
 
-1. **5 KT-programma's** met naam `KT - 25001` t/m `KT - 25005`, status `afgerond`, met start/einddatum in 2025, leeftijdscategorie, en gekoppeld aan een gebied/school
-2. **Trainers** - minimaal 4-6 extra trainers om realistisch 2 per programma te koppelen
-3. **Cliënten** - minimaal 35-40 kinderen (7-8 per groep) met naam, geboortedatum, school
-4. **Sessies** - 10 bijeenkomsten per programma (standaard KT = 10 lessen)
-5. **Presentie** - aanwezigheidsregistratie per sessie per kind
-6. **Koppelingen** - program_staff en program_clients records
+ALTER TABLE public.client_area_preferences ENABLE ROW LEVEL SECURITY;
+-- RLS policies: backoffice CRUD, trainers SELECT
+```
 
-## Aanpak
+Nieuw veld op `clients` tabel:
 
-### Stap 1: Testdata genereren via SQL
-Ik maak een script dat via database-inserts de volgende testdata aanmaakt:
+```sql
+ALTER TABLE public.clients ADD COLUMN all_areas_flexible boolean NOT NULL DEFAULT false;
+```
 
-- **5 programma's**: KT - 25001 t/m 25005, verdeeld over verschillende gebieden, mix van 5-7 en 8-12 jaar, status `afgerond`, periode jan-jun 2025
-- **6 trainers**: realistische Nederlandse namen, gekoppeld aan scholen
-- **40 cliënten**: kinderen met naam, geboortedatum (passend bij leeftijdscategorie), school, oudergegevens, intake_status `afgerond`
-- **50 sessies**: 10 per programma, wekelijks verspreid over de periode
-- **Koppelingen**: elke training 2 trainers + 7-8 kinderen
-- **Presentie**: realistische aanwezigheid (~85%)
+Dit boolean-veld geeft aan dat de deelnemer in elk gebied geplaatst mag worden.
 
-### Stap 2: Bestanden inlezen
-Je noemde dat je bestanden hebt met 2025-gegevens. Na stap 1 kun je die uploaden zodat we echte data gebruiken in plaats van (of naast) gegenereerde testdata. We kunnen dan bestaande records bijwerken of aanvullen.
+## Code-wijzigingen
 
-### Stap 3: Validatie
-Na het inladen controleren we of:
-- Programma's correct op de kaarten verschijnen
-- Trainers en deelnemers zichtbaar zijn op de detailpagina
-- Presentie en sessies kloppen
-- Filters en rapportages werken met de 2025-data
+### 1. ClientDetailPage.tsx — Reserve-gebieden sectie
 
-## Vraag aan jou
+Na het bestaande "Gebied" dropdown (regel ~462-470), een nieuwe sectie toevoegen:
 
-Voordat ik begin:
+- **"Flexibel inzetbaar (alle gebieden)"** checkbox die `all_areas_flexible` toggelt
+- **3 extra dropdown-velden** voor reserve-gebieden (voorkeur 1, 2, 3), gefilterd zodat het primaire gebied en al gekozen reserves niet dubbel voorkomen
+- Bij opslaan: de `client_area_preferences` tabel syncen (delete + insert)
+- Data laden via extra query op `client_area_preferences` voor de huidige client
 
-- **Wil je eerst met puur gegenereerde testdata starten (5 programma's)**, zodat je daarna je eigen bestanden kunt uploaden om aan te vullen of te corrigeren?
-- **Of wil je eerst je bestanden delen**, zodat ik de echte 2025-gegevens direct kan verwerken?
+### 2. AanmeldingenPage.tsx — Reserve-gebieden in bewerkdialog
 
-De eerste optie is het snelst om mee te testen; de tweede geeft meteen realistische data.
+In het bestaande edit-formulier dezelfde reserve-gebied velden toevoegen, zodat het ook bij aanmelding/intake direct ingevuld kan worden.
+
+### 3. WaitlistOverview.tsx — Matrix inclusief reserves
+
+De wachtlijst-matrix nu uitbreiden:
+- Query `client_area_preferences` mee-laden voor alle wachtlijst-deelnemers
+- Per deelnemer tellen voor **primair gebied** en alle **reserve-gebieden** (en `all_areas_flexible`)
+- In de matrix-cellen een onderscheid tonen: bijv. "5 + 3" (5 primair, 3 reserve)
+- Kleurcodering aanpassen: groen als primair + reserve samen >= 7
+
+### 4. GroupComposer.tsx — Matching met reserve-gebieden
+
+De groepssamenstelling uitbreiden:
+- Bij het groeperen van deelnemers per gebied, ook deelnemers met dat gebied als reserve-voorkeur of `all_areas_flexible = true` meenemen
+- Per deelnemer in de lijst een badge tonen: "Primair", "Reserve 1", "Reserve 2", "Reserve 3" of "Flexibel"
+- Sorteer primaire matches bovenaan, dan reserve op volgorde
+
+### 5. Automatische groepsdetectie
+
+In de WaitlistOverview een visuele indicator toevoegen die automatisch berekent:
+- Per gebied+leeftijd: hoeveel deelnemers (primair + reserves) beschikbaar zijn
+- Als het totaal >= 7 is, een "Groep mogelijk" badge tonen met breakdown per voorkeurtype
+- Klikbaar om direct naar GroupComposer te gaan met die selectie
+
+## Technische details
+
+**Nieuwe bestanden:** geen (wijzigingen in bestaande componenten)
+
+**Gewijzigde bestanden:**
+- `src/pages/ClientDetailPage.tsx` — reserve-gebieden UI + data-opslag
+- `src/pages/AanmeldingenPage.tsx` — reserve-gebieden in edit-dialog
+- `src/components/WaitlistOverview.tsx` — matrix met reserves
+- `src/components/GroupComposer.tsx` — matching-logica met badges
+- `src/lib/queryKeys.ts` — queryKey voor `client_area_preferences`
+
+**Database-migratie:**
+- Nieuwe tabel `client_area_preferences` met RLS
+- Nieuw veld `all_areas_flexible` op `clients`
 
