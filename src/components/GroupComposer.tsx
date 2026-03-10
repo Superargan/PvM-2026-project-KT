@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 
-type AgeCategory = "4-7 jaar" | "8-12 jaar";
+type AgeCategory = "5-7 jaar" | "8-12 jaar";
 
 interface GroupedClients {
   areaId: string;
