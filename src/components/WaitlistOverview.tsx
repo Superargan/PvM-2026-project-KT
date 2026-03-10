@@ -173,12 +173,47 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
               )}
             </Badge>
           ))}
-          {(matrix.noArea > 0 || matrix.noAge > 0) && (
+          {matrix.noArea > 0 && (
             <Badge variant="outline" className="text-sm px-3 py-1 border-destructive/30 text-destructive">
-              {matrix.noArea + matrix.noAge} zonder gebied/leeftijd
+              {matrix.noArea} zonder gebied
+            </Badge>
+          )}
+          {matrix.noAge > 0 && (
+            <Badge variant="outline" className="text-sm px-3 py-1 border-destructive/30 text-destructive">
+              {matrix.noAge} zonder geboortedatum
             </Badge>
           )}
         </div>
+
+        {/* Auto-fix area for clients with school */}
+        {matrix.fixableClients.length > 0 && (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 flex items-center justify-between">
+            <p className="text-sm text-foreground">
+              <strong>{matrix.fixableClients.length}</strong> deelnemer(s) hebben een school maar geen gebied — automatisch koppelen?
+            </p>
+            <Button
+              size="sm"
+              disabled={fixingAreas}
+              onClick={async () => {
+                setFixingAreas(true);
+                let fixed = 0;
+                for (const { clientId, areaId } of matrix.fixableClients) {
+                  const { error } = await supabase
+                    .from("clients")
+                    .update({ waitlist_area_id: areaId })
+                    .eq("id", clientId);
+                  if (!error) fixed++;
+                }
+                toast({ title: `${fixed} deelnemer(s) gebied toegewezen` });
+                queryClient.invalidateQueries({ queryKey: ["clients"] });
+                setFixingAreas(false);
+              }}
+            >
+              {fixingAreas ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+              Gebieden koppelen
+            </Button>
+          </div>
+        )}
 
         {/* Matrix grid */}
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
