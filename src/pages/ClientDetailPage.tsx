@@ -243,6 +243,7 @@ export default function ClientDetailPage() {
         notes: client.notes ?? "",
         dropout_reason: client.dropout_reason ?? "",
         dropout_action: client.dropout_action ?? "",
+        waitlist_area_id: client.waitlist_area_id ?? "",
       });
       setDirty(false);
     }
