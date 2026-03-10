@@ -52,7 +52,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
     return (client as any).schools?.neighborhoods?.area_id ?? null;
   };
 
-  const ageCategories: AgeCategory[] = ["4-7 jaar", "8-12 jaar"];
+  const ageCategories: AgeCategory[] = ["5-7 jaar", "8-12 jaar"];
 
   // Build matrix: area × age → count + client list
   const matrix = useMemo(() => {
