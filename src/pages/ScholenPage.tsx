@@ -957,25 +957,40 @@ export default function ScholenPage() {
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
                   </td>
-                  <td className="hidden px-5 py-4 lg:table-cell">
-                    <div className="space-y-0.5 text-xs text-muted-foreground">
-                      {school.contact_email && (
-                        <a href={`mailto:${school.contact_email}`} className="block hover:text-primary truncate">{school.contact_email}</a>
-                      )}
-                      {school.contact_phone && (
-                        <a href={`tel:${school.contact_phone}`} className="block hover:text-primary">{school.contact_phone}</a>
-                      )}
-                      {(school as any).website_url && (
-                        <a href={(school as any).website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary">
-                          <Globe className="h-3 w-3" /> Website
-                        </a>
-                      )}
-                      {!school.contact_email && !school.contact_phone && !(school as any).website_url && (
-                        <span>—</span>
-                      )}
-                    </div>
+                  <td className="hidden px-5 py-4 lg:table-cell text-center">
+                    <button
+                      type="button"
+                      className="inline-flex flex-col items-center gap-0.5 hover:opacity-80"
+                      onClick={() => { setSelectedSchool(school); setStatsDialogOpen(true); }}
+                    >
+                      <span className="font-display text-sm font-bold text-card-foreground">{getTotalClients(school.id)}</span>
+                      {(() => {
+                        const counts = schoolClientCounts[school.id];
+                        if (!counts) return null;
+                        const statusKeys = Object.keys(counts);
+                        if (statusKeys.length === 0) return null;
+                        return (
+                          <div className="flex flex-wrap gap-0.5 justify-center max-w-[120px]">
+                            {statusKeys.slice(0, 3).map((s) => (
+                              <span key={s} className={`status-indicator text-[9px] px-1.5 py-0 ${statusStyles[s] ?? "status-rood"}`}>
+                                {counts[s]}
+                              </span>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </button>
                   </td>
-                  <td className="hidden px-5 py-4 lg:table-cell">
+                  <td className="hidden px-5 py-4 lg:table-cell text-center">
+                    <button
+                      type="button"
+                      className="inline-flex flex-col items-center gap-0.5 hover:opacity-80"
+                      onClick={() => { setSelectedSchool(school); setStatsDialogOpen(true); }}
+                    >
+                      <span className="font-display text-sm font-bold text-card-foreground">{schoolProgramCounts[school.id] ?? 0}</span>
+                    </button>
+                  </td>
+                  <td className="hidden px-5 py-4 xl:table-cell">
                     <div className="flex items-center gap-2">
                       {school.referrers && school.referrers.length > 0 ? (
                         <div className="space-y-1 flex-1">
