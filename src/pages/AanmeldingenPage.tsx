@@ -773,10 +773,32 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit }: {
   onNavigate: (id: string) => void;
   onEdit: (client: any) => void;
 }) {
-  const flagged = clients.map((c: any) => {
-    const missing = REQUIRED_CHECKS.filter((ch) => ch.check(c)).map((ch) => ch.label);
+  // Deduplicate clients by id
+  const uniqueClients = Array.from(new Map(clients.map((c) => [c.id, c])).values());
+
+  // Only check "Gebied" for relevant statuses
+  const relevantForArea = new Set(["wachtlijst", "intake_afgerond", "actief"]);
+
+  const flagged = uniqueClients.map((c: any) => {
+    const missing = Array.from(new Set(
+      REQUIRED_CHECKS
+        .filter((ch) => {
+          if (ch.key === "waitlist_area_id" && !relevantForArea.has(c.intake_status ?? "")) return false;
+          return ch.check(c);
+        })
+        .map((ch) => ch.label)
+    ));
     return { client: c, missing };
   }).filter((r) => r.missing.length > 0).sort((a, b) => b.missing.length - a.missing.length);
+
+  // Summary counts per missing field
+  const summaryCounts = REQUIRED_CHECKS.map((ch) => ({
+    label: ch.label,
+    count: flagged.filter(({ client }) => {
+      if (ch.key === "waitlist_area_id" && !relevantForArea.has(client.intake_status ?? "")) return false;
+      return ch.check(client);
+    }).length,
+  })).filter((s) => s.count > 0);
 
   if (isLoading) {
     return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -816,7 +838,7 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit }: {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          <span className="font-semibold text-foreground">{flagged.length}</span> van {clients.length} deelnemers hebben ontbrekende gegevens
+          <span className="font-semibold text-foreground">{flagged.length}</span> van {uniqueClients.length} deelnemers hebben ontbrekende gegevens
         </p>
         {flagged.length > 0 && (
           <Button size="sm" variant="outline" onClick={handleExport} className="gap-1.5">
@@ -824,6 +846,18 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit }: {
           </Button>
         )}
       </div>
+
+      {/* Summary per missing field */}
+      {summaryCounts.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {summaryCounts.map((s) => (
+            <Badge key={s.label} variant="outline" className="text-xs gap-1">
+              <span className="font-semibold text-destructive">{s.count}</span> zonder {s.label.toLowerCase()}
+            </Badge>
+          ))}
+        </div>
+      )}
+
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full">
