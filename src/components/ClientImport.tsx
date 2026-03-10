@@ -515,18 +515,44 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     setFileName("");
     setResult(null);
     if (fileRef.current) fileRef.current.value = "";
+    if (modeProp === "choose") setSelectedMode("waitlist");
   };
+
+  const mode = selectedMode; // alias for convenience
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>
-            {selectedMode === "waitlist" ? "Wachtlijst importeren uit Excel" : selectedMode === "intake_afgerond" ? "Afgeronde intakes importeren uit Excel" : "Deelnemers importeren uit Excel"}
+            {mode === "waitlist" ? "Wachtlijst importeren uit Excel" : mode === "intake_afgerond" ? "Afgeronde intakes importeren uit Excel" : "Deelnemers importeren uit Excel"}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Mode selector — only when mode="choose" */}
+          {modeProp === "choose" && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Type import</Label>
+              <div className="grid grid-cols-1 gap-2">
+                {MODE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setSelectedMode(opt.value)}
+                    className={`rounded-lg border p-3 text-left transition-colors ${
+                      selectedMode === opt.value
+                        ? "border-primary bg-primary/5 ring-1 ring-primary"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <p className="text-sm font-medium">{opt.label}</p>
+                    <p className="text-xs text-muted-foreground">{opt.description}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {/* File selection */}
           <div className="rounded-lg border-2 border-dashed border-border p-6 text-center">
             <input
