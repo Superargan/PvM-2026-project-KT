@@ -295,13 +295,27 @@ function rowsToEntries(rows: ParsedRow[], isTrainer: boolean): AvailabilityEntry
     if (isTrainer) {
       name = findCol(row, "naam", "name", "trainer", "medewerker");
     } else {
-      const firstName = findCol(row, "voornaam", "firstname", "first_name", "naam");
-      const lastName = findCol(row, "achternaam", "lastname", "last_name");
-      name = lastName ? `${firstName} ${lastName}` : firstName;
+      const firstName = findCol(row, "voornaam", "firstname", "first_name");
+      const lastName = findCol(row, "achternaam", "lastname", "last_name", "familienaam");
+      // Also try combined "naam" / "name" / "deelnemer" / "kind" / "leerling"
+      const combinedName = findCol(row, "naam", "name", "deelnemer", "kind", "leerling", "participant");
+      if (firstName && lastName) {
+        name = `${firstName} ${lastName}`;
+      } else if (firstName) {
+        name = firstName;
+      } else if (combinedName) {
+        name = combinedName;
+      }
     }
-    const date = parseExcelDate(findCol(row, "datum", "date", "dag") ?? row["Datum"] ?? row["datum"]);
-    const start = parseTime(findCol(row, "starttijd", "van", "start", "starttime", "start_time") ?? row["Starttijd"]);
-    const end = parseTime(findCol(row, "eindtijd", "tot", "end", "eindtime", "end_time", "eind") ?? row["Eindtijd"]);
+
+    // Try multiple date column candidates including raw keys
+    const dateRaw = findCol(row, "datum", "date", "dag", "startdatum", "beschikbaar_datum", "beschikbare_datum")
+      ?? findCol(row, "beschikbaar", "available", "available_date");
+    const date = parseExcelDate(dateRaw);
+
+    const start = parseTime(findCol(row, "starttijd", "van", "start", "starttime", "start_time", "begintijd", "begin") ?? row["Starttijd"]);
+    const end = parseTime(findCol(row, "eindtijd", "tot", "end", "eindtime", "end_time", "eind", "stoptijd") ?? row["Eindtijd"]);
+
     if (name && date) {
       entries.push({ name, date, startTime: start ?? "09:00", endTime: end ?? "17:00" });
     }
@@ -616,6 +630,39 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
                   {parsedEntries.length > 15 && (
                     <p className="text-xs text-muted-foreground text-center py-1">... en {parsedEntries.length - 15} meer</p>
                   )}
+                </div>
+              )}
+
+              {/* Debug: show raw data when 0 entries detected */}
+              {importType !== "sessies" && parsedEntries.length === 0 && parsedData.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs text-destructive font-medium">Geen beschikbaarheden herkend. Gevonden kolommen:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {Object.keys(parsedData[0]).map((k) => (
+                      <Badge key={k} variant="outline" className="text-[10px]">{k}</Badge>
+                    ))}
+                  </div>
+                  <div className="max-h-48 overflow-auto rounded border border-border">
+                    <table className="w-full text-xs">
+                      <thead className="bg-muted/50 sticky top-0">
+                        <tr>
+                          {Object.keys(parsedData[0]).map((k) => (
+                            <th key={k} className="px-2 py-1 text-left font-semibold text-muted-foreground whitespace-nowrap">{k}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {parsedData.slice(0, 5).map((row, i) => (
+                          <tr key={i}>
+                            {Object.keys(parsedData[0]).map((k) => (
+                              <td key={k} className="px-2 py-1 whitespace-nowrap text-foreground">{String(row[k] ?? "")}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Verwacht: kolom met naam + datumkolommen (grid) óf kolommen Naam/Datum/Starttijd (rij-formaat)</p>
                 </div>
               )}
 
