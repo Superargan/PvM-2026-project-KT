@@ -332,6 +332,9 @@ export default function AanmeldingenPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="lijst">Aanmeldingen</TabsTrigger>
+          <TabsTrigger value="intake_afgerond" className="gap-1.5">
+            <CheckCircle2 className="h-3.5 w-3.5" /> Intakes afgerond
+          </TabsTrigger>
           <TabsTrigger value="wachtlijst" className="gap-1.5">
             <Clock className="h-3.5 w-3.5" /> Wachtlijst
           </TabsTrigger>
@@ -352,65 +355,27 @@ export default function AanmeldingenPage() {
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border bg-muted/50">
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Naam</th>
-                <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground sm:table-cell">Leeftijd</th>
-                <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground md:table-cell">School</th>
-                <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Toegewezen aan</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
-                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actie</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {clients.length === 0 && (
-                <tr><td colSpan={6} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen aanmeldingen gevonden</td></tr>
-              )}
-              {clients.map((client: any) => {
-                const age = calculateAge(client.date_of_birth);
-                const status = client.intake_status ?? "nieuw";
-                const assigned = assignmentsByClient[client.id] ?? [];
-                return (
-                  <tr key={client.id} className="transition-colors hover:bg-muted/30">
-                    <td className="px-5 py-4">
-                      <p className="text-sm font-semibold text-primary hover:underline cursor-pointer" onClick={() => navigate(`/clienten/${client.id}`)}>{client.first_name} {client.last_name}</p>
-                      <p className="text-xs text-muted-foreground sm:hidden">{age !== null ? `${age} jaar` : "—"}</p>
-                    </td>
-                    <td className="hidden px-5 py-4 sm:table-cell">
-                      <span className="text-sm text-card-foreground">{age !== null ? `${age} jaar` : "—"}</span>
-                    </td>
-                    <td className="hidden px-5 py-4 md:table-cell">
-                      <span className="text-sm text-card-foreground">{client.schools?.name ?? <span className="text-destructive text-xs">Niet gekoppeld</span>}</span>
-                    </td>
-                    <td className="hidden px-5 py-4 lg:table-cell">
-                      <div className="flex flex-wrap gap-1">
-                        {assigned.length > 0
-                          ? assigned.map((name, i) => (
-                              <Badge key={i} variant="secondary" className="text-xs">{name}</Badge>
-                            ))
-                          : <span className="text-xs text-muted-foreground">—</span>
-                        }
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className={`status-indicator ${statusStyles[status] ?? "status-rood"}`}>
-                        {statusLabels[status] ?? status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-right">
-                      <Button size="sm" variant="ghost" onClick={() => openEdit(client)}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <ClientTable
+          clients={clients}
+          assignmentsByClient={assignmentsByClient}
+          onNavigate={(id) => navigate(`/clienten/${id}`)}
+          onEdit={openEdit}
+          showAssigned
+        />
       )}
+        </TabsContent>
+
+        <TabsContent value="intake_afgerond" className="space-y-4">
+          {isLoading ? (
+            <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+          ) : (
+            <ClientTable
+              clients={clients.filter((c: any) => c.intake_status === "intake_afgerond")}
+              assignmentsByClient={assignmentsByClient}
+              onNavigate={(id) => navigate(`/clienten/${id}`)}
+              onEdit={openEdit}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="wachtlijst">
