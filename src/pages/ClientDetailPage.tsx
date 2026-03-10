@@ -249,7 +249,16 @@ export default function ClientDetailPage() {
   }, [client]);
 
   const updateField = (field: string, value: any) => {
-    setForm((prev: any) => ({ ...prev, [field]: value }));
+    setForm((prev: any) => {
+      const next = { ...prev, [field]: value };
+      // Auto-fill area from school if not already set
+      if (field === "school_id" && !prev.waitlist_area_id) {
+        const school = schools.find((s: any) => s.id === value);
+        const areaId = (school as any)?.neighborhoods?.area_id;
+        if (areaId) next.waitlist_area_id = areaId;
+      }
+      return next;
+    });
     setDirty(true);
   };
 
