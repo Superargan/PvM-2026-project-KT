@@ -390,6 +390,62 @@ export default function ProgramDetailPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Dropout dialog */}
+      <Dialog open={dropoutOpen} onOpenChange={setDropoutOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Uitval registreren</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Registreer dat <strong>{dropoutTarget?.clients?.first_name} {dropoutTarget?.clients?.last_name}</strong> gestopt is tijdens de training.
+            </p>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Reden uitval</Label>
+              <Select value={dropoutReason} onValueChange={setDropoutReason}>
+                <SelectTrigger><SelectValue placeholder="Selecteer reden..." /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="Motivatie">Motivatie</SelectItem>
+                  <SelectItem value="Ziekte">Ziekte</SelectItem>
+                  <SelectItem value="Verhuizing">Verhuizing</SelectItem>
+                  <SelectItem value="Gedragsproblemen">Gedragsproblemen</SelectItem>
+                  <SelectItem value="Ouder stopt">Ouder stopt</SelectItem>
+                  <SelectItem value="Praktische redenen">Praktische redenen</SelectItem>
+                  <SelectItem value="Overig">Overig</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Vervolgactie</Label>
+              <Textarea
+                placeholder="Beschrijf eventuele vervolgacties..."
+                value={dropoutAction}
+                onChange={(e) => setDropoutAction(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDropoutOpen(false)}>Annuleren</Button>
+            <Button
+              variant="destructive"
+              disabled={dropoutMutation.isPending}
+              onClick={() => {
+                if (!dropoutTarget) return;
+                dropoutMutation.mutate({
+                  enrollmentId: dropoutTarget.id,
+                  reason: dropoutReason,
+                  action: dropoutAction,
+                });
+              }}
+            >
+              {dropoutMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <AlertTriangle className="h-4 w-4" />}
+              Uitval registreren
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
