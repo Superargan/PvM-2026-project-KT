@@ -694,7 +694,7 @@ function ClientTable({ clients, assignmentsByClient, onNavigate, onEdit, showAss
             )}
             {clients.map((client: any) => {
               const age = calculateAge(client.date_of_birth);
-              const ageGroup = age !== null ? (age <= 7 ? "4-7 jaar" : "8-12 jaar") : "—";
+              const ageGroup = age !== null ? (age >= 5 && age <= 7 ? "5-7 jaar" : age >= 8 && age <= 12 ? "8-12 jaar" : `${age} jaar`) : "—";
               const status = client.intake_status ?? "nieuw";
               const assigned = assignmentsByClient[client.id] ?? [];
               return (

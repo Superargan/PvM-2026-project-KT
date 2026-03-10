@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 
-type AgeCategory = "4-7 jaar" | "8-12 jaar";
+type AgeCategory = "5-7 jaar" | "8-12 jaar";
 
 function getAgeCategory(dob: string | null): AgeCategory | null {
   if (!dob) return null;
   const age = differenceInYears(new Date(), parseISO(dob));
-  if (age >= 4 && age <= 7) return "4-7 jaar";
+  if (age >= 5 && age <= 7) return "5-7 jaar";
   if (age >= 8 && age <= 12) return "8-12 jaar";
   return null;
 }
@@ -52,7 +52,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
     return (client as any).schools?.neighborhoods?.area_id ?? null;
   };
 
-  const ageCategories: AgeCategory[] = ["4-7 jaar", "8-12 jaar"];
+  const ageCategories: AgeCategory[] = ["5-7 jaar", "8-12 jaar"];
 
   // Build matrix: area × age → count + client list
   const matrix = useMemo(() => {
@@ -61,7 +61,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
     let noAge = 0;
 
     areas.forEach((a: any) => {
-      m[a.id] = { "4-7 jaar": [], "8-12 jaar": [] };
+      m[a.id] = { "5-7 jaar": [], "8-12 jaar": [] };
     });
 
     clients.forEach((c: any) => {
@@ -69,7 +69,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
       const age = getAgeCategory(c.date_of_birth);
       if (!areaId) { noArea++; return; }
       if (!age) { noAge++; return; }
-      if (!m[areaId]) m[areaId] = { "4-7 jaar": [], "8-12 jaar": [] };
+      if (!m[areaId]) m[areaId] = { "5-7 jaar": [], "8-12 jaar": [] };
       m[areaId][age].push(c);
     });
 
@@ -81,12 +81,12 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
     return areas.filter((a: any) => {
       const row = matrix.m[a.id];
       if (!row) return false;
-      return row["4-7 jaar"].length > 0 || row["8-12 jaar"].length > 0;
+      return row["5-7 jaar"].length > 0 || row["8-12 jaar"].length > 0;
     });
   }, [areas, matrix]);
 
   const totals = useMemo(() => {
-    const t: Record<string, number> = { "4-7 jaar": 0, "8-12 jaar": 0 };
+    const t: Record<string, number> = { "5-7 jaar": 0, "8-12 jaar": 0 };
     Object.values(matrix.m).forEach(row => {
       ageCategories.forEach(age => { t[age] += row[age]?.length ?? 0; });
     });
