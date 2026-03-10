@@ -45,6 +45,7 @@ export default function GroupComposer() {
   const [creating, setCreating] = useState<string | null>(null);
   const [filterArea, setFilterArea] = useState<string>("alle");
   const [expandedReserve, setExpandedReserve] = useState<Set<string>>(new Set());
+  const [selectedStartDate, setSelectedStartDate] = useState<Record<string, string>>({});
 
   // Fetch waitlist clients
   const { data: waitlistClients = [] } = useQuery({
