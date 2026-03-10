@@ -531,6 +531,16 @@ export default function PlanningPage() {
                   setActiveTab("beschikbaarheid");
                 }}
               />
+
+              {/* Compact availability summary when area+age filter is set */}
+              {filterArea !== "alle" && filterAge !== "alle" && (
+                <AvailabilitySummaryPanel
+                  filterArea={filterArea}
+                  filterAge={filterAge}
+                  areaName={areas.find((a: any) => a.id === filterArea)?.name ?? ""}
+                />
+              )}
+
               <div className="flex justify-center">
                 <Button onClick={() => setShowGroupComposer(true)} size="lg">
                   <Users className="h-4 w-4 mr-2" />
