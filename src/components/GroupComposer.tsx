@@ -184,9 +184,9 @@ export default function GroupComposer() {
 
   // Status color/icon
   const getStatusInfo = (count: number) => {
-    if (count >= 8) return { color: "text-emerald-700 bg-emerald-50 border-emerald-200", label: "Gereed om te starten", icon: <Check className="h-4 w-4" /> };
-    if (count >= 5) return { color: "text-amber-700 bg-amber-50 border-amber-200", label: `Nog ${8 - count} nodig`, icon: <AlertTriangle className="h-4 w-4" /> };
-    return { color: "text-red-700 bg-red-50 border-red-200", label: `Nog ${8 - count} nodig`, icon: <AlertTriangle className="h-4 w-4" /> };
+    if (count >= 7) return { color: "text-emerald-700 bg-emerald-50 border-emerald-200", label: "Gereed om te starten", icon: <Check className="h-4 w-4" /> };
+    if (count >= 5) return { color: "text-amber-700 bg-amber-50 border-amber-200", label: `Nog ${7 - count} nodig`, icon: <AlertTriangle className="h-4 w-4" /> };
+    return { color: "text-red-700 bg-red-50 border-red-200", label: `Nog ${7 - count} nodig`, icon: <AlertTriangle className="h-4 w-4" /> };
   };
 
   // Create group action
