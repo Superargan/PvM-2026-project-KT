@@ -45,7 +45,7 @@ export default function GroupComposer() {
 
   // Fetch waitlist clients with school -> neighborhood -> area joins
   const { data: waitlistClients = [] } = useQuery({
-    queryKey: ["group-composer-clients"],
+    queryKey: ["clients", "group-composer"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
