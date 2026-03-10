@@ -781,12 +781,48 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit }: {
     return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   }
 
+  const handleExport = () => {
+    const { downloadExport } = require("@/lib/csvExport");
+    const columns = [
+      { key: "naam", label: "Naam" },
+      { key: "status", label: "Status" },
+      { key: "school", label: "School" },
+      { key: "ontbrekend", label: "Ontbrekende velden" },
+      { key: "geboortedatum", label: "Geboortedatum" },
+      { key: "telefoon", label: "Telefoon ouder" },
+      { key: "naam_ouder", label: "Naam ouder" },
+      { key: "postcode", label: "Postcode" },
+      { key: "geslacht", label: "Geslacht" },
+      { key: "gebied", label: "Gebied" },
+      { key: "avg", label: "AVG-toestemming" },
+    ];
+    const rows = flagged.map(({ client, missing }) => ({
+      naam: `${client.first_name} ${client.last_name}`.trim(),
+      status: statusLabels[client.intake_status] ?? client.intake_status ?? "",
+      school: client.schools?.name ?? "",
+      ontbrekend: missing.join(", "),
+      geboortedatum: client.date_of_birth ?? "",
+      telefoon: client.guardian_phone ?? "",
+      naam_ouder: client.guardian_name ?? "",
+      postcode: client.postal_code ?? "",
+      geslacht: client.gender ?? "",
+      gebied: client.areas?.name ?? "",
+      avg: client.consent_data_processing,
+    }));
+    downloadExport("controle-aanmeldingen.xlsx", columns, rows, "xlsx");
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           <span className="font-semibold text-foreground">{flagged.length}</span> van {clients.length} deelnemers hebben ontbrekende gegevens
         </p>
+        {flagged.length > 0 && (
+          <Button size="sm" variant="outline" onClick={handleExport} className="gap-1.5">
+            <Download className="h-3.5 w-3.5" /> Exporteer naar Excel
+          </Button>
+        )}
       </div>
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         <div className="overflow-x-auto">
