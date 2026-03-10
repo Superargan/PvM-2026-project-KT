@@ -377,23 +377,6 @@ export default function PlanningPage() {
                   <SelectItem value="maand">Maand</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={filterArea} onValueChange={setFilterArea}>
-                <SelectTrigger className="w-40"><SelectValue placeholder="Gebied" /></SelectTrigger>
-                <SelectContent className="bg-popover">
-                  <SelectItem value="alle">Alle gebieden</SelectItem>
-                  {areas.map((a: any) => (
-                    <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={filterAge} onValueChange={setFilterAge}>
-                <SelectTrigger className="w-32"><SelectValue placeholder="Leeftijd" /></SelectTrigger>
-                <SelectContent className="bg-popover">
-                  <SelectItem value="alle">Alle leeftijden</SelectItem>
-                  <SelectItem value="5-7 jaar">5-7 jaar</SelectItem>
-                  <SelectItem value="8-12 jaar">8-12 jaar</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
 
