@@ -2,12 +2,13 @@ import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getDay, parseISO } from "date-fns";
-import { Users, UserCog, Check, AlertTriangle, CalendarClock, Search } from "lucide-react";
+import { Users, UserCog, Check, AlertTriangle, CalendarClock, Search, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import {
@@ -45,6 +46,7 @@ export default function GroupComposer() {
   const [creating, setCreating] = useState<string | null>(null);
   const [filterArea, setFilterArea] = useState<string>("alle");
   const [expandedReserve, setExpandedReserve] = useState<Set<string>>(new Set());
+  const [selectedStartDate, setSelectedStartDate] = useState<Record<string, string>>({});
 
   // Fetch waitlist clients
   const { data: waitlistClients = [] } = useQuery({
@@ -331,8 +333,9 @@ export default function GroupComposer() {
           name: programName,
           area_id: g.areaId,
           age_category: g.ageCategory,
-          status: "gepland",
+          status: "te_plannen",
           max_participants: selected.size,
+          start_date: selectedStartDate[key] || null,
         })
         .select("id")
         .single();
@@ -551,6 +554,19 @@ export default function GroupComposer() {
                     )}
                   </div>
                 )}
+
+                {/* Vermoedelijke startdatum */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                    <Calendar className="h-3 w-3" /> Vermoedelijke startdatum
+                  </label>
+                  <Input
+                    type="date"
+                    className="h-9 text-xs"
+                    value={selectedStartDate[key] ?? ""}
+                    onChange={(e) => setSelectedStartDate(prev => ({ ...prev, [key]: e.target.value }))}
+                  />
+                </div>
 
                 {/* Trainer selection */}
                 <div className="grid grid-cols-2 gap-3">
