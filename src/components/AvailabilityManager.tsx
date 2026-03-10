@@ -14,9 +14,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { Checkbox } from "@/components/ui/checkbox";
 
 type PeriodMode = "week" | "maand" | "kwartaal";
 type Dagdeel = "ochtend" | "middag";
@@ -36,7 +35,6 @@ const WEEKDAYS = [
   { dow: 7, label: "Zondag", short: "Zo" },
 ];
 
-// Convert JS getDay (0=Sun) to our dow (1=Mon..5=Fri)
 function jsDayToDow(jsDay: number): number {
   return jsDay === 0 ? 7 : jsDay;
 }
@@ -50,7 +48,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [periodMode, setPeriodMode] = useState<PeriodMode>("week");
+  const [periodMode, setPeriodMode] = useState<PeriodMode>("kwartaal");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedPersonId, setSelectedPersonId] = useState<string>(fixedPersonId ?? "");
   const [saving, setSaving] = useState(false);
@@ -59,8 +57,8 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
   const [selections, setSelections] = useState<Record<string, boolean>>({});
   // Custom times override: { "1-ochtend": { start: "09:30", end: "12:00" } }
   const [customTimes, setCustomTimes] = useState<Record<string, { start: string; end: string }>>({});
-  // Track which cells have custom time editing open
-  const [editingTime, setEditingTime] = useState<string | null>(null);
+  // Track dirty state for unsaved changes warning
+  const [isDirty, setIsDirty] = useState(false);
 
   const dateRange = useMemo(() => {
     if (periodMode === "week") {
@@ -71,10 +69,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
     }
     if (periodMode === "kwartaal") {
       const start = startOfMonth(currentDate);
-      return {
-        start,
-        end: endOfMonth(addMonths(start, 2)),
-      };
+      return { start, end: endOfMonth(addMonths(start, 2)) };
     }
     return {
       start: startOfMonth(currentDate),
@@ -83,6 +78,10 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
   }, [periodMode, currentDate]);
 
   const navigatePeriod = (dir: "prev" | "next") => {
+    if (isDirty) {
+      const ok = window.confirm("Je hebt onopgeslagen wijzigingen. Wil je doorgaan?");
+      if (!ok) return;
+    }
     if (periodMode === "week") {
       setCurrentDate(dir === "prev" ? subWeeks(currentDate, 1) : addWeeks(currentDate, 1));
     } else if (periodMode === "kwartaal") {
@@ -126,7 +125,6 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
   const people = type === "trainer" ? trainers : clients;
 
   // Fetch existing availability for selected person + period
-
   const { data: existingAvailability = [], refetch: refetchAvail } = useQuery({
     queryKey: ["avail-existing", type, selectedPersonId, dateRange.start.toISOString(), dateRange.end.toISOString()],
     enabled: !!selectedPersonId,
@@ -156,10 +154,13 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
     },
   });
 
-  // Parse existing availability into grid state when person/period changes
+  // Parse existing availability into grid state
+  // We aggregate by DOW: if ANY date for that DOW has availability, mark it.
+  // For times, we use the most common time or the first encountered.
   const existingGrid = useMemo(() => {
     const grid: Record<string, boolean> = {};
     const times: Record<string, { start: string; end: string }> = {};
+    const timeCounts: Record<string, Record<string, number>> = {};
 
     existingAvailability.forEach((a: any) => {
       const date = parseISO(a.available_date);
@@ -168,39 +169,61 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
 
       const startTime = a.start_time?.slice(0, 5) ?? "09:00";
       const endTime = a.end_time?.slice(0, 5) ?? "17:00";
-
-      // Determine which dagdeel(en) this covers
       const startHour = parseInt(startTime.split(":")[0]);
       const endHour = parseInt(endTime.split(":")[0]);
+      const endMin = parseInt(endTime.split(":")[1] ?? "0");
 
-      if (startHour < 13 && endHour <= 13) {
-        // Morning only
-        grid[`${dow}-ochtend`] = true;
-        times[`${dow}-ochtend`] = { start: startTime, end: endTime };
+      if (startHour < 13 && (endHour < 13 || (endHour === 13 && endMin === 0))) {
+        const key = `${dow}-ochtend`;
+        grid[key] = true;
+        const timeKey = `${startTime}-${endTime}`;
+        if (!timeCounts[key]) timeCounts[key] = {};
+        timeCounts[key][timeKey] = (timeCounts[key][timeKey] ?? 0) + 1;
       } else if (startHour >= 13) {
-        // Afternoon only
-        grid[`${dow}-middag`] = true;
-        times[`${dow}-middag`] = { start: startTime, end: endTime };
+        const key = `${dow}-middag`;
+        grid[key] = true;
+        const timeKey = `${startTime}-${endTime}`;
+        if (!timeCounts[key]) timeCounts[key] = {};
+        timeCounts[key][timeKey] = (timeCounts[key][timeKey] ?? 0) + 1;
       } else {
-        // Full day or spanning both
-        grid[`${dow}-ochtend`] = true;
-        grid[`${dow}-middag`] = true;
-        times[`${dow}-ochtend`] = { start: startTime, end: "12:30" };
-        times[`${dow}-middag`] = { start: "13:00", end: endTime };
+        // Spans both
+        const mKey = `${dow}-ochtend`;
+        const aKey = `${dow}-middag`;
+        grid[mKey] = true;
+        grid[aKey] = true;
+        const mTimeKey = `${startTime}-12:30`;
+        if (!timeCounts[mKey]) timeCounts[mKey] = {};
+        timeCounts[mKey][mTimeKey] = (timeCounts[mKey][mTimeKey] ?? 0) + 1;
+        const aTimeKey = `13:00-${endTime}`;
+        if (!timeCounts[aKey]) timeCounts[aKey] = {};
+        timeCounts[aKey][aTimeKey] = (timeCounts[aKey][aTimeKey] ?? 0) + 1;
       }
     });
+
+    // Pick most common time for each cell
+    for (const key of Object.keys(timeCounts)) {
+      const counts = timeCounts[key];
+      let best = "";
+      let bestCount = 0;
+      for (const [tk, cnt] of Object.entries(counts)) {
+        if (cnt > bestCount) { best = tk; bestCount = cnt; }
+      }
+      if (best) {
+        const [s, e] = best.split("-");
+        times[key] = { start: s, end: e };
+      }
+    }
 
     return { grid, times };
   }, [existingAvailability]);
 
-  // Load existing into state when person changes
+  // Load existing into state when data changes
   const loadExisting = useCallback(() => {
     setSelections(existingGrid.grid);
     setCustomTimes(existingGrid.times);
-    setEditingTime(null);
+    setIsDirty(false);
   }, [existingGrid]);
 
-  // Auto-load when existing data changes
   useEffect(() => {
     if (selectedPersonId) {
       loadExisting();
@@ -213,7 +236,6 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
       const next = { ...prev };
       if (next[key]) {
         delete next[key];
-        // Also remove custom times
         setCustomTimes(ct => {
           const nct = { ...ct };
           delete nct[key];
@@ -224,6 +246,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
       }
       return next;
     });
+    setIsDirty(true);
   };
 
   const toggleFullDay = (dow: number) => {
@@ -235,6 +258,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
       [morningKey]: !bothSelected,
       [middagKey]: !bothSelected,
     }));
+    setIsDirty(true);
   };
 
   const toggleFullDagdeel = (dagdeel: Dagdeel) => {
@@ -244,20 +268,32 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
       updates[`${w.dow}-${dagdeel}`] = !allSelected;
     });
     setSelections(prev => ({ ...prev, ...updates }));
+    setIsDirty(true);
   };
 
-  // Save: generate date records for each selected day/dagdeel in the period
+  const updateCustomTime = (cellKey: string, field: "start" | "end", value: string) => {
+    const dagdeel = cellKey.includes("ochtend") ? DAGDELEN[0] : DAGDELEN[1];
+    setCustomTimes(prev => ({
+      ...prev,
+      [cellKey]: {
+        start: field === "start" ? value : (prev[cellKey]?.start ?? dagdeel.start),
+        end: field === "end" ? value : (prev[cellKey]?.end ?? dagdeel.end),
+      }
+    }));
+    setIsDirty(true);
+  };
+
+  // Save
   const saveAvailability = async () => {
     if (!selectedPersonId) return;
     setSaving(true);
 
     try {
       const allDays = eachDayOfInterval(dateRange);
-
-      // First, delete existing availability in the period for this person
       const startStr = format(dateRange.start, "yyyy-MM-dd");
       const endStr = format(dateRange.end, "yyyy-MM-dd");
 
+      // Delete existing
       if (type === "trainer") {
         const { error: delError } = await supabase
           .from("staff_availability")
@@ -276,7 +312,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
         if (delError) throw delError;
       }
 
-      // Build inserts grouped by type
+      // Build inserts
       const inserts: any[] = [];
 
       allDays.forEach(day => {
@@ -296,51 +332,43 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
         });
       });
 
+      // Batch insert in chunks of 500
       if (inserts.length > 0) {
-        if (type === "trainer") {
-          const rows = inserts.map(i => ({ ...i, staff_id: selectedPersonId }));
-          const { error: insertError } = await supabase.from("staff_availability").insert(rows);
-          if (insertError) throw insertError;
-        } else {
-          const rows = inserts.map(i => ({ ...i, client_id: selectedPersonId }));
-          const { error: insertError } = await supabase.from("client_availability").insert(rows);
-          if (insertError) throw insertError;
+        const chunkSize = 500;
+        for (let i = 0; i < inserts.length; i += chunkSize) {
+          const chunk = inserts.slice(i, i + chunkSize);
+          if (type === "trainer") {
+            const rows = chunk.map(r => ({ ...r, staff_id: selectedPersonId }));
+            const { error } = await supabase.from("staff_availability").insert(rows);
+            if (error) throw error;
+          } else {
+            const rows = chunk.map(r => ({ ...r, client_id: selectedPersonId }));
+            const { error } = await supabase.from("client_availability").insert(rows);
+            if (error) throw error;
+          }
         }
       }
 
       toast({ title: "Beschikbaarheid opgeslagen", description: `${inserts.length} tijdslots opgeslagen` });
+      setIsDirty(false);
       refetchAvail();
       queryClient.invalidateQueries({ queryKey: ["planning-availability"] });
       queryClient.invalidateQueries({ queryKey: ["planning-client-availability"] });
     } catch (err: any) {
-      toast({ title: "Fout", description: err.message, variant: "destructive" });
+      toast({ title: "Fout bij opslaan", description: err.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
   };
 
-  // Count unavailable days (weekdays without any selection)
-  const unavailableDays = useMemo(() => {
-    const allDays = eachDayOfInterval(dateRange);
-    const weekdaysInPeriod = allDays.filter(d => {
-      const dow = jsDayToDow(getDay(d));
-      return dow >= 1 && dow <= 7;
-    });
-
-    const unavailable: Date[] = [];
-    weekdaysInPeriod.forEach(day => {
-      const dow = jsDayToDow(getDay(day));
-      const hasAny = DAGDELEN.some(dd => selections[`${dow}-${dd.key}`]);
-      if (!hasAny) unavailable.push(day);
-    });
-
-    return unavailable;
-  }, [dateRange, selections]);
+  const selectedCount = Object.values(selections).filter(Boolean).length;
 
   const personLabel = (p: any) => {
     if (type === "trainer") return p.name;
     return `${p.first_name} ${p.last_name}`;
   };
+
+  const periodLabel = periodMode === "week" ? "deze week" : periodMode === "maand" ? "deze maand" : "komende 3 maanden";
 
   return (
     <div className="space-y-4">
@@ -349,7 +377,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
         {!fixedPersonId && (
           <div className="space-y-1.5 min-w-[200px]">
             <Label>{type === "trainer" ? "Trainer" : "Deelnemer"}</Label>
-            <Select value={selectedPersonId} onValueChange={(v) => { setSelectedPersonId(v); setSelections({}); setCustomTimes({}); }}>
+            <Select value={selectedPersonId} onValueChange={(v) => { setSelectedPersonId(v); setSelections({}); setCustomTimes({}); setIsDirty(false); }}>
               <SelectTrigger><SelectValue placeholder={`Selecteer ${type}...`} /></SelectTrigger>
               <SelectContent className="bg-popover max-h-60">
                 {people.map((p: any) => (
@@ -405,10 +433,11 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold text-foreground">
-                Beschikbaarheid per dag
+                Wekelijks patroon
               </CardTitle>
               <p className="text-xs text-muted-foreground">
-                Klik op een cel om beschikbaarheid aan/uit te zetten. Klik op een dagkop voor de hele dag, of op Ochtend/Middag voor alle dagen.
+                Stel het weekpatroon in — dit wordt toegepast op alle weken in de geselecteerde periode ({periodLabel}).
+                Klik op een cel om aan/uit te zetten. Gebruik de klok-knop om tijden aan te passen.
               </p>
             </CardHeader>
             <CardContent>
@@ -449,75 +478,75 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
                         {WEEKDAYS.map(w => {
                           const cellKey = `${w.dow}-${dagdeel.key}`;
                           const isSelected = !!selections[cellKey];
-                          const hasCustomTime = !!customTimes[cellKey];
-                          const isEditing = editingTime === cellKey;
                           const times = customTimes[cellKey] ?? { start: dagdeel.start, end: dagdeel.end };
+                          const isDefaultTime = times.start === dagdeel.start && times.end === dagdeel.end;
 
                           return (
                             <td key={w.dow} className="p-1">
                               <div
-                                className={`relative rounded-lg border-2 transition-all cursor-pointer min-h-[56px] flex flex-col items-center justify-center gap-0.5 ${
+                                className={`relative rounded-lg border-2 transition-all min-h-[56px] flex flex-col items-center justify-center gap-0.5 ${
                                   isSelected
                                     ? "border-primary bg-primary/10 text-primary"
-                                    : "border-border bg-muted/30 text-muted-foreground hover:border-muted-foreground/50"
+                                    : "border-border bg-muted/30 text-muted-foreground hover:border-muted-foreground/50 cursor-pointer"
                                 }`}
-                                onClick={() => toggleCell(w.dow, dagdeel.key)}
+                                onClick={() => {
+                                  if (!isSelected) toggleCell(w.dow, dagdeel.key);
+                                }}
                               >
-                                {isSelected && (
+                                {isSelected ? (
                                   <>
-                                    <span className="text-[10px] font-semibold">
+                                    <span className={`text-[10px] font-semibold ${!isDefaultTime ? "text-accent-foreground" : ""}`}>
                                       {times.start}–{times.end}
                                     </span>
-                                    <button
-                                      className="text-[9px] underline opacity-70 hover:opacity-100"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setEditingTime(isEditing ? null : cellKey);
-                                      }}
-                                    >
-                                      <Clock className="h-2.5 w-2.5 inline" /> Wijzig
-                                    </button>
+                                    <div className="flex items-center gap-1">
+                                      {/* Time edit popover */}
+                                      <Popover>
+                                        <PopoverTrigger asChild>
+                                          <button
+                                            className="text-[9px] underline opacity-70 hover:opacity-100 flex items-center gap-0.5"
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            <Clock className="h-2.5 w-2.5" /> Wijzig
+                                          </button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-44 p-3 space-y-2" align="center" side="bottom">
+                                          <div className="space-y-1">
+                                            <Label className="text-[10px]">Van</Label>
+                                            <Input
+                                              type="time"
+                                              value={times.start}
+                                              className="h-7 text-xs"
+                                              onChange={(e) => updateCustomTime(cellKey, "start", e.target.value)}
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <Label className="text-[10px]">Tot</Label>
+                                            <Input
+                                              type="time"
+                                              value={times.end}
+                                              className="h-7 text-xs"
+                                              onChange={(e) => updateCustomTime(cellKey, "end", e.target.value)}
+                                            />
+                                          </div>
+                                        </PopoverContent>
+                                      </Popover>
+                                      {/* Remove button */}
+                                      <button
+                                        className="text-[9px] opacity-50 hover:opacity-100 hover:text-destructive"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          toggleCell(w.dow, dagdeel.key);
+                                        }}
+                                        title="Verwijder"
+                                      >
+                                        <X className="h-2.5 w-2.5" />
+                                      </button>
+                                    </div>
                                   </>
-                                )}
-                                {!isSelected && (
+                                ) : (
                                   <span className="text-[10px]">—</span>
                                 )}
                               </div>
-
-                              {/* Custom time editor */}
-                              {isEditing && isSelected && (
-                                <div className="absolute z-10 mt-1 p-2 bg-popover border border-border rounded-lg shadow-lg space-y-2 min-w-[140px]"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <div className="space-y-1">
-                                    <Label className="text-[10px]">Van</Label>
-                                    <Input
-                                      type="time"
-                                      value={times.start}
-                                      className="h-7 text-xs"
-                                      onChange={(e) => setCustomTimes(prev => ({
-                                        ...prev,
-                                        [cellKey]: { ...times, start: e.target.value }
-                                      }))}
-                                    />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-[10px]">Tot</Label>
-                                    <Input
-                                      type="time"
-                                      value={times.end}
-                                      className="h-7 text-xs"
-                                      onChange={(e) => setCustomTimes(prev => ({
-                                        ...prev,
-                                        [cellKey]: { ...times, end: e.target.value }
-                                      }))}
-                                    />
-                                  </div>
-                                  <Button size="sm" variant="outline" className="w-full h-6 text-[10px]" onClick={() => setEditingTime(null)}>
-                                    OK
-                                  </Button>
-                                </div>
-                              )}
                             </td>
                           );
                         })}
@@ -529,36 +558,20 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
             </CardContent>
           </Card>
 
-          {/* Unavailability summary */}
-          {unavailableDays.length > 0 && (
-            <Card className="border-amber-200 bg-amber-50/30">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xs font-semibold text-amber-800 flex items-center gap-1">
-                  <X className="h-3.5 w-3.5" />
-                  Niet beschikbaar ({unavailableDays.length} werkdag{unavailableDays.length !== 1 ? "en" : ""})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-1">
-                  {unavailableDays.slice(0, 20).map(day => (
-                    <Badge key={day.toISOString()} variant="outline" className="text-[10px] border-amber-300 text-amber-700">
-                      {format(day, "EEE d MMM", { locale: nl })}
-                    </Badge>
-                  ))}
-                  {unavailableDays.length > 20 && (
-                    <Badge variant="outline" className="text-[10px] border-amber-300 text-amber-700">
-                      +{unavailableDays.length - 20} meer
-                    </Badge>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+          {/* Summary */}
+          {selectedCount > 0 && (
+            <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+              <strong className="text-foreground">{selectedCount}</strong> dagdelen geselecteerd per week.
+              {periodMode === "kwartaal" && " Dit patroon wordt toegepast op alle ~13 weken in de komende 3 maanden."}
+              {periodMode === "maand" && " Dit patroon wordt toegepast op alle ~4 weken in deze maand."}
+              {isDirty && <span className="text-amber-600 ml-2">• Onopgeslagen wijzigingen</span>}
+            </div>
           )}
 
           {/* Save */}
-          <Button onClick={saveAvailability} disabled={saving} className="w-full sm:w-auto">
+          <Button onClick={saveAvailability} disabled={saving || !isDirty} className="w-full sm:w-auto">
             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-            Beschikbaarheid opslaan voor {periodMode === "week" ? "deze week" : "deze maand"}
+            Beschikbaarheid opslaan voor {periodLabel}
           </Button>
         </>
       )}
