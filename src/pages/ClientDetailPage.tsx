@@ -83,7 +83,7 @@ export default function ClientDetailPage() {
 
   // Fetch client
   const { data: client, isLoading } = useQuery({
-    queryKey: ["client", id],
+    queryKey: ["clients", "detail", id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
