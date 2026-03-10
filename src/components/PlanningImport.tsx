@@ -46,14 +46,28 @@ const IMPORT_TYPES: { value: ImportType; label: string; description: string; col
 ];
 
 function normalizeKey(key: string): string {
-  return key.toLowerCase().replace(/[^a-z0-9]/g, "");
+  return key.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
 }
 
 function findCol(row: ParsedRow, ...candidates: string[]): string | undefined {
   const keys = Object.keys(row);
-  for (const c of candidates) {
-    const norm = normalizeKey(c);
+  const norms = candidates.map(c => normalizeKey(c));
+
+  // Priority 1: exact match
+  for (const norm of norms) {
     const found = keys.find((k) => normalizeKey(k) === norm);
+    if (found && row[found] !== undefined && row[found] !== "") return String(row[found]).trim();
+  }
+  // Priority 2: key contains candidate
+  for (const norm of norms) {
+    const found = keys.find((k) => normalizeKey(k).includes(norm));
+    if (found && row[found] !== undefined && row[found] !== "") return String(row[found]).trim();
+  }
+  // Priority 3: candidate contains key
+  for (const norm of norms) {
+    const found = keys.find((k) => norm.includes(normalizeKey(k)) && normalizeKey(k).length >= 3);
     if (found && row[found] !== undefined && row[found] !== "") return String(row[found]).trim();
   }
   return undefined;
@@ -236,7 +250,7 @@ function parseCellAvailability(val: any): { available: boolean; startTime: strin
 }
 
 /** Name column candidates (normalized) */
-const NAME_COL_ALIASES = ["naam", "name", "deelnemer", "kind", "leerling", "voornaam", "trainer", "medewerker", "participant"];
+const NAME_COL_ALIASES = ["naam", "name", "deelnemer", "kind", "leerling", "voornaam", "trainer", "medewerker", "participant", "achternaam", "fullname", "volledigenaam"];
 
 /** Dutch weekday mapping to JS getDay() (0=Sunday) */
 const DUTCH_WEEKDAYS: Record<string, number> = {
@@ -295,15 +309,27 @@ function detectGridFormat(rows: ParsedRow[]): {
   const keys = Object.keys(rows[0]);
   if (keys.length < 2) return { isGrid: false, isWeekdayGrid: false, nameKey: "", dateColumns: [], weekdayColumns: [] };
 
-  // Find the name column
-  let nameKey = keys[0];
+  // Find the name column - try alias match first, then fall back to first column
+  let nameKey = "";
   for (const k of keys) {
     const norm = normalizeKey(k);
-    if (NAME_COL_ALIASES.some(alias => norm.includes(alias))) {
+    if (NAME_COL_ALIASES.some(alias => norm.includes(alias) || alias.includes(norm))) {
       nameKey = k;
       break;
     }
   }
+  // If no alias matched, use the first column that has string-like (non-numeric, non-date) values
+  if (!nameKey) {
+    for (const k of keys) {
+      const sample = rows.slice(0, 5).map(r => String(r[k] ?? "").trim()).filter(Boolean);
+      const looksLikeName = sample.length > 0 && sample.every(v => {
+        // Not a number, not a date, not empty
+        return isNaN(Number(v)) && !parseExcelDate(v) && parseWeekdayFromHeader(v) === null;
+      });
+      if (looksLikeName) { nameKey = k; break; }
+    }
+  }
+  if (!nameKey) nameKey = keys[0];
 
   // Check remaining columns for date-like or weekday-like headers
   const dateColumns: { key: string; date: string }[] = [];
@@ -593,21 +619,35 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
           }
         });
 
+        const normalizeName = (n: string) => n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+
         const findClient = (name: string): string | undefined => {
-          const lower = name.toLowerCase().trim();
-          if (clientMap.has(lower)) return clientMap.get(lower);
-          // Partial match (contains)
+          const norm = normalizeName(name);
+          if (!norm) return undefined;
+
+          // Exact full name
           for (const [key, id] of clientMap) {
-            if (key.includes(lower) || lower.includes(key)) return id;
+            if (normalizeName(key) === norm) return id;
+          }
+          // Contains match (either direction)
+          for (const [key, id] of clientMap) {
+            const nk = normalizeName(key);
+            if (nk.includes(norm) || norm.includes(nk)) return id;
           }
           // First name only match (if unique)
-          const firstNameMatch = clientFirstNames.get(lower);
+          const firstNameMatch = clientFirstNames.get(norm);
           if (firstNameMatch && firstNameMatch.count === 1) return firstNameMatch.id;
           // Try first word of input as first name
-          const firstWord = lower.split(/\s+/)[0];
-          if (firstWord !== lower) {
-            const fwMatch = clientFirstNames.get(firstWord);
+          const parts = norm.split(" ");
+          if (parts.length > 0) {
+            const fwMatch = clientFirstNames.get(parts[0]);
             if (fwMatch && fwMatch.count === 1) return fwMatch.id;
+          }
+          // Last name match
+          const lastName = parts[parts.length - 1];
+          for (const [key, id] of clientMap) {
+            const keyParts = normalizeName(key).split(" ");
+            if (keyParts[keyParts.length - 1] === lastName) return id;
           }
           return undefined;
         };
