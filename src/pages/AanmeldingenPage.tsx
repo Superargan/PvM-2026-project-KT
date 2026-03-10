@@ -388,7 +388,7 @@ export default function AanmeldingenPage() {
           </div>
         </TabsContent>
         <TabsContent value="controle" className="space-y-4">
-          <MissingDataCheck clients={clients} isLoading={isLoading} onNavigate={(id) => navigate(`/clienten/${id}`)} onEdit={openEdit} />
+          <MissingDataCheck clients={clients} isLoading={isLoading} onNavigate={(id) => navigate(`/clienten/${id}`)} onEdit={openEdit} schools={schools} refetch={refetch} />
         </TabsContent>
       </Tabs>
 
