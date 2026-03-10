@@ -783,7 +783,6 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit }: {
   }
 
   const handleExport = () => {
-    const { downloadExport } = require("@/lib/csvExport");
     const columns = [
       { key: "naam", label: "Naam" },
       { key: "status", label: "Status" },
