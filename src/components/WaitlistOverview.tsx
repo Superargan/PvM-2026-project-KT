@@ -94,16 +94,32 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
       };
     });
 
+    // Track fixable clients (have school with area but no waitlist_area_id)
+    const fixableClients: { clientId: string; areaId: string }[] = [];
+
     clients.forEach((c: any) => {
       const primaryAreaId = resolveAreaId(c);
       const age = getAgeCategory(c.date_of_birth);
-      if (!age) { noAge++; return; }
+      if (!age) { noAge++; }
+
+      // Check if client has school→area but no explicit waitlist_area_id
+      if (!c.waitlist_area_id && (c as any).schools?.neighborhoods?.area_id) {
+        fixableClients.push({
+          clientId: c.id,
+          areaId: (c as any).schools.neighborhoods.area_id,
+        });
+      }
+
+      if (!primaryAreaId) {
+        if (age) noArea++;
+        return;
+      }
+
+      if (!age) return;
 
       // Primary area
-      if (primaryAreaId && m[primaryAreaId]) {
+      if (m[primaryAreaId]) {
         m[primaryAreaId][age].primary.push(c);
-      } else if (!primaryAreaId) {
-        noArea++;
       }
 
       // Reserve areas
@@ -126,7 +142,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
       }
     });
 
-    return { m, noArea, noAge };
+    return { m, noArea, noAge, fixableClients };
   }, [clients, areas, prefsByClient]);
 
   // Only show areas that have at least 1 waitlist client (primary or reserve)
