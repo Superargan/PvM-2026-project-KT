@@ -47,7 +47,36 @@ function findCol(row: ParsedRow, ...candidates: string[]): string | undefined {
   return undefined;
 }
 
-function parseExcelDate(val: any): string | null {
+/**
+ * Detect whether dates in the dataset are in MM/DD (US) or DD/MM (EU) format.
+ * Scans all string-like date values: if any first-part > 12, it must be DD/MM;
+ * if any second-part > 12, it must be MM/DD. Default: DD/MM (Dutch).
+ */
+function detectDateFormat(rows: ParsedRow[]): "mdy" | "dmy" {
+  const dateColCandidates = ["Datum inschrijving", "Inschrijfdatum", "datum inschrijving",
+    "Datum Intake", "Intake datum", "datum intake", "intake_date",
+    "Geboortedatum", "geboortedatum", "date_of_birth", "Geboorte datum"];
+
+  for (const row of rows) {
+    for (const key of Object.keys(row)) {
+      const nk = normalizeKey(key);
+      const isDateCol = dateColCandidates.some(c => normalizeKey(c) === nk || nk.includes(normalizeKey(c)));
+      if (!isDateCol) continue;
+      const s = String(row[key]).trim();
+      const m = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})$/);
+      if (!m) continue;
+      const p1 = parseInt(m[1]);
+      const p2 = parseInt(m[2]);
+      // If first part > 12, it can't be a month → must be day-first (DD/MM)
+      if (p1 > 12) return "dmy";
+      // If second part > 12, it can't be a month → must be month-first (MM/DD)
+      if (p2 > 12) return "mdy";
+    }
+  }
+  return "dmy"; // Default Dutch
+}
+
+function parseExcelDate(val: any, format: "mdy" | "dmy" = "dmy"): string | null {
   if (!val) return null;
 
   // Excel serial number (as number)
@@ -71,16 +100,28 @@ function parseExcelDate(val: any): string | null {
     }
   }
 
-  // DD-MM-YYYY or DD/MM/YYYY (Dutch primary format)
-  const dmy = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
-  if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, "0")}-${dmy[1].padStart(2, "0")}`;
+  // X/X/XXXX (4-digit year)
+  const full = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+  if (full) {
+    const [, p1, p2, yr] = full;
+    if (format === "mdy") {
+      return `${yr}-${p1.padStart(2, "0")}-${p2.padStart(2, "0")}`;
+    } else {
+      return `${yr}-${p2.padStart(2, "0")}-${p1.padStart(2, "0")}`;
+    }
+  }
 
-  // DD-MM-YY or DD/MM/YY (Dutch 2-digit year)
-  const dmyy = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2})$/);
-  if (dmyy) {
-    const yr = parseInt(dmyy[3]);
+  // X/X/XX (2-digit year)
+  const short = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2})$/);
+  if (short) {
+    const [, p1, p2, yrShort] = short;
+    const yr = parseInt(yrShort);
     const fullYear = yr + (yr < 50 ? 2000 : 1900);
-    return `${fullYear}-${dmyy[2].padStart(2, "0")}-${dmyy[1].padStart(2, "0")}`;
+    if (format === "mdy") {
+      return `${fullYear}-${p1.padStart(2, "0")}-${p2.padStart(2, "0")}`;
+    } else {
+      return `${fullYear}-${p2.padStart(2, "0")}-${p1.padStart(2, "0")}`;
+    }
   }
 
   // YYYY-MM-DD (ISO)
@@ -303,6 +344,10 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     // Track keys within this import batch to avoid intra-batch duplicates
     const batchKeys = new Set<string>();
 
+    // Auto-detect date format from the dataset
+    const dateFormat = detectDateFormat(rows);
+    console.log(`Import: detected date format = ${dateFormat}`);
+
     const inserts: any[] = [];
     const updates: { id: string; data: any }[] = [];
     for (let i = 0; i < rows.length; i++) {
@@ -333,7 +378,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
 
       // Date of birth
       const dobRaw = findCol(row, "Geboortedatum", "geboortedatum", "date_of_birth", "Geboorte datum");
-      let date_of_birth: string | null = parseExcelDate(dobRaw);
+      let date_of_birth: string | null = parseExcelDate(dobRaw, dateFormat);
 
       // Read age from dedicated "Leeftijd" column (NOT "Leeftijdsgroep")
       const ageKeys = Object.keys(row);
@@ -408,11 +453,11 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
 
       // Intake date
       const intakeDateRaw = findCol(row, "Datum Intake", "Intake datum", "datum intake", "intake_date");
-      const intake_date = parseExcelDate(intakeDateRaw);
+      const intake_date = parseExcelDate(intakeDateRaw, dateFormat);
 
       // Enrollment date
       const enrollDateRaw = findCol(row, "Datum inschrijving", "Inschrijfdatum", "datum inschrijving");
-      const enrollDate = parseExcelDate(enrollDateRaw);
+      const enrollDate = parseExcelDate(enrollDateRaw, dateFormat);
 
       // Referral source (how they found the program) — check multiple column names
       const referralRaw = findCol(row, "Hoe aan de KT gekomen", "Verwezen door", "Verwijzing", "Verwijzer", "Hoe bij KT gekomen", "referral", "Bron") ?? null;
