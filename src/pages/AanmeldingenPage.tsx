@@ -67,6 +67,7 @@ const statusLabels: Record<string, string> = {
   nieuw: "Nieuw",
   intake_gepland: "Intake gepland",
   intake: "Intake",
+  intake_afgerond: "Intake afgerond",
   actief: "Actief",
   wachtlijst: "Wachtlijst",
   niet_deelnemen: "Niet deelnemen",
