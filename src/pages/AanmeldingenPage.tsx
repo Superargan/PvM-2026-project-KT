@@ -386,6 +386,9 @@ export default function AanmeldingenPage() {
             <WaitlistManager onEdit={openEdit} />
           </div>
         </TabsContent>
+        <TabsContent value="controle" className="space-y-4">
+          <MissingDataCheck clients={clients} isLoading={isLoading} onNavigate={(id) => navigate(`/clienten/${id}`)} onEdit={openEdit} />
+        </TabsContent>
       </Tabs>
 
       {/* Edit dialog – full form */}
