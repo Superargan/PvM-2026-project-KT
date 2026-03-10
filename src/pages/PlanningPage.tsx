@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval, isSameDay, parseISO, startOfMonth, endOfMonth, addMonths, subMonths, isWithinInterval } from "date-fns";
 import { nl } from "date-fns/locale";
-import { CalendarDays, ChevronLeft, ChevronRight, Users, UserCog, Clock, MapPin, Filter, Plus, X, Loader2, FileSpreadsheet } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Users, UserCog, Clock, MapPin, Filter, Plus, X, Loader2, FileSpreadsheet, Star, Palmtree } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import GroupComposer from "@/components/GroupComposer";
 import AvailabilityManager from "@/components/AvailabilityManager";
 import PlanningImport from "@/components/PlanningImport";
+import { isSpecialDay, type Holiday, type SchoolVacation } from "@/lib/holidays";
 
 const trainerTypeLabels: Record<string, string> = {
   oudertrainer: "Oudertrainer",
@@ -375,22 +376,42 @@ export default function PlanningPage() {
                 const items = agendaByDay[key];
                 const isToday = key === today;
                 const hasItems = items && (items.intakes.length > 0 || items.sessions.length > 0);
+                const special = isSpecialDay(key);
+                const hasHoliday = special.holidays.length > 0;
+                const hasVacation = !!special.vacation;
 
                 return (
                   <div
                     key={key}
-                    className={`rounded-lg border ${isToday ? "border-primary bg-primary/5" : "border-border bg-card"}`}
+                    className={`rounded-lg border ${isToday ? "border-primary bg-primary/5" : hasHoliday ? "border-destructive/30 bg-destructive/5" : hasVacation ? "border-muted-foreground/20 bg-muted/30" : "border-border bg-card"}`}
                   >
                     <div className="flex items-center gap-3 border-b border-border/50 px-4 py-2">
-                      <span className={`text-sm font-bold capitalize ${isToday ? "text-primary" : "text-foreground"}`}>
+                      <span className={`text-sm font-bold capitalize ${isToday ? "text-primary" : hasHoliday ? "text-destructive" : "text-foreground"}`}>
                         {format(day, "EEEE d MMMM", { locale: nl })}
                       </span>
                       {isToday && <Badge variant="default" className="text-[10px] px-1.5 py-0">Vandaag</Badge>}
+                      {special.holidays.map((h, i) => (
+                        <Badge key={i} variant="outline" className="text-[10px] px-1.5 py-0 border-destructive/40 text-destructive">
+                          <Star className="h-2.5 w-2.5 mr-0.5" />
+                          {h.name}
+                        </Badge>
+                      ))}
+                      {hasVacation && !hasHoliday && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-muted-foreground/40 text-muted-foreground">
+                          <Palmtree className="h-2.5 w-2.5 mr-0.5" />
+                          {special.vacation!.name}
+                        </Badge>
+                      )}
                     </div>
 
                     <div className="px-4 py-2 space-y-1.5">
-                      {!hasItems && (
+                      {!hasItems && !hasHoliday && !hasVacation && (
                         <p className="text-xs text-muted-foreground py-1">Geen activiteiten</p>
+                      )}
+                      {!hasItems && (hasHoliday || hasVacation) && (
+                        <p className="text-xs text-muted-foreground py-1">
+                          {hasHoliday ? "Feestdag — geen activiteiten gepland" : "Schoolvakantie"}
+                        </p>
                       )}
 
                       {/* Intakes */}
@@ -485,16 +506,29 @@ export default function PlanningPage() {
                   const isToday = key === today;
                   const intakeCount = items?.intakes.length ?? 0;
                   const sessionCount = items?.sessions.length ?? 0;
+                  const special = isSpecialDay(key);
+                  const hasHoliday = special.holidays.length > 0;
+                  const hasVacation = !!special.vacation;
 
                   return (
                     <div
                       key={key}
-                      className={`bg-card min-h-[80px] p-1.5 ${isToday ? "ring-2 ring-primary ring-inset" : ""}`}
+                      className={`bg-card min-h-[80px] p-1.5 ${isToday ? "ring-2 ring-primary ring-inset" : ""} ${hasHoliday ? "bg-destructive/5" : hasVacation ? "bg-muted/40" : ""}`}
                     >
-                      <span className={`text-xs font-semibold ${isToday ? "text-primary" : "text-foreground"}`}>
+                      <span className={`text-xs font-semibold ${isToday ? "text-primary" : hasHoliday ? "text-destructive" : "text-foreground"}`}>
                         {format(day, "d")}
                       </span>
                       <div className="mt-1 space-y-0.5">
+                        {hasHoliday && (
+                          <div className="rounded bg-destructive/10 px-1 py-0.5 text-[10px] font-medium text-destructive truncate" title={special.holidays.map(h => h.name).join(", ")}>
+                            ⭐ {special.holidays[0].name}
+                          </div>
+                        )}
+                        {hasVacation && !hasHoliday && (
+                          <div className="rounded bg-muted px-1 py-0.5 text-[10px] font-medium text-muted-foreground truncate" title={special.vacation!.name}>
+                            🌴 {special.vacation!.name}
+                          </div>
+                        )}
                         {intakeCount > 0 && (
                           <div className="rounded bg-amber-100 px-1 py-0.5 text-[10px] font-medium text-amber-800 truncate">
                             {intakeCount} intake{intakeCount > 1 ? "s" : ""}
