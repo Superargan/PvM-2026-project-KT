@@ -86,7 +86,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
   }, [areas, matrix]);
 
   const totals = useMemo(() => {
-    const t: Record<string, number> = { "5-7 jaar": 0, "8-12 jaar": 0 };
+    const t: Record<string, number> = { "4-7 jaar": 0, "8-12 jaar": 0 };
     Object.values(matrix.m).forEach(row => {
       ageCategories.forEach(age => { t[age] += row[age]?.length ?? 0; });
     });

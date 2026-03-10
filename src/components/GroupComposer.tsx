@@ -28,7 +28,7 @@ function calculateAge(dob: string | null): number | null {
 function getAgeCategory(dob: string | null): AgeCategory | null {
   const age = calculateAge(dob);
   if (age === null) return null;
-  if (age >= 5 && age <= 7) return "5-7 jaar";
+  if (age >= 4 && age <= 7) return "4-7 jaar";
   if (age >= 8 && age <= 12) return "8-12 jaar";
   return null;
 }
