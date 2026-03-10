@@ -607,21 +607,35 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
           }
         });
 
+        const normalizeName = (n: string) => n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+
         const findClient = (name: string): string | undefined => {
-          const lower = name.toLowerCase().trim();
-          if (clientMap.has(lower)) return clientMap.get(lower);
-          // Partial match (contains)
+          const norm = normalizeName(name);
+          if (!norm) return undefined;
+
+          // Exact full name
           for (const [key, id] of clientMap) {
-            if (key.includes(lower) || lower.includes(key)) return id;
+            if (normalizeName(key) === norm) return id;
+          }
+          // Contains match (either direction)
+          for (const [key, id] of clientMap) {
+            const nk = normalizeName(key);
+            if (nk.includes(norm) || norm.includes(nk)) return id;
           }
           // First name only match (if unique)
-          const firstNameMatch = clientFirstNames.get(lower);
+          const firstNameMatch = clientFirstNames.get(norm);
           if (firstNameMatch && firstNameMatch.count === 1) return firstNameMatch.id;
           // Try first word of input as first name
-          const firstWord = lower.split(/\s+/)[0];
-          if (firstWord !== lower) {
-            const fwMatch = clientFirstNames.get(firstWord);
+          const parts = norm.split(" ");
+          if (parts.length > 0) {
+            const fwMatch = clientFirstNames.get(parts[0]);
             if (fwMatch && fwMatch.count === 1) return fwMatch.id;
+          }
+          // Last name match
+          const lastName = parts[parts.length - 1];
+          for (const [key, id] of clientMap) {
+            const keyParts = normalizeName(key).split(" ");
+            if (keyParts[keyParts.length - 1] === lastName) return id;
           }
           return undefined;
         };
