@@ -2,7 +2,8 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInYears, parseISO } from "date-fns";
-import { Users, ArrowRight } from "lucide-react";
+import { Users, ArrowRight, Eye } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 
@@ -18,9 +19,10 @@ function getAgeCategory(dob: string | null): AgeCategory | null {
 
 interface Props {
   onSelectGroup?: (areaId: string, ageCategory: string) => void;
+  onViewAvailability?: (areaId: string) => void;
 }
 
-export default function WaitlistOverview({ onSelectGroup }: Props) {
+export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: Props) {
   const navigate = useNavigate();
 
   const { data: clients = [] } = useQuery({
@@ -127,6 +129,8 @@ export default function WaitlistOverview({ onSelectGroup }: Props) {
               <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Totaal
               </th>
+              <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -169,12 +173,23 @@ export default function WaitlistOverview({ onSelectGroup }: Props) {
                   <td className="px-4 py-3 text-center">
                     <span className="text-sm font-bold text-foreground">{areaTotal}</span>
                   </td>
+                  <td className="px-4 py-3 text-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs gap-1 text-primary hover:text-primary"
+                      onClick={() => onViewAvailability?.(area.id)}
+                    >
+                      <Eye className="h-3 w-3" />
+                      Beschikbaarheid
+                    </Button>
+                  </td>
                 </tr>
               );
             })}
             {activeAreas.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
                   Geen deelnemers op de wachtlijst
                 </td>
               </tr>

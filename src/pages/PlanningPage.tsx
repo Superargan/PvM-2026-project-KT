@@ -526,6 +526,10 @@ export default function PlanningPage() {
                   setFilterAge(age);
                   setShowGroupComposer(true);
                 }}
+                onViewAvailability={(areaId) => {
+                  setFilterArea(areaId);
+                  setActiveTab("beschikbaarheid");
+                }}
               />
               <div className="flex justify-center">
                 <Button onClick={() => setShowGroupComposer(true)} size="lg">
