@@ -250,10 +250,7 @@ export default function ProgrammasPage() {
               <div><Label>Trainingsnummer</Label><Input name="training_number" placeholder="bijv. KT-001" /></div>
               <div><Label>Locatie</Label><Input name="location" placeholder="bijv. Huis aan de Wijk, schoolnaam..." /></div>
               <div><Label>Beschrijving</Label><Textarea name="description" /></div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><Label>Startdatum</Label><Input name="start_date" type="date" /></div>
-                <div><Label>Einddatum</Label><Input name="end_date" type="date" /></div>
-              </div>
+              <div><Label>Vermoedelijke startdatum</Label><Input name="start_date" type="date" /></div>
               <div><Label>Max deelnemers</Label><Input name="max_participants" type="number" defaultValue={14} min={7} max={14} /></div>
               <div>
                 <Label>Leeftijdscategorie</Label>
