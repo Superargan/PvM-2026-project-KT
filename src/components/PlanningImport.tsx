@@ -295,13 +295,27 @@ function rowsToEntries(rows: ParsedRow[], isTrainer: boolean): AvailabilityEntry
     if (isTrainer) {
       name = findCol(row, "naam", "name", "trainer", "medewerker");
     } else {
-      const firstName = findCol(row, "voornaam", "firstname", "first_name", "naam");
-      const lastName = findCol(row, "achternaam", "lastname", "last_name");
-      name = lastName ? `${firstName} ${lastName}` : firstName;
+      const firstName = findCol(row, "voornaam", "firstname", "first_name");
+      const lastName = findCol(row, "achternaam", "lastname", "last_name", "familienaam");
+      // Also try combined "naam" / "name" / "deelnemer" / "kind" / "leerling"
+      const combinedName = findCol(row, "naam", "name", "deelnemer", "kind", "leerling", "participant");
+      if (firstName && lastName) {
+        name = `${firstName} ${lastName}`;
+      } else if (firstName) {
+        name = firstName;
+      } else if (combinedName) {
+        name = combinedName;
+      }
     }
-    const date = parseExcelDate(findCol(row, "datum", "date", "dag") ?? row["Datum"] ?? row["datum"]);
-    const start = parseTime(findCol(row, "starttijd", "van", "start", "starttime", "start_time") ?? row["Starttijd"]);
-    const end = parseTime(findCol(row, "eindtijd", "tot", "end", "eindtime", "end_time", "eind") ?? row["Eindtijd"]);
+
+    // Try multiple date column candidates including raw keys
+    const dateRaw = findCol(row, "datum", "date", "dag", "startdatum", "beschikbaar_datum", "beschikbare_datum")
+      ?? findCol(row, "beschikbaar", "available", "available_date");
+    const date = parseExcelDate(dateRaw);
+
+    const start = parseTime(findCol(row, "starttijd", "van", "start", "starttime", "start_time", "begintijd", "begin") ?? row["Starttijd"]);
+    const end = parseTime(findCol(row, "eindtijd", "tot", "end", "eindtime", "end_time", "eind", "stoptijd") ?? row["Eindtijd"]);
+
     if (name && date) {
       entries.push({ name, date, startTime: start ?? "09:00", endTime: end ?? "17:00" });
     }
