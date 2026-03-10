@@ -1,41 +1,22 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { format } from "date-fns";
-import { nl } from "date-fns/locale";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Trash2, Clock, XCircle, UserPlus, Upload, Search, X } from "lucide-react";
+import { Loader2, Trash2, Clock, UserPlus, Upload } from "lucide-react";
 import ClientImport from "@/components/ClientImport";
-
-function calculateAge(dob: string | null): number | null {
-  if (!dob) return null;
-  const birth = new Date(dob);
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--;
-  return age;
-}
-
-const statusLabels: Record<string, string> = {
-  waiting: "Wachtend",
-  dropped_out: "Uitgevallen",
-};
-const statusColors: Record<string, string> = {
-  waiting: "bg-amber-100 text-amber-800",
-  dropped_out: "bg-red-100 text-red-800",
-};
+import { filterClients, statusLabels, statusStyles } from "@/lib/clientUtils";
+import ClientFilters from "@/components/ClientFilters";
+import ClientListTable from "@/components/ClientListTable";
 
 export default function WachtlijstPage() {
   const [filterArea, setFilterArea] = useState<string>("all");
   const [filterSchool, setFilterSchool] = useState<string>("all");
   const [filterAge, setFilterAge] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [importOpen, setImportOpen] = useState(false);
@@ -67,7 +48,7 @@ export default function WachtlijstPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, first_name, last_name, date_of_birth, school_id, waitlist_status, waitlist_area_id, dropout_reason, dropout_action, intake_date, registration_date, created_at, schools(name), areas:waitlist_area_id(name)")
+        .select("id, first_name, last_name, date_of_birth, school_id, waitlist_status, waitlist_area_id, dropout_reason, dropout_action, intake_date, intake_status, registration_date, guardian_phone, guardian_name, created_at, schools(name), areas:waitlist_area_id(name)")
         .not("waitlist_status", "is", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -88,25 +69,8 @@ export default function WachtlijstPage() {
     },
   });
 
-  const hasFilters = filterArea !== "all" || filterSchool !== "all" || filterAge !== "all" || search.trim() !== "";
-
-  const filteredClients = waitlistClients.filter((c: any) => {
-    if (search.trim()) {
-      const s = search.toLowerCase();
-      if (!(`${c.first_name} ${c.last_name}`.toLowerCase().includes(s))) return false;
-    }
-    if (filterArea !== "all" && c.waitlist_area_id !== filterArea) return false;
-    if (filterSchool !== "all") {
-      if (filterSchool === "none") { if (c.school_id) return false; }
-      else if (c.school_id !== filterSchool) return false;
-    }
-    if (filterAge !== "all") {
-      const age = calculateAge(c.date_of_birth);
-      if (filterAge === "5-7" && (age === null || age < 5 || age > 7)) return false;
-      if (filterAge === "8-12" && (age === null || age < 8 || age > 12)) return false;
-      if (filterAge === "other" && age !== null && age >= 5 && age <= 12) return false;
-    }
-    return true;
+  const filteredClients = filterClients(waitlistClients, {
+    search, area: filterArea, school: filterSchool, age: filterAge, status: filterStatus,
   });
 
   const assignMutation = useMutation({
@@ -143,7 +107,6 @@ export default function WachtlijstPage() {
       toast.success(`${ids.length} deelnemer(s) verwijderd van de wachtlijst`);
       setSelected(new Set());
       qc.invalidateQueries({ queryKey: ["waitlist-clients"] });
-      qc.invalidateQueries({ queryKey: ["dashboard-participants"] });
     },
     onError: (err: any) => toast.error(err.message),
   });
@@ -171,7 +134,7 @@ export default function WachtlijstPage() {
         <div>
           <h1 className="font-display text-2xl font-extrabold text-foreground">Wachtlijst</h1>
           <p className="text-sm text-muted-foreground">
-            {hasFilters ? `${filteredClients.length} van ${waitlistClients.length}` : waitlistClients.length} deelnemers op de wachtlijst
+            {filteredClients.length !== waitlistClients.length ? `${filteredClients.length} van ${waitlistClients.length}` : waitlistClients.length} deelnemers op de wachtlijst
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -208,155 +171,67 @@ export default function WachtlijstPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Zoek op naam..."
-            className="w-full rounded-lg border border-input bg-card py-2.5 pl-10 pr-4 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-        </div>
-        <Select value={filterArea} onValueChange={setFilterArea}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Gebied" />
-          </SelectTrigger>
-          <SelectContent className="bg-popover">
-            <SelectItem value="all">Alle gebieden</SelectItem>
-            {areas.map((a: any) => (
-              <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={filterSchool} onValueChange={setFilterSchool}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="School" />
-          </SelectTrigger>
-          <SelectContent className="bg-popover">
-            <SelectItem value="all">Alle scholen</SelectItem>
-            <SelectItem value="none">Geen school</SelectItem>
-            {schools.map((s: any) => (
-              <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={filterAge} onValueChange={setFilterAge}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Leeftijd" />
-          </SelectTrigger>
-          <SelectContent className="bg-popover">
-            <SelectItem value="all">Alle leeftijden</SelectItem>
-            <SelectItem value="5-7">5-7 jaar</SelectItem>
-            <SelectItem value="8-12">8-12 jaar</SelectItem>
-            <SelectItem value="other">Overig</SelectItem>
-          </SelectContent>
-        </Select>
-        {hasFilters && (
-          <Button variant="ghost" size="sm" onClick={() => { setFilterArea("all"); setFilterSchool("all"); setFilterAge("all"); setSearch(""); }}>
-            <X className="h-3.5 w-3.5 mr-1" /> Wis filters
-          </Button>
-        )}
-      </div>
+      <ClientFilters
+        search={search} onSearchChange={setSearch}
+        filterArea={filterArea} onFilterAreaChange={setFilterArea}
+        filterSchool={filterSchool} onFilterSchoolChange={setFilterSchool}
+        filterAge={filterAge} onFilterAgeChange={setFilterAge}
+        filterStatus={filterStatus} onFilterStatusChange={setFilterStatus}
+        areas={areas} schools={schools}
+        totalCount={waitlistClients.length} filteredCount={filteredClients.length}
+      />
 
       {isLoading ? (
         <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
       ) : filteredClients.length === 0 ? (
         <div className="flex flex-col items-center py-12 text-muted-foreground">
           <Clock className="h-8 w-8 mb-2" />
-          <p className="text-sm">Geen deelnemers op de wachtlijst{hasFilters ? " met deze filters" : ""}</p>
+          <p className="text-sm">Geen deelnemers op de wachtlijst</p>
         </div>
       ) : (
-        <div className="rounded-xl border border-border bg-card shadow-sm overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10">
-                  <Checkbox
-                    checked={selected.size === filteredClients.length && filteredClients.length > 0}
-                    onCheckedChange={toggleAll}
-                  />
-                </TableHead>
-                <TableHead>Naam</TableHead>
-                <TableHead>Leeftijd</TableHead>
-                <TableHead>School</TableHead>
-                <TableHead>Gebied</TableHead>
-                <TableHead>Inschrijving</TableHead>
-                <TableHead>Intake</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actie</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredClients.map((client: any) => (
-                <TableRow key={client.id} className={selected.has(client.id) ? "bg-muted/50" : ""}>
-                  <TableCell>
-                    <Checkbox
-                      checked={selected.has(client.id)}
-                      onCheckedChange={() => toggleSelect(client.id)}
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    <button className="text-primary hover:underline text-left" onClick={() => navigate(`/clienten/${client.id}`)}>
-                      {client.first_name} {client.last_name}
-                    </button>
-                  </TableCell>
-                  <TableCell className="text-sm text-card-foreground">{(() => { const age = calculateAge(client.date_of_birth); return age !== null ? `${age} jaar` : "—"; })()}</TableCell>
-                  <TableCell className="text-sm text-card-foreground">{(client as any).schools?.name ?? "—"}</TableCell>
-                  <TableCell>{(client as any).areas?.name ?? "—"}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {client.registration_date ? format(new Date(client.registration_date), "d MMM yyyy", { locale: nl }) : "—"}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {client.intake_date ? format(new Date(client.intake_date), "d MMM yyyy", { locale: nl }) : "—"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={statusColors[client.waitlist_status] ?? ""}>
-                      {client.waitlist_status === "waiting" ? <Clock className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
-                      {statusLabels[client.waitlist_status] ?? client.waitlist_status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {assigningClient === client.id ? (
-                      <div className="flex items-center gap-2 justify-end">
-                        <Select value={selectedProgram} onValueChange={setSelectedProgram}>
-                          <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Kies programma" />
-                          </SelectTrigger>
-                          <SelectContent className="bg-popover">
-                            {programs.map((p: any) => (
-                              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          size="sm"
-                          disabled={!selectedProgram || assignMutation.isPending}
-                          onClick={() => {
-                            assignMutation.mutate({ clientId: client.id, programId: selectedProgram });
-                            setAssigningClient(null);
-                            setSelectedProgram("");
-                          }}
-                        >
-                          <UserPlus className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => { setAssigningClient(null); setSelectedProgram(""); }}>
-                          Annuleer
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button size="sm" variant="outline" onClick={() => setAssigningClient(client.id)}>
-                        Toewijzen
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <ClientListTable
+          clients={filteredClients}
+          onNavigate={(id) => navigate(`/clienten/${id}`)}
+          showCheckbox
+          selected={selected}
+          onToggleSelect={toggleSelect}
+          onToggleAll={toggleAll}
+          renderActions={(client) => (
+            assigningClient === client.id ? (
+              <div className="flex items-center gap-2 justify-end">
+                <Select value={selectedProgram} onValueChange={setSelectedProgram}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Kies programma" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    {programs.map((p: any) => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  disabled={!selectedProgram || assignMutation.isPending}
+                  onClick={() => {
+                    assignMutation.mutate({ clientId: client.id, programId: selectedProgram });
+                    setAssigningClient(null);
+                    setSelectedProgram("");
+                  }}
+                >
+                  <UserPlus className="h-3.5 w-3.5" />
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => { setAssigningClient(null); setSelectedProgram(""); }}>
+                  Annuleer
+                </Button>
+              </div>
+            ) : (
+              <Button size="sm" variant="outline" onClick={() => setAssigningClient(client.id)}>
+                Toewijzen
+              </Button>
+            )
+          )}
+          emptyMessage="Geen deelnemers op de wachtlijst"
+        />
       )}
 
       <ClientImport open={importOpen} onOpenChange={setImportOpen} mode="waitlist" />
