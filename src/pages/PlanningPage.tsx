@@ -506,16 +506,29 @@ export default function PlanningPage() {
                   const isToday = key === today;
                   const intakeCount = items?.intakes.length ?? 0;
                   const sessionCount = items?.sessions.length ?? 0;
+                  const special = isSpecialDay(key);
+                  const hasHoliday = special.holidays.length > 0;
+                  const hasVacation = !!special.vacation;
 
                   return (
                     <div
                       key={key}
-                      className={`bg-card min-h-[80px] p-1.5 ${isToday ? "ring-2 ring-primary ring-inset" : ""}`}
+                      className={`bg-card min-h-[80px] p-1.5 ${isToday ? "ring-2 ring-primary ring-inset" : ""} ${hasHoliday ? "bg-destructive/5" : hasVacation ? "bg-muted/40" : ""}`}
                     >
-                      <span className={`text-xs font-semibold ${isToday ? "text-primary" : "text-foreground"}`}>
+                      <span className={`text-xs font-semibold ${isToday ? "text-primary" : hasHoliday ? "text-destructive" : "text-foreground"}`}>
                         {format(day, "d")}
                       </span>
                       <div className="mt-1 space-y-0.5">
+                        {hasHoliday && (
+                          <div className="rounded bg-destructive/10 px-1 py-0.5 text-[10px] font-medium text-destructive truncate" title={special.holidays.map(h => h.name).join(", ")}>
+                            ⭐ {special.holidays[0].name}
+                          </div>
+                        )}
+                        {hasVacation && !hasHoliday && (
+                          <div className="rounded bg-muted px-1 py-0.5 text-[10px] font-medium text-muted-foreground truncate" title={special.vacation!.name}>
+                            🌴 {special.vacation!.name}
+                          </div>
+                        )}
                         {intakeCount > 0 && (
                           <div className="rounded bg-amber-100 px-1 py-0.5 text-[10px] font-medium text-amber-800 truncate">
                             {intakeCount} intake{intakeCount > 1 ? "s" : ""}
