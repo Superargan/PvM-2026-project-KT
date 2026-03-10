@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval, isSameDay, parseISO, startOfMonth, endOfMonth, addMonths, subMonths, isWithinInterval } from "date-fns";
 import { nl } from "date-fns/locale";
-import { CalendarDays, ChevronLeft, ChevronRight, Users, UserCog, Clock, MapPin, Filter, Plus, X, Loader2, FileSpreadsheet } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Users, UserCog, Clock, MapPin, Filter, Plus, X, Loader2, FileSpreadsheet, Star, Palmtree } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import GroupComposer from "@/components/GroupComposer";
 import AvailabilityManager from "@/components/AvailabilityManager";
 import PlanningImport from "@/components/PlanningImport";
+import { isSpecialDay, type Holiday, type SchoolVacation } from "@/lib/holidays";
 
 const trainerTypeLabels: Record<string, string> = {
   oudertrainer: "Oudertrainer",
