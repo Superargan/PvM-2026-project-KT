@@ -1,10 +1,11 @@
-import { Users, Search, Filter, Eye, Plus, Loader2, Download, Upload } from "lucide-react";
+import { Users, Search, Filter, Eye, Plus, Loader2, Download, Upload, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -42,6 +43,9 @@ const statusLabels: Record<string, string> = {
 
 export default function ClientenPage() {
   const [search, setSearch] = useState("");
+  const [filterArea, setFilterArea] = useState<string>("all");
+  const [filterSchool, setFilterSchool] = useState<string>("all");
+  const [filterAge, setFilterAge] = useState<string>("all");
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const { toast } = useToast();
@@ -64,6 +68,41 @@ export default function ClientenPage() {
       if (error) throw error;
       return data ?? [];
     },
+  });
+
+  const { data: schools = [] } = useQuery({
+    queryKey: ["schools-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("schools").select("id, name").order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: areas = [] } = useQuery({
+    queryKey: ["areas-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("areas").select("id, name").order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const hasFilters = filterArea !== "all" || filterSchool !== "all" || filterAge !== "all";
+
+  const filteredClients = clients.filter((c: any) => {
+    if (filterArea !== "all" && c.waitlist_area_id !== filterArea) return false;
+    if (filterSchool !== "all") {
+      if (filterSchool === "none") { if (c.school_id) return false; }
+      else if (c.school_id !== filterSchool) return false;
+    }
+    if (filterAge !== "all") {
+      const age = calculateAge(c.date_of_birth);
+      if (filterAge === "5-7" && (age === null || age < 5 || age > 7)) return false;
+      if (filterAge === "8-12" && (age === null || age < 8 || age > 12)) return false;
+      if (filterAge === "other" && age !== null && age >= 5 && age <= 12) return false;
+    }
+    return true;
   });
 
   const handleAddClient = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -92,12 +131,14 @@ export default function ClientenPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-display text-2xl font-extrabold text-foreground">Deelnemers</h1>
-          <p className="text-sm text-muted-foreground">{clients.length} deelnemers in het systeem</p>
+          <p className="text-sm text-muted-foreground">
+            {hasFilters ? `${filteredClients.length} van ${clients.length}` : clients.length} deelnemers
+          </p>
         </div>
         <div className="flex gap-2">
           {(["csv", "xlsx"] as const).map((fmt) => (
             <Button key={fmt} variant="outline" size="sm" onClick={() => {
-              const rows = clients.map((c: any) => ({
+              const rows = filteredClients.map((c: any) => ({
                 voornaam: c.first_name,
                 achternaam: c.last_name,
                 leeftijd: calculateAge(c.date_of_birth) ?? "",
@@ -154,15 +195,57 @@ export default function ClientenPage() {
         </div>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Zoek op naam..."
-          className="w-full rounded-lg border border-input bg-card py-2.5 pl-10 pr-4 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        />
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Zoek op naam..."
+            className="w-full rounded-lg border border-input bg-card py-2.5 pl-10 pr-4 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+        <Select value={filterArea} onValueChange={setFilterArea}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Gebied" />
+          </SelectTrigger>
+          <SelectContent className="bg-popover">
+            <SelectItem value="all">Alle gebieden</SelectItem>
+            {areas.map((a: any) => (
+              <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={filterSchool} onValueChange={setFilterSchool}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="School" />
+          </SelectTrigger>
+          <SelectContent className="bg-popover">
+            <SelectItem value="all">Alle scholen</SelectItem>
+            <SelectItem value="none">Geen school</SelectItem>
+            {schools.map((s: any) => (
+              <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={filterAge} onValueChange={setFilterAge}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="Leeftijd" />
+          </SelectTrigger>
+          <SelectContent className="bg-popover">
+            <SelectItem value="all">Alle leeftijden</SelectItem>
+            <SelectItem value="5-7">5-7 jaar</SelectItem>
+            <SelectItem value="8-12">8-12 jaar</SelectItem>
+            <SelectItem value="other">Overig</SelectItem>
+          </SelectContent>
+        </Select>
+        {hasFilters && (
+          <Button variant="ghost" size="sm" onClick={() => { setFilterArea("all"); setFilterSchool("all"); setFilterAge("all"); }}>
+            <X className="h-3.5 w-3.5 mr-1" /> Wis filters
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -180,10 +263,10 @@ export default function ClientenPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {clients.length === 0 && (
+              {filteredClients.length === 0 && (
                 <tr><td colSpan={5} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen deelnemers gevonden</td></tr>
               )}
-              {clients.map((client: any) => {
+              {filteredClients.map((client: any) => {
                 const age = calculateAge(client.date_of_birth);
                 const status = client.intake_status ?? "nieuw";
                 return (
