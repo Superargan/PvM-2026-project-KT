@@ -457,7 +457,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
 
       // Enrollment date
       const enrollDateRaw = findCol(row, "Datum inschrijving", "Inschrijfdatum", "datum inschrijving");
-      const enrollDate = parseExcelDate(enrollDateRaw);
+      const enrollDate = parseExcelDate(enrollDateRaw, dateFormat);
 
       // Referral source (how they found the program) — check multiple column names
       const referralRaw = findCol(row, "Hoe aan de KT gekomen", "Verwezen door", "Verwijzing", "Verwijzer", "Hoe bij KT gekomen", "referral", "Bron") ?? null;
