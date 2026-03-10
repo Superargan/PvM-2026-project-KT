@@ -568,7 +568,7 @@ export default function AanmeldingenPage() {
                   }}
                   areas={areas}
                 />
-              )
+              )}
               </div>
             )}
 
