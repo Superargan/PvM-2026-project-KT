@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import WaitlistManager from "@/components/WaitlistManager";
+import AreaPreferencesEditor from "@/components/AreaPreferencesEditor";
 import ClientImport from "@/components/ClientImport";
 import { downloadExport } from "@/lib/csvExport";
 import { calculateAge, statusLabels, statusStyles, filterClients } from "@/lib/clientUtils";
