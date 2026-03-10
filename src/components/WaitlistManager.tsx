@@ -39,7 +39,7 @@ export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => 
     queryFn: async () => {
       let query = supabase
         .from("clients")
-        .select("id, first_name, last_name, date_of_birth, created_at, intake_date, school_id, waitlist_status, waitlist_area_id, dropout_reason, dropout_action, schools(name), areas:waitlist_area_id(name)")
+        .select("id, first_name, last_name, date_of_birth, created_at, intake_date, guardian_phone, school_id, waitlist_status, waitlist_area_id, dropout_reason, dropout_action, schools(name), areas:waitlist_area_id(name)")
         .not("waitlist_status", "is", null);
 
       if (filterArea !== "all") {
@@ -127,11 +127,12 @@ export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => 
               <TableRow>
                 <TableHead>Naam</TableHead>
                 <TableHead>Leeftijdsgroep</TableHead>
+                <TableHead>School</TableHead>
+                <TableHead>Gebied</TableHead>
+                <TableHead>Telefoon</TableHead>
                 <TableHead>Aanmelddatum</TableHead>
                 <TableHead>Intakedatum</TableHead>
-                <TableHead>Gebied</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Reden</TableHead>
                 <TableHead className="text-right">Actie</TableHead>
               </TableRow>
             </TableHeader>
@@ -148,21 +149,26 @@ export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => 
                   <TableCell>
                     <Badge variant="outline" className="text-xs">{ageGroup}</Badge>
                   </TableCell>
+                  <TableCell className="text-sm text-card-foreground">
+                    {(client as any).schools?.name ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-sm text-card-foreground">
+                    {(client as any).areas?.name ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-sm text-card-foreground">
+                    {client.guardian_phone ?? "—"}
+                  </TableCell>
                   <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                     {client.created_at ? format(new Date(client.created_at), "d MMM yyyy", { locale: nl }) : "—"}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                     {client.intake_date ? format(new Date(client.intake_date), "d MMM yyyy", { locale: nl }) : "—"}
                   </TableCell>
-                  <TableCell>{(client as any).areas?.name ?? "—"}</TableCell>
                   <TableCell>
                     <Badge className={statusColors[client.waitlist_status] ?? ""}>
                       {client.waitlist_status === "waiting" ? <Clock className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
                       {statusLabels[client.waitlist_status] ?? client.waitlist_status}
                     </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
-                    {client.dropout_reason ?? "—"}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center gap-1 justify-end">
