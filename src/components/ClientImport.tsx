@@ -405,7 +405,16 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
       // Intake status
       const intakeFormulier = findCol(row, "Intakeformulier", "Intake formulier");
       let intake_status = "nieuw";
-      if (intake_date) intake_status = "intake_gepland";
+      if (intake_date) {
+        const parsedIntake = new Date(intake_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (parsedIntake < today) {
+          intake_status = "intake_afgerond";
+        } else {
+          intake_status = "intake_gepland";
+        }
+      }
       if (intakeFormulier && intakeFormulier.toLowerCase() === "ja") intake_status = "intake";
 
       const recordData: any = {
