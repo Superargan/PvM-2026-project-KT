@@ -132,6 +132,7 @@ function mapOutlookRow(row: Record<string, any>) {
 export default function ScholenPage() {
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [contactUploadOpen, setContactUploadOpen] = useState(false);
   const [contactDialogOpen, setContactDialogOpen] = useState(false);
@@ -141,6 +142,8 @@ export default function ScholenPage() {
   const [selectedArea, setSelectedArea] = useState<string>("");
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
   const [docUploading, setDocUploading] = useState(false);
+  const [editForm, setEditForm] = useState<any>({});
+  const [editSaving, setEditSaving] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -194,6 +197,65 @@ export default function ScholenPage() {
   const filteredNeighborhoods = selectedArea
     ? (areas.find((a: any) => a.id === selectedArea) as any)?.neighborhoods ?? []
     : [];
+
+  const openEditSchool = (school: any) => {
+    // Find the area from the neighborhood
+    const neighborhoodId = school.neighborhood_id ?? "";
+    let areaId = "";
+    if (neighborhoodId) {
+      const area = areas.find((a: any) => (a.neighborhoods ?? []).some((n: any) => n.id === neighborhoodId));
+      if (area) areaId = area.id;
+    }
+    setSelectedArea(areaId);
+    setSelectedNeighborhood(neighborhoodId);
+    setEditForm({
+      name: school.name ?? "",
+      address: school.address ?? "",
+      contact_email: school.contact_email ?? "",
+      contact_phone: school.contact_phone ?? "",
+      website_url: school.website_url ?? "",
+      student_count: school.student_count ?? 0,
+    });
+    setSelectedSchool(school);
+    setEditOpen(true);
+  };
+
+  const handleEditSchool = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedSchool) return;
+    setEditSaving(true);
+
+    let neighborhoodId = selectedNeighborhood || null;
+    if (!neighborhoodId && editForm.address) {
+      const areaName = getAreaFromAddress(editForm.address);
+      if (areaName) {
+        const area = areas.find((a: any) => a.name === areaName);
+        if (area && area.neighborhoods?.length > 0) {
+          neighborhoodId = area.neighborhoods[0].id;
+        }
+      }
+    }
+
+    const { error } = await supabase.from("schools").update({
+      name: editForm.name,
+      address: editForm.address || null,
+      contact_email: editForm.contact_email || null,
+      contact_phone: editForm.contact_phone || null,
+      website_url: editForm.website_url || null,
+      student_count: Number(editForm.student_count) || 0,
+      neighborhood_id: neighborhoodId,
+    }).eq("id", selectedSchool.id);
+
+    setEditSaving(false);
+    if (error) {
+      toast({ title: "Fout", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "School bijgewerkt" });
+      setEditOpen(false);
+      setSelectedSchool(null);
+      refetch();
+    }
+  };
 
   const handleAddSchool = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -777,12 +839,13 @@ export default function ScholenPage() {
                 <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground md:table-cell">Wijk</th>
                 <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Contact</th>
                 <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Contactpersonen</th>
-                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Leerlingen</th>
+                 <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Leerlingen</th>
+                 <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actie</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {schools.length === 0 && (
-                <tr><td colSpan={6} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen scholen gevonden</td></tr>
+                <tr><td colSpan={7} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen scholen gevonden</td></tr>
               )}
               {schools.map((school: any) => (
                 <tr key={school.id} className="transition-colors hover:bg-muted/30">
@@ -886,6 +949,11 @@ export default function ScholenPage() {
                   </td>
                   <td className="px-5 py-4 text-right">
                     <span className="font-display text-sm font-bold text-card-foreground">{school.student_count ?? 0}</span>
+                  </td>
+                  <td className="px-5 py-4 text-right">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditSchool(school)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -1062,6 +1130,71 @@ export default function ScholenPage() {
               </label>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit school dialog */}
+      <Dialog open={editOpen} onOpenChange={(open) => {
+        setEditOpen(open);
+        if (!open) { setSelectedSchool(null); setSelectedArea(""); setSelectedNeighborhood(""); }
+      }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>School bewerken</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSchool} className="space-y-4">
+            <div>
+              <Label>Naam *</Label>
+              <Input value={editForm.name ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, name: e.target.value }))} required />
+            </div>
+            <div>
+              <Label>Adres</Label>
+              <Input value={editForm.address ?? ""} onChange={(e) => { setEditForm((f: any) => ({ ...f, address: e.target.value })); }} onBlur={(e) => autoDetectNeighborhood(e.target.value)} />
+            </div>
+            <div>
+              <Label>Gebied</Label>
+              <Select value={selectedArea} onValueChange={(val) => { setSelectedArea(val); setSelectedNeighborhood(""); }}>
+                <SelectTrigger><SelectValue placeholder="Selecteer een gebied..." /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  {areas.map((a: any) => (
+                    <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Wijk</Label>
+              <Select value={selectedNeighborhood} onValueChange={setSelectedNeighborhood} disabled={!selectedArea}>
+                <SelectTrigger><SelectValue placeholder={selectedArea ? "Selecteer een wijk..." : "Kies eerst een gebied"} /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  {filteredNeighborhoods.map((n: any) => (
+                    <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>E-mail</Label>
+                <Input type="email" value={editForm.contact_email ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, contact_email: e.target.value }))} />
+              </div>
+              <div>
+                <Label>Telefoon</Label>
+                <Input type="tel" value={editForm.contact_phone ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, contact_phone: e.target.value }))} />
+              </div>
+            </div>
+            <div>
+              <Label>Website</Label>
+              <Input type="url" placeholder="https://..." value={editForm.website_url ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, website_url: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Aantal leerlingen</Label>
+              <Input type="number" min="0" value={editForm.student_count ?? 0} onChange={(e) => setEditForm((f: any) => ({ ...f, student_count: e.target.value }))} />
+            </div>
+            <Button type="submit" className="w-full" disabled={editSaving}>
+              {editSaving ? "Opslaan..." : "Opslaan"}
+            </Button>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
