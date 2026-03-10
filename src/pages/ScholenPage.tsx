@@ -198,6 +198,65 @@ export default function ScholenPage() {
     ? (areas.find((a: any) => a.id === selectedArea) as any)?.neighborhoods ?? []
     : [];
 
+  const openEditSchool = (school: any) => {
+    // Find the area from the neighborhood
+    const neighborhoodId = school.neighborhood_id ?? "";
+    let areaId = "";
+    if (neighborhoodId) {
+      const area = areas.find((a: any) => (a.neighborhoods ?? []).some((n: any) => n.id === neighborhoodId));
+      if (area) areaId = area.id;
+    }
+    setSelectedArea(areaId);
+    setSelectedNeighborhood(neighborhoodId);
+    setEditForm({
+      name: school.name ?? "",
+      address: school.address ?? "",
+      contact_email: school.contact_email ?? "",
+      contact_phone: school.contact_phone ?? "",
+      website_url: school.website_url ?? "",
+      student_count: school.student_count ?? 0,
+    });
+    setSelectedSchool(school);
+    setEditOpen(true);
+  };
+
+  const handleEditSchool = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedSchool) return;
+    setEditSaving(true);
+
+    let neighborhoodId = selectedNeighborhood || null;
+    if (!neighborhoodId && editForm.address) {
+      const areaName = getAreaFromAddress(editForm.address);
+      if (areaName) {
+        const area = areas.find((a: any) => a.name === areaName);
+        if (area && area.neighborhoods?.length > 0) {
+          neighborhoodId = area.neighborhoods[0].id;
+        }
+      }
+    }
+
+    const { error } = await supabase.from("schools").update({
+      name: editForm.name,
+      address: editForm.address || null,
+      contact_email: editForm.contact_email || null,
+      contact_phone: editForm.contact_phone || null,
+      website_url: editForm.website_url || null,
+      student_count: Number(editForm.student_count) || 0,
+      neighborhood_id: neighborhoodId,
+    }).eq("id", selectedSchool.id);
+
+    setEditSaving(false);
+    if (error) {
+      toast({ title: "Fout", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "School bijgewerkt" });
+      setEditOpen(false);
+      setSelectedSchool(null);
+      refetch();
+    }
+  };
+
   const handleAddSchool = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
