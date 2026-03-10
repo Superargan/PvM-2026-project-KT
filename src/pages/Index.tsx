@@ -60,7 +60,7 @@ export default function Dashboard() {
   });
 
   const { data: waitlistCount = 0 } = useQuery({
-    queryKey: ["dashboard-waitlist"],
+    queryKey: ["clients", "dashboard", "waitlist"],
     queryFn: async () => {
       const { count } = await supabase
         .from("clients")
