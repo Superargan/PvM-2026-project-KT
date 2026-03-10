@@ -1,23 +1,13 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { differenceInYears, parseISO } from "date-fns";
 import { Users, ArrowRight, Eye, Star, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
-type AgeCategory = "5-7 jaar" | "8-12 jaar";
-
-function getAgeCategory(dob: string | null): AgeCategory | null {
-  if (!dob) return null;
-  const age = differenceInYears(new Date(), parseISO(dob));
-  if (age >= 5 && age <= 7) return "5-7 jaar";
-  if (age >= 8 && age <= 12) return "8-12 jaar";
-  return null;
-}
+import { resolveAreaId, getAgeCategoryPlanning, type AgeCategory } from "@/lib/clientUtils";
 
 interface Props {
   onSelectGroup?: (areaId: string, ageCategory: string) => void;
@@ -35,7 +25,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, first_name, last_name, date_of_birth, waitlist_area_id, all_areas_flexible, school_id, schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
+        .select("id, first_name, last_name, date_of_birth, waitlist_area_id, all_areas_flexible, intake_status, school_id, schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
         .eq("archived", false)
         .in("intake_status", ["wachtlijst", "intake_afgerond"]);
       if (error) throw error;
@@ -43,7 +33,6 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
     },
   });
 
-  // Fetch area preferences for all waitlist clients
   const { data: allPreferences = [] } = useQuery({
     queryKey: ["clients", "waitlist-overview-prefs"],
     queryFn: async () => {
@@ -64,7 +53,6 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
     },
   });
 
-  // Build a map: clientId -> set of reserve area IDs
   const prefsByClient = useMemo(() => {
     const m: Record<string, Set<string>> = {};
     allPreferences.forEach((p: any) => {
@@ -74,52 +62,43 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
     return m;
   }, [allPreferences]);
 
-  const resolveAreaId = (client: any): string | null => {
-    if (client.waitlist_area_id) return client.waitlist_area_id;
-    return (client as any).schools?.neighborhoods?.area_id ?? null;
-  };
-
   const ageCategories: AgeCategory[] = ["5-7 jaar", "8-12 jaar"];
 
-  // Build matrix: area × age → { primary: client[], reserve: client[] }
+  // Build matrix: area × age → { intake: client[], wachtlijst: client[], reserveIntake: client[], reserveWachtlijst: client[] }
   const matrix = useMemo(() => {
-    const m: Record<string, Record<string, { primary: any[]; reserve: any[] }>> = {};
+    const m: Record<string, Record<string, { intake: any[]; wachtlijst: any[]; reserveIntake: any[]; reserveWachtlijst: any[] }>> = {};
     let noArea = 0;
     let noAge = 0;
 
     areas.forEach((a: any) => {
       m[a.id] = {
-        "5-7 jaar": { primary: [], reserve: [] },
-        "8-12 jaar": { primary: [], reserve: [] },
+        "5-7 jaar": { intake: [], wachtlijst: [], reserveIntake: [], reserveWachtlijst: [] },
+        "8-12 jaar": { intake: [], wachtlijst: [], reserveIntake: [], reserveWachtlijst: [] },
       };
     });
 
-    // Track fixable clients (have school with area but no waitlist_area_id)
     const fixableClients: { clientId: string; areaId: string }[] = [];
 
     clients.forEach((c: any) => {
       const primaryAreaId = resolveAreaId(c);
-      const age = getAgeCategory(c.date_of_birth);
-      if (!age) { noAge++; }
+      const age = getAgeCategoryPlanning(c.date_of_birth);
+      const isIntake = (c.intake_status ?? "wachtlijst") === "intake_afgerond";
+      if (!age) noAge++;
 
-      // Check if client has school→area but no explicit waitlist_area_id
-      if (!c.waitlist_area_id && (c as any).schools?.neighborhoods?.area_id) {
-        fixableClients.push({
-          clientId: c.id,
-          areaId: (c as any).schools.neighborhoods.area_id,
-        });
+      if (!c.waitlist_area_id && c.schools?.neighborhoods?.area_id) {
+        fixableClients.push({ clientId: c.id, areaId: c.schools.neighborhoods.area_id });
       }
 
       if (!primaryAreaId) {
         if (age) noArea++;
         return;
       }
-
       if (!age) return;
 
       // Primary area
       if (m[primaryAreaId]) {
-        m[primaryAreaId][age].primary.push(c);
+        if (isIntake) m[primaryAreaId][age].intake.push(c);
+        else m[primaryAreaId][age].wachtlijst.push(c);
       }
 
       // Reserve areas
@@ -127,16 +106,18 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
       if (reserveAreas) {
         reserveAreas.forEach((areaId) => {
           if (areaId !== primaryAreaId && m[areaId]) {
-            m[areaId][age].reserve.push(c);
+            if (isIntake) m[areaId][age].reserveIntake.push(c);
+            else m[areaId][age].reserveWachtlijst.push(c);
           }
         });
       }
 
-      // All areas flexible
-      if ((c as any).all_areas_flexible) {
+      // Flexible
+      if (c.all_areas_flexible) {
         areas.forEach((a: any) => {
           if (a.id !== primaryAreaId && m[a.id] && !reserveAreas?.has(a.id)) {
-            m[a.id][age].reserve.push(c);
+            if (isIntake) m[a.id][age].reserveIntake.push(c);
+            else m[a.id][age].reserveWachtlijst.push(c);
           }
         });
       }
@@ -145,31 +126,37 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
     return { m, noArea, noAge, fixableClients };
   }, [clients, areas, prefsByClient]);
 
-  // Only show areas that have at least 1 waitlist client (primary or reserve)
   const activeAreas = useMemo(() => {
     return areas.filter((a: any) => {
       const row = matrix.m[a.id];
       if (!row) return false;
       return ageCategories.some(age => {
         const cell = row[age];
-        return cell.primary.length > 0 || cell.reserve.length > 0;
+        return cell.intake.length + cell.wachtlijst.length + cell.reserveIntake.length + cell.reserveWachtlijst.length > 0;
       });
     });
   }, [areas, matrix]);
 
   const totals = useMemo(() => {
-    const t: Record<string, { primary: number; reserve: number }> = {
-      "5-7 jaar": { primary: 0, reserve: 0 },
-      "8-12 jaar": { primary: 0, reserve: 0 },
+    const t: Record<string, { intake: number; wachtlijst: number; reserve: number }> = {
+      "5-7 jaar": { intake: 0, wachtlijst: 0, reserve: 0 },
+      "8-12 jaar": { intake: 0, wachtlijst: 0, reserve: 0 },
     };
     Object.values(matrix.m).forEach(row => {
       ageCategories.forEach(age => {
-        t[age].primary += row[age]?.primary.length ?? 0;
-        t[age].reserve += row[age]?.reserve.length ?? 0;
+        const cell = row[age];
+        if (!cell) return;
+        t[age].intake += cell.intake.length;
+        t[age].wachtlijst += cell.wachtlijst.length;
+        t[age].reserve += cell.reserveIntake.length + cell.reserveWachtlijst.length;
       });
     });
     return t;
   }, [matrix]);
+
+  // Count totals for summary
+  const totalIntake = clients.filter((c: any) => c.intake_status === "intake_afgerond").length;
+  const totalWachtlijst = clients.filter((c: any) => c.intake_status === "wachtlijst").length;
 
   return (
     <TooltipProvider>
@@ -178,18 +165,16 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
         <div className="flex flex-wrap gap-3">
           <Badge variant="outline" className="text-sm px-3 py-1 border-muted-foreground/30">
             <Users className="h-3.5 w-3.5 mr-1.5" />
-            {clients.length} totaal op wachtlijst
+            {clients.length} totaal
           </Badge>
-          {ageCategories.map(age => (
-            <Badge key={age} variant="outline" className="text-sm px-3 py-1 border-primary/30 text-primary">
-              {age}: {totals[age].primary}
-              {totals[age].reserve > 0 && (
-                <span className="text-muted-foreground ml-1">(+{totals[age].reserve} reserve)</span>
-              )}
-            </Badge>
-          ))}
+          <Badge variant="outline" className="text-sm px-3 py-1 border-blue-300 text-blue-700">
+            {totalIntake} intake afgerond
+          </Badge>
+          <Badge variant="outline" className="text-sm px-3 py-1 border-orange-300 text-orange-700">
+            {totalWachtlijst} wachtlijst
+          </Badge>
           {matrix.noArea > 0 && (
-            <Badge variant="outline" className="text-sm px-3 py-1 border-destructive/30 text-destructive">
+            <Badge variant="outline" className="text-sm px-3 py-1 border-amber-400 text-amber-700">
               {matrix.noArea} zonder gebied
             </Badge>
           )}
@@ -204,7 +189,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
         {matrix.fixableClients.length > 0 && (
           <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 flex items-center justify-between">
             <p className="text-sm text-foreground">
-              <strong>{matrix.fixableClients.length}</strong> deelnemer(s) hebben een school maar geen gebied — automatisch koppelen?
+              <strong>{matrix.fixableClients.length}</strong> aanmelder(s) hebben een school maar geen gebied — automatisch koppelen?
             </p>
             <Button
               size="sm"
@@ -219,7 +204,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
                     .eq("id", clientId);
                   if (!error) fixed++;
                 }
-                toast({ title: `${fixed} deelnemer(s) gebied toegewezen` });
+                toast({ title: `${fixed} aanmelder(s) gebied toegewezen` });
                 queryClient.invalidateQueries({ queryKey: ["clients"] });
                 setFixingAreas(false);
               }}
@@ -255,7 +240,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
                 const row = matrix.m[area.id];
                 const areaTotal = ageCategories.reduce((sum, age) => {
                   const cell = row[age];
-                  return sum + cell.primary.length + cell.reserve.length;
+                  return sum + cell.intake.length + cell.wachtlijst.length + cell.reserveIntake.length + cell.reserveWachtlijst.length;
                 }, 0);
 
                 return (
@@ -265,9 +250,11 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
                     </td>
                     {ageCategories.map(age => {
                       const cell = row[age];
-                      const primary = cell.primary.length;
-                      const reserve = cell.reserve.length;
-                      const total = primary + reserve;
+                      const intakeCount = cell.intake.length;
+                      const wachtlijstCount = cell.wachtlijst.length;
+                      const primaryTotal = intakeCount + wachtlijstCount;
+                      const reserveTotal = cell.reserveIntake.length + cell.reserveWachtlijst.length;
+                      const total = primaryTotal + reserveTotal;
                       const ready = total >= 7;
                       const partial = total >= 5;
 
@@ -278,7 +265,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
                               <TooltipTrigger asChild>
                                 <button
                                   onClick={() => onSelectGroup?.(area.id, age)}
-                                  className={`inline-flex flex-col items-center rounded-lg px-3 py-1.5 text-sm font-bold transition-colors min-w-[60px] ${
+                                  className={`inline-flex flex-col items-center rounded-lg px-3 py-1.5 text-sm font-bold transition-colors min-w-[80px] ${
                                     ready
                                       ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300"
                                       : partial
@@ -286,20 +273,29 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
                                       : "bg-red-100 text-red-800 hover:bg-red-200 border border-red-300"
                                   }`}
                                 >
-                                  <span className="flex items-center gap-1">
-                                    {primary}
+                                  <span className="flex items-center gap-1.5">
+                                    {intakeCount > 0 && (
+                                      <span className="text-blue-700">{intakeCount}i</span>
+                                    )}
+                                    {intakeCount > 0 && wachtlijstCount > 0 && (
+                                      <span className="text-muted-foreground">+</span>
+                                    )}
+                                    {wachtlijstCount > 0 && (
+                                      <span className="text-orange-700">{wachtlijstCount}w</span>
+                                    )}
                                     {ready && <ArrowRight className="h-3 w-3" />}
                                   </span>
-                                  {reserve > 0 && (
+                                  {reserveTotal > 0 && (
                                     <span className="text-[10px] font-medium opacity-70 flex items-center gap-0.5">
                                       <Star className="h-2.5 w-2.5" />
-                                      +{reserve} reserve
+                                      +{reserveTotal} reserve
                                     </span>
                                   )}
                                 </button>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>{primary} primair{reserve > 0 ? `, ${reserve} reserve/flexibel` : ""}</p>
+                                <p className="font-medium">{intakeCount} intake afgerond, {wachtlijstCount} wachtlijst</p>
+                                {reserveTotal > 0 && <p>{reserveTotal} reserve/flexibel</p>}
                                 {ready && <p className="font-semibold text-emerald-600">Groep mogelijk!</p>}
                               </TooltipContent>
                             </Tooltip>
@@ -329,7 +325,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
               {activeAreas.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    Geen deelnemers op de wachtlijst
+                    Geen aanmelders op de wachtlijst
                   </td>
                 </tr>
               )}
@@ -340,7 +336,9 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
                   <td className="px-4 py-2 text-xs font-semibold uppercase text-muted-foreground">Totaal</td>
                   {ageCategories.map(age => (
                     <td key={age} className="px-4 py-2 text-center text-sm font-bold text-foreground">
-                      {totals[age].primary}
+                      <span className="text-blue-700">{totals[age].intake}i</span>
+                      <span className="text-muted-foreground mx-0.5">+</span>
+                      <span className="text-orange-700">{totals[age].wachtlijst}w</span>
                       {totals[age].reserve > 0 && (
                         <span className="text-xs font-normal text-muted-foreground ml-1">+{totals[age].reserve}</span>
                       )}
@@ -356,10 +354,10 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
         </div>
 
         <p className="text-xs text-muted-foreground">
-          <span className="inline-block w-3 h-3 rounded bg-emerald-200 border border-emerald-300 mr-1 align-middle" /> ≥7 deelnemers (gereed)
-          <span className="inline-block w-3 h-3 rounded bg-amber-200 border border-amber-300 mr-1 ml-3 align-middle" /> 5-6 deelnemers (bijna gereed)
-          <span className="inline-block w-3 h-3 rounded bg-red-200 border border-red-300 mr-1 ml-3 align-middle" /> &lt;5 deelnemers
-          <span className="ml-3">Getallen: <strong>primair</strong> <span className="opacity-60">+reserve</span></span>
+          <span className="inline-block w-3 h-3 rounded bg-emerald-200 border border-emerald-300 mr-1 align-middle" /> ≥7 (gereed)
+          <span className="inline-block w-3 h-3 rounded bg-amber-200 border border-amber-300 mr-1 ml-3 align-middle" /> 5-6 (bijna)
+          <span className="inline-block w-3 h-3 rounded bg-red-200 border border-red-300 mr-1 ml-3 align-middle" /> &lt;5
+          <span className="ml-3"><span className="text-blue-700 font-semibold">i</span>=intake afgerond <span className="text-orange-700 font-semibold">w</span>=wachtlijst</span>
         </p>
       </div>
     </TooltipProvider>

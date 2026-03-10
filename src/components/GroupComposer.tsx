@@ -1,9 +1,8 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { differenceInYears, parseISO, format, getDay } from "date-fns";
-import { nl } from "date-fns/locale";
-import { Users, UserCog, Check, AlertTriangle, CalendarClock } from "lucide-react";
+import { getDay, parseISO } from "date-fns";
+import { Users, UserCog, Check, AlertTriangle, CalendarClock, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,9 +10,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-
-type AgeCategory = "5-7 jaar" | "8-12 jaar";
-type MatchType = "Primair" | "Reserve 1" | "Reserve 2" | "Reserve 3" | "Flexibel";
+import {
+  calculateAge,
+  getAgeCategoryPlanning,
+  resolveAreaId,
+  getMatchType,
+  matchSortOrder,
+  matchColors,
+  statusBadgeStyles,
+  type AgeCategory,
+  type MatchType,
+} from "@/lib/clientUtils";
 
 interface ClientWithMatch {
   client: any;
@@ -28,27 +35,6 @@ interface GroupedClients {
   clients: ClientWithMatch[];
 }
 
-function calculateAge(dob: string | null): number | null {
-  if (!dob) return null;
-  return differenceInYears(new Date(), parseISO(dob));
-}
-
-function getAgeCategory(dob: string | null): AgeCategory | null {
-  const age = calculateAge(dob);
-  if (age === null) return null;
-  if (age >= 5 && age <= 7) return "5-7 jaar";
-  if (age >= 8 && age <= 12) return "8-12 jaar";
-  return null;
-}
-
-const matchColors: Record<MatchType, string> = {
-  "Primair": "bg-emerald-100 text-emerald-800 border-emerald-300",
-  "Reserve 1": "bg-blue-100 text-blue-800 border-blue-300",
-  "Reserve 2": "bg-violet-100 text-violet-800 border-violet-300",
-  "Reserve 3": "bg-pink-100 text-pink-800 border-pink-300",
-  "Flexibel": "bg-amber-100 text-amber-800 border-amber-300",
-};
-
 export default function GroupComposer() {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -58,6 +44,7 @@ export default function GroupComposer() {
   const [selectedKindtrainer, setSelectedKindtrainer] = useState<Record<string, string>>({});
   const [creating, setCreating] = useState<string | null>(null);
   const [filterArea, setFilterArea] = useState<string>("alle");
+  const [expandedReserve, setExpandedReserve] = useState<Set<string>>(new Set());
 
   // Fetch waitlist clients
   const { data: waitlistClients = [] } = useQuery({
@@ -65,7 +52,7 @@ export default function GroupComposer() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, first_name, last_name, date_of_birth, waitlist_area_id, all_areas_flexible, school_id, schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
+        .select("id, first_name, last_name, date_of_birth, waitlist_area_id, all_areas_flexible, intake_status, school_id, schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
         .eq("archived", false)
         .in("intake_status", ["wachtlijst", "intake_afgerond"]);
       if (error) throw error;
@@ -107,7 +94,7 @@ export default function GroupComposer() {
     },
   });
 
-  // Build availability map: clientId -> array of { dayOfWeek, startTime, endTime }
+  // Build availability map
   const availByClient = useMemo(() => {
     const m: Record<string, { dayOfWeek: number; dayName: string; startTime: string; endTime: string }[]> = {};
     const dayNames = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"];
@@ -124,18 +111,15 @@ export default function GroupComposer() {
     return m;
   }, [allAvailability]);
 
-  // Find best overlapping timeslot for a set of client IDs
-  const getSuggestion = (clientIds: Set<string>): { dayName: string; startTime: string; endTime: string; overlap: number; total: number } | null => {
+  // Find best overlapping timeslot
+  const getSuggestion = (clientIds: Set<string>) => {
     if (clientIds.size === 0) return null;
-    
-    // Count availability per weekday, track time overlaps
     const dayStats: Record<number, { count: number; dayName: string; starts: string[]; ends: string[] }> = {};
     const dayNames = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"];
     
     clientIds.forEach((cid) => {
       const avail = availByClient[cid];
       if (!avail) return;
-      // Deduplicate by day of week for this client
       const seenDays = new Set<number>();
       avail.forEach((a) => {
         if (seenDays.has(a.dayOfWeek)) return;
@@ -149,14 +133,10 @@ export default function GroupComposer() {
       });
     });
 
-    // Find day with most overlap
     const entries = Object.values(dayStats).filter(d => d.count >= 2);
     if (entries.length === 0) return null;
-    
     entries.sort((a, b) => b.count - a.count);
     const best = entries[0];
-    
-    // Find common time window (latest start, earliest end)
     const latestStart = best.starts.sort().reverse()[0];
     const earliestEnd = best.ends.sort()[0];
     
@@ -199,38 +179,7 @@ export default function GroupComposer() {
     return m;
   }, [areas]);
 
-  const resolveAreaId = (client: any): string | null => {
-    if (client.waitlist_area_id) return client.waitlist_area_id;
-    return (client as any).schools?.neighborhoods?.area_id ?? null;
-  };
-
-  // Determine match type for a client in a given area
-  const getMatchType = (client: any, targetAreaId: string): MatchType | null => {
-    const primaryAreaId = resolveAreaId(client);
-    if (primaryAreaId === targetAreaId) return "Primair";
-
-    const prefs = prefsByClient[client.id];
-    if (prefs && prefs[targetAreaId]) {
-      const order = prefs[targetAreaId];
-      if (order === 1) return "Reserve 1";
-      if (order === 2) return "Reserve 2";
-      if (order === 3) return "Reserve 3";
-    }
-
-    if ((client as any).all_areas_flexible) return "Flexibel";
-
-    return null;
-  };
-
-  const matchSortOrder: Record<MatchType, number> = {
-    "Primair": 0,
-    "Reserve 1": 1,
-    "Reserve 2": 2,
-    "Reserve 3": 3,
-    "Flexibel": 4,
-  };
-
-  // Group clients by area + age category, including reserve matches
+  // Group clients by area + age category
   const groups: GroupedClients[] = useMemo(() => {
     const map = new Map<string, GroupedClients>();
 
@@ -240,25 +189,16 @@ export default function GroupComposer() {
         const key = `${area.id}__${ageCategory}`;
         const matchedClients: ClientWithMatch[] = [];
 
-        // Check each waitlist client for this area
         waitlistClients.forEach((client: any) => {
-          const ageCat = getAgeCategory(client.date_of_birth);
+          const ageCat = getAgeCategoryPlanning(client.date_of_birth);
           if (ageCat !== ageCategory) return;
-
-          const matchType = getMatchType(client, area.id);
-          if (!matchType) return;
-
-          matchedClients.push({
-            client,
-            matchType,
-            sortOrder: matchSortOrder[matchType],
-          });
+          const mt = getMatchType(client, area.id, prefsByClient);
+          if (!mt) return;
+          matchedClients.push({ client, matchType: mt, sortOrder: matchSortOrder[mt] });
         });
 
         if (matchedClients.length > 0) {
-          // Sort: primary first, then by reserve order
           matchedClients.sort((a, b) => a.sortOrder - b.sortOrder);
-
           map.set(key, {
             areaId: area.id,
             areaName: areaMap[area.id] ?? "Onbekend gebied",
@@ -274,16 +214,14 @@ export default function GroupComposer() {
 
   // Clients without area or age
   const unassigned = useMemo(() => {
-    return waitlistClients.filter((c: any) => !resolveAreaId(c) || !getAgeCategory(c.date_of_birth));
+    return waitlistClients.filter((c: any) => !resolveAreaId(c) || !getAgeCategoryPlanning(c.date_of_birth));
   }, [waitlistClients]);
 
-  // Filtered groups
   const filteredGroups = useMemo(() => {
     if (filterArea === "alle") return groups;
     return groups.filter(g => g.areaId === filterArea);
   }, [groups, filterArea]);
 
-  // Trainer lists
   const oudertrainers = useMemo(() => {
     return allTrainers.filter((t: any) =>
       !t.trainer_type || t.trainer_type === "oudertrainer" || t.trainer_type === "beide"
@@ -301,7 +239,6 @@ export default function GroupComposer() {
     return t.name;
   };
 
-  // Selection helpers
   const getGroupKey = (g: GroupedClients) => `${g.areaId}__${g.ageCategory}`;
 
   const getSelectedForGroup = (g: GroupedClients): Set<string> => {
@@ -337,6 +274,42 @@ export default function GroupComposer() {
     return { color: "text-red-700 bg-red-50 border-red-200", label: `Nog ${7 - count} nodig`, icon: <AlertTriangle className="h-4 w-4" /> };
   };
 
+  const toggleReserveSearch = (key: string) => {
+    setExpandedReserve(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  // Find extra reserve-area candidates not already in a group
+  const getReserveCandidates = (group: GroupedClients): ClientWithMatch[] => {
+    const existingIds = new Set(group.clients.map(cm => cm.client.id));
+    const candidates: ClientWithMatch[] = [];
+
+    waitlistClients.forEach((client: any) => {
+      if (existingIds.has(client.id)) return;
+      const ageCat = getAgeCategoryPlanning(client.date_of_birth);
+      if (ageCat !== group.ageCategory) return;
+
+      // Check if this client has the group's area as a reserve preference
+      const prefs = prefsByClient[client.id];
+      if (prefs && prefs[group.areaId]) {
+        const order = prefs[group.areaId];
+        const mt: MatchType = order === 1 ? "Reserve 1" : order === 2 ? "Reserve 2" : "Reserve 3";
+        candidates.push({ client, matchType: mt, sortOrder: matchSortOrder[mt] });
+        return;
+      }
+      if (client.all_areas_flexible) {
+        candidates.push({ client, matchType: "Flexibel", sortOrder: matchSortOrder["Flexibel"] });
+      }
+    });
+
+    candidates.sort((a, b) => a.sortOrder - b.sortOrder);
+    return candidates;
+  };
+
   const createGroup = async (g: GroupedClients) => {
     const key = getGroupKey(g);
     const selected = getSelectedForGroup(g);
@@ -344,7 +317,7 @@ export default function GroupComposer() {
     const kindtrainerId = selectedKindtrainer[key];
 
     if (selected.size === 0) {
-      toast({ title: "Selecteer minimaal 1 deelnemer", variant: "destructive" });
+      toast({ title: "Selecteer minimaal 1 aanmelder", variant: "destructive" });
       return;
     }
 
@@ -391,7 +364,7 @@ export default function GroupComposer() {
         .in("id", Array.from(selected));
       if (updateErr) throw updateErr;
 
-      toast({ title: "Groep aangemaakt", description: `${programName} met ${selected.size} deelnemers` });
+      toast({ title: "Groep aangemaakt", description: `${programName} met ${selected.size} aanmelders` });
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       navigate(`/programmas/${program.id}`);
     } catch (err: any) {
@@ -401,11 +374,48 @@ export default function GroupComposer() {
     }
   };
 
+  // Render a client row with status + match badges
+  const renderClientRow = (cm: ClientWithMatch, group: GroupedClients, selected: Set<string>) => {
+    const { client, matchType } = cm;
+    const age = calculateAge(client.date_of_birth);
+    const statusStyle = statusBadgeStyles[client.intake_status] ?? statusBadgeStyles.wachtlijst;
+
+    return (
+      <label
+        key={client.id}
+        className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted/50 cursor-pointer transition-colors"
+      >
+        <Checkbox
+          checked={selected.has(client.id)}
+          onCheckedChange={() => toggleClient(group, client.id)}
+        />
+        <span className="text-sm text-foreground truncate">
+          {client.first_name} {client.last_name}
+        </span>
+        <Badge
+          variant="outline"
+          className={`text-[10px] px-1.5 py-0 ml-auto shrink-0 ${statusStyle.className}`}
+        >
+          {statusStyle.label}
+        </Badge>
+        <Badge
+          variant="outline"
+          className={`text-[10px] px-1.5 py-0 shrink-0 ${matchColors[matchType]}`}
+        >
+          {matchType}
+        </Badge>
+        {age !== null && (
+          <span className="text-xs text-muted-foreground shrink-0">{age}j</span>
+        )}
+      </label>
+    );
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Stel automatisch groepen samen op basis van leeftijd en gebied. Inclusief reserve-voorkeuren en flexibele deelnemers.
+          Stel automatisch groepen samen op basis van leeftijd en gebied. Inclusief reserve-voorkeuren en flexibele aanmelders.
         </p>
         <Select value={filterArea} onValueChange={setFilterArea}>
           <SelectTrigger className="w-48"><SelectValue placeholder="Filter op gebied" /></SelectTrigger>
@@ -422,7 +432,13 @@ export default function GroupComposer() {
       <div className="flex flex-wrap gap-2">
         <Badge variant="outline" className="border-muted-foreground/30">
           <Users className="h-3 w-3 mr-1" />
-          {waitlistClients.length} op wachtlijst
+          {waitlistClients.length} aanmelders
+        </Badge>
+        <Badge variant="outline" className="border-blue-300 text-blue-700">
+          {waitlistClients.filter((c: any) => c.intake_status === "intake_afgerond").length} intake afgerond
+        </Badge>
+        <Badge variant="outline" className="border-orange-300 text-orange-700">
+          {waitlistClients.filter((c: any) => c.intake_status === "wachtlijst").length} wachtlijst
         </Badge>
         <Badge variant="outline" className="border-emerald-300 text-emerald-700">
           {groups.filter(g => g.clients.length >= 7).length} groep(en) gereed
@@ -438,7 +454,7 @@ export default function GroupComposer() {
         <div className="rounded-xl border border-border bg-card p-8 text-center">
           <Users className="h-10 w-10 mx-auto text-muted-foreground/50 mb-2" />
           <p className="text-sm text-muted-foreground">
-            Geen wachtlijst-deelnemers gevonden die gegroepeerd kunnen worden.
+            Geen aanmelders gevonden die gegroepeerd kunnen worden.
           </p>
         </div>
       )}
@@ -450,8 +466,10 @@ export default function GroupComposer() {
           const selected = getSelectedForGroup(group);
           const status = getStatusInfo(selected.size);
           const isCreating = creating === key;
-          const primaryCount = group.clients.filter(cm => cm.matchType === "Primair").length;
-          const reserveCount = group.clients.length - primaryCount;
+          const intakeClients = group.clients.filter(cm => cm.client.intake_status === "intake_afgerond");
+          const wachtlijstClients_ = group.clients.filter(cm => cm.client.intake_status !== "intake_afgerond");
+          const showReserve = expandedReserve.has(key);
+          const reserveCandidates = showReserve ? getReserveCandidates(group) : [];
 
           return (
             <Card key={key} className="border-border">
@@ -462,7 +480,10 @@ export default function GroupComposer() {
                       {group.areaName} · {group.ageCategory}
                     </CardTitle>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {primaryCount} primair{reserveCount > 0 ? `, ${reserveCount} reserve/flexibel` : ""}
+                      <span className="text-blue-700">{intakeClients.length} intake afgerond</span>
+                      {wachtlijstClients_.length > 0 && (
+                        <span className="text-orange-700 ml-1">· {wachtlijstClients_.length} wachtlijst</span>
+                      )}
                     </p>
                   </div>
                   <Badge className={`${status.color} gap-1`}>
@@ -472,10 +493,10 @@ export default function GroupComposer() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Client checkboxes with match badges */}
+                {/* Client list split by status */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Deelnemers</span>
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Aanmelders</span>
                     <button
                       className="text-xs text-primary hover:underline"
                       onClick={() => toggleAll(group)}
@@ -483,35 +504,53 @@ export default function GroupComposer() {
                       {selected.size === group.clients.length ? "Deselecteer alles" : "Selecteer alles"}
                     </button>
                   </div>
-                  <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
-                    {group.clients.map(({ client, matchType }) => {
-                      const age = calculateAge(client.date_of_birth);
-                      return (
-                        <label
-                          key={client.id}
-                          className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted/50 cursor-pointer transition-colors"
-                        >
-                          <Checkbox
-                            checked={selected.has(client.id)}
-                            onCheckedChange={() => toggleClient(group, client.id)}
-                          />
-                          <span className="text-sm text-foreground">
-                            {client.first_name} {client.last_name}
-                          </span>
-                          <Badge
-                            variant="outline"
-                            className={`text-[10px] px-1.5 py-0 ml-auto shrink-0 ${matchColors[matchType]}`}
-                          >
-                            {matchType}
-                          </Badge>
-                          {age !== null && (
-                            <span className="text-xs text-muted-foreground shrink-0">{age}j</span>
-                          )}
-                        </label>
-                      );
-                    })}
+                  <div className="max-h-56 overflow-y-auto space-y-0.5 pr-1">
+                    {/* Intake afgerond section */}
+                    {intakeClients.length > 0 && (
+                      <>
+                        <div className="text-[10px] font-semibold text-blue-700 uppercase tracking-wider px-2 pt-1 pb-0.5">
+                          Intake afgerond ({intakeClients.length})
+                        </div>
+                        {intakeClients.map(cm => renderClientRow(cm, group, selected))}
+                      </>
+                    )}
+                    {/* Wachtlijst section */}
+                    {wachtlijstClients_.length > 0 && (
+                      <>
+                        <div className="text-[10px] font-semibold text-orange-700 uppercase tracking-wider px-2 pt-2 pb-0.5">
+                          Wachtlijst ({wachtlijstClients_.length})
+                        </div>
+                        {wachtlijstClients_.map(cm => renderClientRow(cm, group, selected))}
+                      </>
+                    )}
                   </div>
                 </div>
+
+                {/* Reserve area search button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs gap-1.5"
+                  onClick={() => toggleReserveSearch(key)}
+                >
+                  <Search className="h-3 w-3" />
+                  {showReserve ? "Verberg reservegebied resultaten" : "Zoek op reservegebied"}
+                </Button>
+
+                {showReserve && (
+                  <div className="rounded-lg border border-border bg-muted/20 p-2 space-y-1">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-1">
+                      Extra kandidaten via reservegebied ({reserveCandidates.length})
+                    </p>
+                    {reserveCandidates.length === 0 ? (
+                      <p className="text-xs text-muted-foreground px-1 py-1">Geen extra kandidaten gevonden.</p>
+                    ) : (
+                      <div className="max-h-32 overflow-y-auto space-y-0.5">
+                        {reserveCandidates.map(cm => renderClientRow(cm, group, selected))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Trainer selection */}
                 <div className="grid grid-cols-2 gap-3">
@@ -575,7 +614,7 @@ export default function GroupComposer() {
                     return (
                       <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 flex items-center gap-2">
                         <CalendarClock className="h-4 w-4 text-amber-600 shrink-0" />
-                        <p className="text-xs text-amber-800">Geen overlappend moment gevonden. {clientsWithAvail}/{selected.size} deelnemers hebben beschikbaarheid.</p>
+                        <p className="text-xs text-amber-800">Geen overlappend moment gevonden. {clientsWithAvail}/{selected.size} aanmelders hebben beschikbaarheid.</p>
                       </div>
                     );
                   }
@@ -607,7 +646,7 @@ export default function GroupComposer() {
                   onClick={() => createGroup(group)}
                   disabled={isCreating || selected.size === 0}
                 >
-                  {isCreating ? "Aanmaken..." : `Groep aanmaken (${selected.size} deelnemers)`}
+                  {isCreating ? "Aanmaken..." : `Groep aanmaken (${selected.size} aanmelders)`}
                 </Button>
               </CardContent>
             </Card>
@@ -615,10 +654,10 @@ export default function GroupComposer() {
         })}
       </div>
 
-      {/* Clients without area */}
+      {/* Clients without area/age */}
       {(() => {
         const noArea = unassigned.filter((c: any) => !resolveAreaId(c));
-        const noAge = unassigned.filter((c: any) => !getAgeCategory(c.date_of_birth));
+        const noAge = unassigned.filter((c: any) => !getAgeCategoryPlanning(c.date_of_birth));
         return (
           <>
             {noArea.length > 0 && (
@@ -626,7 +665,7 @@ export default function GroupComposer() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-semibold text-amber-800">
                     <AlertTriangle className="h-4 w-4 inline mr-1" />
-                    Deelnemers zonder gebied ({noArea.length})
+                    Aanmelders zonder gebied ({noArea.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -645,7 +684,7 @@ export default function GroupComposer() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-semibold text-red-800">
                     <AlertTriangle className="h-4 w-4 inline mr-1" />
-                    Deelnemers zonder geboortedatum ({noAge.length})
+                    Aanmelders zonder geboortedatum ({noAge.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>

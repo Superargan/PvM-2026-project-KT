@@ -1,9 +1,9 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval, parseISO, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns";
+import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval, parseISO, startOfMonth, endOfMonth, addMonths, subMonths, differenceInYears, getDay } from "date-fns";
 import { nl } from "date-fns/locale";
-import { CalendarDays, ChevronLeft, ChevronRight, Users, UserCog, Clock, MapPin, Filter, Plus, X, FileSpreadsheet, Star, Palmtree } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Users, UserCog, Clock, MapPin, Filter, Plus, X, FileSpreadsheet, Star, Palmtree, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -32,6 +32,100 @@ const trainerTypeColors: Record<string, string> = {
 };
 
 type ViewMode = "week" | "maand";
+
+// Compact availability summary panel for a selected area+age
+function AvailabilitySummaryPanel({ filterArea, filterAge, areaName }: { filterArea: string; filterAge: string; areaName: string }) {
+  const { data: candidates = [] } = useQuery({
+    queryKey: ["clients", "avail-panel", filterArea, filterAge],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("id, first_name, last_name, date_of_birth, waitlist_area_id, intake_status")
+        .eq("archived", false)
+        .in("intake_status", ["wachtlijst", "intake_afgerond"])
+        .eq("waitlist_area_id", filterArea);
+      if (error) throw error;
+      // Filter by age category
+      return (data ?? []).filter((c: any) => {
+        if (!c.date_of_birth) return false;
+        const age = differenceInYears(new Date(), parseISO(c.date_of_birth));
+        if (filterAge === "5-7 jaar") return age >= 5 && age <= 7;
+        if (filterAge === "8-12 jaar") return age >= 8 && age <= 12;
+        return false;
+      });
+    },
+  });
+
+  const candidateIds = candidates.map((c: any) => c.id);
+
+  const { data: availData = [] } = useQuery({
+    queryKey: ["clients", "avail-panel-data", candidateIds],
+    enabled: candidateIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("client_availability")
+        .select("client_id, available_date, start_time, end_time")
+        .in("client_id", candidateIds);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const dayNames = ["Zo", "Ma", "Di", "Wo", "Do", "Vr", "Za"];
+  const daySummary = useMemo(() => {
+    const counts: Record<number, number> = {};
+    const clientsPerDay: Record<number, Set<string>> = {};
+    availData.forEach((a: any) => {
+      const dow = getDay(parseISO(a.available_date));
+      if (!clientsPerDay[dow]) clientsPerDay[dow] = new Set();
+      clientsPerDay[dow].add(a.client_id);
+    });
+    for (let i = 0; i < 7; i++) {
+      counts[i] = clientsPerDay[i]?.size ?? 0;
+    }
+    return counts;
+  }, [availData]);
+
+  const clientsWithAvail = new Set(availData.map((a: any) => a.client_id)).size;
+
+  if (candidates.length === 0) return null;
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <CalendarClock className="h-4 w-4 text-primary" />
+        <span className="text-sm font-semibold text-foreground">
+          Beschikbaarheid {areaName} · {filterAge}
+        </span>
+        <Badge variant="outline" className="text-xs ml-auto">
+          {clientsWithAvail}/{candidates.length} met beschikbaarheid
+        </Badge>
+      </div>
+      <div className="grid grid-cols-7 gap-1.5">
+        {[1, 2, 3, 4, 5, 6, 0].map(dow => {
+          const count = daySummary[dow];
+          const pct = candidates.length > 0 ? count / candidates.length : 0;
+          return (
+            <div key={dow} className="text-center">
+              <div className="text-[10px] font-semibold text-muted-foreground mb-1">{dayNames[dow]}</div>
+              <div
+                className={`rounded-lg py-2 text-sm font-bold ${
+                  pct >= 0.5
+                    ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                    : count > 0
+                    ? "bg-amber-100 text-amber-800 border border-amber-300"
+                    : "bg-muted text-muted-foreground border border-border"
+                }`}
+              >
+                {count}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function PlanningPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("week");
@@ -531,6 +625,16 @@ export default function PlanningPage() {
                   setActiveTab("beschikbaarheid");
                 }}
               />
+
+              {/* Compact availability summary when area+age filter is set */}
+              {filterArea !== "alle" && filterAge !== "alle" && (
+                <AvailabilitySummaryPanel
+                  filterArea={filterArea}
+                  filterAge={filterAge}
+                  areaName={areas.find((a: any) => a.id === filterArea)?.name ?? ""}
+                />
+              )}
+
               <div className="flex justify-center">
                 <Button onClick={() => setShowGroupComposer(true)} size="lg">
                   <Users className="h-4 w-4 mr-2" />
