@@ -437,9 +437,9 @@ export default function GroupComposer() {
                   variant="outline"
                   className="text-xs border-amber-300 text-amber-700 cursor-pointer hover:bg-amber-100"
                   onClick={() => navigate(`/clienten/${c.id}`)}
-                >
+                 >
                   {c.first_name} {c.last_name}
-                  {!c.date_of_birth ? " (geen geb.datum)" : ""}
+                  {!c.date_of_birth ? " (geen geb.datum)" : !getAgeCategory(c.date_of_birth) ? ` (${calculateAge(c.date_of_birth)} jaar)` : ""}
                   {!resolveAreaId(c) ? " (geen gebied)" : ""}
                 </Badge>
               ))}
