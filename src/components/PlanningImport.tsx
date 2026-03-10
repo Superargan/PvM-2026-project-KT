@@ -46,14 +46,28 @@ const IMPORT_TYPES: { value: ImportType; label: string; description: string; col
 ];
 
 function normalizeKey(key: string): string {
-  return key.toLowerCase().replace(/[^a-z0-9]/g, "");
+  return key.toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
 }
 
 function findCol(row: ParsedRow, ...candidates: string[]): string | undefined {
   const keys = Object.keys(row);
-  for (const c of candidates) {
-    const norm = normalizeKey(c);
+  const norms = candidates.map(c => normalizeKey(c));
+
+  // Priority 1: exact match
+  for (const norm of norms) {
     const found = keys.find((k) => normalizeKey(k) === norm);
+    if (found && row[found] !== undefined && row[found] !== "") return String(row[found]).trim();
+  }
+  // Priority 2: key contains candidate
+  for (const norm of norms) {
+    const found = keys.find((k) => normalizeKey(k).includes(norm));
+    if (found && row[found] !== undefined && row[found] !== "") return String(row[found]).trim();
+  }
+  // Priority 3: candidate contains key
+  for (const norm of norms) {
+    const found = keys.find((k) => norm.includes(normalizeKey(k)) && normalizeKey(k).length >= 3);
     if (found && row[found] !== undefined && row[found] !== "") return String(row[found]).trim();
   }
   return undefined;
