@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { differenceInYears, parseISO } from "date-fns";
-import { Users, UserCog, Check, AlertTriangle } from "lucide-react";
+import { differenceInYears, parseISO, format, getDay } from "date-fns";
+import { nl } from "date-fns/locale";
+import { Users, UserCog, Check, AlertTriangle, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
