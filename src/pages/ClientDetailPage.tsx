@@ -240,6 +240,8 @@ export default function ClientDetailPage() {
         consent_data_processing: client.consent_data_processing ?? false,
         whatsapp_consent: client.whatsapp_consent ?? false,
         notes: client.notes ?? "",
+        dropout_reason: client.dropout_reason ?? "",
+        dropout_action: client.dropout_action ?? "",
       });
       setDirty(false);
     }
