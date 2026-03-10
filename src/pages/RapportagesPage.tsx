@@ -63,7 +63,7 @@ export default function RapportagesPage() {
   const { data: clients = [], isLoading: cl } = useQuery({
     queryKey: ["rpt_clients"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("clients").select("id, first_name, last_name, created_at, date_of_birth, gender, school_id, postal_code, address, city, guardian_name, guardian_phone, guardian_email").eq("archived", false);
+      const { data, error } = await supabase.from("clients").select("id, first_name, last_name, created_at, registration_date, date_of_birth, gender, school_id, postal_code, address, city, guardian_name, guardian_phone, guardian_email").eq("archived", false);
       if (error) throw error;
       return data ?? [];
     },
@@ -185,7 +185,7 @@ export default function RapportagesPage() {
   const aanmeldData = useMemo(() => {
     const map = new Map<string, Map<string, number>>();
     clients.forEach((c: any) => {
-      const pk = periodKey(new Date(c.created_at), gran);
+      const pk = periodKey(new Date(c.registration_date ?? c.created_at), gran);
       const bk = breakdownKey(c.id);
       if (!map.has(pk)) map.set(pk, new Map());
       const inner = map.get(pk)!;

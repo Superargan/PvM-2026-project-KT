@@ -36,6 +36,7 @@ const editSchema = z.object({
   intake_notes: z.string().max(5000).optional(),
   intake_status: z.string().optional(),
   intake_date: z.string().optional(),
+  registration_date: z.string().optional(),
   consent_data_processing: z.boolean().optional(),
   whatsapp_consent: z.boolean().optional(),
   notes: z.string().max(5000).optional(),
@@ -184,6 +185,7 @@ export default function AanmeldingenPage() {
       intake_notes: client.intake_notes ?? "",
       intake_status: client.intake_status ?? "nieuw",
       intake_date: client.intake_date ?? "",
+      registration_date: client.registration_date ?? "",
       consent_data_processing: client.consent_data_processing ?? false,
       whatsapp_consent: client.whatsapp_consent ?? false,
       notes: client.notes ?? "",
@@ -568,6 +570,9 @@ export default function AanmeldingenPage() {
                 <Input type="date" value={form.intake_date ?? ""} onChange={(e) => updateField("intake_date", e.target.value)} />
               </FieldWrapper>
             </div>
+            <FieldWrapper label="Aanmelddatum">
+              <Input type="date" value={form.registration_date ?? ""} onChange={(e) => updateField("registration_date", e.target.value)} />
+            </FieldWrapper>
 
             {/* Info: auto-trigger uitleg */}
             {form.intake_status === "nieuw" && form.intake_date && (

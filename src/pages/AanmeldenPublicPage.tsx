@@ -71,6 +71,7 @@ export default function AanmeldenPublicPage() {
       guardian_email: result.data.guardian_email,
       referral_reason: result.data.referral_reason,
       intake_status: "nieuw",
+      registration_date: new Date().toISOString().split("T")[0],
     } as any);
     setSubmitting(false);
 

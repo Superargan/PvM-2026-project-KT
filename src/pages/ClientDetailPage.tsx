@@ -234,6 +234,7 @@ export default function ClientDetailPage() {
         intake_notes: client.intake_notes ?? "",
         intake_status: client.intake_status ?? "nieuw",
         intake_date: client.intake_date ?? "",
+        registration_date: (client as any).registration_date ?? "",
         consent_data_processing: client.consent_data_processing ?? false,
         whatsapp_consent: client.whatsapp_consent ?? false,
         notes: client.notes ?? "",
@@ -513,6 +514,9 @@ export default function ClientDetailPage() {
                 <Input type="date" value={form.intake_date ?? ""} onChange={(e) => updateField("intake_date", e.target.value)} />
               </Field>
             </div>
+            <Field label="Aanmelddatum">
+              <Input type="date" value={form.registration_date ?? ""} onChange={(e) => updateField("registration_date", e.target.value)} />
+            </Field>
             <Field label="Reden van aanmelding">
               <Textarea value={form.referral_reason ?? ""} onChange={(e) => updateField("referral_reason", e.target.value)} rows={3} />
             </Field>

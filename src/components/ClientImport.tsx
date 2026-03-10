@@ -432,7 +432,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
         referral_reason: referral_reason,
         referrer_id,
         ...(mode === "waitlist" ? { waitlist_status: "waiting" } : {}),
-        ...(enrollDate ? { created_at: `${enrollDate}T00:00:00Z` } : {}),
+        ...(enrollDate ? { registration_date: enrollDate } : {}),
       };
 
       // Check if record already exists
