@@ -184,9 +184,9 @@ export default function GroupComposer() {
 
   // Status color/icon
   const getStatusInfo = (count: number) => {
-    if (count >= 8) return { color: "text-emerald-700 bg-emerald-50 border-emerald-200", label: "Gereed om te starten", icon: <Check className="h-4 w-4" /> };
-    if (count >= 5) return { color: "text-amber-700 bg-amber-50 border-amber-200", label: `Nog ${8 - count} nodig`, icon: <AlertTriangle className="h-4 w-4" /> };
-    return { color: "text-red-700 bg-red-50 border-red-200", label: `Nog ${8 - count} nodig`, icon: <AlertTriangle className="h-4 w-4" /> };
+    if (count >= 7) return { color: "text-emerald-700 bg-emerald-50 border-emerald-200", label: "Gereed om te starten", icon: <Check className="h-4 w-4" /> };
+    if (count >= 5) return { color: "text-amber-700 bg-amber-50 border-amber-200", label: `Nog ${7 - count} nodig`, icon: <AlertTriangle className="h-4 w-4" /> };
+    return { color: "text-red-700 bg-red-50 border-red-200", label: `Nog ${7 - count} nodig`, icon: <AlertTriangle className="h-4 w-4" /> };
   };
 
   // Create group action
@@ -262,7 +262,7 @@ export default function GroupComposer() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Stel automatisch groepen samen op basis van leeftijd en gebied. Minimaal 8 deelnemers per groep.
+          Stel automatisch groepen samen op basis van leeftijd en gebied. Minimaal 7 deelnemers per groep (max 14).
         </p>
         <Select value={filterArea} onValueChange={setFilterArea}>
           <SelectTrigger className="w-48"><SelectValue placeholder="Filter op gebied" /></SelectTrigger>
@@ -322,7 +322,7 @@ export default function GroupComposer() {
                   </div>
                   <Badge className={`${status.color} gap-1`}>
                     {status.icon}
-                    {selected.size >= 8 ? `${selected.size} geselecteerd ✓` : status.label}
+                    {selected.size >= 7 ? `${selected.size} geselecteerd ✓` : status.label}
                   </Badge>
                 </div>
               </CardHeader>

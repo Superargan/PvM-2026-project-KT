@@ -100,7 +100,7 @@ export default function ProgrammasPage() {
       location: (form.get("location") as string) || null,
       start_date: (form.get("start_date") as string) || null,
       end_date: (form.get("end_date") as string) || null,
-      max_participants: Number(form.get("max_participants")) || 10,
+      max_participants: Number(form.get("max_participants")) || 14,
       area_id: selectedArea || null,
       neighborhood_id: selectedNeighborhood || null,
       age_category: selectedAgeCategory || null,
@@ -254,7 +254,7 @@ export default function ProgrammasPage() {
                 <div><Label>Startdatum</Label><Input name="start_date" type="date" /></div>
                 <div><Label>Einddatum</Label><Input name="end_date" type="date" /></div>
               </div>
-              <div><Label>Max deelnemers</Label><Input name="max_participants" type="number" defaultValue={10} min={1} /></div>
+              <div><Label>Max deelnemers</Label><Input name="max_participants" type="number" defaultValue={14} min={7} max={14} /></div>
               <div>
                 <Label>Leeftijdscategorie</Label>
                 <Select value={selectedAgeCategory} onValueChange={setSelectedAgeCategory}>
@@ -307,7 +307,7 @@ export default function ProgrammasPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredPrograms.map((prog: any) => {
             const enrolled = prog.program_clients?.[0]?.count ?? 0;
-            const max = prog.max_participants ?? 10;
+            const max = prog.max_participants ?? 14;
             const status = prog.status ?? "te_plannen";
             const statusInfo = statusMap[status] ?? { css: "status-oranje", label: status };
             const next = nextStatus[status];
