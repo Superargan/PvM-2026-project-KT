@@ -184,6 +184,7 @@ export default function AanmeldingenPage() {
       intake_notes: client.intake_notes ?? "",
       intake_status: client.intake_status ?? "nieuw",
       intake_date: client.intake_date ?? "",
+      registration_date: client.registration_date ?? "",
       consent_data_processing: client.consent_data_processing ?? false,
       whatsapp_consent: client.whatsapp_consent ?? false,
       notes: client.notes ?? "",
