@@ -71,7 +71,7 @@ export default function Dashboard() {
   });
 
   const { data: recentClients = [] } = useQuery({
-    queryKey: ["dashboard-recent-clients"],
+    queryKey: ["clients", "dashboard", "recent"],
     queryFn: async () => {
       const { data } = await supabase
         .from("clients")

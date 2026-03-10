@@ -26,7 +26,7 @@ export default function ClientenPage() {
   const navigate = useNavigate();
 
   const { data: clients = [], isLoading, refetch } = useQuery({
-    queryKey: ["clients", search],
+    queryKey: ["clients", "list", search],
     queryFn: async () => {
       let query = supabase
         .from("clients")

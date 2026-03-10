@@ -61,7 +61,7 @@ export default function RapportagesPage() {
 
   // Fetch all required data
   const { data: clients = [], isLoading: cl } = useQuery({
-    queryKey: ["rpt_clients"],
+    queryKey: ["clients", "rapportages"],
     queryFn: async () => {
       const { data, error } = await supabase.from("clients").select("id, first_name, last_name, created_at, registration_date, date_of_birth, gender, school_id, postal_code, address, city, guardian_name, guardian_phone, guardian_email").eq("archived", false);
       if (error) throw error;

@@ -580,8 +580,6 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
 
     if (added > 0 || updated > 0) {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
-      queryClient.invalidateQueries({ queryKey: ["aanmeldingen"] });
-      queryClient.invalidateQueries({ queryKey: ["waitlist-clients"] });
       const parts = [];
       if (added > 0) parts.push(`${added} toegevoegd`);
       if (updated > 0) parts.push(`${updated} bijgewerkt`);

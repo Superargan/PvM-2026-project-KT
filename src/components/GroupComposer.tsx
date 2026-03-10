@@ -249,7 +249,7 @@ export default function GroupComposer() {
       if (updateErr) throw updateErr;
 
       toast({ title: "Groep aangemaakt", description: `${programName} met ${selected.size} deelnemers` });
-      queryClient.invalidateQueries({ queryKey: ["group-composer-clients"] });
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
       navigate(`/programmas/${program.id}`);
     } catch (err: any) {
       toast({ title: "Fout bij aanmaken", description: err.message, variant: "destructive" });

@@ -318,7 +318,6 @@ export default function ClientDetailPage() {
     onSuccess: () => {
       toast({ title: "Deelnemer verwijderd" });
       queryClient.invalidateQueries({ queryKey: ["clients"] });
-      queryClient.invalidateQueries({ queryKey: ["aanmeldingen"] });
       navigate("/clienten");
     },
     onError: (err: any) => {
