@@ -185,7 +185,7 @@ export default function RapportagesPage() {
   const aanmeldData = useMemo(() => {
     const map = new Map<string, Map<string, number>>();
     clients.forEach((c: any) => {
-      const pk = periodKey(new Date(c.created_at), gran);
+      const pk = periodKey(new Date(c.registration_date ?? c.created_at), gran);
       const bk = breakdownKey(c.id);
       if (!map.has(pk)) map.set(pk, new Map());
       const inner = map.get(pk)!;
