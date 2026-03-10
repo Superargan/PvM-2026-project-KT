@@ -338,6 +338,9 @@ export default function AanmeldingenPage() {
           <TabsTrigger value="wachtlijst" className="gap-1.5">
             <Clock className="h-3.5 w-3.5" /> Wachtlijst
           </TabsTrigger>
+          <TabsTrigger value="controle" className="gap-1.5">
+            <AlertTriangle className="h-3.5 w-3.5" /> Controle
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="lijst" className="space-y-4">
