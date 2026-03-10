@@ -127,11 +127,12 @@ export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => 
               <TableRow>
                 <TableHead>Naam</TableHead>
                 <TableHead>Leeftijdsgroep</TableHead>
+                <TableHead>School</TableHead>
+                <TableHead>Gebied</TableHead>
+                <TableHead>Telefoon</TableHead>
                 <TableHead>Aanmelddatum</TableHead>
                 <TableHead>Intakedatum</TableHead>
-                <TableHead>Gebied</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Reden</TableHead>
                 <TableHead className="text-right">Actie</TableHead>
               </TableRow>
             </TableHeader>
