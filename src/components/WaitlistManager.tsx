@@ -39,7 +39,7 @@ export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => 
     queryFn: async () => {
       let query = supabase
         .from("clients")
-        .select("id, first_name, last_name, date_of_birth, created_at, intake_date, guardian_phone, school_id, waitlist_status, waitlist_area_id, dropout_reason, dropout_action, schools(name), areas:waitlist_area_id(name)")
+        .select("id, first_name, last_name, date_of_birth, registration_date, created_at, intake_date, guardian_phone, school_id, waitlist_status, waitlist_area_id, dropout_reason, dropout_action, schools(name), areas:waitlist_area_id(name)")
         .not("waitlist_status", "is", null);
 
       if (filterArea !== "all") {
@@ -159,7 +159,7 @@ export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => 
                     {client.guardian_phone ?? "—"}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                    {client.created_at ? format(new Date(client.created_at), "d MMM yyyy", { locale: nl }) : "—"}
+                    {client.registration_date ? format(new Date(client.registration_date), "d MMM yyyy", { locale: nl }) : "—"}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                     {client.intake_date ? format(new Date(client.intake_date), "d MMM yyyy", { locale: nl }) : "—"}
