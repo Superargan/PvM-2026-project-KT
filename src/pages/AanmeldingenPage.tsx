@@ -1,4 +1,4 @@
-import { CheckCircle2, Loader2, ExternalLink, Clock, UserPlus, X, CalendarDays, Upload, Search, Pencil, AlertTriangle, Download } from "lucide-react";
+import { CheckCircle2, Loader2, ExternalLink, Clock, UserPlus, X, CalendarDays, Upload, Search, Pencil, AlertTriangle, Download, School } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
@@ -388,7 +388,7 @@ export default function AanmeldingenPage() {
           </div>
         </TabsContent>
         <TabsContent value="controle" className="space-y-4">
-          <MissingDataCheck clients={clients} isLoading={isLoading} onNavigate={(id) => navigate(`/clienten/${id}`)} onEdit={openEdit} />
+          <MissingDataCheck clients={clients} isLoading={isLoading} onNavigate={(id) => navigate(`/clienten/${id}`)} onEdit={openEdit} schools={schools} refetch={refetch} />
         </TabsContent>
       </Tabs>
 
@@ -767,12 +767,18 @@ const REQUIRED_CHECKS: { key: string; label: string; check: (c: any) => boolean 
   { key: "consent_data_processing", label: "AVG-toestemming", check: (c) => !c.consent_data_processing },
 ];
 
-function MissingDataCheck({ clients, isLoading, onNavigate, onEdit }: {
+function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, refetch }: {
   clients: any[];
   isLoading: boolean;
   onNavigate: (id: string) => void;
   onEdit: (client: any) => void;
+  schools: { id: string; name: string }[];
+  refetch: () => void;
 }) {
+  const [schoolAssignments, setSchoolAssignments] = useState<Record<string, string>>({});
+  const [savingSchool, setSavingSchool] = useState<string | null>(null);
+  const { toast } = useToast();
+
   // Deduplicate clients by id
   const uniqueClients = Array.from(new Map(clients.map((c) => [c.id, c])).values());
 
@@ -799,6 +805,24 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit }: {
       return ch.check(client);
     }).length,
   })).filter((s) => s.count > 0);
+
+  // Clients without school
+  const clientsWithoutSchool = uniqueClients.filter((c: any) => !c.school_id);
+
+  const handleAssignSchool = async (clientId: string) => {
+    const schoolId = schoolAssignments[clientId];
+    if (!schoolId) return;
+    setSavingSchool(clientId);
+    const { error } = await supabase.from("clients").update({ school_id: schoolId }).eq("id", clientId);
+    setSavingSchool(null);
+    if (error) {
+      toast({ title: "Fout", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "School gekoppeld" });
+      setSchoolAssignments((prev) => { const next = { ...prev }; delete next[clientId]; return next; });
+      refetch();
+    }
+  };
 
   if (isLoading) {
     return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -835,7 +859,7 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit }: {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           <span className="font-semibold text-foreground">{flagged.length}</span> van {uniqueClients.length} deelnemers hebben ontbrekende gegevens
@@ -855,6 +879,53 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit }: {
               <span className="font-semibold text-destructive">{s.count}</span> zonder {s.label.toLowerCase()}
             </Badge>
           ))}
+        </div>
+      )}
+
+      {/* School assignment section */}
+      {clientsWithoutSchool.length > 0 && (
+        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <School className="h-4 w-4 text-muted-foreground" />
+            <p className="text-sm font-semibold text-foreground">
+              {clientsWithoutSchool.length} deelnemer(s) zonder school — koppel hieronder
+            </p>
+          </div>
+          <div className="space-y-2">
+            {clientsWithoutSchool.map((client: any) => (
+              <div key={client.id} className="flex items-center gap-3 rounded-lg border border-border bg-muted/20 px-3 py-2">
+                <p
+                  className="text-sm font-medium text-primary hover:underline cursor-pointer min-w-[140px]"
+                  onClick={() => onNavigate(client.id)}
+                >
+                  {client.first_name} {client.last_name}
+                </p>
+                {client.class_group && (
+                  <Badge variant="outline" className="text-[10px] shrink-0">groep {client.class_group}</Badge>
+                )}
+                <Select
+                  value={schoolAssignments[client.id] ?? ""}
+                  onValueChange={(v) => setSchoolAssignments((prev) => ({ ...prev, [client.id]: v }))}
+                >
+                  <SelectTrigger className="flex-1 min-w-[200px]">
+                    <SelectValue placeholder="Selecteer school..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover max-h-60">
+                    {schools.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  disabled={!schoolAssignments[client.id] || savingSchool === client.id}
+                  onClick={() => handleAssignSchool(client.id)}
+                >
+                  {savingSchool === client.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Koppel"}
+                </Button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

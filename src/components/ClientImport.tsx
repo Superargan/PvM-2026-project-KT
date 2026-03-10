@@ -140,6 +140,9 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
   const [fileName, setFileName] = useState("");
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<{ added: number; skipped: number; updated: number; errors: string[] } | null>(null);
+  const [unmatchedSchools, setUnmatchedSchools] = useState<string[]>([]);
+  const [schoolResolutions, setSchoolResolutions] = useState<Record<string, string>>({});
+  const [showResolution, setShowResolution] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -188,10 +191,13 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     reader.readAsBinaryString(file);
   };
 
-  /** Fuzzy school name matching: exact → contains → best partial */
-  const findSchoolId = (name: string | undefined): string | null => {
+  /** Fuzzy school name matching: exact → contains → best partial → user resolutions */
+  const findSchoolId = (name: string | undefined, resolutions?: Record<string, string>): string | null => {
     if (!name) return null;
     const norm = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
+    // Check user resolutions first
+    if (resolutions && resolutions[norm]) return resolutions[norm];
 
     // Exact match
     const exact = schools.find((s) => s.name.toLowerCase().trim() === norm);
@@ -212,6 +218,34 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     }
 
     return null;
+  };
+
+  /** Scan rows for school names that don't match any known school */
+  const detectUnmatchedSchools = () => {
+    const unmatched = new Set<string>();
+    for (const row of rows) {
+      const schoolName = findCol(row, "School", "school", "Schoolnaam");
+      if (schoolName) {
+        const id = findSchoolId(schoolName);
+        if (!id) {
+          const norm = schoolName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+          unmatched.add(norm);
+        }
+      }
+    }
+    return Array.from(unmatched);
+  };
+
+  /** Called when file is parsed — check for unmatched schools before allowing import */
+  const checkSchoolsBeforeImport = () => {
+    const unmatched = detectUnmatchedSchools();
+    if (unmatched.length > 0) {
+      setUnmatchedSchools(unmatched);
+      setShowResolution(true);
+    } else {
+      setShowResolution(false);
+      setUnmatchedSchools([]);
+    }
   };
 
   const findAreaId = (name: string | undefined): string | null => {
@@ -340,7 +374,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
 
       // School
       const schoolName = findCol(row, "School", "school", "Schoolnaam");
-      const school_id = findSchoolId(schoolName);
+      const school_id = findSchoolId(schoolName, schoolResolutions);
 
       // Area
       const areaName = findCol(row, "Gebied", "gebied", "Area");
@@ -515,6 +549,9 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     setRows([]);
     setFileName("");
     setResult(null);
+    setUnmatchedSchools([]);
+    setSchoolResolutions({});
+    setShowResolution(false);
     if (fileRef.current) fileRef.current.value = "";
     if (modeProp === "choose") setSelectedMode("waitlist");
   };
@@ -597,9 +634,41 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
                 Verwachte kolommen: <strong>Naam kind</strong> (of Voornaam + Achternaam), Geboortedatum/Leeftijd, School, Groep, Geslacht, Telefoonnummer, Postcode, Gebied, Datum Intake, Datum inschrijving
               </p>
 
-              <Button onClick={handleImport} disabled={importing} className="w-full">
-                {importing ? <><Loader2 className="h-4 w-4 animate-spin" /> Importeren...</> : <><Upload className="h-4 w-4" /> {rows.length} deelnemer(s) importeren</>}
-              </Button>
+              {/* School resolution step */}
+              {showResolution && unmatchedSchools.length > 0 && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2">
+                  <p className="text-sm font-medium text-amber-900 flex items-center gap-1.5">
+                    <AlertCircle className="h-4 w-4" />
+                    {unmatchedSchools.length} schoolna{unmatchedSchools.length === 1 ? "am" : "men"} niet automatisch herkend
+                  </p>
+                  <p className="text-xs text-amber-700">Koppel hieronder de juiste school, of laat leeg om zonder school te importeren.</p>
+                  {unmatchedSchools.map((name) => (
+                    <div key={name} className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-amber-900 min-w-[120px] truncate" title={name}>"{name}"</span>
+                      <select
+                        className="flex-1 rounded border border-amber-300 bg-white px-2 py-1 text-xs"
+                        value={schoolResolutions[name] ?? ""}
+                        onChange={(e) => setSchoolResolutions((prev) => ({ ...prev, [name]: e.target.value }))}
+                      >
+                        <option value="">— Overslaan —</option>
+                        {schools.map((s) => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {!showResolution ? (
+                <Button onClick={() => { checkSchoolsBeforeImport(); if (detectUnmatchedSchools().length === 0) handleImport(); }} disabled={importing} className="w-full">
+                  {importing ? <><Loader2 className="h-4 w-4 animate-spin" /> Importeren...</> : <><Upload className="h-4 w-4" /> {rows.length} deelnemer(s) importeren</>}
+                </Button>
+              ) : (
+                <Button onClick={handleImport} disabled={importing} className="w-full">
+                  {importing ? <><Loader2 className="h-4 w-4 animate-spin" /> Importeren...</> : <><Upload className="h-4 w-4" /> Importeren met bovenstaande keuzes</>}
+                </Button>
+              )}
             </div>
           )}
 
