@@ -117,15 +117,24 @@ const NON_PERSON_REFERRAL_SOURCES = [
   "zelfstandig", "eigen initiatief", "onbekend", "anders", "overig",
 ];
 
+type ImportMode = "default" | "waitlist" | "intake_afgerond";
+
 interface ClientImportProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onComplete?: () => void;
-  /** When "waitlist", imported clients get waitlist_status='waiting' and intake_status='wachtlijst' */
-  mode?: "default" | "waitlist";
+  /** Fixed mode, or "choose" to let user pick between waitlist / intake_afgerond */
+  mode?: ImportMode | "choose";
 }
 
-export default function ClientImport({ open, onOpenChange, onComplete, mode = "default" }: ClientImportProps) {
+const MODE_OPTIONS: { value: ImportMode; label: string; description: string }[] = [
+  { value: "waitlist", label: "Wachtlijst", description: "Deelnemers worden op de wachtlijst geplaatst (status: wachtlijst)" },
+  { value: "intake_afgerond", label: "Afgeronde intakes", description: "Deelnemers met afgeronde intake (status: intake_afgerond)" },
+  { value: "default", label: "Nieuwe aanmeldingen", description: "Nieuwe deelnemers (status wordt automatisch bepaald)" },
+];
+
+export default function ClientImport({ open, onOpenChange, onComplete, mode: modeProp = "default" }: ClientImportProps) {
+  const [selectedMode, setSelectedMode] = useState<ImportMode>(modeProp === "choose" ? "waitlist" : modeProp);
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [fileName, setFileName] = useState("");
   const [importing, setImporting] = useState(false);
