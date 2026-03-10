@@ -348,22 +348,80 @@ export default function AanmeldingenPage() {
         </TabsList>
 
         <TabsContent value="lijst" className="space-y-4">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Zoek op naam..."
-          className="w-full rounded-lg border border-input bg-card py-2.5 pl-10 pr-4 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        />
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Zoek op naam..."
+            className="w-full rounded-lg border border-input bg-card py-2.5 pl-10 pr-4 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+        <Select value={filterArea} onValueChange={setFilterArea}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Gebied" />
+          </SelectTrigger>
+          <SelectContent className="bg-popover">
+            <SelectItem value="all">Alle gebieden</SelectItem>
+            {areas.map((a: any) => (
+              <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={filterSchool} onValueChange={setFilterSchool}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="School" />
+          </SelectTrigger>
+          <SelectContent className="bg-popover">
+            <SelectItem value="all">Alle scholen</SelectItem>
+            <SelectItem value="none">Geen school</SelectItem>
+            {schools.map((s: any) => (
+              <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={filterAge} onValueChange={setFilterAge}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="Leeftijd" />
+          </SelectTrigger>
+          <SelectContent className="bg-popover">
+            <SelectItem value="all">Alle leeftijden</SelectItem>
+            <SelectItem value="5-7">5-7 jaar</SelectItem>
+            <SelectItem value="8-12">8-12 jaar</SelectItem>
+            <SelectItem value="other">Overig</SelectItem>
+          </SelectContent>
+        </Select>
+        {(filterArea !== "all" || filterSchool !== "all" || filterAge !== "all") && (
+          <Button variant="ghost" size="sm" onClick={() => { setFilterArea("all"); setFilterSchool("all"); setFilterAge("all"); }}>
+            <X className="h-3.5 w-3.5 mr-1" /> Wis filters
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : (
         <ClientTable
-          clients={clients}
+          clients={clients.filter((c: any) => {
+            if (filterArea !== "all") {
+              const clientAreaId = c.waitlist_area_id || c.schools?.neighborhoods?.area_id;
+              if (clientAreaId !== filterArea) return false;
+            }
+            if (filterSchool !== "all") {
+              if (filterSchool === "none") { if (c.school_id) return false; }
+              else if (c.school_id !== filterSchool) return false;
+            }
+            if (filterAge !== "all") {
+              const age = calculateAge(c.date_of_birth);
+              if (filterAge === "5-7" && (age === null || age < 5 || age > 7)) return false;
+              if (filterAge === "8-12" && (age === null || age < 8 || age > 12)) return false;
+              if (filterAge === "other" && age !== null && age >= 5 && age <= 12) return false;
+            }
+            return true;
+          })}
           assignmentsByClient={assignmentsByClient}
           onNavigate={(id) => navigate(`/clienten/${id}`)}
           onEdit={openEdit}
