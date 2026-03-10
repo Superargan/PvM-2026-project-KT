@@ -333,8 +333,9 @@ export default function GroupComposer() {
           name: programName,
           area_id: g.areaId,
           age_category: g.ageCategory,
-          status: "gepland",
+          status: "te_plannen",
           max_participants: selected.size,
+          start_date: selectedStartDate[key] || null,
         })
         .select("id")
         .single();
