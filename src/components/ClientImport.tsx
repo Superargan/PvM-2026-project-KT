@@ -440,7 +440,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         intake_status: selectedMode === "waitlist" ? "wachtlijst" : selectedMode === "intake_afgerond" ? "intake_afgerond" : intake_status,
         referral_reason: referral_reason,
         referrer_id,
-        ...(mode === "waitlist" ? { waitlist_status: "waiting" } : {}),
+        ...(selectedMode === "waitlist" ? { waitlist_status: "waiting" } : {}),
         ...(enrollDate ? { registration_date: enrollDate } : {}),
       };
 
