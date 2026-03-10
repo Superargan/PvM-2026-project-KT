@@ -555,6 +555,19 @@ export default function GroupComposer() {
                   </div>
                 )}
 
+                {/* Vermoedelijke startdatum */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                    <Calendar className="h-3 w-3" /> Vermoedelijke startdatum
+                  </label>
+                  <Input
+                    type="date"
+                    className="h-9 text-xs"
+                    value={selectedStartDate[key] ?? ""}
+                    onChange={(e) => setSelectedStartDate(prev => ({ ...prev, [key]: e.target.value }))}
+                  />
+                </div>
+
                 {/* Trainer selection */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
