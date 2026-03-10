@@ -109,6 +109,45 @@ export type Database = {
           },
         ]
       }
+      client_area_preferences: {
+        Row: {
+          area_id: string
+          client_id: string
+          created_at: string
+          id: string
+          preference_order: number
+        }
+        Insert: {
+          area_id: string
+          client_id: string
+          created_at?: string
+          id?: string
+          preference_order?: number
+        }
+        Update: {
+          area_id?: string
+          client_id?: string
+          created_at?: string
+          id?: string
+          preference_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_area_preferences_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_area_preferences_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_assignments: {
         Row: {
           client_id: string
@@ -186,6 +225,7 @@ export type Database = {
       clients: {
         Row: {
           address: string | null
+          all_areas_flexible: boolean
           archived: boolean
           city: string | null
           class_group: string | null
@@ -219,6 +259,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          all_areas_flexible?: boolean
           archived?: boolean
           city?: string | null
           class_group?: string | null
@@ -252,6 +293,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          all_areas_flexible?: boolean
           archived?: boolean
           city?: string | null
           class_group?: string | null

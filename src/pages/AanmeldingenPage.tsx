@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import WaitlistManager from "@/components/WaitlistManager";
+import AreaPreferencesEditor from "@/components/AreaPreferencesEditor";
 import ClientImport from "@/components/ClientImport";
 import { downloadExport } from "@/lib/csvExport";
 import { calculateAge, statusLabels, statusStyles, filterClients } from "@/lib/clientUtils";
@@ -555,7 +556,19 @@ export default function AanmeldingenPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                </FieldWrapper>
+              </FieldWrapper>
+              {editClient?.id && (
+                <AreaPreferencesEditor
+                  clientId={editClient.id}
+                  primaryAreaId={(editClient as any)?.waitlist_area_id ?? null}
+                  allAreasFlexible={(editClient as any)?.all_areas_flexible ?? false}
+                  onAllAreasFlexibleChange={async (v) => {
+                    await supabase.from("clients").update({ all_areas_flexible: v } as any).eq("id", editClient.id);
+                    setEditClient((prev: any) => ({ ...prev, all_areas_flexible: v }));
+                  }}
+                  areas={areas}
+                />
+              )}
               </div>
             )}
 

@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, Save, User, ClipboardList, BookOpen, Shield, FileText, Download, CalendarDays, Trash2 } from "lucide-react";
 import AvailabilityManager from "@/components/AvailabilityManager";
+import AreaPreferencesEditor from "@/components/AreaPreferencesEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateInput } from "@/components/DateInput";
@@ -253,6 +254,7 @@ export default function ClientDetailPage() {
         dropout_reason: client.dropout_reason ?? "",
         dropout_action: client.dropout_action ?? "",
         waitlist_area_id: client.waitlist_area_id ?? "",
+        all_areas_flexible: (client as any).all_areas_flexible ?? false,
       });
       setDirty(false);
     }
@@ -480,6 +482,15 @@ export default function ClientDetailPage() {
                 </Select>
               </Field>
             </div>
+
+            {/* Reserve area preferences */}
+            <AreaPreferencesEditor
+              clientId={id!}
+              primaryAreaId={form.waitlist_area_id || null}
+              allAreasFlexible={form.all_areas_flexible ?? false}
+              onAllAreasFlexibleChange={(v) => updateField("all_areas_flexible", v)}
+              areas={areas}
+            />
 
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t border-border pt-4">Ouder/Verzorger</p>
             <Field label="Naam">
