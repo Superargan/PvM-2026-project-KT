@@ -306,32 +306,67 @@ export default function ProgramDetailPage() {
                 {enrolledClients.map((ec: any) => {
                   const c = ec.clients;
                   if (!c) return null;
+                  const isDropout = ec.early_dropout === true;
                   return (
-                    <div key={ec.id} className="flex items-center justify-between px-4 py-3">
+                    <div key={ec.id} className={`flex items-center justify-between px-4 py-3 ${isDropout ? "opacity-60 bg-muted/30" : ""}`}>
                       <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                        <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${isDropout ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"}`}>
                           {c.first_name?.[0]}{c.last_name?.[0]}
                         </div>
                         <div>
-                          <button
-                            onClick={() => navigate(`/clienten/${c.id}`)}
-                            className="text-sm font-medium text-foreground hover:underline"
-                          >
-                            {c.first_name} {c.last_name}
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => navigate(`/clienten/${c.id}`)}
+                              className={`text-sm font-medium hover:underline ${isDropout ? "text-muted-foreground line-through" : "text-foreground"}`}
+                            >
+                              {c.first_name} {c.last_name}
+                            </button>
+                            {isDropout && (
+                              <Badge variant="outline" className="text-xs border-destructive/30 text-destructive">
+                                <AlertTriangle className="h-3 w-3 mr-1" /> Gestopt
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-xs text-muted-foreground">
                             {c.schools?.name ?? ""}{c.gender ? ` • ${c.gender}` : ""}
+                            {isDropout && ec.dropout_reason ? ` • ${ec.dropout_reason}` : ""}
                           </p>
                         </div>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => removeMutation.mutate(ec.id)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        {isDropout ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-xs"
+                            onClick={() => undoDropoutMutation.mutate(ec.id)}
+                          >
+                            Herstel
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive text-xs"
+                            onClick={() => {
+                              setDropoutTarget(ec);
+                              setDropoutReason("");
+                              setDropoutAction("");
+                              setDropoutOpen(true);
+                            }}
+                          >
+                            <AlertTriangle className="h-3.5 w-3.5 mr-1" /> Gestopt
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => removeMutation.mutate(ec.id)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   );
                 })}
