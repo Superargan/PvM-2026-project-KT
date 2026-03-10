@@ -12,7 +12,7 @@ export default function Dashboard() {
         .from("clients")
         .select("*", { count: "exact", head: true })
         .eq("archived", false)
-        .in("intake_status", ["actief", "wachtlijst", "intake_gepland", "intake", "nieuw"]);
+        .in("intake_status", ["actief", "wachtlijst", "intake_gepland", "intake", "intake_afgerond", "nieuw"]);
       return count ?? 0;
     },
   });
