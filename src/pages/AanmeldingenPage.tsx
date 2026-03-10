@@ -634,8 +634,8 @@ export default function AanmeldingenPage() {
 
             {/* Wachtlijst velden */}
             {form.intake_status === "wachtlijst" && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-3">
-                <p className="text-xs font-semibold text-amber-800">Wachtlijst-instellingen</p>
+              <div className="rounded-lg border border-accent/30 bg-accent/10 p-3 space-y-3">
+                <p className="text-xs font-semibold text-accent-foreground">Wachtlijst-instellingen</p>
                 <FieldWrapper label="Wachtlijst-gebied">
                   <Select value={(editClient as any)?.waitlist_area_id ?? ""} onValueChange={(v) => {
                     handleWaitlist(editClient.id, "waiting", v);
