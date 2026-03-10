@@ -7,6 +7,7 @@ import { ArrowLeft, Loader2, Save, User, ClipboardList, BookOpen, Shield, FileTe
 import AvailabilityManager from "@/components/AvailabilityManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/DateInput";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -411,7 +412,7 @@ export default function ClientDetailPage() {
             </div>
             <div className="grid grid-cols-3 gap-4">
               <Field label="Geboortedatum">
-                <Input type="date" value={form.date_of_birth ?? ""} onChange={(e) => updateField("date_of_birth", e.target.value)} max={new Date().toISOString().split("T")[0]} />
+                <DateInput value={form.date_of_birth ?? ""} onChange={(v) => updateField("date_of_birth", v)} max={new Date().toISOString().split("T")[0]} />
               </Field>
               <Field label="Geslacht">
                 <Select value={form.gender ?? ""} onValueChange={(v) => updateField("gender", v)}>

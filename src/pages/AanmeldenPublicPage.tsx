@@ -4,6 +4,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/DateInput";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -121,7 +122,7 @@ export default function AanmeldenPublicPage() {
           </div>
 
           <FieldWrapper label="Geboortedatum kind *" error={errors.date_of_birth}>
-            <Input type="date" value={form.date_of_birth ?? ""} onChange={(e) => updateField("date_of_birth", e.target.value)} max={new Date().toISOString().split("T")[0]} />
+            <DateInput value={form.date_of_birth ?? ""} onChange={(v) => updateField("date_of_birth", v)} max={new Date().toISOString().split("T")[0]} />
           </FieldWrapper>
 
           <FieldWrapper label="School *" error={errors.school_id}>
