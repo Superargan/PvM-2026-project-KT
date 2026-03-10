@@ -1,83 +1,59 @@
 
 
-# Plan: Consistente look & feel door de hele flow + Schooloverzicht met trainingen en statussen
+# Plan: Testomgeving 2025 met Kanjertrainingen
 
-## Probleemanalyse
+## Huidige situatie
 
-De drie hoofdpagina's (Aanmeldingen, Deelnemers, Wachtlijst) tonen momenteel:
-- **Verschillende tabelkolommen** per pagina (AanmeldingenPage toont Naam/Leeftijdsgroep/School/Gebied/Telefoon/Status; ClientenPage toont Naam/Leeftijd/School/Ouder/Status; WachtlijstPage toont Naam/Leeftijd/School/Gebied/Inschrijving/Intake/Status)
-- **Verschillende tabellen** (AanmeldingenPage gebruikt een aparte `ClientTable` component, ClientenPage gebruikt een inline `<table>`, WachtlijstPage gebruikt de shadcn `Table` component)
-- **Verschillende status-labels en styling** (WachtlijstPage heeft eigen `statusLabels` met "Wachtend"/"Uitgevallen", andere pagina's gebruiken de lifecycle-labels)
-- **Geen statusfilter** - alleen Gebied/School/Leeftijd maar niet op status
-- **ScholenPage mist** aanmeldingentellingen, trainingsoverzicht en statusverdeling per school
+| Gegeven | Aantal |
+|---------|--------|
+| Programma's (2026, KT) | 28 (te_plannen) + 3 (ingepland) |
+| Trainers | 1 (Patrick van Mastricht) |
+| Scholen | 162 |
+| Gebieden | 14 (alle Rotterdamse gebieden) |
+| Cliënten | 1 |
+| Sessies | 10 |
 
-## Plan van aanpak
+Er bestaan nog geen 2025-programma's. Alle huidige KT-nummers beginnen met 26xxx.
 
-### 1. Gedeelde `ClientListTable` component maken
-Nieuwe component `src/components/ClientListTable.tsx` die op alle drie pagina's wordt gebruikt met consistente kolommen:
+## Wat er nodig is
 
-| Naam | Leeftijd | School | Gebied | Ouder/Telefoon | Aanmelddatum | Status | Actie |
+Om realistisch te testen hebben we voor 5 Kanjertrainingen (2025) het volgende nodig:
 
-- Uniform design met dezelfde `rounded-xl border` stijl
-- Gedeelde `statusLabels`, `statusStyles`, en `calculateAge` functies (verplaatst naar een gedeeld bestand `src/lib/clientUtils.ts`)
-- Optionele kolommen (checkbox, toegewezen) via props
+1. **5 KT-programma's** met naam `KT - 25001` t/m `KT - 25005`, status `afgerond`, met start/einddatum in 2025, leeftijdscategorie, en gekoppeld aan een gebied/school
+2. **Trainers** - minimaal 4-6 extra trainers om realistisch 2 per programma te koppelen
+3. **Cliënten** - minimaal 35-40 kinderen (7-8 per groep) met naam, geboortedatum, school
+4. **Sessies** - 10 bijeenkomsten per programma (standaard KT = 10 lessen)
+5. **Presentie** - aanwezigheidsregistratie per sessie per kind
+6. **Koppelingen** - program_staff en program_clients records
 
-### 2. Gedeelde `ClientFilters` component maken
-Nieuwe component `src/components/ClientFilters.tsx` met:
-- Zoekveld (naam)
-- Gebied filter
-- School filter
-- Leeftijd filter (5-7, 8-12, Overig)
-- **Status filter** (nieuw: alle lifecycle-statussen)
-- "Wis filters" knop
-- Telt gefilterde resultaten vs totaal
+## Aanpak
 
-### 3. Alle drie pagina's refactoren
-- **AanmeldingenPage**: Vervang inline filters en `ClientTable` door `ClientFilters` + `ClientListTable`. Tabs behouden (Aanmeldingen/Intakes afgerond/Wachtlijst/Controle), maar filters gelden nu overal.
-- **ClientenPage**: Vervang inline tabel door `ClientListTable`, vervang inline filters door `ClientFilters`.
-- **WachtlijstPage**: Vervang inline tabel door `ClientListTable`, vervang inline filters door `ClientFilters`. Verwijder eigen `statusLabels`/`statusColors`.
+### Stap 1: Testdata genereren via SQL
+Ik maak een script dat via database-inserts de volgende testdata aanmaakt:
 
-### 4. Gedeelde utilities verplaatsen
-Nieuw bestand `src/lib/clientUtils.ts`:
-- `calculateAge()`
-- `statusLabels` (de volledige lifecycle map)
-- `statusStyles` (de kleuren map)
-- `getAgeGroup()` helper
+- **5 programma's**: KT - 25001 t/m 25005, verdeeld over verschillende gebieden, mix van 5-7 en 8-12 jaar, status `afgerond`, periode jan-jun 2025
+- **6 trainers**: realistische Nederlandse namen, gekoppeld aan scholen
+- **40 cliënten**: kinderen met naam, geboortedatum (passend bij leeftijdscategorie), school, oudergegevens, intake_status `afgerond`
+- **50 sessies**: 10 per programma, wekelijks verspreid over de periode
+- **Koppelingen**: elke training 2 trainers + 7-8 kinderen
+- **Presentie**: realistische aanwezigheid (~85%)
 
-### 5. ScholenPage uitbreiden met trainingen en statussen
-Op de ScholenPage per school extra kolommen/informatie tonen:
-- **Aanmeldingen**: tel clients met `school_id` = school (alle statussen in intake-flow)
-- **Deelnemers**: tel clients met status actief/afgerond/gestopt
-- **Trainingen**: tel programma's gekoppeld aan de school via `programs.school_id`
-- Klikbaar om door te navigeren naar gefilterde lijstpagina
+### Stap 2: Bestanden inlezen
+Je noemde dat je bestanden hebt met 2025-gegevens. Na stap 1 kun je die uploaden zodat we echte data gebruiken in plaats van (of naast) gegenereerde testdata. We kunnen dan bestaande records bijwerken of aanvullen.
 
-Dit vereist dat de schoolquery wordt uitgebreid om counts op te halen:
-```sql
--- Geen DB-wijziging nodig, client-side aggregatie via extra queries
-```
+### Stap 3: Validatie
+Na het inladen controleren we of:
+- Programma's correct op de kaarten verschijnen
+- Trainers en deelnemers zichtbaar zijn op de detailpagina
+- Presentie en sessies kloppen
+- Filters en rapportages werken met de 2025-data
 
-Extra queries op ScholenPage:
-- Clients grouped by school_id en intake_status
-- Programs grouped by school_id
+## Vraag aan jou
 
-### 6. Schooldetail-overlay met statusverdeling
-Als je op een school klikt in de statistiekenkolommen, toon een dialog/sectie met:
-- Lijst van trainingen bij die school (naam, status, periode)
-- Statusverdeling van aanmeldingen (badge per status met telling)
-- Snellink naar gefilterde Aanmeldingen/Deelnemers pagina
+Voordat ik begin:
 
-## Technische details
+- **Wil je eerst met puur gegenereerde testdata starten (5 programma's)**, zodat je daarna je eigen bestanden kunt uploaden om aan te vullen of te corrigeren?
+- **Of wil je eerst je bestanden delen**, zodat ik de echte 2025-gegevens direct kan verwerken?
 
-**Nieuwe bestanden:**
-- `src/lib/clientUtils.ts` - gedeelde helpers
-- `src/components/ClientFilters.tsx` - herbruikbare filterbar
-- `src/components/ClientListTable.tsx` - herbruikbare tabel
-
-**Gewijzigde bestanden:**
-- `src/pages/AanmeldingenPage.tsx` - refactor naar gedeelde componenten
-- `src/pages/ClientenPage.tsx` - refactor naar gedeelde componenten
-- `src/pages/WachtlijstPage.tsx` - refactor naar gedeelde componenten
-- `src/pages/ScholenPage.tsx` - trainingen, aanmeldingen en statusoverzicht toevoegen
-
-**Geen database-migraties nodig** - alle data is al beschikbaar via bestaande tabellen.
+De eerste optie is het snelst om mee te testen; de tweede geeft meteen realistische data.
 

@@ -17,6 +17,9 @@ import { Badge } from "@/components/ui/badge";
 import WaitlistManager from "@/components/WaitlistManager";
 import ClientImport from "@/components/ClientImport";
 import { downloadExport } from "@/lib/csvExport";
+import { calculateAge, statusLabels, statusStyles, filterClients } from "@/lib/clientUtils";
+import ClientFilters from "@/components/ClientFilters";
+import ClientListTable from "@/components/ClientListTable";
 
 const editSchema = z.object({
   first_name: z.string().trim().min(1, "Voornaam is verplicht").max(100),
@@ -47,43 +50,13 @@ const editSchema = z.object({
 
 type EditForm = z.infer<typeof editSchema>;
 
-function calculateAge(dob: string | null): number | null {
-  if (!dob) return null;
-  const birth = new Date(dob);
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--;
-  return age;
-}
-
-const statusStyles: Record<string, string> = {
-  nieuw: "status-rood",
-  intake_gepland: "status-oranje",
-  intake_afgerond: "status-groen",
-  wachtlijst: "status-oranje",
-  actief: "status-groen",
-  training_afgerond: "status-groen",
-  tussentijds_gestopt: "status-rood",
-  niet_deelnemen: "status-rood",
-};
-
-const statusLabels: Record<string, string> = {
-  nieuw: "Aanmelding",
-  intake_gepland: "Intake gepland",
-  intake_afgerond: "Intake afgerond",
-  wachtlijst: "Wachtlijst",
-  actief: "Deelnemer",
-  training_afgerond: "Training afgerond",
-  tussentijds_gestopt: "Tussentijds gestopt",
-  niet_deelnemen: "Niet deelnemen",
-};
-
 export default function AanmeldingenPage() {
   const [activeTab, setActiveTab] = useState("lijst");
   const [search, setSearch] = useState("");
   const [filterArea, setFilterArea] = useState<string>("all");
   const [filterSchool, setFilterSchool] = useState<string>("all");
   const [filterAge, setFilterAge] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
   const [editOpen, setEditOpen] = useState(false);
   const [editClient, setEditClient] = useState<any>(null);
   const [form, setForm] = useState<Partial<EditForm>>({});
@@ -141,7 +114,6 @@ export default function AanmeldingenPage() {
     },
   });
 
-  // Fetch assignments for the currently edited client
   const { data: assignments = [], refetch: refetchAssignments } = useQuery({
     queryKey: ["client-assignments", editClient?.id],
     enabled: !!editClient?.id,
@@ -155,7 +127,6 @@ export default function AanmeldingenPage() {
     },
   });
 
-  // Fetch available programs for "deelnemen" flow
   const { data: availablePrograms = [] } = useQuery({
     queryKey: ["available-programs"],
     queryFn: async () => {
@@ -249,7 +220,6 @@ export default function AanmeldingenPage() {
       return;
     }
 
-    // Validate: if "actief" and no program selected, require it
     if (result.data.intake_status === "actief" && !selectedProgramId) {
       toast({ title: "Selecteer een programma", description: "Kies een programma om het kind aan te koppelen.", variant: "destructive" });
       return;
@@ -269,7 +239,6 @@ export default function AanmeldingenPage() {
       return;
     }
 
-    // If status changed to "actief" and program selected, create program_clients link
     if (result.data.intake_status === "actief" && selectedProgramId) {
       const { error: linkError } = await supabase.from("program_clients").insert({
         client_id: editClient.id,
@@ -302,7 +271,6 @@ export default function AanmeldingenPage() {
     }
   };
 
-  // Get assigned staff names for a client (from a preloaded map)
   const { data: allAssignments = [] } = useQuery({
     queryKey: ["all-client-assignments"],
     queryFn: async () => {
@@ -319,6 +287,10 @@ export default function AanmeldingenPage() {
     if (a.staff?.name) acc[a.client_id].push(a.staff.name);
     return acc;
   }, {});
+
+  const filteredClients = filterClients(clients, {
+    search, area: filterArea, school: filterSchool, age: filterAge, status: filterStatus,
+  });
 
   return (
     <div className="space-y-6">
@@ -352,93 +324,34 @@ export default function AanmeldingenPage() {
         </TabsList>
 
         <TabsContent value="lijst" className="space-y-4">
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Zoek op naam..."
-            className="w-full rounded-lg border border-input bg-card py-2.5 pl-10 pr-4 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          <ClientFilters
+            search={search} onSearchChange={setSearch}
+            filterArea={filterArea} onFilterAreaChange={setFilterArea}
+            filterSchool={filterSchool} onFilterSchoolChange={setFilterSchool}
+            filterAge={filterAge} onFilterAgeChange={setFilterAge}
+            filterStatus={filterStatus} onFilterStatusChange={setFilterStatus}
+            areas={areas} schools={schools}
+            totalCount={clients.length} filteredCount={filteredClients.length}
           />
-        </div>
-        <Select value={filterArea} onValueChange={setFilterArea}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Gebied" />
-          </SelectTrigger>
-          <SelectContent className="bg-popover">
-            <SelectItem value="all">Alle gebieden</SelectItem>
-            {areas.map((a: any) => (
-              <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={filterSchool} onValueChange={setFilterSchool}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="School" />
-          </SelectTrigger>
-          <SelectContent className="bg-popover">
-            <SelectItem value="all">Alle scholen</SelectItem>
-            <SelectItem value="none">Geen school</SelectItem>
-            {schools.map((s: any) => (
-              <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={filterAge} onValueChange={setFilterAge}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Leeftijd" />
-          </SelectTrigger>
-          <SelectContent className="bg-popover">
-            <SelectItem value="all">Alle leeftijden</SelectItem>
-            <SelectItem value="5-7">5-7 jaar</SelectItem>
-            <SelectItem value="8-12">8-12 jaar</SelectItem>
-            <SelectItem value="other">Overig</SelectItem>
-          </SelectContent>
-        </Select>
-        {(filterArea !== "all" || filterSchool !== "all" || filterAge !== "all") && (
-          <Button variant="ghost" size="sm" onClick={() => { setFilterArea("all"); setFilterSchool("all"); setFilterAge("all"); }}>
-            <X className="h-3.5 w-3.5 mr-1" /> Wis filters
-          </Button>
-        )}
-      </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-      ) : (
-        <ClientTable
-          clients={clients.filter((c: any) => {
-            if (filterArea !== "all") {
-              const clientAreaId = c.waitlist_area_id || c.schools?.neighborhoods?.area_id;
-              if (clientAreaId !== filterArea) return false;
-            }
-            if (filterSchool !== "all") {
-              if (filterSchool === "none") { if (c.school_id) return false; }
-              else if (c.school_id !== filterSchool) return false;
-            }
-            if (filterAge !== "all") {
-              const age = calculateAge(c.date_of_birth);
-              if (filterAge === "5-7" && (age === null || age < 5 || age > 7)) return false;
-              if (filterAge === "8-12" && (age === null || age < 8 || age > 12)) return false;
-              if (filterAge === "other" && age !== null && age >= 5 && age <= 12) return false;
-            }
-            return true;
-          })}
-          assignmentsByClient={assignmentsByClient}
-          onNavigate={(id) => navigate(`/clienten/${id}`)}
-          onEdit={openEdit}
-          showAssigned
-        />
-      )}
+          {isLoading ? (
+            <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+          ) : (
+            <ClientListTable
+              clients={filteredClients}
+              assignmentsByClient={assignmentsByClient}
+              onNavigate={(id) => navigate(`/clienten/${id}`)}
+              onEdit={openEdit}
+              showAssigned
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="intake_afgerond" className="space-y-4">
           {isLoading ? (
             <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
           ) : (
-            <ClientTable
+            <ClientListTable
               clients={clients.filter((c: any) => c.intake_status === "intake_afgerond")}
               assignmentsByClient={assignmentsByClient}
               onNavigate={(id) => navigate(`/clienten/${id}`)}
@@ -464,7 +377,6 @@ export default function AanmeldingenPage() {
             <DialogTitle>Aanmelding bewerken</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSave} className="space-y-5">
-            {/* Kind */}
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kindgegevens</p>
             <div className="grid grid-cols-2 gap-4">
               <FieldWrapper label="Voornaam *" error={errors.first_name}>
@@ -493,7 +405,6 @@ export default function AanmeldingenPage() {
               </FieldWrapper>
             </div>
 
-            {/* School */}
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t border-border pt-4">School koppelen</p>
             <FieldWrapper label="School" error={errors.school_id}>
               <Select value={form.school_id ?? ""} onValueChange={(v) => updateField("school_id", v)}>
@@ -506,7 +417,6 @@ export default function AanmeldingenPage() {
               </Select>
             </FieldWrapper>
 
-            {/* Ouder/Verzorger */}
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t border-border pt-4">Ouder/Verzorger</p>
             <FieldWrapper label="Naam" error={errors.guardian_name}>
               <Input value={form.guardian_name ?? ""} onChange={(e) => updateField("guardian_name", e.target.value)} />
@@ -523,7 +433,6 @@ export default function AanmeldingenPage() {
               <Input type="email" value={form.guardian_email ?? ""} onChange={(e) => updateField("guardian_email", e.target.value)} />
             </FieldWrapper>
 
-            {/* Adres */}
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t border-border pt-4">Adresgegevens</p>
             <div className="grid grid-cols-3 gap-4">
               <FieldWrapper label="Postcode" error={errors.postal_code}>
@@ -537,7 +446,6 @@ export default function AanmeldingenPage() {
               </FieldWrapper>
             </div>
 
-            {/* Toewijzing aan medewerkers */}
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t border-border pt-4">Toegewezen aan</p>
             <div className="space-y-2">
               <div className="flex flex-wrap gap-2">
@@ -585,7 +493,6 @@ export default function AanmeldingenPage() {
               </Select>
             </div>
 
-            {/* Intake & Status */}
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t border-border pt-4">Intake & Status</p>
             <div className="grid grid-cols-2 gap-4">
               <FieldWrapper label="Status" error={errors.intake_status}>
@@ -611,14 +518,12 @@ export default function AanmeldingenPage() {
               <Input type="date" value={form.registration_date ?? ""} onChange={(e) => updateField("registration_date", e.target.value)} />
             </FieldWrapper>
 
-            {/* Info: auto-trigger uitleg */}
             {form.intake_status === "nieuw" && form.intake_date && (
               <div className="rounded-lg border border-border bg-muted/50 p-3">
                 <p className="text-xs text-muted-foreground">💡 Bij opslaan wordt de status automatisch naar <strong>Intake gepland</strong> gewijzigd omdat er een intakedatum is ingevuld.</p>
               </div>
             )}
 
-            {/* Programma koppeling bij "deelnemen" */}
             {form.intake_status === "actief" && (
               <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-3">
                 <p className="text-xs font-semibold text-primary">Programma koppeling</p>
@@ -636,7 +541,6 @@ export default function AanmeldingenPage() {
               </div>
             )}
 
-            {/* Wachtlijst velden */}
             {form.intake_status === "wachtlijst" && (
               <div className="rounded-lg border border-accent/30 bg-accent/10 p-3 space-y-3">
                 <p className="text-xs font-semibold text-accent-foreground">Wachtlijst-instellingen</p>
@@ -655,7 +559,6 @@ export default function AanmeldingenPage() {
               </div>
             )}
 
-            {/* Tussentijds gestopt / niet deelnemen reden */}
             {(form.intake_status === "tussentijds_gestopt" || form.intake_status === "niet_deelnemen") && (
               <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 space-y-3">
                 <p className="text-xs font-semibold text-destructive">
@@ -694,7 +597,6 @@ export default function AanmeldingenPage() {
               <Textarea value={form.notes ?? ""} onChange={(e) => updateField("notes", e.target.value)} rows={2} />
             </FieldWrapper>
 
-            {/* Beschikbaarheid */}
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t border-border pt-4">Beschikbaarheid</p>
             <div className="rounded-lg border border-border bg-muted/30 p-3 flex items-center justify-between">
               <div>
@@ -714,7 +616,6 @@ export default function AanmeldingenPage() {
               </Button>
             </div>
 
-            {/* Toestemming */}
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t border-border pt-4">Toestemming</p>
             <div className="flex items-center gap-3">
               <Checkbox
@@ -742,87 +643,6 @@ export default function AanmeldingenPage() {
       </Dialog>
 
       <ClientImport open={importOpen} onOpenChange={setImportOpen} onComplete={() => refetch()} mode="choose" />
-    </div>
-  );
-}
-
-function ClientTable({ clients, assignmentsByClient, onNavigate, onEdit, showAssigned }: {
-  clients: any[];
-  assignmentsByClient: Record<string, string[]>;
-  onNavigate: (id: string) => void;
-  onEdit: (client: any) => void;
-  showAssigned?: boolean;
-}) {
-  return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-border bg-muted/50">
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Naam</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Leeftijdsgroep</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">School</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gebied</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Telefoon</th>
-              {showAssigned && <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Toegewezen</th>}
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actie</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {clients.length === 0 && (
-              <tr><td colSpan={showAssigned ? 8 : 7} className="px-4 py-8 text-center text-sm text-muted-foreground">Geen aanmeldingen gevonden</td></tr>
-            )}
-            {clients.map((client: any) => {
-              const age = calculateAge(client.date_of_birth);
-              const ageGroup = age !== null ? (age >= 5 && age <= 7 ? "5-7 jaar" : age >= 8 && age <= 12 ? "8-12 jaar" : `${age} jaar`) : "—";
-              const status = client.intake_status ?? "nieuw";
-              const assigned = assignmentsByClient[client.id] ?? [];
-              return (
-                <tr key={client.id} className="transition-colors hover:bg-muted/30">
-                  <td className="px-4 py-3">
-                    <p className="text-sm font-semibold text-primary hover:underline cursor-pointer" onClick={() => onNavigate(client.id)}>{client.first_name} {client.last_name}</p>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge variant="outline" className="text-xs">{ageGroup}</Badge>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="text-sm text-card-foreground">{client.schools?.name ?? <span className="text-xs text-muted-foreground">—</span>}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="text-sm text-card-foreground">{(client as any).areas?.name ?? "—"}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="text-sm text-card-foreground">{client.guardian_phone ?? "—"}</span>
-                  </td>
-                  {showAssigned && (
-                    <td className="hidden px-4 py-3 lg:table-cell">
-                      <div className="flex flex-wrap gap-1">
-                        {assigned.length > 0
-                          ? assigned.map((name: string, i: number) => (
-                              <Badge key={i} variant="secondary" className="text-xs">{name}</Badge>
-                            ))
-                          : <span className="text-xs text-muted-foreground">—</span>
-                        }
-                      </div>
-                    </td>
-                  )}
-                  <td className="px-4 py-3">
-                    <span className={`status-indicator ${statusStyles[status] ?? "status-rood"}`}>
-                      {statusLabels[status] ?? status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Button size="sm" variant="ghost" onClick={() => onEdit(client)}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }
@@ -860,10 +680,7 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
   const [savingSchool, setSavingSchool] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Deduplicate clients by id
   const uniqueClients = Array.from(new Map(clients.map((c) => [c.id, c])).values());
-
-  // Only check "Gebied" for relevant statuses
   const relevantForArea = new Set(["wachtlijst", "intake_afgerond", "actief"]);
 
   const flagged = uniqueClients.map((c: any) => {
@@ -878,7 +695,6 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
     return { client: c, missing };
   }).filter((r) => r.missing.length > 0).sort((a, b) => b.missing.length - a.missing.length);
 
-  // Summary counts per missing field
   const summaryCounts = REQUIRED_CHECKS.map((ch) => ({
     label: ch.label,
     count: flagged.filter(({ client }) => {
@@ -887,7 +703,6 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
     }).length,
   })).filter((s) => s.count > 0);
 
-  // Clients without school
   const clientsWithoutSchool = uniqueClients.filter((c: any) => !c.school_id);
 
   const handleAssignSchool = async (clientId: string) => {
@@ -915,26 +730,12 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
       { key: "status", label: "Status" },
       { key: "school", label: "School" },
       { key: "ontbrekend", label: "Ontbrekende velden" },
-      { key: "geboortedatum", label: "Geboortedatum" },
-      { key: "telefoon", label: "Telefoon ouder" },
-      { key: "naam_ouder", label: "Naam ouder" },
-      { key: "postcode", label: "Postcode" },
-      { key: "geslacht", label: "Geslacht" },
-      { key: "gebied", label: "Gebied" },
-      { key: "avg", label: "AVG-toestemming" },
     ];
     const rows = flagged.map(({ client, missing }) => ({
       naam: `${client.first_name} ${client.last_name}`.trim(),
       status: statusLabels[client.intake_status] ?? client.intake_status ?? "",
       school: client.schools?.name ?? "",
       ontbrekend: missing.join(", "),
-      geboortedatum: client.date_of_birth ?? "",
-      telefoon: client.guardian_phone ?? "",
-      naam_ouder: client.guardian_name ?? "",
-      postcode: client.postal_code ?? "",
-      geslacht: client.gender ?? "",
-      gebied: client.areas?.name ?? "",
-      avg: client.consent_data_processing,
     }));
     downloadExport("controle-aanmeldingen.xlsx", columns, rows, "xlsx");
   };
@@ -952,7 +753,6 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
         )}
       </div>
 
-      {/* Summary per missing field */}
       {summaryCounts.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {summaryCounts.map((s) => (
@@ -963,7 +763,6 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
         </div>
       )}
 
-      {/* School assignment section */}
       {clientsWithoutSchool.length > 0 && (
         <div className="rounded-xl border border-border bg-card p-4 space-y-3">
           <div className="flex items-center gap-2">
@@ -1010,52 +809,12 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border bg-muted/50">
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Naam</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ontbrekende velden</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actie</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {flagged.length === 0 && (
-                <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-muted-foreground">✅ Alle gegevens zijn volledig ingevuld!</td></tr>
-              )}
-              {flagged.map(({ client, missing }) => {
-                const status = client.intake_status ?? "nieuw";
-                return (
-                  <tr key={client.id} className="transition-colors hover:bg-muted/30">
-                    <td className="px-4 py-3">
-                      <p className="text-sm font-semibold text-primary hover:underline cursor-pointer" onClick={() => onNavigate(client.id)}>{client.first_name} {client.last_name}</p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`status-indicator ${statusStyles[status] ?? "status-rood"}`}>
-                        {statusLabels[status] ?? status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-1">
-                        {missing.map((m) => (
-                          <Badge key={m} variant="destructive" className="text-xs">{m}</Badge>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Button size="sm" variant="ghost" onClick={() => onEdit(client)}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <ClientListTable
+        clients={flagged.map(({ client }) => client)}
+        onNavigate={onNavigate}
+        onEdit={onEdit}
+        emptyMessage="✅ Alle gegevens zijn volledig ingevuld!"
+      />
     </div>
   );
 }

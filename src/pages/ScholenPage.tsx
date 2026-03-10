@@ -6,11 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { getAreaFromAddress } from "@/lib/postcodeMapping";
 import { downloadExport, ExportColumn } from "@/lib/csvExport";
+import { statusLabels, statusStyles } from "@/lib/clientUtils";
 
 // ── CSV / Outlook helpers ──────────────────────────────────────────────
 
@@ -137,6 +140,7 @@ export default function ScholenPage() {
   const [contactUploadOpen, setContactUploadOpen] = useState(false);
   const [contactDialogOpen, setContactDialogOpen] = useState(false);
   const [docsDialogOpen, setDocsDialogOpen] = useState(false);
+  const [statsDialogOpen, setStatsDialogOpen] = useState(false);
   const [selectedSchool, setSelectedSchool] = useState<any>(null);
   const [editingReferrer, setEditingReferrer] = useState<any>(null);
   const [selectedArea, setSelectedArea] = useState<string>("");
@@ -146,6 +150,7 @@ export default function ScholenPage() {
   const [editSaving, setEditSaving] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // Fetch areas with neighborhoods
   const { data: areas = [] } = useQuery({
@@ -178,7 +183,62 @@ export default function ScholenPage() {
     },
   });
 
-  // Auto-detect neighborhood from address postcode
+  // Fetch client counts per school
+  const { data: clientsBySchool = [] } = useQuery({
+    queryKey: ["clients-by-school"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("school_id, intake_status")
+        .eq("archived", false)
+        .not("school_id", "is", null);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Fetch program counts per school
+  const { data: programsBySchool = [] } = useQuery({
+    queryKey: ["programs-by-school"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("programs")
+        .select("school_id, name, status, start_date, end_date")
+        .eq("archived", false)
+        .not("school_id", "is", null);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Build lookup maps
+  const schoolClientCounts = clientsBySchool.reduce((acc: Record<string, Record<string, number>>, c: any) => {
+    if (!c.school_id) return acc;
+    if (!acc[c.school_id]) acc[c.school_id] = {};
+    const status = c.intake_status ?? "nieuw";
+    acc[c.school_id][status] = (acc[c.school_id][status] || 0) + 1;
+    return acc;
+  }, {});
+
+  const schoolProgramCounts = programsBySchool.reduce((acc: Record<string, number>, p: any) => {
+    if (!p.school_id) return acc;
+    acc[p.school_id] = (acc[p.school_id] || 0) + 1;
+    return acc;
+  }, {});
+
+  const schoolPrograms = programsBySchool.reduce((acc: Record<string, any[]>, p: any) => {
+    if (!p.school_id) return acc;
+    if (!acc[p.school_id]) acc[p.school_id] = [];
+    acc[p.school_id].push(p);
+    return acc;
+  }, {});
+
+  const getTotalClients = (schoolId: string) => {
+    const counts = schoolClientCounts[schoolId];
+    if (!counts) return 0;
+    return Object.values(counts).reduce((a: number, b: number) => a + b, 0);
+  };
+
   const autoDetectNeighborhood = (address: string) => {
     const areaName = getAreaFromAddress(address);
     if (!areaName) return;
@@ -837,10 +897,11 @@ export default function ScholenPage() {
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">School</th>
                 <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground md:table-cell">Gebied</th>
                 <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground md:table-cell">Wijk</th>
-                <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Contact</th>
-                <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Contactpersonen</th>
-                 <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Leerlingen</th>
-                 <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actie</th>
+                <th className="hidden px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Aanmeldingen</th>
+                <th className="hidden px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Trainingen</th>
+                <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground xl:table-cell">Contactpersonen</th>
+                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Leerlingen</th>
+                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actie</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -896,25 +957,40 @@ export default function ScholenPage() {
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
                   </td>
-                  <td className="hidden px-5 py-4 lg:table-cell">
-                    <div className="space-y-0.5 text-xs text-muted-foreground">
-                      {school.contact_email && (
-                        <a href={`mailto:${school.contact_email}`} className="block hover:text-primary truncate">{school.contact_email}</a>
-                      )}
-                      {school.contact_phone && (
-                        <a href={`tel:${school.contact_phone}`} className="block hover:text-primary">{school.contact_phone}</a>
-                      )}
-                      {(school as any).website_url && (
-                        <a href={(school as any).website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary">
-                          <Globe className="h-3 w-3" /> Website
-                        </a>
-                      )}
-                      {!school.contact_email && !school.contact_phone && !(school as any).website_url && (
-                        <span>—</span>
-                      )}
-                    </div>
+                  <td className="hidden px-5 py-4 lg:table-cell text-center">
+                    <button
+                      type="button"
+                      className="inline-flex flex-col items-center gap-0.5 hover:opacity-80"
+                      onClick={() => { setSelectedSchool(school); setStatsDialogOpen(true); }}
+                    >
+                      <span className="font-display text-sm font-bold text-card-foreground">{getTotalClients(school.id)}</span>
+                      {(() => {
+                        const counts = schoolClientCounts[school.id];
+                        if (!counts) return null;
+                        const statusKeys = Object.keys(counts);
+                        if (statusKeys.length === 0) return null;
+                        return (
+                          <div className="flex flex-wrap gap-0.5 justify-center max-w-[120px]">
+                            {statusKeys.slice(0, 3).map((s) => (
+                              <span key={s} className={`status-indicator text-[9px] px-1.5 py-0 ${statusStyles[s] ?? "status-rood"}`}>
+                                {counts[s]}
+                              </span>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </button>
                   </td>
-                  <td className="hidden px-5 py-4 lg:table-cell">
+                  <td className="hidden px-5 py-4 lg:table-cell text-center">
+                    <button
+                      type="button"
+                      className="inline-flex flex-col items-center gap-0.5 hover:opacity-80"
+                      onClick={() => { setSelectedSchool(school); setStatsDialogOpen(true); }}
+                    >
+                      <span className="font-display text-sm font-bold text-card-foreground">{schoolProgramCounts[school.id] ?? 0}</span>
+                    </button>
+                  </td>
+                  <td className="hidden px-5 py-4 xl:table-cell">
                     <div className="flex items-center gap-2">
                       {school.referrers && school.referrers.length > 0 ? (
                         <div className="space-y-1 flex-1">
@@ -1195,6 +1271,84 @@ export default function ScholenPage() {
               {editSaving ? "Opslaan..." : "Opslaan"}
             </Button>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Stats dialog */}
+      <Dialog open={statsDialogOpen} onOpenChange={(open) => {
+        setStatsDialogOpen(open);
+        if (!open) setSelectedSchool(null);
+      }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Overzicht – {selectedSchool?.name}</DialogTitle>
+          </DialogHeader>
+          {selectedSchool && (
+            <div className="space-y-5 max-h-[60vh] overflow-y-auto">
+              {/* Status distribution */}
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-card-foreground">Statusverdeling aanmeldingen</p>
+                {(() => {
+                  const counts = schoolClientCounts[selectedSchool.id];
+                  if (!counts || Object.keys(counts).length === 0) {
+                    return <p className="text-xs text-muted-foreground">Geen aanmeldingen bij deze school.</p>;
+                  }
+                  return (
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(counts).map(([status, count]) => (
+                        <div key={status} className="flex items-center gap-1.5">
+                          <span className={`status-indicator ${statusStyles[status] ?? "status-rood"}`}>
+                            {statusLabels[status] ?? status}
+                          </span>
+                          <span className="font-display text-sm font-bold text-card-foreground">{count as number}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+                <div className="flex gap-2 mt-2">
+                  <Button size="sm" variant="outline" onClick={() => {
+                    navigate(`/aanmeldingen`);
+                    setStatsDialogOpen(false);
+                  }}>
+                    Naar aanmeldingen
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => {
+                    navigate(`/clienten`);
+                    setStatsDialogOpen(false);
+                  }}>
+                    Naar deelnemers
+                  </Button>
+                </div>
+              </div>
+
+              {/* Trainingen */}
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-card-foreground">Trainingen ({schoolProgramCounts[selectedSchool.id] ?? 0})</p>
+                {(() => {
+                  const progs = schoolPrograms[selectedSchool.id];
+                  if (!progs || progs.length === 0) {
+                    return <p className="text-xs text-muted-foreground">Geen trainingen bij deze school.</p>;
+                  }
+                  return (
+                    <div className="space-y-1">
+                      {progs.map((p: any) => (
+                        <div key={p.school_id + p.name} className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
+                          <div>
+                            <p className="text-sm font-medium text-card-foreground">{p.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {p.start_date ?? "—"} – {p.end_date ?? "—"}
+                            </p>
+                          </div>
+                          <Badge variant="outline" className="text-xs">{p.status ?? "—"}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
