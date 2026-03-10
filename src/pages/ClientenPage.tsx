@@ -60,6 +60,7 @@ export default function ClientenPage() {
         .from("clients")
         .select("*, schools(name)")
         .eq("archived", false)
+        .in("intake_status", ["actief", "training_afgerond", "tussentijds_gestopt"])
         .order("created_at", { ascending: false });
 
       if (search.trim()) {
