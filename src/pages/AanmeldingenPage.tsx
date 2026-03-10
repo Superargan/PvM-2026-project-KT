@@ -556,6 +556,7 @@ export default function AanmeldingenPage() {
                     <SelectItem value="nieuw">Nieuw</SelectItem>
                     <SelectItem value="intake_gepland">Intake gepland</SelectItem>
                     <SelectItem value="intake">Intake (in uitvoering)</SelectItem>
+                    <SelectItem value="intake_afgerond">Intake afgerond</SelectItem>
                     <SelectItem value="actief">Deelnemen</SelectItem>
                     <SelectItem value="wachtlijst">Wachtlijst</SelectItem>
                     <SelectItem value="niet_deelnemen">Niet deelnemen</SelectItem>

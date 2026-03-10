@@ -116,7 +116,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
         .from("clients")
         .select("id, first_name, last_name")
         .eq("archived", false)
-        .in("intake_status", ["nieuw", "intake_gepland", "intake", "actief", "wachtlijst"])
+        .in("intake_status", ["nieuw", "intake_gepland", "intake", "intake_afgerond", "actief", "wachtlijst"])
         .order("first_name");
       if (error) throw error;
       return data ?? [];
