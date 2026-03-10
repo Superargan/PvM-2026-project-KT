@@ -81,7 +81,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
     return areas.filter((a: any) => {
       const row = matrix.m[a.id];
       if (!row) return false;
-      return row["5-7 jaar"].length > 0 || row["8-12 jaar"].length > 0;
+      return row["4-7 jaar"].length > 0 || row["8-12 jaar"].length > 0;
     });
   }, [areas, matrix]);
 
