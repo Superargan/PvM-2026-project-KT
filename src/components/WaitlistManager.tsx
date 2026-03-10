@@ -140,7 +140,7 @@ export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => 
               {waitlistClients.map((client: any) => {
                 const age = client.date_of_birth ? differenceInYears(new Date(), new Date(client.date_of_birth)) : null;
                 const ageGroup = age !== null
-                  ? age <= 7 ? "4-7 jaar" : "8-12 jaar"
+                  ? age >= 5 && age <= 7 ? "5-7 jaar" : age >= 8 && age <= 12 ? "8-12 jaar" : `${age} jaar`
                   : "—";
 
                 return (

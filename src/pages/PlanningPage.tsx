@@ -299,7 +299,7 @@ export default function PlanningPage() {
           <SelectTrigger className="w-32"><SelectValue placeholder="Leeftijd" /></SelectTrigger>
           <SelectContent className="bg-popover">
             <SelectItem value="alle">Alle leeftijden</SelectItem>
-            <SelectItem value="4-7 jaar">4-7 jaar</SelectItem>
+            <SelectItem value="5-7 jaar">5-7 jaar</SelectItem>
             <SelectItem value="8-12 jaar">8-12 jaar</SelectItem>
           </SelectContent>
         </Select>
