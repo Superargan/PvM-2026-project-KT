@@ -557,6 +557,50 @@ export default function GroupComposer() {
                   </div>
                 </div>
 
+                {/* Suggested timeslot */}
+                {(() => {
+                  const suggestion = getSuggestion(selected);
+                  const clientsWithAvail = Array.from(selected).filter(id => availByClient[id]?.length > 0).length;
+                  
+                  if (clientsWithAvail === 0) {
+                    return (
+                      <div className="rounded-lg border border-border bg-muted/30 p-3 flex items-center gap-2">
+                        <CalendarClock className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <p className="text-xs text-muted-foreground">Geen beschikbaarheid ingevuld — voeg beschikbaarheid toe voor een voorstel.</p>
+                      </div>
+                    );
+                  }
+                  
+                  if (!suggestion) {
+                    return (
+                      <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 flex items-center gap-2">
+                        <CalendarClock className="h-4 w-4 text-amber-600 shrink-0" />
+                        <p className="text-xs text-amber-800">Geen overlappend moment gevonden. {clientsWithAvail}/{selected.size} deelnemers hebben beschikbaarheid.</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <CalendarClock className="h-4 w-4 text-emerald-600 shrink-0" />
+                        <p className="text-xs font-semibold text-emerald-800">Voorstel trainingsmoment</p>
+                      </div>
+                      <div className="flex items-center gap-3 pl-6">
+                        <Badge variant="outline" className="border-emerald-300 text-emerald-700 text-xs capitalize">
+                          {suggestion.dayName}
+                        </Badge>
+                        <span className="text-sm font-medium text-foreground">
+                          {suggestion.startTime.slice(0, 5)} – {suggestion.endTime.slice(0, 5)}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          ({suggestion.overlap}/{suggestion.total} beschikbaar)
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Create button */}
                 <Button
                   className="w-full"
