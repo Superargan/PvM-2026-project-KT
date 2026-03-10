@@ -431,7 +431,9 @@ export default function PlanningPage() {
                               Intake: {intake.first_name} {intake.last_name}
                             </p>
                             <p className="text-xs text-amber-700">
-                              {intake.schools?.name ?? "Geen school"} · {intake.intake_status === "intake_gepland" ? "Gepland" : "In uitvoering"}
+                              {intake.schools?.name ?? "Geen school"}
+                              {(intake as any).areas?.name ? ` · ${(intake as any).areas.name}` : ""}
+                              {" · "}{intake.intake_status === "intake_gepland" ? "Gepland" : "In uitvoering"}
                             </p>
                           </div>
                           <div className="flex flex-wrap gap-1">
