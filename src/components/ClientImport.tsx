@@ -5,6 +5,7 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { Label } from "@/components/ui/label";
 import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -117,15 +118,24 @@ const NON_PERSON_REFERRAL_SOURCES = [
   "zelfstandig", "eigen initiatief", "onbekend", "anders", "overig",
 ];
 
+type ImportMode = "default" | "waitlist" | "intake_afgerond";
+
 interface ClientImportProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onComplete?: () => void;
-  /** When "waitlist", imported clients get waitlist_status='waiting' and intake_status='wachtlijst' */
-  mode?: "default" | "waitlist";
+  /** Fixed mode, or "choose" to let user pick between waitlist / intake_afgerond */
+  mode?: ImportMode | "choose";
 }
 
-export default function ClientImport({ open, onOpenChange, onComplete, mode = "default" }: ClientImportProps) {
+const MODE_OPTIONS: { value: ImportMode; label: string; description: string }[] = [
+  { value: "waitlist", label: "Wachtlijst", description: "Deelnemers worden op de wachtlijst geplaatst (status: wachtlijst)" },
+  { value: "intake_afgerond", label: "Afgeronde intakes", description: "Deelnemers met afgeronde intake (status: intake_afgerond)" },
+  { value: "default", label: "Nieuwe aanmeldingen", description: "Nieuwe deelnemers (status wordt automatisch bepaald)" },
+];
+
+export default function ClientImport({ open, onOpenChange, onComplete, mode: modeProp = "default" }: ClientImportProps) {
+  const [selectedMode, setSelectedMode] = useState<ImportMode>(modeProp === "choose" ? "waitlist" : modeProp);
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [fileName, setFileName] = useState("");
   const [importing, setImporting] = useState(false);
@@ -428,10 +438,10 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
         postal_code,
         guardian_phone,
         intake_date,
-        intake_status: mode === "waitlist" ? "wachtlijst" : intake_status,
+        intake_status: selectedMode === "waitlist" ? "wachtlijst" : selectedMode === "intake_afgerond" ? "intake_afgerond" : intake_status,
         referral_reason: referral_reason,
         referrer_id,
-        ...(mode === "waitlist" ? { waitlist_status: "waiting" } : {}),
+        ...(selectedMode === "waitlist" ? { waitlist_status: "waiting" } : {}),
         ...(enrollDate ? { registration_date: enrollDate } : {}),
       };
 
@@ -496,7 +506,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
       const parts = [];
       if (added > 0) parts.push(`${added} toegevoegd`);
       if (updated > 0) parts.push(`${updated} bijgewerkt`);
-      toast({ title: `${parts.join(", ")}${mode === "waitlist" ? " (wachtlijst)" : ""}` });
+      toast({ title: `${parts.join(", ")}${selectedMode === "waitlist" ? " (wachtlijst)" : selectedMode === "intake_afgerond" ? " (intakes afgerond)" : ""}` });
       onComplete?.();
     }
   };
@@ -506,16 +516,44 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode = "d
     setFileName("");
     setResult(null);
     if (fileRef.current) fileRef.current.value = "";
+    if (modeProp === "choose") setSelectedMode("waitlist");
   };
+
+  const mode = selectedMode; // alias for convenience
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>{mode === "waitlist" ? "Wachtlijst importeren uit Excel" : "Deelnemers importeren uit Excel"}</DialogTitle>
+          <DialogTitle>
+            {mode === "waitlist" ? "Wachtlijst importeren uit Excel" : mode === "intake_afgerond" ? "Afgeronde intakes importeren uit Excel" : "Deelnemers importeren uit Excel"}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Mode selector — only when mode="choose" */}
+          {modeProp === "choose" && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Type import</Label>
+              <div className="grid grid-cols-1 gap-2">
+                {MODE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setSelectedMode(opt.value)}
+                    className={`rounded-lg border p-3 text-left transition-colors ${
+                      selectedMode === opt.value
+                        ? "border-primary bg-primary/5 ring-1 ring-primary"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <p className="text-sm font-medium">{opt.label}</p>
+                    <p className="text-xs text-muted-foreground">{opt.description}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {/* File selection */}
           <div className="rounded-lg border-2 border-dashed border-border p-6 text-center">
             <input

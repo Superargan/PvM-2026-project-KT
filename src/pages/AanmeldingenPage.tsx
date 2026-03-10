@@ -659,7 +659,7 @@ export default function AanmeldingenPage() {
         </DialogContent>
       </Dialog>
 
-      <ClientImport open={importOpen} onOpenChange={setImportOpen} onComplete={() => refetch()} />
+      <ClientImport open={importOpen} onOpenChange={setImportOpen} onComplete={() => refetch()} mode="choose" />
     </div>
   );
 }
