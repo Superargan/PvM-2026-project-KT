@@ -568,6 +568,9 @@ export default function AanmeldingenPage() {
                 <Input type="date" value={form.intake_date ?? ""} onChange={(e) => updateField("intake_date", e.target.value)} />
               </FieldWrapper>
             </div>
+            <FieldWrapper label="Aanmelddatum">
+              <Input type="date" value={form.registration_date ?? ""} onChange={(e) => updateField("registration_date", e.target.value)} />
+            </FieldWrapper>
 
             {/* Info: auto-trigger uitleg */}
             {form.intake_status === "nieuw" && form.intake_date && (
