@@ -622,21 +622,27 @@ export default function PlanningPage() {
           <p className="text-sm text-muted-foreground">
             Overzicht van deelnemers en hun beschikbaarheid in de huidige {viewMode === "week" ? "week" : "maand"}.
           </p>
-          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+           <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border bg-muted/50">
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Deelnemer</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gebied</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Beschikbaar in periode</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {allClients.map((client: any) => {
+                {allClients
+                  .filter((c: any) => filterArea === "alle" || c.waitlist_area_id === filterArea)
+                  .map((client: any) => {
                   const clientAvail = clientAvailability.filter((a: any) => a.client_id === client.id);
                   return (
                     <tr key={client.id} className="hover:bg-muted/30 transition-colors">
                       <td className="px-4 py-3">
                         <p className="text-sm font-semibold text-foreground">{client.first_name} {client.last_name}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-sm text-card-foreground">{(client as any).areas?.name ?? "—"}</span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-1">
@@ -653,8 +659,8 @@ export default function PlanningPage() {
                     </tr>
                   );
                 })}
-                {allClients.length === 0 && (
-                  <tr><td colSpan={2} className="px-4 py-8 text-center text-sm text-muted-foreground">Geen deelnemers gevonden</td></tr>
+                {allClients.filter((c: any) => filterArea === "alle" || c.waitlist_area_id === filterArea).length === 0 && (
+                  <tr><td colSpan={3} className="px-4 py-8 text-center text-sm text-muted-foreground">Geen deelnemers gevonden</td></tr>
                 )}
               </tbody>
             </table>
