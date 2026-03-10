@@ -20,7 +20,7 @@ const statusColors: Record<string, string> = {
   dropped_out: "bg-red-100 text-red-800",
 };
 
-export default function WaitlistManager() {
+export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => void }) {
   const [filterArea, setFilterArea] = useState<string>("all");
   const [importOpen, setImportOpen] = useState(false);
   const qc = useQueryClient();
