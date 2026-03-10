@@ -82,7 +82,7 @@ export default function ProgramDetailPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("schools")
-        .select("id, name")
+        .select("id, name, neighborhood_id, neighborhoods(id, name, area_id, areas(id, name))")
         .order("name");
       if (error) throw error;
       return data ?? [];
