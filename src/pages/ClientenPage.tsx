@@ -60,6 +60,7 @@ export default function ClientenPage() {
         .from("clients")
         .select("*, schools(name)")
         .eq("archived", false)
+        .in("intake_status", ["actief", "training_afgerond", "tussentijds_gestopt"])
         .order("created_at", { ascending: false });
 
       if (search.trim()) {
@@ -134,7 +135,7 @@ export default function ClientenPage() {
         <div>
           <h1 className="font-display text-2xl font-extrabold text-foreground">Deelnemers</h1>
           <p className="text-sm text-muted-foreground">
-            {hasFilters ? `${filteredClients.length} van ${clients.length}` : clients.length} deelnemers
+            {hasFilters ? `${filteredClients.length} van ${clients.length}` : clients.length} deelnemers (status: actief, afgerond of gestopt)
           </p>
         </div>
         <div className="flex gap-2">

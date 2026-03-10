@@ -41,6 +41,8 @@ const editSchema = z.object({
   consent_data_processing: z.boolean().optional(),
   whatsapp_consent: z.boolean().optional(),
   notes: z.string().max(5000).optional(),
+  dropout_reason: z.string().optional(),
+  dropout_action: z.string().max(2000).optional(),
 });
 
 type EditForm = z.infer<typeof editSchema>;
@@ -193,6 +195,8 @@ export default function AanmeldingenPage() {
       consent_data_processing: client.consent_data_processing ?? false,
       whatsapp_consent: client.whatsapp_consent ?? false,
       notes: client.notes ?? "",
+      dropout_reason: client.dropout_reason ?? "",
+      dropout_action: client.dropout_action ?? "",
     });
     setErrors({});
     setSelectedProgramId("");
@@ -588,14 +592,14 @@ export default function AanmeldingenPage() {
                 <Select value={form.intake_status ?? "nieuw"} onValueChange={(v) => updateField("intake_status", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-popover">
-                    <SelectItem value="nieuw">Nieuw</SelectItem>
+                    <SelectItem value="nieuw">Aanmelding</SelectItem>
                     <SelectItem value="intake_gepland">Intake gepland</SelectItem>
-                    <SelectItem value="intake">Intake (in uitvoering)</SelectItem>
                     <SelectItem value="intake_afgerond">Intake afgerond</SelectItem>
-                    <SelectItem value="actief">Deelnemen</SelectItem>
                     <SelectItem value="wachtlijst">Wachtlijst</SelectItem>
+                    <SelectItem value="actief">Deelnemer</SelectItem>
+                    <SelectItem value="training_afgerond">Training afgerond</SelectItem>
+                    <SelectItem value="tussentijds_gestopt">Tussentijds gestopt</SelectItem>
                     <SelectItem value="niet_deelnemen">Niet deelnemen</SelectItem>
-                    <SelectItem value="afgerond">Afgerond</SelectItem>
                   </SelectContent>
                 </Select>
               </FieldWrapper>
@@ -609,16 +613,16 @@ export default function AanmeldingenPage() {
 
             {/* Info: auto-trigger uitleg */}
             {form.intake_status === "nieuw" && form.intake_date && (
-              <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
-                <p className="text-xs text-blue-800">💡 Bij opslaan wordt de status automatisch naar <strong>Intake gepland</strong> gewijzigd omdat er een intakedatum is ingevuld.</p>
+              <div className="rounded-lg border border-border bg-muted/50 p-3">
+                <p className="text-xs text-muted-foreground">💡 Bij opslaan wordt de status automatisch naar <strong>Intake gepland</strong> gewijzigd omdat er een intakedatum is ingevuld.</p>
               </div>
             )}
 
             {/* Programma koppeling bij "deelnemen" */}
             {form.intake_status === "actief" && (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 space-y-3">
-                <p className="text-xs font-semibold text-emerald-800">Programma koppeling</p>
-                <p className="text-xs text-emerald-700">Selecteer het programma waaraan dit kind gaat deelnemen.</p>
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-3">
+                <p className="text-xs font-semibold text-primary">Programma koppeling</p>
+                <p className="text-xs text-muted-foreground">Selecteer het programma waaraan dit kind gaat deelnemen.</p>
                 <Select value={selectedProgramId} onValueChange={setSelectedProgramId}>
                   <SelectTrigger><SelectValue placeholder="Kies een programma..." /></SelectTrigger>
                   <SelectContent className="bg-popover">
@@ -634,8 +638,8 @@ export default function AanmeldingenPage() {
 
             {/* Wachtlijst velden */}
             {form.intake_status === "wachtlijst" && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-3">
-                <p className="text-xs font-semibold text-amber-800">Wachtlijst-instellingen</p>
+              <div className="rounded-lg border border-accent/30 bg-accent/10 p-3 space-y-3">
+                <p className="text-xs font-semibold text-accent-foreground">Wachtlijst-instellingen</p>
                 <FieldWrapper label="Wachtlijst-gebied">
                   <Select value={(editClient as any)?.waitlist_area_id ?? ""} onValueChange={(v) => {
                     handleWaitlist(editClient.id, "waiting", v);
@@ -651,12 +655,28 @@ export default function AanmeldingenPage() {
               </div>
             )}
 
-            {/* Niet deelnemen reden */}
-            {form.intake_status === "niet_deelnemen" && (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-3 space-y-3">
-                <p className="text-xs font-semibold text-red-800">Reden niet deelnemen</p>
-                <FieldWrapper label="Notities">
-                  <Textarea value={form.notes ?? ""} onChange={(e) => updateField("notes", e.target.value)} rows={2} placeholder="Reden waarom het kind niet deelneemt..." />
+            {/* Tussentijds gestopt / niet deelnemen reden */}
+            {(form.intake_status === "tussentijds_gestopt" || form.intake_status === "niet_deelnemen") && (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 space-y-3">
+                <p className="text-xs font-semibold text-destructive">
+                  {form.intake_status === "tussentijds_gestopt" ? "Reden tussentijds gestopt" : "Reden niet deelnemen"}
+                </p>
+                <FieldWrapper label="Reden">
+                  <Select value={form.dropout_reason ?? ""} onValueChange={(v) => updateField("dropout_reason", v)}>
+                    <SelectTrigger><SelectValue placeholder="Selecteer reden" /></SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="motivatie">Motivatie</SelectItem>
+                      <SelectItem value="ziekte">Ziekte</SelectItem>
+                      <SelectItem value="verhuizing">Verhuizing</SelectItem>
+                      <SelectItem value="gedrag">Gedrag</SelectItem>
+                      <SelectItem value="ouders">Ouders/verzorgers</SelectItem>
+                      <SelectItem value="school_wissel">Schoolwissel</SelectItem>
+                      <SelectItem value="overig">Overig</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FieldWrapper>
+                <FieldWrapper label="Toelichting / vervolgactie">
+                  <Textarea value={form.dropout_action ?? ""} onChange={(e) => updateField("dropout_action", e.target.value)} rows={2} placeholder="Beschrijf de reden en eventuele vervolgacties..." />
                 </FieldWrapper>
               </div>
             )}
