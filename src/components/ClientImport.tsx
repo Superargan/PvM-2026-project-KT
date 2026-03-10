@@ -378,7 +378,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
 
       // Date of birth
       const dobRaw = findCol(row, "Geboortedatum", "geboortedatum", "date_of_birth", "Geboorte datum");
-      let date_of_birth: string | null = parseExcelDate(dobRaw);
+      let date_of_birth: string | null = parseExcelDate(dobRaw, dateFormat);
 
       // Read age from dedicated "Leeftijd" column (NOT "Leeftijdsgroep")
       const ageKeys = Object.keys(row);
