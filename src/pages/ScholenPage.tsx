@@ -132,6 +132,7 @@ function mapOutlookRow(row: Record<string, any>) {
 export default function ScholenPage() {
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [contactUploadOpen, setContactUploadOpen] = useState(false);
   const [contactDialogOpen, setContactDialogOpen] = useState(false);
@@ -141,6 +142,8 @@ export default function ScholenPage() {
   const [selectedArea, setSelectedArea] = useState<string>("");
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
   const [docUploading, setDocUploading] = useState(false);
+  const [editForm, setEditForm] = useState<any>({});
+  const [editSaving, setEditSaving] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
