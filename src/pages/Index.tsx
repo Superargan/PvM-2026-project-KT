@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export default function Dashboard() {
   const { data: clientCount = 0 } = useQuery({
-    queryKey: ["dashboard-participants"],
+    queryKey: ["clients", "dashboard", "participants"],
     queryFn: async () => {
       const { count } = await supabase
         .from("clients")
