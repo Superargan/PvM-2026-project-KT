@@ -191,10 +191,13 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     reader.readAsBinaryString(file);
   };
 
-  /** Fuzzy school name matching: exact → contains → best partial */
-  const findSchoolId = (name: string | undefined): string | null => {
+  /** Fuzzy school name matching: exact → contains → best partial → user resolutions */
+  const findSchoolId = (name: string | undefined, resolutions?: Record<string, string>): string | null => {
     if (!name) return null;
     const norm = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
+    // Check user resolutions first
+    if (resolutions && resolutions[norm]) return resolutions[norm];
 
     // Exact match
     const exact = schools.find((s) => s.name.toLowerCase().trim() === norm);
@@ -215,6 +218,34 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     }
 
     return null;
+  };
+
+  /** Scan rows for school names that don't match any known school */
+  const detectUnmatchedSchools = () => {
+    const unmatched = new Set<string>();
+    for (const row of rows) {
+      const schoolName = findCol(row, "School", "school", "Schoolnaam");
+      if (schoolName) {
+        const id = findSchoolId(schoolName);
+        if (!id) {
+          const norm = schoolName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+          unmatched.add(norm);
+        }
+      }
+    }
+    return Array.from(unmatched);
+  };
+
+  /** Called when file is parsed — check for unmatched schools before allowing import */
+  const checkSchoolsBeforeImport = () => {
+    const unmatched = detectUnmatchedSchools();
+    if (unmatched.length > 0) {
+      setUnmatchedSchools(unmatched);
+      setShowResolution(true);
+    } else {
+      setShowResolution(false);
+      setUnmatchedSchools([]);
+    }
   };
 
   const findAreaId = (name: string | undefined): string | null => {
