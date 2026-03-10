@@ -94,7 +94,7 @@ export default function AanmeldingenPage() {
     queryFn: async () => {
       let query = supabase
         .from("clients")
-        .select("*, schools(name)")
+        .select("*, schools(name), areas:waitlist_area_id(name)")
         .eq("archived", false)
         .order("created_at", { ascending: false });
 
