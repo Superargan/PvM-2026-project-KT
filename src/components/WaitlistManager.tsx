@@ -165,6 +165,12 @@ export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => 
                     {client.dropout_reason ?? "—"}
                   </TableCell>
                   <TableCell className="text-right">
+                    <div className="flex items-center gap-1 justify-end">
+                    {onEdit && (
+                      <Button size="sm" variant="ghost" onClick={() => onEdit(client)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                     {assigningClient === client.id ? (
                       <div className="flex items-center gap-2 justify-end">
                         <Select value={selectedProgram} onValueChange={setSelectedProgram}>
