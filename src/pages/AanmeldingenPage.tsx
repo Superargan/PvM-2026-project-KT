@@ -651,12 +651,28 @@ export default function AanmeldingenPage() {
               </div>
             )}
 
-            {/* Niet deelnemen reden */}
-            {form.intake_status === "niet_deelnemen" && (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-3 space-y-3">
-                <p className="text-xs font-semibold text-red-800">Reden niet deelnemen</p>
-                <FieldWrapper label="Notities">
-                  <Textarea value={form.notes ?? ""} onChange={(e) => updateField("notes", e.target.value)} rows={2} placeholder="Reden waarom het kind niet deelneemt..." />
+            {/* Tussentijds gestopt / niet deelnemen reden */}
+            {(form.intake_status === "tussentijds_gestopt" || form.intake_status === "niet_deelnemen") && (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 space-y-3">
+                <p className="text-xs font-semibold text-destructive">
+                  {form.intake_status === "tussentijds_gestopt" ? "Reden tussentijds gestopt" : "Reden niet deelnemen"}
+                </p>
+                <FieldWrapper label="Reden">
+                  <Select value={form.dropout_reason ?? ""} onValueChange={(v) => updateField("dropout_reason", v)}>
+                    <SelectTrigger><SelectValue placeholder="Selecteer reden" /></SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="motivatie">Motivatie</SelectItem>
+                      <SelectItem value="ziekte">Ziekte</SelectItem>
+                      <SelectItem value="verhuizing">Verhuizing</SelectItem>
+                      <SelectItem value="gedrag">Gedrag</SelectItem>
+                      <SelectItem value="ouders">Ouders/verzorgers</SelectItem>
+                      <SelectItem value="school_wissel">Schoolwissel</SelectItem>
+                      <SelectItem value="overig">Overig</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FieldWrapper>
+                <FieldWrapper label="Toelichting / vervolgactie">
+                  <Textarea value={form.dropout_action ?? ""} onChange={(e) => updateField("dropout_action", e.target.value)} rows={2} placeholder="Beschrijf de reden en eventuele vervolgacties..." />
                 </FieldWrapper>
               </div>
             )}

@@ -134,7 +134,7 @@ export default function ClientenPage() {
         <div>
           <h1 className="font-display text-2xl font-extrabold text-foreground">Deelnemers</h1>
           <p className="text-sm text-muted-foreground">
-            {hasFilters ? `${filteredClients.length} van ${clients.length}` : clients.length} deelnemers
+            {hasFilters ? `${filteredClients.length} van ${clients.length}` : clients.length} deelnemers (status: actief, afgerond of gestopt)
           </p>
         </div>
         <div className="flex gap-2">
