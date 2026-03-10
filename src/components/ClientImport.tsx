@@ -344,6 +344,10 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     // Track keys within this import batch to avoid intra-batch duplicates
     const batchKeys = new Set<string>();
 
+    // Auto-detect date format from the dataset
+    const dateFormat = detectDateFormat(rows);
+    console.log(`Import: detected date format = ${dateFormat}`);
+
     const inserts: any[] = [];
     const updates: { id: string; data: any }[] = [];
     for (let i = 0; i < rows.length; i++) {
