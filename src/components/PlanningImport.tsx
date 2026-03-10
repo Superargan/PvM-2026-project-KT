@@ -633,6 +633,39 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
                 </div>
               )}
 
+              {/* Debug: show raw data when 0 entries detected */}
+              {importType !== "sessies" && parsedEntries.length === 0 && parsedData.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs text-destructive font-medium">Geen beschikbaarheden herkend. Gevonden kolommen:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {Object.keys(parsedData[0]).map((k) => (
+                      <Badge key={k} variant="outline" className="text-[10px]">{k}</Badge>
+                    ))}
+                  </div>
+                  <div className="max-h-48 overflow-auto rounded border border-border">
+                    <table className="w-full text-xs">
+                      <thead className="bg-muted/50 sticky top-0">
+                        <tr>
+                          {Object.keys(parsedData[0]).map((k) => (
+                            <th key={k} className="px-2 py-1 text-left font-semibold text-muted-foreground whitespace-nowrap">{k}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {parsedData.slice(0, 5).map((row, i) => (
+                          <tr key={i}>
+                            {Object.keys(parsedData[0]).map((k) => (
+                              <td key={k} className="px-2 py-1 whitespace-nowrap text-foreground">{String(row[k] ?? "")}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Verwacht: kolom met naam + datumkolommen (grid) óf kolommen Naam/Datum/Starttijd (rij-formaat)</p>
+                </div>
+              )}
+
               {/* Preview for sessies (raw rows) */}
               {importType === "sessies" && (
                 <div className="max-h-48 overflow-auto rounded border border-border">
