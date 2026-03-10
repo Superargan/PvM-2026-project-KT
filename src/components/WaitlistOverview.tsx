@@ -223,7 +223,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
                               <TooltipTrigger asChild>
                                 <button
                                   onClick={() => onSelectGroup?.(area.id, age)}
-                                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-bold transition-colors ${
+                                  className={`inline-flex flex-col items-center rounded-lg px-3 py-1.5 text-sm font-bold transition-colors min-w-[60px] ${
                                     ready
                                       ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300"
                                       : partial
@@ -231,11 +231,16 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
                                       : "bg-red-100 text-red-800 hover:bg-red-200 border border-red-300"
                                   }`}
                                 >
-                                  {primary}
+                                  <span className="flex items-center gap-1">
+                                    {primary}
+                                    {ready && <ArrowRight className="h-3 w-3" />}
+                                  </span>
                                   {reserve > 0 && (
-                                    <span className="text-xs font-normal opacity-70">+{reserve}</span>
+                                    <span className="text-[10px] font-medium opacity-70 flex items-center gap-0.5">
+                                      <Star className="h-2.5 w-2.5" />
+                                      +{reserve} reserve
+                                    </span>
                                   )}
-                                  {ready && <ArrowRight className="h-3 w-3" />}
                                 </button>
                               </TooltipTrigger>
                               <TooltipContent>
