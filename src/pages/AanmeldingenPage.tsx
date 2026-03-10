@@ -616,9 +616,9 @@ export default function AanmeldingenPage() {
 
             {/* Programma koppeling bij "deelnemen" */}
             {form.intake_status === "actief" && (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 space-y-3">
-                <p className="text-xs font-semibold text-emerald-800">Programma koppeling</p>
-                <p className="text-xs text-emerald-700">Selecteer het programma waaraan dit kind gaat deelnemen.</p>
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-3">
+                <p className="text-xs font-semibold text-primary">Programma koppeling</p>
+                <p className="text-xs text-muted-foreground">Selecteer het programma waaraan dit kind gaat deelnemen.</p>
                 <Select value={selectedProgramId} onValueChange={setSelectedProgramId}>
                   <SelectTrigger><SelectValue placeholder="Kies een programma..." /></SelectTrigger>
                   <SelectContent className="bg-popover">
