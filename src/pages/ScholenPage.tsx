@@ -845,7 +845,7 @@ export default function ScholenPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {schools.length === 0 && (
-                <tr><td colSpan={6} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen scholen gevonden</td></tr>
+                <tr><td colSpan={7} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen scholen gevonden</td></tr>
               )}
               {schools.map((school: any) => (
                 <tr key={school.id} className="transition-colors hover:bg-muted/30">
