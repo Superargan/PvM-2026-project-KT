@@ -588,14 +588,14 @@ export default function AanmeldingenPage() {
                 <Select value={form.intake_status ?? "nieuw"} onValueChange={(v) => updateField("intake_status", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-popover">
-                    <SelectItem value="nieuw">Nieuw</SelectItem>
+                    <SelectItem value="nieuw">Aanmelding</SelectItem>
                     <SelectItem value="intake_gepland">Intake gepland</SelectItem>
-                    <SelectItem value="intake">Intake (in uitvoering)</SelectItem>
                     <SelectItem value="intake_afgerond">Intake afgerond</SelectItem>
-                    <SelectItem value="actief">Deelnemen</SelectItem>
                     <SelectItem value="wachtlijst">Wachtlijst</SelectItem>
+                    <SelectItem value="actief">Deelnemer</SelectItem>
+                    <SelectItem value="training_afgerond">Training afgerond</SelectItem>
+                    <SelectItem value="tussentijds_gestopt">Tussentijds gestopt</SelectItem>
                     <SelectItem value="niet_deelnemen">Niet deelnemen</SelectItem>
-                    <SelectItem value="afgerond">Afgerond</SelectItem>
                   </SelectContent>
                 </Select>
               </FieldWrapper>
