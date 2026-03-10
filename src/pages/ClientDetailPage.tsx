@@ -28,23 +28,25 @@ function calculateAge(dob: string | null): number | null {
 }
 
 const statusLabels: Record<string, string> = {
-  nieuw: "Nieuw",
+  nieuw: "Aanmelding",
   intake_gepland: "Intake gepland",
-  intake: "Intake",
-  actief: "Actief",
+  intake_afgerond: "Intake afgerond",
   wachtlijst: "Wachtlijst",
+  actief: "Deelnemer",
+  training_afgerond: "Training afgerond",
+  tussentijds_gestopt: "Tussentijds gestopt",
   niet_deelnemen: "Niet deelnemen",
-  afgerond: "Afgerond",
 };
 
 const statusStyles: Record<string, string> = {
   nieuw: "status-rood",
   intake_gepland: "status-oranje",
-  intake: "status-oranje",
-  actief: "status-groen",
+  intake_afgerond: "status-groen",
   wachtlijst: "status-oranje",
+  actief: "status-groen",
+  training_afgerond: "status-groen",
+  tussentijds_gestopt: "status-rood",
   niet_deelnemen: "status-rood",
-  afgerond: "status-groen",
 };
 
 function IntakeProgress({ client }: { client: any }) {
@@ -238,6 +240,8 @@ export default function ClientDetailPage() {
         consent_data_processing: client.consent_data_processing ?? false,
         whatsapp_consent: client.whatsapp_consent ?? false,
         notes: client.notes ?? "",
+        dropout_reason: client.dropout_reason ?? "",
+        dropout_action: client.dropout_action ?? "",
       });
       setDirty(false);
     }
@@ -499,14 +503,14 @@ export default function ClientDetailPage() {
                 <Select value={form.intake_status ?? "nieuw"} onValueChange={(v) => updateField("intake_status", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-popover">
-                    <SelectItem value="nieuw">Nieuw</SelectItem>
+                    <SelectItem value="nieuw">Aanmelding</SelectItem>
                     <SelectItem value="intake_gepland">Intake gepland</SelectItem>
-                    <SelectItem value="intake">Intake</SelectItem>
                     <SelectItem value="intake_afgerond">Intake afgerond</SelectItem>
-                    <SelectItem value="actief">Actief</SelectItem>
                     <SelectItem value="wachtlijst">Wachtlijst</SelectItem>
+                    <SelectItem value="actief">Deelnemer</SelectItem>
+                    <SelectItem value="training_afgerond">Training afgerond</SelectItem>
+                    <SelectItem value="tussentijds_gestopt">Tussentijds gestopt</SelectItem>
                     <SelectItem value="niet_deelnemen">Niet deelnemen</SelectItem>
-                    <SelectItem value="afgerond">Afgerond</SelectItem>
                   </SelectContent>
                 </Select>
               </Field>
@@ -517,6 +521,38 @@ export default function ClientDetailPage() {
             <Field label="Aanmelddatum">
               <Input type="date" value={form.registration_date ?? ""} onChange={(e) => updateField("registration_date", e.target.value)} />
             </Field>
+
+            {/* Dropout reason fields - shown for tussentijds_gestopt and niet_deelnemen */}
+            {(form.intake_status === "tussentijds_gestopt" || form.intake_status === "niet_deelnemen") && (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 space-y-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-destructive">
+                  {form.intake_status === "tussentijds_gestopt" ? "Reden tussentijds gestopt" : "Reden niet deelnemen"}
+                </p>
+                <Field label="Reden">
+                  <Select value={form.dropout_reason ?? ""} onValueChange={(v) => updateField("dropout_reason", v)}>
+                    <SelectTrigger><SelectValue placeholder="Selecteer reden" /></SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="motivatie">Motivatie</SelectItem>
+                      <SelectItem value="ziekte">Ziekte</SelectItem>
+                      <SelectItem value="verhuizing">Verhuizing</SelectItem>
+                      <SelectItem value="gedrag">Gedrag</SelectItem>
+                      <SelectItem value="ouders">Ouders/verzorgers</SelectItem>
+                      <SelectItem value="school_wissel">Schoolwissel</SelectItem>
+                      <SelectItem value="overig">Overig</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Toelichting / vervolgactie">
+                  <Textarea
+                    value={form.dropout_action ?? ""}
+                    onChange={(e) => updateField("dropout_action", e.target.value)}
+                    rows={3}
+                    placeholder="Beschrijf de reden en eventuele vervolgacties..."
+                  />
+                </Field>
+              </div>
+            )}
+
             <Field label="Reden van aanmelding">
               <Textarea value={form.referral_reason ?? ""} onChange={(e) => updateField("referral_reason", e.target.value)} rows={3} />
             </Field>
