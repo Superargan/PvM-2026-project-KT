@@ -503,15 +503,24 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
       // For availability types, detect format and pre-process
       if (importType !== "sessies" && json.length > 0) {
         const grid = detectGridFormat(json);
-        if (grid.isGrid) {
+        if (grid.isGrid && grid.isWeekdayGrid) {
+          const entries = weekdayGridToEntries(json, grid.nameKey, grid.weekdayColumns, 3);
+          const weekdayNames = grid.weekdayColumns.map(wc => wc.label).join(", ");
+          setParsedEntries(entries);
+          setDetectedFormat(`Weekdag-formaat: ${grid.weekdayColumns.length} dagen (${weekdayNames}) → ${entries.length} beschikbaarheden (komende 3 maanden)`);
+        } else if (grid.isGrid) {
           const entries = gridToEntries(json, grid.nameKey, grid.dateColumns);
           setParsedEntries(entries);
-          setDetectedFormat(`Grid-formaat gedetecteerd: ${grid.dateColumns.length} dagkolommen, ${entries.length} beschikbaarheden`);
+          setDetectedFormat(`Grid-formaat: ${grid.dateColumns.length} dagkolommen, ${entries.length} beschikbaarheden`);
         } else {
           const isTrainer = importType === "trainer_beschikbaarheid";
           const entries = rowsToEntries(json, isTrainer);
           setParsedEntries(entries);
-          setDetectedFormat(`Rij-formaat: ${entries.length} beschikbaarheden gevonden`);
+          if (entries.length > 0 && entries.length > json.length) {
+            setDetectedFormat(`Weekdag-rij-formaat: ${entries.length} beschikbaarheden (komende 3 maanden)`);
+          } else {
+            setDetectedFormat(`Rij-formaat: ${entries.length} beschikbaarheden gevonden`);
+          }
         }
       } else {
         setParsedEntries([]);
