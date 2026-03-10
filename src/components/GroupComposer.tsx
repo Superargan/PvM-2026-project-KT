@@ -66,7 +66,7 @@ export default function GroupComposer() {
         .from("clients")
         .select("id, first_name, last_name, date_of_birth, waitlist_area_id, all_areas_flexible, school_id, schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
         .eq("archived", false)
-        .eq("intake_status", "wachtlijst");
+        .in("intake_status", ["wachtlijst", "intake_afgerond"]);
       if (error) throw error;
       return data ?? [];
     },
