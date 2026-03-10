@@ -1,4 +1,4 @@
-import { CheckCircle2, Loader2, ExternalLink, Clock, UserPlus, X, CalendarDays, Upload, Search, Pencil, AlertTriangle } from "lucide-react";
+import { CheckCircle2, Loader2, ExternalLink, Clock, UserPlus, X, CalendarDays, Upload, Search, Pencil, AlertTriangle, Download } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import WaitlistManager from "@/components/WaitlistManager";
 import ClientImport from "@/components/ClientImport";
+import { downloadExport } from "@/lib/csvExport";
 
 const editSchema = z.object({
   first_name: z.string().trim().min(1, "Voornaam is verplicht").max(100),
@@ -781,12 +782,47 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit }: {
     return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
   }
 
+  const handleExport = () => {
+    const columns = [
+      { key: "naam", label: "Naam" },
+      { key: "status", label: "Status" },
+      { key: "school", label: "School" },
+      { key: "ontbrekend", label: "Ontbrekende velden" },
+      { key: "geboortedatum", label: "Geboortedatum" },
+      { key: "telefoon", label: "Telefoon ouder" },
+      { key: "naam_ouder", label: "Naam ouder" },
+      { key: "postcode", label: "Postcode" },
+      { key: "geslacht", label: "Geslacht" },
+      { key: "gebied", label: "Gebied" },
+      { key: "avg", label: "AVG-toestemming" },
+    ];
+    const rows = flagged.map(({ client, missing }) => ({
+      naam: `${client.first_name} ${client.last_name}`.trim(),
+      status: statusLabels[client.intake_status] ?? client.intake_status ?? "",
+      school: client.schools?.name ?? "",
+      ontbrekend: missing.join(", "),
+      geboortedatum: client.date_of_birth ?? "",
+      telefoon: client.guardian_phone ?? "",
+      naam_ouder: client.guardian_name ?? "",
+      postcode: client.postal_code ?? "",
+      geslacht: client.gender ?? "",
+      gebied: client.areas?.name ?? "",
+      avg: client.consent_data_processing,
+    }));
+    downloadExport("controle-aanmeldingen.xlsx", columns, rows, "xlsx");
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           <span className="font-semibold text-foreground">{flagged.length}</span> van {clients.length} deelnemers hebben ontbrekende gegevens
         </p>
+        {flagged.length > 0 && (
+          <Button size="sm" variant="outline" onClick={handleExport} className="gap-1.5">
+            <Download className="h-3.5 w-3.5" /> Exporteer naar Excel
+          </Button>
+        )}
       </div>
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         <div className="overflow-x-auto">
