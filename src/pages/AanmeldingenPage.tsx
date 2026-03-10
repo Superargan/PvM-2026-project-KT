@@ -79,6 +79,9 @@ const statusLabels: Record<string, string> = {
 export default function AanmeldingenPage() {
   const [activeTab, setActiveTab] = useState("lijst");
   const [search, setSearch] = useState("");
+  const [filterArea, setFilterArea] = useState<string>("all");
+  const [filterSchool, setFilterSchool] = useState<string>("all");
+  const [filterAge, setFilterAge] = useState<string>("all");
   const [editOpen, setEditOpen] = useState(false);
   const [editClient, setEditClient] = useState<any>(null);
   const [form, setForm] = useState<Partial<EditForm>>({});
