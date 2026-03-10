@@ -250,7 +250,7 @@ function parseCellAvailability(val: any): { available: boolean; startTime: strin
 }
 
 /** Name column candidates (normalized) */
-const NAME_COL_ALIASES = ["naam", "name", "deelnemer", "kind", "leerling", "voornaam", "trainer", "medewerker", "participant"];
+const NAME_COL_ALIASES = ["naam", "name", "deelnemer", "kind", "leerling", "voornaam", "trainer", "medewerker", "participant", "achternaam", "fullname", "volledigenaam"];
 
 /** Dutch weekday mapping to JS getDay() (0=Sunday) */
 const DUTCH_WEEKDAYS: Record<string, number> = {
