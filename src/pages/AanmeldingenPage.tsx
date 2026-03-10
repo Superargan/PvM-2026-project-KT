@@ -56,6 +56,7 @@ const statusStyles: Record<string, string> = {
   nieuw: "status-rood",
   intake_gepland: "status-oranje",
   intake: "status-oranje",
+  intake_afgerond: "status-groen",
   actief: "status-groen",
   wachtlijst: "status-oranje",
   niet_deelnemen: "status-rood",
