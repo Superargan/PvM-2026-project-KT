@@ -228,7 +228,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
                                       ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300"
                                       : partial
                                       ? "bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300"
-                                      : "bg-muted text-muted-foreground hover:bg-muted/80 border border-border"
+                                      : "bg-red-100 text-red-800 hover:bg-red-200 border border-red-300"
                                   }`}
                                 >
                                   {primary}
