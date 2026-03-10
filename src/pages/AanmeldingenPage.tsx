@@ -658,6 +658,87 @@ export default function AanmeldingenPage() {
   );
 }
 
+function ClientTable({ clients, assignmentsByClient, onNavigate, onEdit, showAssigned }: {
+  clients: any[];
+  assignmentsByClient: Record<string, string[]>;
+  onNavigate: (id: string) => void;
+  onEdit: (client: any) => void;
+  showAssigned?: boolean;
+}) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-border bg-muted/50">
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Naam</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Leeftijdsgroep</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">School</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gebied</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Telefoon</th>
+              {showAssigned && <th className="hidden px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Toegewezen</th>}
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actie</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {clients.length === 0 && (
+              <tr><td colSpan={showAssigned ? 8 : 7} className="px-4 py-8 text-center text-sm text-muted-foreground">Geen aanmeldingen gevonden</td></tr>
+            )}
+            {clients.map((client: any) => {
+              const age = calculateAge(client.date_of_birth);
+              const ageGroup = age !== null ? (age <= 7 ? "4-7 jaar" : "8-12 jaar") : "—";
+              const status = client.intake_status ?? "nieuw";
+              const assigned = assignmentsByClient[client.id] ?? [];
+              return (
+                <tr key={client.id} className="transition-colors hover:bg-muted/30">
+                  <td className="px-4 py-3">
+                    <p className="text-sm font-semibold text-primary hover:underline cursor-pointer" onClick={() => onNavigate(client.id)}>{client.first_name} {client.last_name}</p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge variant="outline" className="text-xs">{ageGroup}</Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-sm text-card-foreground">{client.schools?.name ?? <span className="text-xs text-muted-foreground">—</span>}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-sm text-card-foreground">{(client as any).areas?.name ?? "—"}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-sm text-card-foreground">{client.guardian_phone ?? "—"}</span>
+                  </td>
+                  {showAssigned && (
+                    <td className="hidden px-4 py-3 lg:table-cell">
+                      <div className="flex flex-wrap gap-1">
+                        {assigned.length > 0
+                          ? assigned.map((name: string, i: number) => (
+                              <Badge key={i} variant="secondary" className="text-xs">{name}</Badge>
+                            ))
+                          : <span className="text-xs text-muted-foreground">—</span>
+                        }
+                      </div>
+                    </td>
+                  )}
+                  <td className="px-4 py-3">
+                    <span className={`status-indicator ${statusStyles[status] ?? "status-rood"}`}>
+                      {statusLabels[status] ?? status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Button size="sm" variant="ghost" onClick={() => onEdit(client)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function FieldWrapper({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
