@@ -139,12 +139,16 @@ export default function ProgramDetailPage() {
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <h1 className="font-display text-2xl font-extrabold text-foreground">{program.name}</h1>
-            {(program as any).training_number && (
-              <Badge variant="outline" className="text-xs">{(program as any).training_number}</Badge>
-            )}
+            {(() => {
+              const label = program.schools?.name || (program as any).location || program.areas?.name;
+              return label ? (
+                <Badge variant="outline" className="text-xs">{label}</Badge>
+              ) : null;
+            })()}
             <span className={`status-indicator ${statusInfo.css}`}>{statusInfo.label}</span>
           </div>
           <p className="text-sm text-muted-foreground">
+            {(program as any).training_number && <>{(program as any).training_number} • </>}
             {(program as any).location && <>{(program as any).location} • </>}
             {program.schools?.name && <>{program.schools.name} • </>}
             {program.areas?.name && <>{program.areas.name}</>}
