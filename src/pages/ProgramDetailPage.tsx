@@ -205,8 +205,8 @@ export default function ProgramDetailPage() {
             {(program as any).training_number && <>{(program as any).training_number} • </>}
             {(program as any).location && <>{(program as any).location} • </>}
             {program.schools?.name && <>{program.schools.name} • </>}
-            {program.areas?.name && <>{program.areas.name}</>}
-            {program.neighborhoods?.name && <> — {program.neighborhoods.name}</>}
+            {program.areas?.name && <>Gebied: {program.areas.name}</>}
+            {program.neighborhoods?.name && <> • Wijk: {program.neighborhoods.name}</>}
           </p>
         </div>
       </div>

@@ -99,11 +99,11 @@ export default function ProgrammasPage() {
       training_number: (form.get("training_number") as string) || null,
       location: (form.get("location") as string) || null,
       start_date: (form.get("start_date") as string) || null,
-      end_date: (form.get("end_date") as string) || null,
       max_participants: Number(form.get("max_participants")) || 14,
       area_id: selectedArea || null,
       neighborhood_id: selectedNeighborhood || null,
       age_category: selectedAgeCategory || null,
+      status: "te_plannen",
     } as any);
 
     if (error) {
