@@ -26,7 +26,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
   const navigate = useNavigate();
 
   const { data: clients = [] } = useQuery({
-    queryKey: ["waitlist-overview-clients"],
+    queryKey: ["clients", "waitlist-overview"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")

@@ -69,7 +69,7 @@ export default function AanmeldingenPage() {
   const queryClient = useQueryClient();
 
   const { data: clients = [], isLoading, refetch } = useQuery({
-    queryKey: ["aanmeldingen", search],
+    queryKey: ["clients", "aanmeldingen", search],
     queryFn: async () => {
       let query = supabase
         .from("clients")
@@ -253,7 +253,7 @@ export default function AanmeldingenPage() {
     setSaving(false);
     toast({ title: "Aanmelding bijgewerkt" });
     setEditOpen(false);
-    refetch();
+    queryClient.invalidateQueries({ queryKey: ["clients"] });
     queryClient.invalidateQueries({ queryKey: ["client-assignments"] });
   };
 

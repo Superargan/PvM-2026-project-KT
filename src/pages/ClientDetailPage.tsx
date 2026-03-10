@@ -83,7 +83,7 @@ export default function ClientDetailPage() {
 
   // Fetch client
   const { data: client, isLoading } = useQuery({
-    queryKey: ["client", id],
+    queryKey: ["clients", "detail", id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
@@ -293,7 +293,7 @@ export default function ClientDetailPage() {
     onSuccess: () => {
       toast({ title: "Opgeslagen" });
       setDirty(false);
-      queryClient.invalidateQueries({ queryKey: ["client", id] });
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
       queryClient.invalidateQueries({ queryKey: ["client-audit", id] });
     },
     onError: (err: any) => {
@@ -318,7 +318,6 @@ export default function ClientDetailPage() {
     onSuccess: () => {
       toast({ title: "Deelnemer verwijderd" });
       queryClient.invalidateQueries({ queryKey: ["clients"] });
-      queryClient.invalidateQueries({ queryKey: ["aanmeldingen"] });
       navigate("/clienten");
     },
     onError: (err: any) => {

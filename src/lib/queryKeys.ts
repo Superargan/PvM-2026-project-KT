@@ -1,0 +1,29 @@
+import { QueryClient } from "@tanstack/react-query";
+
+/**
+ * All client-related query keys share the ["clients"] prefix.
+ * This allows invalidateAllClientQueries to invalidate them all at once.
+ */
+export const clientKeys = {
+  all: ["clients"] as const,
+  list: (search?: string) => ["clients", "list", search] as const,
+  detail: (id: string) => ["clients", "detail", id] as const,
+  aanmeldingen: (search?: string) => ["clients", "aanmeldingen", search] as const,
+  waitlist: (...args: string[]) => ["clients", "waitlist", ...args] as const,
+  dashboard: (...args: string[]) => ["clients", "dashboard", ...args] as const,
+  planning: ["clients", "planning"] as const,
+  bySchool: ["clients", "by-school"] as const,
+  rapportages: ["clients", "rapportages"] as const,
+  groupComposer: ["clients", "group-composer"] as const,
+  waitlistOverview: ["clients", "waitlist-overview"] as const,
+  avail: ["clients", "avail"] as const,
+  forProgram: ["clients", "for-program"] as const,
+};
+
+/**
+ * Invalidate ALL client-related queries in one call.
+ * Because all keys start with ["clients"], this matches everything.
+ */
+export function invalidateAllClientQueries(queryClient: QueryClient) {
+  queryClient.invalidateQueries({ queryKey: ["clients"] });
+}

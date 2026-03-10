@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export default function Dashboard() {
   const { data: clientCount = 0 } = useQuery({
-    queryKey: ["dashboard-participants"],
+    queryKey: ["clients", "dashboard", "participants"],
     queryFn: async () => {
       const { count } = await supabase
         .from("clients")
@@ -34,7 +34,7 @@ export default function Dashboard() {
   });
 
   const { data: newClientCount = 0 } = useQuery({
-    queryKey: ["dashboard-new-clients"],
+    queryKey: ["clients", "dashboard", "new"],
     queryFn: async () => {
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
@@ -52,7 +52,7 @@ export default function Dashboard() {
   });
 
   const { data: intakeGeplandCount = 0 } = useQuery({
-    queryKey: ["dashboard-intake-gepland"],
+    queryKey: ["clients", "dashboard", "intake-gepland"],
     queryFn: async () => {
       const { count } = await supabase.from("clients").select("*", { count: "exact", head: true }).eq("archived", false).eq("intake_status", "intake_gepland");
       return count ?? 0;
@@ -60,7 +60,7 @@ export default function Dashboard() {
   });
 
   const { data: waitlistCount = 0 } = useQuery({
-    queryKey: ["dashboard-waitlist"],
+    queryKey: ["clients", "dashboard", "waitlist"],
     queryFn: async () => {
       const { count } = await supabase
         .from("clients")
@@ -71,7 +71,7 @@ export default function Dashboard() {
   });
 
   const { data: recentClients = [] } = useQuery({
-    queryKey: ["dashboard-recent-clients"],
+    queryKey: ["clients", "dashboard", "recent"],
     queryFn: async () => {
       const { data } = await supabase
         .from("clients")

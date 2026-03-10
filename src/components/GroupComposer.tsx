@@ -45,7 +45,7 @@ export default function GroupComposer() {
 
   // Fetch waitlist clients with school -> neighborhood -> area joins
   const { data: waitlistClients = [] } = useQuery({
-    queryKey: ["group-composer-clients"],
+    queryKey: ["clients", "group-composer"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
@@ -249,7 +249,7 @@ export default function GroupComposer() {
       if (updateErr) throw updateErr;
 
       toast({ title: "Groep aangemaakt", description: `${programName} met ${selected.size} deelnemers` });
-      queryClient.invalidateQueries({ queryKey: ["group-composer-clients"] });
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
       navigate(`/programmas/${program.id}`);
     } catch (err: any) {
       toast({ title: "Fout bij aanmaken", description: err.message, variant: "destructive" });

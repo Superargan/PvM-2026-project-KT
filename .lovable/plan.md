@@ -1,97 +1,59 @@
 
 
-# Plan: Centraal queryKey-systeem voor consistente data-synchronisatie
+# Plan: Testomgeving 2025 met Kanjertrainingen
 
-## Probleem
+## Huidige situatie
 
-Clientgegevens worden op 10+ plekken opgehaald met verschillende queryKeys:
-- `["aanmeldingen", search]`, `["clients", search]`, `["waitlist-clients"]`, `["dashboard-new-clients"]`, `["planning-clients"]`, `["clients-by-school"]`, `["group-composer-clients"]`, `["waitlist-overview-clients"]`, `["rpt_clients"]`, etc.
+| Gegeven | Aantal |
+|---------|--------|
+| Programma's (2026, KT) | 28 (te_plannen) + 3 (ingepland) |
+| Trainers | 1 (Patrick van Mastricht) |
+| Scholen | 162 |
+| Gebieden | 14 (alle Rotterdamse gebieden) |
+| Cliënten | 1 |
+| Sessies | 10 |
 
-Bij het opslaan op de ClientDetailPage worden alleen `["client", id]`, `["clients"]` en `["aanmeldingen"]` ge-invalideerd. Daardoor zien andere pagina's (Wachtlijst, Dashboard, Planning, Scholen, Rapportages) nog oude data.
+Er bestaan nog geen 2025-programma's. Alle huidige KT-nummers beginnen met 26xxx.
 
-Bovendien matcht `invalidateQueries({ queryKey: ["aanmeldingen"] })` niet met `["aanmeldingen", search]` tenzij `exact: false` wordt gebruikt (wat standaard is), maar sommige keys zoals `["waitlist-clients"]` worden helemaal niet ge-invalideerd.
+## Wat er nodig is
 
-## Oplossing
+Om realistisch te testen hebben we voor 5 Kanjertrainingen (2025) het volgende nodig:
 
-**Stap 1: Gedeelde queryKey-constanten en invalidatie-helper**
+1. **5 KT-programma's** met naam `KT - 25001` t/m `KT - 25005`, status `afgerond`, met start/einddatum in 2025, leeftijdscategorie, en gekoppeld aan een gebied/school
+2. **Trainers** - minimaal 4-6 extra trainers om realistisch 2 per programma te koppelen
+3. **Cliënten** - minimaal 35-40 kinderen (7-8 per groep) met naam, geboortedatum, school
+4. **Sessies** - 10 bijeenkomsten per programma (standaard KT = 10 lessen)
+5. **Presentie** - aanwezigheidsregistratie per sessie per kind
+6. **Koppelingen** - program_staff en program_clients records
 
-Maak een `src/lib/queryKeys.ts` met:
-- Alle client-gerelateerde queryKeys onder een gemeenschappelijke prefix `"clients"`
-- Een helper `invalidateAllClientQueries(queryClient)` die in een keer alle client-gerelateerde queries invalideert
+## Aanpak
 
-```typescript
-// src/lib/queryKeys.ts
-export const queryKeys = {
-  clients: {
-    all: ["clients"] as const,
-    list: (search?: string) => ["clients", "list", search] as const,
-    detail: (id: string) => ["clients", "detail", id] as const,
-    aanmeldingen: (search?: string) => ["clients", "aanmeldingen", search] as const,
-    waitlist: ["clients", "waitlist"] as const,
-    dashboard: ["clients", "dashboard"] as const,
-    planning: ["clients", "planning"] as const,
-    bySchool: ["clients", "by-school"] as const,
-    rapportages: ["clients", "rapportages"] as const,
-    groupComposer: ["clients", "group-composer"] as const,
-    waitlistOverview: ["clients", "waitlist-overview"] as const,
-  },
-};
+### Stap 1: Testdata genereren via SQL
+Ik maak een script dat via database-inserts de volgende testdata aanmaakt:
 
-export function invalidateAllClientQueries(queryClient: QueryClient) {
-  queryClient.invalidateQueries({ queryKey: ["clients"] });
-}
-```
+- **5 programma's**: KT - 25001 t/m 25005, verdeeld over verschillende gebieden, mix van 5-7 en 8-12 jaar, status `afgerond`, periode jan-jun 2025
+- **6 trainers**: realistische Nederlandse namen, gekoppeld aan scholen
+- **40 cliënten**: kinderen met naam, geboortedatum (passend bij leeftijdscategorie), school, oudergegevens, intake_status `afgerond`
+- **50 sessies**: 10 per programma, wekelijks verspreid over de periode
+- **Koppelingen**: elke training 2 trainers + 7-8 kinderen
+- **Presentie**: realistische aanwezigheid (~85%)
 
-Doordat alle keys nu beginnen met `["clients"]`, invalideert `invalidateQueries({ queryKey: ["clients"] })` automatisch **alle** client-queries in een keer.
+### Stap 2: Bestanden inlezen
+Je noemde dat je bestanden hebt met 2025-gegevens. Na stap 1 kun je die uploaden zodat we echte data gebruiken in plaats van (of naast) gegenereerde testdata. We kunnen dan bestaande records bijwerken of aanvullen.
 
-**Stap 2: Alle pagina's bijwerken**
+### Stap 3: Validatie
+Na het inladen controleren we of:
+- Programma's correct op de kaarten verschijnen
+- Trainers en deelnemers zichtbaar zijn op de detailpagina
+- Presentie en sessies kloppen
+- Filters en rapportages werken met de 2025-data
 
-Vervang de huidige queryKeys in alle bestanden:
+## Vraag aan jou
 
-| Bestand | Oud | Nieuw |
-|---|---|---|
-| `AanmeldingenPage.tsx` | `["aanmeldingen", search]` | `["clients", "aanmeldingen", search]` |
-| `ClientenPage.tsx` | `["clients", search]` | `["clients", "list", search]` |
-| `WachtlijstPage.tsx` | `["waitlist-clients"]` | `["clients", "waitlist"]` |
-| `ClientDetailPage.tsx` | `["client", id]` | `["clients", "detail", id]` |
-| `Index.tsx` | `["dashboard-new-clients"]`, `["dashboard-waitlist"]`, `["dashboard-recent-clients"]` | `["clients", "dashboard", "new"]`, `["clients", "dashboard", "waitlist"]`, `["clients", "dashboard", "recent"]` |
-| `PlanningPage.tsx` | `["planning-clients"]` | `["clients", "planning"]` |
-| `ScholenPage.tsx` | `["clients-by-school"]` | `["clients", "by-school"]` |
-| `RapportagesPage.tsx` | `["rpt_clients"]` | `["clients", "rapportages"]` |
-| `WaitlistOverview.tsx` | `["waitlist-overview-clients"]` | `["clients", "waitlist-overview"]` |
-| `WaitlistManager.tsx` | `["waitlist-clients", filterArea]` | `["clients", "waitlist", filterArea]` |
-| `GroupComposer.tsx` | `["group-composer-clients"]` | `["clients", "group-composer"]` |
-| `AvailabilityManager.tsx` | `["avail-clients"]` | `["clients", "avail"]` |
-| `ProgramDetailPage.tsx` | `["all-clients-for-program"]` | `["clients", "for-program"]` |
-| `ClientImport.tsx` | meerdere invalidates | `invalidateAllClientQueries(qc)` |
+Voordat ik begin:
 
-**Stap 3: Alle invalidatie-calls vereenvoudigen**
+- **Wil je eerst met puur gegenereerde testdata starten (5 programma's)**, zodat je daarna je eigen bestanden kunt uploaden om aan te vullen of te corrigeren?
+- **Of wil je eerst je bestanden delen**, zodat ik de echte 2025-gegevens direct kan verwerken?
 
-Op elke plek waar client-data wordt gemuteerd (ClientDetailPage save, WachtlijstPage assign, AanmeldingenPage edit, etc.), vervang de individuele invalidateQueries-calls door de enkele `invalidateAllClientQueries(queryClient)` call.
-
-## Resultaat
-
-- Wijziging op de clientkaart werkt direct door op alle pagina's
-- Geen aparte invalidatie-lijsten meer nodig bij elke mutatie
-- Nieuwe queries die beginnen met `["clients", ...]` worden automatisch mee-ge-invalideerd
-
-## Bestanden die gewijzigd worden
-
-- `src/lib/queryKeys.ts` (nieuw)
-- `src/pages/ClientDetailPage.tsx`
-- `src/pages/AanmeldingenPage.tsx`
-- `src/pages/ClientenPage.tsx`
-- `src/pages/WachtlijstPage.tsx`
-- `src/pages/Index.tsx`
-- `src/pages/PlanningPage.tsx`
-- `src/pages/ScholenPage.tsx`
-- `src/pages/RapportagesPage.tsx`
-- `src/pages/ProgramDetailPage.tsx`
-- `src/components/WaitlistOverview.tsx`
-- `src/components/WaitlistManager.tsx`
-- `src/components/GroupComposer.tsx`
-- `src/components/AvailabilityManager.tsx`
-- `src/components/ClientImport.tsx`
-
-Geen database-migraties nodig.
+De eerste optie is het snelst om mee te testen; de tweede geeft meteen realistische data.
 

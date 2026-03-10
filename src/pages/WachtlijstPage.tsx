@@ -44,7 +44,7 @@ export default function WachtlijstPage() {
   });
 
   const { data: waitlistClients = [], isLoading } = useQuery({
-    queryKey: ["waitlist-clients"],
+    queryKey: ["clients", "waitlist"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
@@ -89,7 +89,7 @@ export default function WachtlijstPage() {
     },
     onSuccess: () => {
       toast.success("Deelnemer toegewezen aan programma");
-      qc.invalidateQueries({ queryKey: ["waitlist-clients"] });
+      qc.invalidateQueries({ queryKey: ["clients"] });
     },
     onError: (err: any) => toast.error(err.message),
   });
@@ -106,7 +106,7 @@ export default function WachtlijstPage() {
     onSuccess: (_, ids) => {
       toast.success(`${ids.length} deelnemer(s) verwijderd van de wachtlijst`);
       setSelected(new Set());
-      qc.invalidateQueries({ queryKey: ["waitlist-clients"] });
+      qc.invalidateQueries({ queryKey: ["clients"] });
     },
     onError: (err: any) => toast.error(err.message),
   });
