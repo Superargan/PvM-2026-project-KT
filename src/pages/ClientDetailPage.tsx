@@ -499,9 +499,12 @@ export default function ClientDetailPage() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent className="bg-popover">
                     <SelectItem value="nieuw">Nieuw</SelectItem>
+                    <SelectItem value="intake_gepland">Intake gepland</SelectItem>
                     <SelectItem value="intake">Intake</SelectItem>
+                    <SelectItem value="intake_afgerond">Intake afgerond</SelectItem>
                     <SelectItem value="actief">Actief</SelectItem>
                     <SelectItem value="wachtlijst">Wachtlijst</SelectItem>
+                    <SelectItem value="niet_deelnemen">Niet deelnemen</SelectItem>
                     <SelectItem value="afgerond">Afgerond</SelectItem>
                   </SelectContent>
                 </Select>

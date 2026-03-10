@@ -82,7 +82,7 @@ export default function PlanningPage() {
         .from("clients")
         .select("id, first_name, last_name, intake_status, intake_date, date_of_birth, schools(name), waitlist_area_id")
         .eq("archived", false)
-        .in("intake_status", ["intake_gepland", "intake"])
+        .in("intake_status", ["intake_gepland", "intake", "intake_afgerond"])
         .gte("intake_date", format(dateRange.start, "yyyy-MM-dd"))
         .lte("intake_date", format(dateRange.end, "yyyy-MM-dd"));
       if (error) throw error;
@@ -171,7 +171,7 @@ export default function PlanningPage() {
         .from("clients")
         .select("id, first_name, last_name")
         .eq("archived", false)
-        .in("intake_status", ["nieuw", "intake_gepland", "intake", "actief", "wachtlijst"])
+        .in("intake_status", ["nieuw", "intake_gepland", "intake", "intake_afgerond", "actief", "wachtlijst"])
         .order("first_name");
       if (error) throw error;
       return data ?? [];

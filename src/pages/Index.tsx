@@ -12,7 +12,7 @@ export default function Dashboard() {
         .from("clients")
         .select("*", { count: "exact", head: true })
         .eq("archived", false)
-        .in("intake_status", ["actief", "wachtlijst", "intake_gepland", "intake", "nieuw"]);
+        .in("intake_status", ["actief", "wachtlijst", "intake_gepland", "intake", "intake_afgerond", "nieuw"]);
       return count ?? 0;
     },
   });
@@ -100,6 +100,7 @@ export default function Dashboard() {
     nieuw: { label: "Nieuw", color: "rood" },
     intake_gepland: { label: "Intake gepland", color: "oranje" },
     intake: { label: "Intake", color: "oranje" },
+    intake_afgerond: { label: "Intake afgerond", color: "groen" },
     actief: { label: "Actief", color: "groen" },
     wachtlijst: { label: "Wachtlijst", color: "oranje" },
     niet_deelnemen: { label: "Niet deelnemen", color: "rood" },

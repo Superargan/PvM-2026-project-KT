@@ -56,6 +56,7 @@ const statusStyles: Record<string, string> = {
   nieuw: "status-rood",
   intake_gepland: "status-oranje",
   intake: "status-oranje",
+  intake_afgerond: "status-groen",
   actief: "status-groen",
   wachtlijst: "status-oranje",
   niet_deelnemen: "status-rood",
@@ -66,6 +67,7 @@ const statusLabels: Record<string, string> = {
   nieuw: "Nieuw",
   intake_gepland: "Intake gepland",
   intake: "Intake",
+  intake_afgerond: "Intake afgerond",
   actief: "Actief",
   wachtlijst: "Wachtlijst",
   niet_deelnemen: "Niet deelnemen",
@@ -554,6 +556,7 @@ export default function AanmeldingenPage() {
                     <SelectItem value="nieuw">Nieuw</SelectItem>
                     <SelectItem value="intake_gepland">Intake gepland</SelectItem>
                     <SelectItem value="intake">Intake (in uitvoering)</SelectItem>
+                    <SelectItem value="intake_afgerond">Intake afgerond</SelectItem>
                     <SelectItem value="actief">Deelnemen</SelectItem>
                     <SelectItem value="wachtlijst">Wachtlijst</SelectItem>
                     <SelectItem value="niet_deelnemen">Niet deelnemen</SelectItem>
