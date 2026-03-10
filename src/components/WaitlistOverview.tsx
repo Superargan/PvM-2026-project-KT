@@ -69,7 +69,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
       const age = getAgeCategory(c.date_of_birth);
       if (!areaId) { noArea++; return; }
       if (!age) { noAge++; return; }
-      if (!m[areaId]) m[areaId] = { "4-7 jaar": [], "8-12 jaar": [] };
+      if (!m[areaId]) m[areaId] = { "5-7 jaar": [], "8-12 jaar": [] };
       m[areaId][age].push(c);
     });
 
