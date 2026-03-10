@@ -129,6 +129,8 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
               <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Totaal
               </th>
+              <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
