@@ -237,15 +237,19 @@ export default function ProgramDetailPage() {
             value={program.school_id ?? "geen"}
             onValueChange={async (v) => {
               const schoolId = v === "geen" ? null : v;
+              const selectedSchool = schools.find((s: any) => s.id === schoolId);
+              const neighborhoodId = selectedSchool?.neighborhood_id ?? null;
+              const areaId = selectedSchool?.neighborhoods?.area_id ?? null;
               const { error } = await supabase
                 .from("programs")
-                .update({ school_id: schoolId })
+                .update({ school_id: schoolId, neighborhood_id: neighborhoodId, area_id: areaId })
                 .eq("id", id!);
               if (error) {
                 toast({ title: "Fout", description: error.message, variant: "destructive" });
               } else {
                 toast({ title: "School gekoppeld" });
                 qc.invalidateQueries({ queryKey: ["program", id] });
+                qc.invalidateQueries({ queryKey: ["programs"] });
               }
             }}
           >
