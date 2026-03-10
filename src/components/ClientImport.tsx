@@ -373,6 +373,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       batchKeys.add(batchKey);
 
       // School
+      const schoolName = findCol(row, "School", "school", "Schoolnaam");
       const school_id = findSchoolId(schoolName, schoolResolutions);
 
       // Area
