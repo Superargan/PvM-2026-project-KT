@@ -140,6 +140,7 @@ export default function ScholenPage() {
   const [contactUploadOpen, setContactUploadOpen] = useState(false);
   const [contactDialogOpen, setContactDialogOpen] = useState(false);
   const [docsDialogOpen, setDocsDialogOpen] = useState(false);
+  const [statsDialogOpen, setStatsDialogOpen] = useState(false);
   const [selectedSchool, setSelectedSchool] = useState<any>(null);
   const [editingReferrer, setEditingReferrer] = useState<any>(null);
   const [selectedArea, setSelectedArea] = useState<string>("");
@@ -149,6 +150,7 @@ export default function ScholenPage() {
   const [editSaving, setEditSaving] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // Fetch areas with neighborhoods
   const { data: areas = [] } = useQuery({
