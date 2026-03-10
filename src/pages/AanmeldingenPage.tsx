@@ -1,4 +1,4 @@
-import { ClipboardList, Search, Pencil, Loader2, ExternalLink, Clock, UserPlus, X, CalendarDays, Upload } from "lucide-react";
+import { CheckCircle2, Loader2, ExternalLink, Clock, UserPlus, X, CalendarDays, Upload, Search, Pencil } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
