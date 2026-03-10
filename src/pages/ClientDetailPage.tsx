@@ -28,23 +28,25 @@ function calculateAge(dob: string | null): number | null {
 }
 
 const statusLabels: Record<string, string> = {
-  nieuw: "Nieuw",
+  nieuw: "Aanmelding",
   intake_gepland: "Intake gepland",
-  intake: "Intake",
-  actief: "Actief",
+  intake_afgerond: "Intake afgerond",
   wachtlijst: "Wachtlijst",
+  actief: "Deelnemer",
+  training_afgerond: "Training afgerond",
+  tussentijds_gestopt: "Tussentijds gestopt",
   niet_deelnemen: "Niet deelnemen",
-  afgerond: "Afgerond",
 };
 
 const statusStyles: Record<string, string> = {
   nieuw: "status-rood",
   intake_gepland: "status-oranje",
-  intake: "status-oranje",
-  actief: "status-groen",
+  intake_afgerond: "status-groen",
   wachtlijst: "status-oranje",
+  actief: "status-groen",
+  training_afgerond: "status-groen",
+  tussentijds_gestopt: "status-rood",
   niet_deelnemen: "status-rood",
-  afgerond: "status-groen",
 };
 
 function IntakeProgress({ client }: { client: any }) {
