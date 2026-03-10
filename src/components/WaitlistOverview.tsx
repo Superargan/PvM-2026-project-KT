@@ -173,6 +173,17 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
                   <td className="px-4 py-3 text-center">
                     <span className="text-sm font-bold text-foreground">{areaTotal}</span>
                   </td>
+                  <td className="px-4 py-3 text-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs gap-1 text-primary hover:text-primary"
+                      onClick={() => onViewAvailability?.(area.id)}
+                    >
+                      <Eye className="h-3 w-3" />
+                      Beschikbaarheid
+                    </Button>
+                  </td>
                 </tr>
               );
             })}
