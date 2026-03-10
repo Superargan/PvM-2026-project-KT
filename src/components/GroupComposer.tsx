@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { differenceInYears, parseISO } from "date-fns";
-import { Users, UserCog, Check, AlertTriangle } from "lucide-react";
+import { differenceInYears, parseISO, format, getDay } from "date-fns";
+import { nl } from "date-fns/locale";
+import { Users, UserCog, Check, AlertTriangle, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -94,7 +95,80 @@ export default function GroupComposer() {
     },
   });
 
-  // Fetch all active trainers
+  // Fetch all client availability
+  const { data: allAvailability = [] } = useQuery({
+    queryKey: ["clients", "group-composer-avail"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("client_availability")
+        .select("client_id, available_date, start_time, end_time");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Build availability map: clientId -> array of { dayOfWeek, startTime, endTime }
+  const availByClient = useMemo(() => {
+    const m: Record<string, { dayOfWeek: number; dayName: string; startTime: string; endTime: string }[]> = {};
+    const dayNames = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"];
+    allAvailability.forEach((a: any) => {
+      if (!m[a.client_id]) m[a.client_id] = [];
+      const dow = getDay(parseISO(a.available_date));
+      m[a.client_id].push({
+        dayOfWeek: dow,
+        dayName: dayNames[dow],
+        startTime: a.start_time ?? "09:00",
+        endTime: a.end_time ?? "17:00",
+      });
+    });
+    return m;
+  }, [allAvailability]);
+
+  // Find best overlapping timeslot for a set of client IDs
+  const getSuggestion = (clientIds: Set<string>): { dayName: string; startTime: string; endTime: string; overlap: number; total: number } | null => {
+    if (clientIds.size === 0) return null;
+    
+    // Count availability per weekday, track time overlaps
+    const dayStats: Record<number, { count: number; dayName: string; starts: string[]; ends: string[] }> = {};
+    const dayNames = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"];
+    
+    clientIds.forEach((cid) => {
+      const avail = availByClient[cid];
+      if (!avail) return;
+      // Deduplicate by day of week for this client
+      const seenDays = new Set<number>();
+      avail.forEach((a) => {
+        if (seenDays.has(a.dayOfWeek)) return;
+        seenDays.add(a.dayOfWeek);
+        if (!dayStats[a.dayOfWeek]) {
+          dayStats[a.dayOfWeek] = { count: 0, dayName: dayNames[a.dayOfWeek], starts: [], ends: [] };
+        }
+        dayStats[a.dayOfWeek].count++;
+        dayStats[a.dayOfWeek].starts.push(a.startTime);
+        dayStats[a.dayOfWeek].ends.push(a.endTime);
+      });
+    });
+
+    // Find day with most overlap
+    const entries = Object.values(dayStats).filter(d => d.count >= 2);
+    if (entries.length === 0) return null;
+    
+    entries.sort((a, b) => b.count - a.count);
+    const best = entries[0];
+    
+    // Find common time window (latest start, earliest end)
+    const latestStart = best.starts.sort().reverse()[0];
+    const earliestEnd = best.ends.sort()[0];
+    
+    return {
+      dayName: best.dayName,
+      startTime: latestStart <= earliestEnd ? latestStart : best.starts.sort()[0],
+      endTime: latestStart <= earliestEnd ? earliestEnd : best.ends.sort().reverse()[0],
+      overlap: best.count,
+      total: clientIds.size,
+    };
+  };
+
   const { data: allTrainers = [] } = useQuery({
     queryKey: ["group-composer-trainers"],
     queryFn: async () => {
@@ -482,6 +556,50 @@ export default function GroupComposer() {
                     </Select>
                   </div>
                 </div>
+
+                {/* Suggested timeslot */}
+                {(() => {
+                  const suggestion = getSuggestion(selected);
+                  const clientsWithAvail = Array.from(selected).filter(id => availByClient[id]?.length > 0).length;
+                  
+                  if (clientsWithAvail === 0) {
+                    return (
+                      <div className="rounded-lg border border-border bg-muted/30 p-3 flex items-center gap-2">
+                        <CalendarClock className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <p className="text-xs text-muted-foreground">Geen beschikbaarheid ingevuld — voeg beschikbaarheid toe voor een voorstel.</p>
+                      </div>
+                    );
+                  }
+                  
+                  if (!suggestion) {
+                    return (
+                      <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 flex items-center gap-2">
+                        <CalendarClock className="h-4 w-4 text-amber-600 shrink-0" />
+                        <p className="text-xs text-amber-800">Geen overlappend moment gevonden. {clientsWithAvail}/{selected.size} deelnemers hebben beschikbaarheid.</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <CalendarClock className="h-4 w-4 text-emerald-600 shrink-0" />
+                        <p className="text-xs font-semibold text-emerald-800">Voorstel trainingsmoment</p>
+                      </div>
+                      <div className="flex items-center gap-3 pl-6">
+                        <Badge variant="outline" className="border-emerald-300 text-emerald-700 text-xs capitalize">
+                          {suggestion.dayName}
+                        </Badge>
+                        <span className="text-sm font-medium text-foreground">
+                          {suggestion.startTime.slice(0, 5)} – {suggestion.endTime.slice(0, 5)}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          ({suggestion.overlap}/{suggestion.total} beschikbaar)
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Create button */}
                 <Button
