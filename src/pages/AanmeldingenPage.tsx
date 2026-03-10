@@ -36,6 +36,7 @@ const editSchema = z.object({
   intake_notes: z.string().max(5000).optional(),
   intake_status: z.string().optional(),
   intake_date: z.string().optional(),
+  registration_date: z.string().optional(),
   consent_data_processing: z.boolean().optional(),
   whatsapp_consent: z.boolean().optional(),
   notes: z.string().max(5000).optional(),

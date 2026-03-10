@@ -514,6 +514,10 @@ export default function ClientDetailPage() {
                 <Input type="date" value={form.intake_date ?? ""} onChange={(e) => updateField("intake_date", e.target.value)} />
               </Field>
             </div>
+            <Field label="Aanmelddatum">
+              <Input type="date" value={form.registration_date ?? ""} onChange={(e) => updateField("registration_date", e.target.value)} />
+            </Field>
+            </div>
             <Field label="Reden van aanmelding">
               <Textarea value={form.referral_reason ?? ""} onChange={(e) => updateField("referral_reason", e.target.value)} rows={3} />
             </Field>
