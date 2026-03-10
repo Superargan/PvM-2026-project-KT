@@ -99,11 +99,11 @@ export default function ProgrammasPage() {
       training_number: (form.get("training_number") as string) || null,
       location: (form.get("location") as string) || null,
       start_date: (form.get("start_date") as string) || null,
-      end_date: (form.get("end_date") as string) || null,
       max_participants: Number(form.get("max_participants")) || 14,
       area_id: selectedArea || null,
       neighborhood_id: selectedNeighborhood || null,
       age_category: selectedAgeCategory || null,
+      status: "te_plannen",
     } as any);
 
     if (error) {
@@ -250,10 +250,7 @@ export default function ProgrammasPage() {
               <div><Label>Trainingsnummer</Label><Input name="training_number" placeholder="bijv. KT-001" /></div>
               <div><Label>Locatie</Label><Input name="location" placeholder="bijv. Huis aan de Wijk, schoolnaam..." /></div>
               <div><Label>Beschrijving</Label><Textarea name="description" /></div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><Label>Startdatum</Label><Input name="start_date" type="date" /></div>
-                <div><Label>Einddatum</Label><Input name="end_date" type="date" /></div>
-              </div>
+              <div><Label>Vermoedelijke startdatum</Label><Input name="start_date" type="date" /></div>
               <div><Label>Max deelnemers</Label><Input name="max_participants" type="number" defaultValue={14} min={7} max={14} /></div>
               <div>
                 <Label>Leeftijdscategorie</Label>
@@ -327,10 +324,14 @@ export default function ProgrammasPage() {
                 </h3>
                 {prog.description && <p className="text-xs text-muted-foreground">{prog.description}</p>}
                 {prog.schools?.name && <p className="text-xs text-muted-foreground">{prog.schools.name}</p>}
-                {(prog.areas?.name || prog.neighborhoods?.name) && (
+                {prog.areas?.name && (
                   <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                    <MapPin className="h-3 w-3" />
-                    {prog.areas?.name}{prog.neighborhoods?.name ? ` — ${prog.neighborhoods.name}` : ""}
+                    <MapPin className="h-3 w-3" /> {prog.areas.name}
+                  </p>
+                )}
+                {prog.neighborhoods?.name && (
+                  <p className="flex items-center gap-1 text-xs text-muted-foreground ml-4">
+                    Wijk: {prog.neighborhoods.name}
                   </p>
                 )}
                 <div className="mt-4 space-y-2 border-t border-border pt-3">

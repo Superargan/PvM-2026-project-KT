@@ -205,8 +205,8 @@ export default function ProgramDetailPage() {
             {(program as any).training_number && <>{(program as any).training_number} • </>}
             {(program as any).location && <>{(program as any).location} • </>}
             {program.schools?.name && <>{program.schools.name} • </>}
-            {program.areas?.name && <>{program.areas.name}</>}
-            {program.neighborhoods?.name && <> — {program.neighborhoods.name}</>}
+            {program.areas?.name && <>Gebied: {program.areas.name}</>}
+            {program.neighborhoods?.name && <> • Wijk: {program.neighborhoods.name}</>}
           </p>
         </div>
       </div>
@@ -227,9 +227,10 @@ export default function ProgramDetailPage() {
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1"><MapPin className="h-3.5 w-3.5" /> Gebied</div>
-          <p className="text-sm font-semibold text-foreground">
-            {program.areas?.name ?? "—"}{program.neighborhoods?.name ? ` — ${program.neighborhoods.name}` : ""}
-          </p>
+          <p className="text-sm font-semibold text-foreground">{program.areas?.name ?? "—"}</p>
+          {program.neighborhoods?.name && (
+            <p className="text-xs text-muted-foreground mt-0.5">Wijk: {program.neighborhoods.name}</p>
+          )}
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1"><School className="h-3.5 w-3.5" /> School</div>
