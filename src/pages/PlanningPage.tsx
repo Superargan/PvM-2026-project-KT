@@ -224,6 +224,8 @@ export default function PlanningPage() {
 
     intakes.forEach((intake: any) => {
       if (intake.intake_date && map[intake.intake_date]) {
+        // Apply area filter to intakes too
+        if (filterArea !== "alle" && intake.waitlist_area_id !== filterArea) return;
         map[intake.intake_date].intakes.push(intake);
       }
     });
