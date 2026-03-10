@@ -754,3 +754,86 @@ function FieldWrapper({ label, error, children }: { label: string; error?: strin
     </div>
   );
 }
+
+const REQUIRED_CHECKS: { key: string; label: string; check: (c: any) => boolean }[] = [
+  { key: "date_of_birth", label: "Geboortedatum", check: (c) => !c.date_of_birth },
+  { key: "school_id", label: "School", check: (c) => !c.school_id },
+  { key: "guardian_phone", label: "Telefoon ouder", check: (c) => !c.guardian_phone },
+  { key: "guardian_name", label: "Naam ouder", check: (c) => !c.guardian_name },
+  { key: "waitlist_area_id", label: "Gebied", check: (c) => !c.waitlist_area_id },
+  { key: "gender", label: "Geslacht", check: (c) => !c.gender },
+  { key: "postal_code", label: "Postcode", check: (c) => !c.postal_code },
+  { key: "consent_data_processing", label: "AVG-toestemming", check: (c) => !c.consent_data_processing },
+];
+
+function MissingDataCheck({ clients, isLoading, onNavigate, onEdit }: {
+  clients: any[];
+  isLoading: boolean;
+  onNavigate: (id: string) => void;
+  onEdit: (client: any) => void;
+}) {
+  const flagged = clients.map((c: any) => {
+    const missing = REQUIRED_CHECKS.filter((ch) => ch.check(c)).map((ch) => ch.label);
+    return { client: c, missing };
+  }).filter((r) => r.missing.length > 0).sort((a, b) => b.missing.length - a.missing.length);
+
+  if (isLoading) {
+    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          <span className="font-semibold text-foreground">{flagged.length}</span> van {clients.length} deelnemers hebben ontbrekende gegevens
+        </p>
+      </div>
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-border bg-muted/50">
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Naam</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ontbrekende velden</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actie</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {flagged.length === 0 && (
+                <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-muted-foreground">✅ Alle gegevens zijn volledig ingevuld!</td></tr>
+              )}
+              {flagged.map(({ client, missing }) => {
+                const status = client.intake_status ?? "nieuw";
+                return (
+                  <tr key={client.id} className="transition-colors hover:bg-muted/30">
+                    <td className="px-4 py-3">
+                      <p className="text-sm font-semibold text-primary hover:underline cursor-pointer" onClick={() => onNavigate(client.id)}>{client.first_name} {client.last_name}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`status-indicator ${statusStyles[status] ?? "status-rood"}`}>
+                        {statusLabels[status] ?? status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {missing.map((m) => (
+                          <Badge key={m} variant="destructive" className="text-xs">{m}</Badge>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Button size="sm" variant="ghost" onClick={() => onEdit(client)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
