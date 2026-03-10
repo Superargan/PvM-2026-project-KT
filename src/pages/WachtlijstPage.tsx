@@ -236,7 +236,7 @@ export default function WachtlijstPage() {
                   <TableCell className="text-sm text-card-foreground">{(() => { const age = calculateAge(client.date_of_birth); return age !== null ? `${age} jaar` : "—"; })()}</TableCell>
                   <TableCell>{(client as any).areas?.name ?? "—"}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {client.created_at ? format(new Date(client.created_at), "d MMM yyyy", { locale: nl }) : "—"}
+                    {client.registration_date ? format(new Date(client.registration_date), "d MMM yyyy", { locale: nl }) : "—"}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {client.intake_date ? format(new Date(client.intake_date), "d MMM yyyy", { locale: nl }) : "—"}
