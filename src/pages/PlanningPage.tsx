@@ -376,22 +376,42 @@ export default function PlanningPage() {
                 const items = agendaByDay[key];
                 const isToday = key === today;
                 const hasItems = items && (items.intakes.length > 0 || items.sessions.length > 0);
+                const special = isSpecialDay(key);
+                const hasHoliday = special.holidays.length > 0;
+                const hasVacation = !!special.vacation;
 
                 return (
                   <div
                     key={key}
-                    className={`rounded-lg border ${isToday ? "border-primary bg-primary/5" : "border-border bg-card"}`}
+                    className={`rounded-lg border ${isToday ? "border-primary bg-primary/5" : hasHoliday ? "border-destructive/30 bg-destructive/5" : hasVacation ? "border-muted-foreground/20 bg-muted/30" : "border-border bg-card"}`}
                   >
                     <div className="flex items-center gap-3 border-b border-border/50 px-4 py-2">
-                      <span className={`text-sm font-bold capitalize ${isToday ? "text-primary" : "text-foreground"}`}>
+                      <span className={`text-sm font-bold capitalize ${isToday ? "text-primary" : hasHoliday ? "text-destructive" : "text-foreground"}`}>
                         {format(day, "EEEE d MMMM", { locale: nl })}
                       </span>
                       {isToday && <Badge variant="default" className="text-[10px] px-1.5 py-0">Vandaag</Badge>}
+                      {special.holidays.map((h, i) => (
+                        <Badge key={i} variant="outline" className="text-[10px] px-1.5 py-0 border-destructive/40 text-destructive">
+                          <Star className="h-2.5 w-2.5 mr-0.5" />
+                          {h.name}
+                        </Badge>
+                      ))}
+                      {hasVacation && !hasHoliday && (
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-muted-foreground/40 text-muted-foreground">
+                          <Palmtree className="h-2.5 w-2.5 mr-0.5" />
+                          {special.vacation!.name}
+                        </Badge>
+                      )}
                     </div>
 
                     <div className="px-4 py-2 space-y-1.5">
-                      {!hasItems && (
+                      {!hasItems && !hasHoliday && !hasVacation && (
                         <p className="text-xs text-muted-foreground py-1">Geen activiteiten</p>
+                      )}
+                      {!hasItems && (hasHoliday || hasVacation) && (
+                        <p className="text-xs text-muted-foreground py-1">
+                          {hasHoliday ? "Feestdag — geen activiteiten gepland" : "Schoolvakantie"}
+                        </p>
                       )}
 
                       {/* Intakes */}
