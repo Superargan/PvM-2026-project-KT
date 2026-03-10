@@ -149,21 +149,20 @@ export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => 
                   <TableCell>
                     <Badge variant="outline" className="text-xs">{ageGroup}</Badge>
                   </TableCell>
+                  <TableCell className="text-sm text-card-foreground">
+                    {(client as any).schools?.name ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-sm text-card-foreground">
+                    {(client as any).areas?.name ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-sm text-card-foreground">
+                    {client.guardian_phone ?? "—"}
+                  </TableCell>
                   <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                     {client.created_at ? format(new Date(client.created_at), "d MMM yyyy", { locale: nl }) : "—"}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                     {client.intake_date ? format(new Date(client.intake_date), "d MMM yyyy", { locale: nl }) : "—"}
-                  </TableCell>
-                  <TableCell>{(client as any).areas?.name ?? "—"}</TableCell>
-                  <TableCell>
-                    <Badge className={statusColors[client.waitlist_status] ?? ""}>
-                      {client.waitlist_status === "waiting" ? <Clock className="h-3 w-3 mr-1" /> : <XCircle className="h-3 w-3 mr-1" />}
-                      {statusLabels[client.waitlist_status] ?? client.waitlist_status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
-                    {client.dropout_reason ?? "—"}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center gap-1 justify-end">
