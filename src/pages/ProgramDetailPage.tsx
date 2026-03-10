@@ -71,6 +71,19 @@ export default function ProgramDetailPage() {
     },
   });
 
+  // Fetch schools for linking
+  const { data: schools = [] } = useQuery({
+    queryKey: ["all-schools-for-program"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("schools")
+        .select("id, name")
+        .order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const enrolledIds = enrolledClients.map((ec: any) => ec.client_id);
   const availableClients = allClients.filter((c: any) => !enrolledIds.includes(c.id));
 
