@@ -121,7 +121,7 @@ export default function AanmeldenPublicPage() {
           </div>
 
           <FieldWrapper label="Geboortedatum kind *" error={errors.date_of_birth}>
-            <Input type="date" value={form.date_of_birth ?? ""} onChange={(e) => updateField("date_of_birth", e.target.value)} max={new Date().toISOString().split("T")[0]} />
+            <DateInput value={form.date_of_birth ?? ""} onChange={(v) => updateField("date_of_birth", v)} max={new Date().toISOString().split("T")[0]} />
           </FieldWrapper>
 
           <FieldWrapper label="School *" error={errors.school_id}>
