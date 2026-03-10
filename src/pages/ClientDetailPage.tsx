@@ -7,6 +7,7 @@ import { ArrowLeft, Loader2, Save, User, ClipboardList, BookOpen, Shield, FileTe
 import AvailabilityManager from "@/components/AvailabilityManager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/DateInput";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
