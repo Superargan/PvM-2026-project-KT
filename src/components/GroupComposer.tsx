@@ -12,12 +12,19 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 
 type AgeCategory = "5-7 jaar" | "8-12 jaar";
+type MatchType = "Primair" | "Reserve 1" | "Reserve 2" | "Reserve 3" | "Flexibel";
+
+interface ClientWithMatch {
+  client: any;
+  matchType: MatchType;
+  sortOrder: number;
+}
 
 interface GroupedClients {
   areaId: string;
   areaName: string;
   ageCategory: AgeCategory;
-  clients: any[];
+  clients: ClientWithMatch[];
 }
 
 function calculateAge(dob: string | null): number | null {
@@ -33,6 +40,14 @@ function getAgeCategory(dob: string | null): AgeCategory | null {
   return null;
 }
 
+const matchColors: Record<MatchType, string> = {
+  "Primair": "bg-emerald-100 text-emerald-800 border-emerald-300",
+  "Reserve 1": "bg-blue-100 text-blue-800 border-blue-300",
+  "Reserve 2": "bg-violet-100 text-violet-800 border-violet-300",
+  "Reserve 3": "bg-pink-100 text-pink-800 border-pink-300",
+  "Flexibel": "bg-amber-100 text-amber-800 border-amber-300",
+};
+
 export default function GroupComposer() {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -43,15 +58,27 @@ export default function GroupComposer() {
   const [creating, setCreating] = useState<string | null>(null);
   const [filterArea, setFilterArea] = useState<string>("alle");
 
-  // Fetch waitlist clients with school -> neighborhood -> area joins
+  // Fetch waitlist clients
   const { data: waitlistClients = [] } = useQuery({
     queryKey: ["clients", "group-composer"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, first_name, last_name, date_of_birth, waitlist_area_id, school_id, schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
+        .select("id, first_name, last_name, date_of_birth, waitlist_area_id, all_areas_flexible, school_id, schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
         .eq("archived", false)
         .eq("intake_status", "wachtlijst");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Fetch area preferences
+  const { data: allPreferences = [] } = useQuery({
+    queryKey: ["clients", "group-composer-prefs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("client_area_preferences")
+        .select("client_id, area_id, preference_order");
       if (error) throw error;
       return data ?? [];
     },
@@ -82,45 +109,94 @@ export default function GroupComposer() {
     },
   });
 
-  // Area map for resolving names
+  // Preference map: clientId -> { areaId: preferenceOrder }
+  const prefsByClient = useMemo(() => {
+    const m: Record<string, Record<string, number>> = {};
+    allPreferences.forEach((p: any) => {
+      if (!m[p.client_id]) m[p.client_id] = {};
+      m[p.client_id][p.area_id] = p.preference_order;
+    });
+    return m;
+  }, [allPreferences]);
+
   const areaMap = useMemo(() => {
     const m: Record<string, string> = {};
     areas.forEach((a: any) => { m[a.id] = a.name; });
     return m;
   }, [areas]);
 
-  // Resolve area for a client
   const resolveAreaId = (client: any): string | null => {
     if (client.waitlist_area_id) return client.waitlist_area_id;
-    const areaId = (client as any).schools?.neighborhoods?.area_id;
-    if (areaId) return areaId;
+    return (client as any).schools?.neighborhoods?.area_id ?? null;
+  };
+
+  // Determine match type for a client in a given area
+  const getMatchType = (client: any, targetAreaId: string): MatchType | null => {
+    const primaryAreaId = resolveAreaId(client);
+    if (primaryAreaId === targetAreaId) return "Primair";
+
+    const prefs = prefsByClient[client.id];
+    if (prefs && prefs[targetAreaId]) {
+      const order = prefs[targetAreaId];
+      if (order === 1) return "Reserve 1";
+      if (order === 2) return "Reserve 2";
+      if (order === 3) return "Reserve 3";
+    }
+
+    if ((client as any).all_areas_flexible) return "Flexibel";
+
     return null;
   };
 
-  // Group clients by area + age category
+  const matchSortOrder: Record<MatchType, number> = {
+    "Primair": 0,
+    "Reserve 1": 1,
+    "Reserve 2": 2,
+    "Reserve 3": 3,
+    "Flexibel": 4,
+  };
+
+  // Group clients by area + age category, including reserve matches
   const groups: GroupedClients[] = useMemo(() => {
     const map = new Map<string, GroupedClients>();
 
-    waitlistClients.forEach((client: any) => {
-      const areaId = resolveAreaId(client);
-      const ageCategory = getAgeCategory(client.date_of_birth);
-      if (!areaId || !ageCategory) return;
+    areas.forEach((area: any) => {
+      const ageCategories: AgeCategory[] = ["5-7 jaar", "8-12 jaar"];
+      ageCategories.forEach((ageCategory) => {
+        const key = `${area.id}__${ageCategory}`;
+        const matchedClients: ClientWithMatch[] = [];
 
-      const key = `${areaId}__${ageCategory}`;
-      if (!map.has(key)) {
-        map.set(key, {
-          areaId,
-          areaName: areaMap[areaId] ?? "Onbekend gebied",
-          ageCategory,
-          clients: [],
+        // Check each waitlist client for this area
+        waitlistClients.forEach((client: any) => {
+          const ageCat = getAgeCategory(client.date_of_birth);
+          if (ageCat !== ageCategory) return;
+
+          const matchType = getMatchType(client, area.id);
+          if (!matchType) return;
+
+          matchedClients.push({
+            client,
+            matchType,
+            sortOrder: matchSortOrder[matchType],
+          });
         });
-      }
-      map.get(key)!.clients.push(client);
+
+        if (matchedClients.length > 0) {
+          // Sort: primary first, then by reserve order
+          matchedClients.sort((a, b) => a.sortOrder - b.sortOrder);
+
+          map.set(key, {
+            areaId: area.id,
+            areaName: areaMap[area.id] ?? "Onbekend gebied",
+            ageCategory,
+            clients: matchedClients,
+          });
+        }
+      });
     });
 
-    // Sort: largest groups first
     return Array.from(map.values()).sort((a, b) => b.clients.length - a.clients.length);
-  }, [waitlistClients, areaMap]);
+  }, [waitlistClients, areas, areaMap, prefsByClient]);
 
   // Clients without area or age
   const unassigned = useMemo(() => {
@@ -157,8 +233,7 @@ export default function GroupComposer() {
   const getSelectedForGroup = (g: GroupedClients): Set<string> => {
     const key = getGroupKey(g);
     if (!selectedClients[key]) {
-      // Default: all selected
-      return new Set(g.clients.map((c: any) => c.id));
+      return new Set(g.clients.map((cm) => cm.client.id));
     }
     return selectedClients[key];
   };
@@ -178,18 +253,16 @@ export default function GroupComposer() {
     if (current.size === g.clients.length) {
       setSelectedClients(prev => ({ ...prev, [key]: new Set() }));
     } else {
-      setSelectedClients(prev => ({ ...prev, [key]: new Set(g.clients.map((c: any) => c.id)) }));
+      setSelectedClients(prev => ({ ...prev, [key]: new Set(g.clients.map((cm) => cm.client.id)) }));
     }
   };
 
-  // Status color/icon
   const getStatusInfo = (count: number) => {
     if (count >= 7) return { color: "text-emerald-700 bg-emerald-50 border-emerald-200", label: "Gereed om te starten", icon: <Check className="h-4 w-4" /> };
     if (count >= 5) return { color: "text-amber-700 bg-amber-50 border-amber-200", label: `Nog ${7 - count} nodig`, icon: <AlertTriangle className="h-4 w-4" /> };
     return { color: "text-red-700 bg-red-50 border-red-200", label: `Nog ${7 - count} nodig`, icon: <AlertTriangle className="h-4 w-4" /> };
   };
 
-  // Create group action
   const createGroup = async (g: GroupedClients) => {
     const key = getGroupKey(g);
     const selected = getSelectedForGroup(g);
@@ -204,7 +277,6 @@ export default function GroupComposer() {
     setCreating(key);
 
     try {
-      // 1. Create program
       const programName = `${g.areaName} – ${g.ageCategory}`;
       const { data: program, error: progErr } = await supabase
         .from("programs")
@@ -220,7 +292,6 @@ export default function GroupComposer() {
 
       if (progErr) throw progErr;
 
-      // 2. Insert program_clients
       const clientInserts = Array.from(selected).map(clientId => ({
         program_id: program.id,
         client_id: clientId,
@@ -228,7 +299,6 @@ export default function GroupComposer() {
       const { error: clientErr } = await supabase.from("program_clients").insert(clientInserts);
       if (clientErr) throw clientErr;
 
-      // 3. Insert program_staff
       const staffInserts: any[] = [];
       if (oudertrainerId) {
         staffInserts.push({ program_id: program.id, staff_id: oudertrainerId, role: "oudertrainer" });
@@ -241,7 +311,6 @@ export default function GroupComposer() {
         if (staffErr) throw staffErr;
       }
 
-      // 4. Update client intake_status to 'actief'
       const { error: updateErr } = await supabase
         .from("clients")
         .update({ intake_status: "actief" })
@@ -262,7 +331,7 @@ export default function GroupComposer() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Stel automatisch groepen samen op basis van leeftijd en gebied. Minimaal 7 deelnemers per groep (max 14).
+          Stel automatisch groepen samen op basis van leeftijd en gebied. Inclusief reserve-voorkeuren en flexibele deelnemers.
         </p>
         <Select value={filterArea} onValueChange={setFilterArea}>
           <SelectTrigger className="w-48"><SelectValue placeholder="Filter op gebied" /></SelectTrigger>
@@ -307,6 +376,8 @@ export default function GroupComposer() {
           const selected = getSelectedForGroup(group);
           const status = getStatusInfo(selected.size);
           const isCreating = creating === key;
+          const primaryCount = group.clients.filter(cm => cm.matchType === "Primair").length;
+          const reserveCount = group.clients.length - primaryCount;
 
           return (
             <Card key={key} className="border-border">
@@ -317,7 +388,7 @@ export default function GroupComposer() {
                       {group.areaName} · {group.ageCategory}
                     </CardTitle>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {group.clients.length} deelnemer{group.clients.length !== 1 ? "s" : ""} op wachtlijst
+                      {primaryCount} primair{reserveCount > 0 ? `, ${reserveCount} reserve/flexibel` : ""}
                     </p>
                   </div>
                   <Badge className={`${status.color} gap-1`}>
@@ -327,7 +398,7 @@ export default function GroupComposer() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Client checkboxes */}
+                {/* Client checkboxes with match badges */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Deelnemers</span>
@@ -339,7 +410,7 @@ export default function GroupComposer() {
                     </button>
                   </div>
                   <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
-                    {group.clients.map((client: any) => {
+                    {group.clients.map(({ client, matchType }) => {
                       const age = calculateAge(client.date_of_birth);
                       return (
                         <label
@@ -353,8 +424,14 @@ export default function GroupComposer() {
                           <span className="text-sm text-foreground">
                             {client.first_name} {client.last_name}
                           </span>
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] px-1.5 py-0 ml-auto shrink-0 ${matchColors[matchType]}`}
+                          >
+                            {matchType}
+                          </Badge>
                           {age !== null && (
-                            <span className="text-xs text-muted-foreground ml-auto">{age} jaar</span>
+                            <span className="text-xs text-muted-foreground shrink-0">{age}j</span>
                           )}
                         </label>
                       );
@@ -437,10 +514,9 @@ export default function GroupComposer() {
                   variant="outline"
                   className="text-xs border-amber-300 text-amber-700 cursor-pointer hover:bg-amber-100"
                   onClick={() => navigate(`/clienten/${c.id}`)}
-                 >
+                >
                   {c.first_name} {c.last_name}
                   {!c.date_of_birth ? " (geen geb.datum)" : !getAgeCategory(c.date_of_birth) ? ` (${calculateAge(c.date_of_birth)} jaar)` : ""}
-                  {!resolveAreaId(c) ? " (geen gebied)" : ""}
                 </Badge>
               ))}
             </div>
