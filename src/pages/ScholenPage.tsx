@@ -1132,6 +1132,71 @@ export default function ScholenPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit school dialog */}
+      <Dialog open={editOpen} onOpenChange={(open) => {
+        setEditOpen(open);
+        if (!open) { setSelectedSchool(null); setSelectedArea(""); setSelectedNeighborhood(""); }
+      }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>School bewerken</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSchool} className="space-y-4">
+            <div>
+              <Label>Naam *</Label>
+              <Input value={editForm.name ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, name: e.target.value }))} required />
+            </div>
+            <div>
+              <Label>Adres</Label>
+              <Input value={editForm.address ?? ""} onChange={(e) => { setEditForm((f: any) => ({ ...f, address: e.target.value })); }} onBlur={(e) => autoDetectNeighborhood(e.target.value)} />
+            </div>
+            <div>
+              <Label>Gebied</Label>
+              <Select value={selectedArea} onValueChange={(val) => { setSelectedArea(val); setSelectedNeighborhood(""); }}>
+                <SelectTrigger><SelectValue placeholder="Selecteer een gebied..." /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  {areas.map((a: any) => (
+                    <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Wijk</Label>
+              <Select value={selectedNeighborhood} onValueChange={setSelectedNeighborhood} disabled={!selectedArea}>
+                <SelectTrigger><SelectValue placeholder={selectedArea ? "Selecteer een wijk..." : "Kies eerst een gebied"} /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  {filteredNeighborhoods.map((n: any) => (
+                    <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>E-mail</Label>
+                <Input type="email" value={editForm.contact_email ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, contact_email: e.target.value }))} />
+              </div>
+              <div>
+                <Label>Telefoon</Label>
+                <Input type="tel" value={editForm.contact_phone ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, contact_phone: e.target.value }))} />
+              </div>
+            </div>
+            <div>
+              <Label>Website</Label>
+              <Input type="url" placeholder="https://..." value={editForm.website_url ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, website_url: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Aantal leerlingen</Label>
+              <Input type="number" min="0" value={editForm.student_count ?? 0} onChange={(e) => setEditForm((f: any) => ({ ...f, student_count: e.target.value }))} />
+            </div>
+            <Button type="submit" className="w-full" disabled={editSaving}>
+              {editSaving ? "Opslaan..." : "Opslaan"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
