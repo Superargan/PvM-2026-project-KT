@@ -29,13 +29,13 @@ const IMPORT_TYPES: { value: ImportType; label: string; description: string; col
     value: "trainer_beschikbaarheid",
     label: "Beschikbaarheid trainers",
     description: "Importeer beschikbaarheid van trainers",
-    columns: "Naam + Datum/Starttijd/Eindtijd OF Naam + dagkolommen (x = hele dag, tijd = vanaf-tijd)",
+    columns: "Naam + weekdagen (ma/di/wo…) OF Naam + datumkolommen OF Naam + Datum/Starttijd/Eindtijd",
   },
   {
     value: "deelnemer_beschikbaarheid",
     label: "Beschikbaarheid deelnemers",
     description: "Importeer beschikbaarheid van deelnemers",
-    columns: "Voornaam, Achternaam, Datum, Starttijd, Eindtijd OF naam + dagkolommen",
+    columns: "Naam + weekdagen (ma/di/wo…) OF Naam + datumkolommen OF Voornaam, Achternaam, Dag/Datum",
   },
   {
     value: "sessies",
@@ -238,16 +238,64 @@ function parseCellAvailability(val: any): { available: boolean; startTime: strin
 /** Name column candidates (normalized) */
 const NAME_COL_ALIASES = ["naam", "name", "deelnemer", "kind", "leerling", "voornaam", "trainer", "medewerker", "participant"];
 
+/** Dutch weekday mapping to JS getDay() (0=Sunday) */
+const DUTCH_WEEKDAYS: Record<string, number> = {
+  maandag: 1, ma: 1, monday: 1, mon: 1,
+  dinsdag: 2, di: 2, tuesday: 2, tue: 2,
+  woensdag: 3, wo: 3, wednesday: 3, wed: 3,
+  donderdag: 4, do: 4, thursday: 4, thu: 4,
+  vrijdag: 5, vr: 5, friday: 5, fri: 5,
+  zaterdag: 6, za: 6, saturday: 6, sat: 6,
+  zondag: 0, zo: 0, sunday: 0, sun: 0,
+};
+
+/** Try to parse a column header as a weekday */
+function parseWeekdayFromHeader(header: string): number | null {
+  if (!header) return null;
+  const h = String(header).trim().toLowerCase().replace(/[^a-z]/g, "");
+  return DUTCH_WEEKDAYS[h] ?? null;
+}
+
+/** Generate all dates for a given weekday (0-6) in the next N months from today */
+function expandWeekdayToDates(weekdayIndex: number, months: number): string[] {
+  const dates: string[] = [];
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setMonth(end.getMonth() + months);
+
+  const current = new Date(start);
+  // Advance to the first occurrence of this weekday
+  while (current.getDay() !== weekdayIndex) {
+    current.setDate(current.getDate() + 1);
+  }
+
+  while (current <= end) {
+    const y = current.getFullYear();
+    const m = String(current.getMonth() + 1).padStart(2, "0");
+    const d = String(current.getDate()).padStart(2, "0");
+    dates.push(`${y}-${m}-${d}`);
+    current.setDate(current.getDate() + 7);
+  }
+  return dates;
+}
+
 /**
  * Detect if the sheet is in grid/matrix format:
- * First column = names, other columns = dates, cells = x or times
+ * First column = names, other columns = dates OR weekdays, cells = x or times
  */
-function detectGridFormat(rows: ParsedRow[]): { isGrid: boolean; nameKey: string; dateColumns: { key: string; date: string }[] } {
-  if (rows.length === 0) return { isGrid: false, nameKey: "", dateColumns: [] };
+function detectGridFormat(rows: ParsedRow[]): {
+  isGrid: boolean;
+  isWeekdayGrid: boolean;
+  nameKey: string;
+  dateColumns: { key: string; date: string }[];
+  weekdayColumns: { key: string; weekday: number; label: string }[];
+} {
+  if (rows.length === 0) return { isGrid: false, isWeekdayGrid: false, nameKey: "", dateColumns: [], weekdayColumns: [] };
   const keys = Object.keys(rows[0]);
-  if (keys.length < 3) return { isGrid: false, nameKey: "", dateColumns: [] };
+  if (keys.length < 2) return { isGrid: false, isWeekdayGrid: false, nameKey: "", dateColumns: [], weekdayColumns: [] };
 
-  // Find the name column: try to identify by header name first, fallback to first column
+  // Find the name column
   let nameKey = keys[0];
   for (const k of keys) {
     const norm = normalizeKey(k);
@@ -257,20 +305,29 @@ function detectGridFormat(rows: ParsedRow[]): { isGrid: boolean; nameKey: string
     }
   }
 
-  // Check remaining columns for date-like headers
+  // Check remaining columns for date-like or weekday-like headers
   const dateColumns: { key: string; date: string }[] = [];
+  const weekdayColumns: { key: string; weekday: number; label: string }[] = [];
   for (const k of keys) {
     if (k === nameKey) continue;
     const date = parseDateFromHeader(k);
-    if (date) dateColumns.push({ key: k, date });
+    if (date) { dateColumns.push({ key: k, date }); continue; }
+    const wd = parseWeekdayFromHeader(k);
+    if (wd !== null) { weekdayColumns.push({ key: k, weekday: wd, label: k }); }
   }
 
-  // If at least 2 columns parse as dates, it's a grid format
-  const isGrid = dateColumns.length >= 2;
-  return { isGrid, nameKey, dateColumns };
+  // Weekday grid takes priority if we found weekday columns
+  if (weekdayColumns.length >= 1) {
+    return { isGrid: true, isWeekdayGrid: true, nameKey, dateColumns: [], weekdayColumns };
+  }
+  // Date grid
+  if (dateColumns.length >= 2) {
+    return { isGrid: true, isWeekdayGrid: false, nameKey, dateColumns, weekdayColumns: [] };
+  }
+  return { isGrid: false, isWeekdayGrid: false, nameKey, dateColumns: [], weekdayColumns: [] };
 }
 
-/** Convert grid format to flat availability entries */
+/** Convert grid format (date columns) to flat availability entries */
 function gridToEntries(rows: ParsedRow[], nameKey: string, dateColumns: { key: string; date: string }[]): AvailabilityEntry[] {
   const entries: AvailabilityEntry[] = [];
   for (const row of rows) {
@@ -287,7 +344,40 @@ function gridToEntries(rows: ParsedRow[], nameKey: string, dateColumns: { key: s
   return entries;
 }
 
-/** Convert standard row format to flat availability entries */
+/** Convert weekday grid format to flat availability entries (expanded to next N months) */
+function weekdayGridToEntries(
+  rows: ParsedRow[],
+  nameKey: string,
+  weekdayColumns: { key: string; weekday: number; label: string }[],
+  months: number = 3
+): AvailabilityEntry[] {
+  const entries: AvailabilityEntry[] = [];
+  // Pre-compute all dates per weekday
+  const datesByWeekday = new Map<number, string[]>();
+  for (const wc of weekdayColumns) {
+    if (!datesByWeekday.has(wc.weekday)) {
+      datesByWeekday.set(wc.weekday, expandWeekdayToDates(wc.weekday, months));
+    }
+  }
+
+  for (const row of rows) {
+    const name = String(row[nameKey] ?? "").trim();
+    if (!name) continue;
+    for (const wc of weekdayColumns) {
+      const cell = row[wc.key];
+      const parsed = parseCellAvailability(cell);
+      if (parsed?.available) {
+        const dates = datesByWeekday.get(wc.weekday) ?? [];
+        for (const date of dates) {
+          entries.push({ name, date, startTime: parsed.startTime, endTime: parsed.endTime });
+        }
+      }
+    }
+  }
+  return entries;
+}
+
+/** Convert standard row format to flat availability entries (supports weekday column too) */
 function rowsToEntries(rows: ParsedRow[], isTrainer: boolean): AvailabilityEntry[] {
   const entries: AvailabilityEntry[] = [];
   for (const row of rows) {
@@ -297,7 +387,6 @@ function rowsToEntries(rows: ParsedRow[], isTrainer: boolean): AvailabilityEntry
     } else {
       const firstName = findCol(row, "voornaam", "firstname", "first_name");
       const lastName = findCol(row, "achternaam", "lastname", "last_name", "familienaam");
-      // Also try combined "naam" / "name" / "deelnemer" / "kind" / "leerling"
       const combinedName = findCol(row, "naam", "name", "deelnemer", "kind", "leerling", "participant");
       if (firstName && lastName) {
         name = `${firstName} ${lastName}`;
@@ -308,16 +397,32 @@ function rowsToEntries(rows: ParsedRow[], isTrainer: boolean): AvailabilityEntry
       }
     }
 
-    // Try multiple date column candidates including raw keys
-    const dateRaw = findCol(row, "datum", "date", "dag", "startdatum", "beschikbaar_datum", "beschikbare_datum")
+    // Try hard date first
+    const dateRaw = findCol(row, "datum", "date", "startdatum", "beschikbaar_datum", "beschikbare_datum")
       ?? findCol(row, "beschikbaar", "available", "available_date");
     const date = parseExcelDate(dateRaw);
 
-    const start = parseTime(findCol(row, "starttijd", "van", "start", "starttime", "start_time", "begintijd", "begin") ?? row["Starttijd"]);
-    const end = parseTime(findCol(row, "eindtijd", "tot", "end", "eindtime", "end_time", "eind", "stoptijd") ?? row["Eindtijd"]);
-
     if (name && date) {
+      const start = parseTime(findCol(row, "starttijd", "van", "start", "starttime", "start_time", "begintijd", "begin") ?? row["Starttijd"]);
+      const end = parseTime(findCol(row, "eindtijd", "tot", "end", "eindtime", "end_time", "eind", "stoptijd") ?? row["Eindtijd"]);
       entries.push({ name, date, startTime: start ?? "09:00", endTime: end ?? "17:00" });
+      continue;
+    }
+
+    // Try weekday column (e.g., "dag" = "maandag")
+    if (name) {
+      const dagRaw = findCol(row, "dag", "weekdag", "day", "weekday");
+      if (dagRaw) {
+        const wdIndex = parseWeekdayFromHeader(dagRaw);
+        if (wdIndex !== null) {
+          const start = parseTime(findCol(row, "starttijd", "van", "start", "starttime", "start_time", "begintijd", "begin") ?? row["Starttijd"]);
+          const end = parseTime(findCol(row, "eindtijd", "tot", "end", "eindtime", "end_time", "eind", "stoptijd") ?? row["Eindtijd"]);
+          const dates = expandWeekdayToDates(wdIndex, 3);
+          for (const d of dates) {
+            entries.push({ name, date: d, startTime: start ?? "09:00", endTime: end ?? "17:00" });
+          }
+        }
+      }
     }
   }
   return entries;
@@ -398,15 +503,24 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
       // For availability types, detect format and pre-process
       if (importType !== "sessies" && json.length > 0) {
         const grid = detectGridFormat(json);
-        if (grid.isGrid) {
+        if (grid.isGrid && grid.isWeekdayGrid) {
+          const entries = weekdayGridToEntries(json, grid.nameKey, grid.weekdayColumns, 3);
+          const weekdayNames = grid.weekdayColumns.map(wc => wc.label).join(", ");
+          setParsedEntries(entries);
+          setDetectedFormat(`Weekdag-formaat: ${grid.weekdayColumns.length} dagen (${weekdayNames}) → ${entries.length} beschikbaarheden (komende 3 maanden)`);
+        } else if (grid.isGrid) {
           const entries = gridToEntries(json, grid.nameKey, grid.dateColumns);
           setParsedEntries(entries);
-          setDetectedFormat(`Grid-formaat gedetecteerd: ${grid.dateColumns.length} dagkolommen, ${entries.length} beschikbaarheden`);
+          setDetectedFormat(`Grid-formaat: ${grid.dateColumns.length} dagkolommen, ${entries.length} beschikbaarheden`);
         } else {
           const isTrainer = importType === "trainer_beschikbaarheid";
           const entries = rowsToEntries(json, isTrainer);
           setParsedEntries(entries);
-          setDetectedFormat(`Rij-formaat: ${entries.length} beschikbaarheden gevonden`);
+          if (entries.length > 0 && entries.length > json.length) {
+            setDetectedFormat(`Weekdag-rij-formaat: ${entries.length} beschikbaarheden (komende 3 maanden)`);
+          } else {
+            setDetectedFormat(`Rij-formaat: ${entries.length} beschikbaarheden gevonden`);
+          }
         }
       } else {
         setParsedEntries([]);
@@ -583,6 +697,7 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
           <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm space-y-1">
             <p className="font-medium text-foreground">{typeInfo.description}</p>
             <p className="text-muted-foreground text-xs">{typeInfo.columns}</p>
+            <p className="text-xs text-muted-foreground">Weekdagen (ma/di/wo…) → uitgebreid naar komende 3 maanden</p>
             <p className="text-xs text-muted-foreground">Kruisje (x) = hele dag • Tijd = vanaf-tijd • Lege cel = niet beschikbaar</p>
           </div>
 
