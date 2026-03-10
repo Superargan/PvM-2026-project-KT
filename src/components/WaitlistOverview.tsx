@@ -27,6 +27,9 @@ interface Props {
 
 export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: Props) {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [fixingAreas, setFixingAreas] = useState(false);
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients", "waitlist-overview"],
