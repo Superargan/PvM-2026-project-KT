@@ -214,8 +214,8 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
       </div>
 
       <p className="text-xs text-muted-foreground">
-        <span className="inline-block w-3 h-3 rounded bg-emerald-200 border border-emerald-300 mr-1 align-middle" /> ≥8 deelnemers (gereed)
-        <span className="inline-block w-3 h-3 rounded bg-amber-200 border border-amber-300 mr-1 ml-3 align-middle" /> 5-7 deelnemers (bijna gereed)
+        <span className="inline-block w-3 h-3 rounded bg-emerald-200 border border-emerald-300 mr-1 align-middle" /> ≥7 deelnemers (gereed)
+        <span className="inline-block w-3 h-3 rounded bg-amber-200 border border-amber-300 mr-1 ml-3 align-middle" /> 5-6 deelnemers (bijna gereed)
         <span className="inline-block w-3 h-3 rounded bg-muted border border-border mr-1 ml-3 align-middle" /> &lt;5 deelnemers
       </p>
     </div>
