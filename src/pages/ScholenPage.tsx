@@ -183,7 +183,62 @@ export default function ScholenPage() {
     },
   });
 
-  // Auto-detect neighborhood from address postcode
+  // Fetch client counts per school
+  const { data: clientsBySchool = [] } = useQuery({
+    queryKey: ["clients-by-school"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("school_id, intake_status")
+        .eq("archived", false)
+        .not("school_id", "is", null);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Fetch program counts per school
+  const { data: programsBySchool = [] } = useQuery({
+    queryKey: ["programs-by-school"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("programs")
+        .select("school_id, name, status, start_date, end_date")
+        .eq("archived", false)
+        .not("school_id", "is", null);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Build lookup maps
+  const schoolClientCounts = clientsBySchool.reduce((acc: Record<string, Record<string, number>>, c: any) => {
+    if (!c.school_id) return acc;
+    if (!acc[c.school_id]) acc[c.school_id] = {};
+    const status = c.intake_status ?? "nieuw";
+    acc[c.school_id][status] = (acc[c.school_id][status] || 0) + 1;
+    return acc;
+  }, {});
+
+  const schoolProgramCounts = programsBySchool.reduce((acc: Record<string, number>, p: any) => {
+    if (!p.school_id) return acc;
+    acc[p.school_id] = (acc[p.school_id] || 0) + 1;
+    return acc;
+  }, {});
+
+  const schoolPrograms = programsBySchool.reduce((acc: Record<string, any[]>, p: any) => {
+    if (!p.school_id) return acc;
+    if (!acc[p.school_id]) acc[p.school_id] = [];
+    acc[p.school_id].push(p);
+    return acc;
+  }, {});
+
+  const getTotalClients = (schoolId: string) => {
+    const counts = schoolClientCounts[schoolId];
+    if (!counts) return 0;
+    return Object.values(counts).reduce((a: number, b: number) => a + b, 0);
+  };
+
   const autoDetectNeighborhood = (address: string) => {
     const areaName = getAreaFromAddress(address);
     if (!areaName) return;
