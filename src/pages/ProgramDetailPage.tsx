@@ -30,7 +30,10 @@ export default function ProgramDetailPage() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [selectedClientId, setSelectedClientId] = useState("");
-
+  const [dropoutOpen, setDropoutOpen] = useState(false);
+  const [dropoutTarget, setDropoutTarget] = useState<any>(null);
+  const [dropoutReason, setDropoutReason] = useState("");
+  const [dropoutAction, setDropoutAction] = useState("");
   // Fetch program
   const { data: program, isLoading } = useQuery({
     queryKey: ["program", id],
