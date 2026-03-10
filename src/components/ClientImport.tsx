@@ -549,6 +549,9 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     setRows([]);
     setFileName("");
     setResult(null);
+    setUnmatchedSchools([]);
+    setSchoolResolutions({});
+    setShowResolution(false);
     if (fileRef.current) fileRef.current.value = "";
     if (modeProp === "choose") setSelectedMode("waitlist");
   };
