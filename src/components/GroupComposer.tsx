@@ -322,7 +322,7 @@ export default function GroupComposer() {
                   </div>
                   <Badge className={`${status.color} gap-1`}>
                     {status.icon}
-                    {selected.size >= 8 ? `${selected.size} geselecteerd ✓` : status.label}
+                    {selected.size >= 7 ? `${selected.size} geselecteerd ✓` : status.label}
                   </Badge>
                 </div>
               </CardHeader>

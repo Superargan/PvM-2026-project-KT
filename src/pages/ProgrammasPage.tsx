@@ -307,7 +307,7 @@ export default function ProgrammasPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredPrograms.map((prog: any) => {
             const enrolled = prog.program_clients?.[0]?.count ?? 0;
-            const max = prog.max_participants ?? 10;
+            const max = prog.max_participants ?? 14;
             const status = prog.status ?? "te_plannen";
             const statusInfo = statusMap[status] ?? { css: "status-oranje", label: status };
             const next = nextStatus[status];

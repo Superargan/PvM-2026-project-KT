@@ -145,7 +145,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
                   </td>
                   {ageCategories.map(age => {
                     const count = row[age]?.length ?? 0;
-                    const ready = count >= 8;
+                     const ready = count >= 7;
                     const partial = count >= 5;
 
                     return (
