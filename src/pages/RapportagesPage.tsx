@@ -63,7 +63,7 @@ export default function RapportagesPage() {
   const { data: clients = [], isLoading: cl } = useQuery({
     queryKey: ["rpt_clients"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("clients").select("id, first_name, last_name, created_at, date_of_birth, gender, school_id, postal_code, address, city, guardian_name, guardian_phone, guardian_email").eq("archived", false);
+      const { data, error } = await supabase.from("clients").select("id, first_name, last_name, created_at, registration_date, date_of_birth, gender, school_id, postal_code, address, city, guardian_name, guardian_phone, guardian_email").eq("archived", false);
       if (error) throw error;
       return data ?? [];
     },
