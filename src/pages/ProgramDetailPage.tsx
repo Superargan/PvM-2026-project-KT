@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, Loader2, Users, UserPlus, X, GraduationCap, Calendar, MapPin, Settings, ClipboardList, FileText,
+  ArrowLeft, Loader2, Users, UserPlus, X, GraduationCap, Calendar, MapPin, Settings, ClipboardList, FileText, School,
 } from "lucide-react";
 import ProgramTrainers from "@/components/ProgramTrainers";
 import ProgramAttendance from "@/components/ProgramAttendance";
