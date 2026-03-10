@@ -114,6 +114,15 @@ export default function ClientDetailPage() {
     },
   });
 
+  // Fetch areas for dropdown
+  const { data: areas = [] } = useQuery({
+    queryKey: ["areas-list"],
+    queryFn: async () => {
+      const { data } = await supabase.from("areas").select("id, name").order("name");
+      return data ?? [];
+    },
+  });
+
   // Fetch programs for this client
   const { data: programs = [] } = useQuery({
     queryKey: ["client-programs", id],
