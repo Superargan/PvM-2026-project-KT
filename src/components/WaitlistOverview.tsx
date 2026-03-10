@@ -18,9 +18,10 @@ function getAgeCategory(dob: string | null): AgeCategory | null {
 
 interface Props {
   onSelectGroup?: (areaId: string, ageCategory: string) => void;
+  onViewAvailability?: (areaId: string) => void;
 }
 
-export default function WaitlistOverview({ onSelectGroup }: Props) {
+export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: Props) {
   const navigate = useNavigate();
 
   const { data: clients = [] } = useQuery({
