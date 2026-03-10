@@ -171,7 +171,7 @@ export default function ProgramDetailPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1"><Users className="h-3.5 w-3.5" /> Deelnemers</div>
           <p className="text-2xl font-bold text-foreground">{enrolledClients.length}<span className="text-sm font-normal text-muted-foreground">/{program.max_participants ?? 10}</span></p>
@@ -189,6 +189,35 @@ export default function ProgramDetailPage() {
           <p className="text-sm font-semibold text-foreground">
             {program.areas?.name ?? "—"}{program.neighborhoods?.name ? ` — ${program.neighborhoods.name}` : ""}
           </p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1"><School className="h-3.5 w-3.5" /> School</div>
+          <Select
+            value={program.school_id ?? "geen"}
+            onValueChange={async (v) => {
+              const schoolId = v === "geen" ? null : v;
+              const { error } = await supabase
+                .from("programs")
+                .update({ school_id: schoolId })
+                .eq("id", id!);
+              if (error) {
+                toast({ title: "Fout", description: error.message, variant: "destructive" });
+              } else {
+                toast({ title: "School gekoppeld" });
+                qc.invalidateQueries({ queryKey: ["program", id] });
+              }
+            }}
+          >
+            <SelectTrigger className="h-8 text-sm mt-0.5">
+              <SelectValue placeholder="Selecteer school..." />
+            </SelectTrigger>
+            <SelectContent className="bg-popover">
+              <SelectItem value="geen">Geen school</SelectItem>
+              {schools.map((s: any) => (
+                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
