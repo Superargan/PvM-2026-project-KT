@@ -170,7 +170,7 @@ export default function PlanningPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, first_name, last_name")
+        .select("id, first_name, last_name, waitlist_area_id, areas:waitlist_area_id(name)")
         .eq("archived", false)
         .in("intake_status", ["nieuw", "intake_gepland", "intake", "intake_afgerond", "actief", "wachtlijst"])
         .order("first_name");
