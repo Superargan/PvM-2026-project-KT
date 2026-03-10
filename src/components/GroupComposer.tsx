@@ -282,7 +282,7 @@ export default function GroupComposer() {
           {waitlistClients.length} op wachtlijst
         </Badge>
         <Badge variant="outline" className="border-emerald-300 text-emerald-700">
-          {groups.filter(g => g.clients.length >= 8).length} groep(en) gereed
+          {groups.filter(g => g.clients.length >= 7).length} groep(en) gereed
         </Badge>
         {unassigned.length > 0 && (
           <Badge variant="outline" className="border-amber-300 text-amber-700">
