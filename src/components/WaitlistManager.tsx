@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, UserPlus, Clock, XCircle, Upload } from "lucide-react";
+import { Loader2, UserPlus, Clock, XCircle, Upload, Pencil } from "lucide-react";
 import ClientImport from "@/components/ClientImport";
 import { format, differenceInYears } from "date-fns";
 import { nl } from "date-fns/locale";
@@ -20,7 +20,7 @@ const statusColors: Record<string, string> = {
   dropped_out: "bg-red-100 text-red-800",
 };
 
-export default function WaitlistManager() {
+export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => void }) {
   const [filterArea, setFilterArea] = useState<string>("all");
   const [importOpen, setImportOpen] = useState(false);
   const qc = useQueryClient();
@@ -165,6 +165,12 @@ export default function WaitlistManager() {
                     {client.dropout_reason ?? "—"}
                   </TableCell>
                   <TableCell className="text-right">
+                    <div className="flex items-center gap-1 justify-end">
+                    {onEdit && (
+                      <Button size="sm" variant="ghost" onClick={() => onEdit(client)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                     {assigningClient === client.id ? (
                       <div className="flex items-center gap-2 justify-end">
                         <Select value={selectedProgram} onValueChange={setSelectedProgram}>
@@ -197,6 +203,7 @@ export default function WaitlistManager() {
                         Toewijzen
                       </Button>
                     )}
+                  </div>
                   </TableCell>
                 </TableRow>
                 );
