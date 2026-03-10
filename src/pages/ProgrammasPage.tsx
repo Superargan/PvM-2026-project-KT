@@ -327,10 +327,14 @@ export default function ProgrammasPage() {
                 </h3>
                 {prog.description && <p className="text-xs text-muted-foreground">{prog.description}</p>}
                 {prog.schools?.name && <p className="text-xs text-muted-foreground">{prog.schools.name}</p>}
-                {(prog.areas?.name || prog.neighborhoods?.name) && (
+                {prog.areas?.name && (
                   <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                    <MapPin className="h-3 w-3" />
-                    {prog.areas?.name}{prog.neighborhoods?.name ? ` — ${prog.neighborhoods.name}` : ""}
+                    <MapPin className="h-3 w-3" /> {prog.areas.name}
+                  </p>
+                )}
+                {prog.neighborhoods?.name && (
+                  <p className="flex items-center gap-1 text-xs text-muted-foreground ml-4">
+                    Wijk: {prog.neighborhoods.name}
                   </p>
                 )}
                 <div className="mt-4 space-y-2 border-t border-border pt-3">
