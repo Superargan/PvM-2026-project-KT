@@ -312,6 +312,33 @@ export default function PlanningPage() {
         </div>
       </div>
 
+      {/* Global filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        <Filter className="h-4 w-4 text-muted-foreground" />
+        <Select value={filterArea} onValueChange={setFilterArea}>
+          <SelectTrigger className="w-40"><SelectValue placeholder="Gebied" /></SelectTrigger>
+          <SelectContent className="bg-popover">
+            <SelectItem value="alle">Alle gebieden</SelectItem>
+            {areas.map((a: any) => (
+              <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={filterAge} onValueChange={setFilterAge}>
+          <SelectTrigger className="w-32"><SelectValue placeholder="Leeftijd" /></SelectTrigger>
+          <SelectContent className="bg-popover">
+            <SelectItem value="alle">Alle leeftijden</SelectItem>
+            <SelectItem value="5-7 jaar">5-7 jaar</SelectItem>
+            <SelectItem value="8-12 jaar">8-12 jaar</SelectItem>
+          </SelectContent>
+        </Select>
+        {(filterArea !== "alle" || filterAge !== "alle") && (
+          <Button variant="ghost" size="sm" onClick={() => { setFilterArea("alle"); setFilterAge("alle"); }}>
+            <X className="h-3.5 w-3.5 mr-1" /> Filters wissen
+          </Button>
+        )}
+      </div>
+
       <Tabs defaultValue="agenda" className="space-y-4">
         <TabsList>
           <TabsTrigger value="agenda">Agenda</TabsTrigger>
