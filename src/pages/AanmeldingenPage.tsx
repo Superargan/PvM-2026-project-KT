@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import WaitlistManager from "@/components/WaitlistManager";
 import ClientImport from "@/components/ClientImport";
+import { downloadExport } from "@/lib/csvExport";
 
 const editSchema = z.object({
   first_name: z.string().trim().min(1, "Voornaam is verplicht").max(100),
