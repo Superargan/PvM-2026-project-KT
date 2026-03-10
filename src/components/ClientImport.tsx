@@ -453,7 +453,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
 
       // Intake date
       const intakeDateRaw = findCol(row, "Datum Intake", "Intake datum", "datum intake", "intake_date");
-      const intake_date = parseExcelDate(intakeDateRaw);
+      const intake_date = parseExcelDate(intakeDateRaw, dateFormat);
 
       // Enrollment date
       const enrollDateRaw = findCol(row, "Datum inschrijving", "Inschrijfdatum", "datum inschrijving");
