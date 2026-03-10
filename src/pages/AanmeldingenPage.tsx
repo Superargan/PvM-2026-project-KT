@@ -415,7 +415,7 @@ export default function AanmeldingenPage() {
 
         <TabsContent value="wachtlijst">
           <div className="rounded-xl border border-border bg-card p-6">
-            <WaitlistManager />
+            <WaitlistManager onEdit={openEdit} />
           </div>
         </TabsContent>
       </Tabs>
