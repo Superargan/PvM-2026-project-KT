@@ -61,7 +61,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
     let noAge = 0;
 
     areas.forEach((a: any) => {
-      m[a.id] = { "4-7 jaar": [], "8-12 jaar": [] };
+      m[a.id] = { "5-7 jaar": [], "8-12 jaar": [] };
     });
 
     clients.forEach((c: any) => {
