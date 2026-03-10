@@ -262,7 +262,7 @@ export default function GroupComposer() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Stel automatisch groepen samen op basis van leeftijd en gebied. Minimaal 8 deelnemers per groep.
+          Stel automatisch groepen samen op basis van leeftijd en gebied. Minimaal 7 deelnemers per groep (max 14).
         </p>
         <Select value={filterArea} onValueChange={setFilterArea}>
           <SelectTrigger className="w-48"><SelectValue placeholder="Filter op gebied" /></SelectTrigger>
