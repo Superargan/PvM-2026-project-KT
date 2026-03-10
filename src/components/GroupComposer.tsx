@@ -497,32 +497,53 @@ export default function GroupComposer() {
         })}
       </div>
 
-      {/* Unassigned clients */}
-      {unassigned.length > 0 && (
-        <Card className="border-amber-200 bg-amber-50/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-amber-800">
-              <AlertTriangle className="h-4 w-4 inline mr-1" />
-              Deelnemers zonder gebied of geboortedatum ({unassigned.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-1">
-              {unassigned.map((c: any) => (
-                <Badge
-                  key={c.id}
-                  variant="outline"
-                  className="text-xs border-amber-300 text-amber-700 cursor-pointer hover:bg-amber-100"
-                  onClick={() => navigate(`/clienten/${c.id}`)}
-                >
-                  {c.first_name} {c.last_name}
-                  {!c.date_of_birth ? " (geen geb.datum)" : !getAgeCategory(c.date_of_birth) ? ` (${calculateAge(c.date_of_birth)} jaar)` : ""}
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Clients without area */}
+      {(() => {
+        const noArea = unassigned.filter((c: any) => !resolveAreaId(c));
+        const noAge = unassigned.filter((c: any) => !getAgeCategory(c.date_of_birth));
+        return (
+          <>
+            {noArea.length > 0 && (
+              <Card className="border-amber-200 bg-amber-50/50">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-semibold text-amber-800">
+                    <AlertTriangle className="h-4 w-4 inline mr-1" />
+                    Deelnemers zonder gebied ({noArea.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-1">
+                    {noArea.map((c: any) => (
+                      <Badge key={c.id} variant="outline" className="text-xs border-amber-300 text-amber-700 cursor-pointer hover:bg-amber-100" onClick={() => navigate(`/clienten/${c.id}`)}>
+                        {c.first_name} {c.last_name}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            {noAge.length > 0 && (
+              <Card className="border-red-200 bg-red-50/50">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-semibold text-red-800">
+                    <AlertTriangle className="h-4 w-4 inline mr-1" />
+                    Deelnemers zonder geboortedatum ({noAge.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-1">
+                    {noAge.map((c: any) => (
+                      <Badge key={c.id} variant="outline" className="text-xs border-red-300 text-red-700 cursor-pointer hover:bg-red-100" onClick={() => navigate(`/clienten/${c.id}`)}>
+                        {c.first_name} {c.last_name}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        );
+      })()}
     </div>
   );
 }

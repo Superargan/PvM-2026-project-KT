@@ -1,11 +1,12 @@
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInYears, parseISO } from "date-fns";
-import { Users, ArrowRight, Eye, Star } from "lucide-react";
+import { Users, ArrowRight, Eye, Star, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type AgeCategory = "5-7 jaar" | "8-12 jaar";
@@ -25,6 +26,9 @@ interface Props {
 
 export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: Props) {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [fixingAreas, setFixingAreas] = useState(false);
 
   const { data: clients = [] } = useQuery({
     queryKey: ["clients", "waitlist-overview"],
@@ -90,16 +94,32 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
       };
     });
 
+    // Track fixable clients (have school with area but no waitlist_area_id)
+    const fixableClients: { clientId: string; areaId: string }[] = [];
+
     clients.forEach((c: any) => {
       const primaryAreaId = resolveAreaId(c);
       const age = getAgeCategory(c.date_of_birth);
-      if (!age) { noAge++; return; }
+      if (!age) { noAge++; }
+
+      // Check if client has school→area but no explicit waitlist_area_id
+      if (!c.waitlist_area_id && (c as any).schools?.neighborhoods?.area_id) {
+        fixableClients.push({
+          clientId: c.id,
+          areaId: (c as any).schools.neighborhoods.area_id,
+        });
+      }
+
+      if (!primaryAreaId) {
+        if (age) noArea++;
+        return;
+      }
+
+      if (!age) return;
 
       // Primary area
-      if (primaryAreaId && m[primaryAreaId]) {
+      if (m[primaryAreaId]) {
         m[primaryAreaId][age].primary.push(c);
-      } else if (!primaryAreaId) {
-        noArea++;
       }
 
       // Reserve areas
@@ -122,7 +142,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
       }
     });
 
-    return { m, noArea, noAge };
+    return { m, noArea, noAge, fixableClients };
   }, [clients, areas, prefsByClient]);
 
   // Only show areas that have at least 1 waitlist client (primary or reserve)
@@ -168,12 +188,47 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
               )}
             </Badge>
           ))}
-          {(matrix.noArea > 0 || matrix.noAge > 0) && (
+          {matrix.noArea > 0 && (
             <Badge variant="outline" className="text-sm px-3 py-1 border-destructive/30 text-destructive">
-              {matrix.noArea + matrix.noAge} zonder gebied/leeftijd
+              {matrix.noArea} zonder gebied
+            </Badge>
+          )}
+          {matrix.noAge > 0 && (
+            <Badge variant="outline" className="text-sm px-3 py-1 border-destructive/30 text-destructive">
+              {matrix.noAge} zonder geboortedatum
             </Badge>
           )}
         </div>
+
+        {/* Auto-fix area for clients with school */}
+        {matrix.fixableClients.length > 0 && (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 flex items-center justify-between">
+            <p className="text-sm text-foreground">
+              <strong>{matrix.fixableClients.length}</strong> deelnemer(s) hebben een school maar geen gebied — automatisch koppelen?
+            </p>
+            <Button
+              size="sm"
+              disabled={fixingAreas}
+              onClick={async () => {
+                setFixingAreas(true);
+                let fixed = 0;
+                for (const { clientId, areaId } of matrix.fixableClients) {
+                  const { error } = await supabase
+                    .from("clients")
+                    .update({ waitlist_area_id: areaId })
+                    .eq("id", clientId);
+                  if (!error) fixed++;
+                }
+                toast({ title: `${fixed} deelnemer(s) gebied toegewezen` });
+                queryClient.invalidateQueries({ queryKey: ["clients"] });
+                setFixingAreas(false);
+              }}
+            >
+              {fixingAreas ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+              Gebieden koppelen
+            </Button>
+          </div>
+        )}
 
         {/* Matrix grid */}
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
