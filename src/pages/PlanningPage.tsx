@@ -81,7 +81,7 @@ export default function PlanningPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, first_name, last_name, intake_status, intake_date, date_of_birth, schools(name), waitlist_area_id")
+        .select("id, first_name, last_name, intake_status, intake_date, date_of_birth, schools(name), waitlist_area_id, areas:waitlist_area_id(name)")
         .eq("archived", false)
         .in("intake_status", ["intake_gepland", "intake", "intake_afgerond"])
         .gte("intake_date", format(dateRange.start, "yyyy-MM-dd"))
@@ -170,7 +170,7 @@ export default function PlanningPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, first_name, last_name")
+        .select("id, first_name, last_name, waitlist_area_id, areas:waitlist_area_id(name)")
         .eq("archived", false)
         .in("intake_status", ["nieuw", "intake_gepland", "intake", "intake_afgerond", "actief", "wachtlijst"])
         .order("first_name");
@@ -224,6 +224,8 @@ export default function PlanningPage() {
 
     intakes.forEach((intake: any) => {
       if (intake.intake_date && map[intake.intake_date]) {
+        // Apply area filter to intakes too
+        if (filterArea !== "alle" && intake.waitlist_area_id !== filterArea) return;
         map[intake.intake_date].intakes.push(intake);
       }
     });
@@ -310,6 +312,33 @@ export default function PlanningPage() {
         </div>
       </div>
 
+      {/* Global filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        <Filter className="h-4 w-4 text-muted-foreground" />
+        <Select value={filterArea} onValueChange={setFilterArea}>
+          <SelectTrigger className="w-40"><SelectValue placeholder="Gebied" /></SelectTrigger>
+          <SelectContent className="bg-popover">
+            <SelectItem value="alle">Alle gebieden</SelectItem>
+            {areas.map((a: any) => (
+              <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={filterAge} onValueChange={setFilterAge}>
+          <SelectTrigger className="w-32"><SelectValue placeholder="Leeftijd" /></SelectTrigger>
+          <SelectContent className="bg-popover">
+            <SelectItem value="alle">Alle leeftijden</SelectItem>
+            <SelectItem value="5-7 jaar">5-7 jaar</SelectItem>
+            <SelectItem value="8-12 jaar">8-12 jaar</SelectItem>
+          </SelectContent>
+        </Select>
+        {(filterArea !== "alle" || filterAge !== "alle") && (
+          <Button variant="ghost" size="sm" onClick={() => { setFilterArea("alle"); setFilterAge("alle"); }}>
+            <X className="h-3.5 w-3.5 mr-1" /> Filters wissen
+          </Button>
+        )}
+      </div>
+
       <Tabs defaultValue="agenda" className="space-y-4">
         <TabsList>
           <TabsTrigger value="agenda">Agenda</TabsTrigger>
@@ -346,23 +375,6 @@ export default function PlanningPage() {
                 <SelectContent className="bg-popover">
                   <SelectItem value="week">Week</SelectItem>
                   <SelectItem value="maand">Maand</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={filterArea} onValueChange={setFilterArea}>
-                <SelectTrigger className="w-40"><SelectValue placeholder="Gebied" /></SelectTrigger>
-                <SelectContent className="bg-popover">
-                  <SelectItem value="alle">Alle gebieden</SelectItem>
-                  {areas.map((a: any) => (
-                    <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={filterAge} onValueChange={setFilterAge}>
-                <SelectTrigger className="w-32"><SelectValue placeholder="Leeftijd" /></SelectTrigger>
-                <SelectContent className="bg-popover">
-                  <SelectItem value="alle">Alle leeftijden</SelectItem>
-                  <SelectItem value="5-7 jaar">5-7 jaar</SelectItem>
-                  <SelectItem value="8-12 jaar">8-12 jaar</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -429,7 +441,9 @@ export default function PlanningPage() {
                               Intake: {intake.first_name} {intake.last_name}
                             </p>
                             <p className="text-xs text-amber-700">
-                              {intake.schools?.name ?? "Geen school"} · {intake.intake_status === "intake_gepland" ? "Gepland" : "In uitvoering"}
+                              {intake.schools?.name ?? "Geen school"}
+                              {(intake as any).areas?.name ? ` · ${(intake as any).areas.name}` : ""}
+                              {" · "}{intake.intake_status === "intake_gepland" ? "Gepland" : "In uitvoering"}
                             </p>
                           </div>
                           <div className="flex flex-wrap gap-1">
@@ -618,21 +632,27 @@ export default function PlanningPage() {
           <p className="text-sm text-muted-foreground">
             Overzicht van deelnemers en hun beschikbaarheid in de huidige {viewMode === "week" ? "week" : "maand"}.
           </p>
-          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+           <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border bg-muted/50">
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Deelnemer</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gebied</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Beschikbaar in periode</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {allClients.map((client: any) => {
+                {allClients
+                  .filter((c: any) => filterArea === "alle" || c.waitlist_area_id === filterArea)
+                  .map((client: any) => {
                   const clientAvail = clientAvailability.filter((a: any) => a.client_id === client.id);
                   return (
                     <tr key={client.id} className="hover:bg-muted/30 transition-colors">
                       <td className="px-4 py-3">
                         <p className="text-sm font-semibold text-foreground">{client.first_name} {client.last_name}</p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-sm text-card-foreground">{(client as any).areas?.name ?? "—"}</span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-1">
@@ -649,8 +669,8 @@ export default function PlanningPage() {
                     </tr>
                   );
                 })}
-                {allClients.length === 0 && (
-                  <tr><td colSpan={2} className="px-4 py-8 text-center text-sm text-muted-foreground">Geen deelnemers gevonden</td></tr>
+                {allClients.filter((c: any) => filterArea === "alle" || c.waitlist_area_id === filterArea).length === 0 && (
+                  <tr><td colSpan={3} className="px-4 py-8 text-center text-sm text-muted-foreground">Geen deelnemers gevonden</td></tr>
                 )}
               </tbody>
             </table>
