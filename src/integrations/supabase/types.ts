@@ -210,6 +210,7 @@ export type Database = {
           postal_code: string | null
           referral_reason: string | null
           referrer_id: string | null
+          registration_date: string | null
           school_id: string | null
           updated_at: string
           waitlist_area_id: string | null
@@ -242,6 +243,7 @@ export type Database = {
           postal_code?: string | null
           referral_reason?: string | null
           referrer_id?: string | null
+          registration_date?: string | null
           school_id?: string | null
           updated_at?: string
           waitlist_area_id?: string | null
@@ -274,6 +276,7 @@ export type Database = {
           postal_code?: string | null
           referral_reason?: string | null
           referrer_id?: string | null
+          registration_date?: string | null
           school_id?: string | null
           updated_at?: string
           waitlist_area_id?: string | null
