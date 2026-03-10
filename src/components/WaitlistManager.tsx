@@ -35,7 +35,7 @@ export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => 
   });
 
   const { data: waitlistClients = [], isLoading } = useQuery({
-    queryKey: ["waitlist-clients", filterArea],
+    queryKey: ["clients", "waitlist", filterArea],
     queryFn: async () => {
       let query = supabase
         .from("clients")
