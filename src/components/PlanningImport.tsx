@@ -29,13 +29,13 @@ const IMPORT_TYPES: { value: ImportType; label: string; description: string; col
     value: "trainer_beschikbaarheid",
     label: "Beschikbaarheid trainers",
     description: "Importeer beschikbaarheid van trainers",
-    columns: "Naam + Datum/Starttijd/Eindtijd OF Naam + dagkolommen (x = hele dag, tijd = vanaf-tijd)",
+    columns: "Naam + weekdagen (ma/di/wo…) OF Naam + datumkolommen OF Naam + Datum/Starttijd/Eindtijd",
   },
   {
     value: "deelnemer_beschikbaarheid",
     label: "Beschikbaarheid deelnemers",
     description: "Importeer beschikbaarheid van deelnemers",
-    columns: "Voornaam, Achternaam, Datum, Starttijd, Eindtijd OF naam + dagkolommen",
+    columns: "Naam + weekdagen (ma/di/wo…) OF Naam + datumkolommen OF Voornaam, Achternaam, Dag/Datum",
   },
   {
     value: "sessies",
