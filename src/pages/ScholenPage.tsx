@@ -1273,6 +1273,84 @@ export default function ScholenPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Stats dialog */}
+      <Dialog open={statsDialogOpen} onOpenChange={(open) => {
+        setStatsDialogOpen(open);
+        if (!open) setSelectedSchool(null);
+      }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Overzicht – {selectedSchool?.name}</DialogTitle>
+          </DialogHeader>
+          {selectedSchool && (
+            <div className="space-y-5 max-h-[60vh] overflow-y-auto">
+              {/* Status distribution */}
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-card-foreground">Statusverdeling aanmeldingen</p>
+                {(() => {
+                  const counts = schoolClientCounts[selectedSchool.id];
+                  if (!counts || Object.keys(counts).length === 0) {
+                    return <p className="text-xs text-muted-foreground">Geen aanmeldingen bij deze school.</p>;
+                  }
+                  return (
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(counts).map(([status, count]) => (
+                        <div key={status} className="flex items-center gap-1.5">
+                          <span className={`status-indicator ${statusStyles[status] ?? "status-rood"}`}>
+                            {statusLabels[status] ?? status}
+                          </span>
+                          <span className="font-display text-sm font-bold text-card-foreground">{count as number}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+                <div className="flex gap-2 mt-2">
+                  <Button size="sm" variant="outline" onClick={() => {
+                    navigate(`/aanmeldingen`);
+                    setStatsDialogOpen(false);
+                  }}>
+                    Naar aanmeldingen
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => {
+                    navigate(`/clienten`);
+                    setStatsDialogOpen(false);
+                  }}>
+                    Naar deelnemers
+                  </Button>
+                </div>
+              </div>
+
+              {/* Trainingen */}
+              <div className="space-y-2">
+                <p className="text-sm font-semibold text-card-foreground">Trainingen ({schoolProgramCounts[selectedSchool.id] ?? 0})</p>
+                {(() => {
+                  const progs = schoolPrograms[selectedSchool.id];
+                  if (!progs || progs.length === 0) {
+                    return <p className="text-xs text-muted-foreground">Geen trainingen bij deze school.</p>;
+                  }
+                  return (
+                    <div className="space-y-1">
+                      {progs.map((p: any) => (
+                        <div key={p.school_id + p.name} className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
+                          <div>
+                            <p className="text-sm font-medium text-card-foreground">{p.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {p.start_date ?? "—"} – {p.end_date ?? "—"}
+                            </p>
+                          </div>
+                          <Badge variant="outline" className="text-xs">{p.status ?? "—"}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
