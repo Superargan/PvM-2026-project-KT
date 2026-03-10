@@ -55,7 +55,7 @@ export default function ProgramDetailPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("program_clients")
-        .select("id, client_id, enrolled_at, clients(id, first_name, last_name, date_of_birth, gender, schools(name))")
+        .select("id, client_id, enrolled_at, early_dropout, dropout_reason, dropout_action, clients(id, first_name, last_name, date_of_birth, gender, schools(name))")
         .eq("program_id", id!);
       if (error) throw error;
       return data ?? [];
