@@ -254,7 +254,7 @@ export default function ProgrammasPage() {
                 <div><Label>Startdatum</Label><Input name="start_date" type="date" /></div>
                 <div><Label>Einddatum</Label><Input name="end_date" type="date" /></div>
               </div>
-              <div><Label>Max deelnemers</Label><Input name="max_participants" type="number" defaultValue={10} min={1} /></div>
+              <div><Label>Max deelnemers</Label><Input name="max_participants" type="number" defaultValue={14} min={7} max={14} /></div>
               <div>
                 <Label>Leeftijdscategorie</Label>
                 <Select value={selectedAgeCategory} onValueChange={setSelectedAgeCategory}>
