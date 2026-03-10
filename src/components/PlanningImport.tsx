@@ -309,15 +309,27 @@ function detectGridFormat(rows: ParsedRow[]): {
   const keys = Object.keys(rows[0]);
   if (keys.length < 2) return { isGrid: false, isWeekdayGrid: false, nameKey: "", dateColumns: [], weekdayColumns: [] };
 
-  // Find the name column
-  let nameKey = keys[0];
+  // Find the name column - try alias match first, then fall back to first column
+  let nameKey = "";
   for (const k of keys) {
     const norm = normalizeKey(k);
-    if (NAME_COL_ALIASES.some(alias => norm.includes(alias))) {
+    if (NAME_COL_ALIASES.some(alias => norm.includes(alias) || alias.includes(norm))) {
       nameKey = k;
       break;
     }
   }
+  // If no alias matched, use the first column that has string-like (non-numeric, non-date) values
+  if (!nameKey) {
+    for (const k of keys) {
+      const sample = rows.slice(0, 5).map(r => String(r[k] ?? "").trim()).filter(Boolean);
+      const looksLikeName = sample.length > 0 && sample.every(v => {
+        // Not a number, not a date, not empty
+        return isNaN(Number(v)) && !parseExcelDate(v) && parseWeekdayFromHeader(v) === null;
+      });
+      if (looksLikeName) { nameKey = k; break; }
+    }
+  }
+  if (!nameKey) nameKey = keys[0];
 
   // Check remaining columns for date-like or weekday-like headers
   const dateColumns: { key: string; date: string }[] = [];
