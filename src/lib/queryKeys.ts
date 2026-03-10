@@ -18,6 +18,7 @@ export const clientKeys = {
   waitlistOverview: ["clients", "waitlist-overview"] as const,
   avail: ["clients", "avail"] as const,
   forProgram: ["clients", "for-program"] as const,
+  areaPreferences: (clientId?: string) => ["clients", "area-preferences", clientId] as const,
 };
 
 /**
