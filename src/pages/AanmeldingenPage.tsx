@@ -369,7 +369,7 @@ export default function AanmeldingenPage() {
           </div>
         </TabsContent>
         <TabsContent value="controle" className="space-y-4">
-          <MissingDataCheck clients={clients.filter((c: any) => ["nieuw", "intake_gepland", "intake_afgerond", "wachtlijst"].includes(c.intake_status ?? "nieuw"))} isLoading={isLoading} onNavigate={(id) => navigate(`/clienten/${id}`)} onEdit={openEdit} schools={schools} refetch={refetch} />
+          <MissingDataCheck clients={clients.filter((c: any) => !["actief", "training_afgerond", "tussentijds_gestopt", "niet_deelnemen"].includes(c.intake_status ?? "nieuw"))} isLoading={isLoading} onNavigate={(id) => navigate(`/clienten/${id}`)} onEdit={openEdit} schools={schools} refetch={refetch} />
         </TabsContent>
       </Tabs>
 
