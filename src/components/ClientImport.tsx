@@ -160,6 +160,115 @@ const NON_PERSON_REFERRAL_SOURCES = [
   "zelfstandig", "eigen initiatief", "onbekend", "anders", "overig",
 ];
 
+const DAY_COLUMNS = ["Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag", "Zondag"];
+const DAY_INDICES = [1, 2, 3, 4, 5, 6, 0]; // JS day indices (0=Sun)
+
+interface ParsedAvailability {
+  dayIndex: number; // 0=Sun, 1=Mon, ...
+  startTime: string;
+  endTime: string;
+  notes: string | null;
+}
+
+/** Parse a cell value into availability start/end times */
+function parseAvailabilityCell(val: string | undefined): { available: boolean; startTime: string; endTime: string; notes: string | null } | null {
+  if (!val || !val.trim()) return null;
+  const s = val.trim();
+  const lower = s.toLowerCase();
+
+  // Skip empty-like values
+  if (lower === "-" || lower === "nee" || lower === "n" || lower === "nee" || lower === "n.v.t.") return null;
+
+  // Pure text that indicates "we'll figure it out" — store as notes
+  if (lower === "in overleg" || lower.startsWith("vanaf ") && lower.match(/[a-z]{3,}/)) {
+    // "vanaf april" etc — text-only
+    if (lower.startsWith("vanaf ") && !lower.match(/\d/)) {
+      return { available: true, startTime: "09:00", endTime: "17:00", notes: s };
+    }
+    return { available: true, startTime: "09:00", endTime: "17:00", notes: s };
+  }
+
+  // "Ochtend"
+  if (lower === "ochtend" || lower === "voormiddag") {
+    return { available: true, startTime: "09:00", endTime: "12:00", notes: null };
+  }
+  // "Middag"
+  if (lower === "middag" || lower === "namiddag") {
+    return { available: true, startTime: "12:00", endTime: "17:00", notes: null };
+  }
+  // "Onder schooltijd"
+  if (lower.includes("schooltijd") || lower.includes("school tijd")) {
+    return { available: true, startTime: "08:30", endTime: "15:00", notes: s };
+  }
+  // "Voorkeur" — available, default times
+  if (lower === "voorkeur") {
+    return { available: true, startTime: "09:00", endTime: "17:00", notes: "Voorkeur" };
+  }
+
+  // Extract time pattern: "15.00", "14:45", "1545", "15.00 uur"
+  const extractTime = (text: string): string | null => {
+    // HH:MM or HH.MM
+    const hm = text.match(/(\d{1,2})[:\.](\d{2})/);
+    if (hm) return `${hm[1].padStart(2, "0")}:${hm[2]}`;
+    // HHMM (4 digits)
+    const hhmm = text.match(/\b(\d{2})(\d{2})\b/);
+    if (hhmm && parseInt(hhmm[1]) < 24 && parseInt(hhmm[2]) < 60) return `${hhmm[1]}:${hhmm[2]}`;
+    return null;
+  };
+
+  // "Tot XXXX" or "tot XXXX"
+  if (lower.startsWith("tot ")) {
+    const endTime = extractTime(s);
+    if (endTime) return { available: true, startTime: "09:00", endTime, notes: s.includes("ivm") || s.includes("i.v.m") ? s : null };
+  }
+
+  // "vanaf XX:XX" or "na XX:XX"
+  if (lower.startsWith("vanaf ") || lower.startsWith("na ")) {
+    const startTime = extractTime(s);
+    if (startTime) return { available: true, startTime, endTime: "17:00", notes: null };
+  }
+
+  // "X (15.00 uur)" or "x (13.00 uur)"
+  if (lower.startsWith("x")) {
+    const time = extractTime(s);
+    if (time) return { available: true, startTime: time, endTime: "17:00", notes: null };
+    return { available: true, startTime: "09:00", endTime: "17:00", notes: null };
+  }
+
+  // Pure time like "15.00 uur"
+  const pureTime = extractTime(s);
+  if (pureTime) {
+    // If it contains "of" (e.g., "8.30 of 12.15"), take earliest as start
+    if (lower.includes(" of ")) {
+      const parts = s.split(/\s+of\s+/i);
+      const times = parts.map(p => extractTime(p)).filter(Boolean) as string[];
+      if (times.length >= 2) {
+        times.sort();
+        return { available: true, startTime: times[0], endTime: "17:00", notes: s };
+      }
+    }
+    return { available: true, startTime: pureTime, endTime: "17:00", notes: null };
+  }
+
+  // Any other non-empty value — treat as available with notes
+  return { available: true, startTime: "09:00", endTime: "17:00", notes: s };
+}
+
+/** Generate dates for a specific day of week over the next N days */
+function generateDatesForDay(dayIndex: number, days: number = 90): string[] {
+  const dates: string[] = [];
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  for (let i = 0; i < days; i++) {
+    const d = new Date(start);
+    d.setDate(d.getDate() + i);
+    if (d.getDay() === dayIndex) {
+      dates.push(d.toISOString().split("T")[0]);
+    }
+  }
+  return dates;
+}
+
 type ImportMode = "default" | "waitlist" | "intake_afgerond";
 
 interface ClientImportProps {
