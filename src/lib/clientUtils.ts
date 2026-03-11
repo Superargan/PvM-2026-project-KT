@@ -170,13 +170,31 @@ export function buildAvailabilityByClient(
   return m;
 }
 
+export interface AvailabilityProposal {
+  dayName: string;
+  startTime: string;
+  endTime: string;
+  overlap: number;
+  total: number;
+}
+
 /** Get best day/time overlap for a set of clients */
 export function getAvailabilityOverlap(
   clientIds: string[] | Set<string>,
   availByClient: Record<string, { dayOfWeek: number; dayName: string; startTime: string; endTime: string }[]>
-): { dayName: string; startTime: string; endTime: string; overlap: number; total: number } | null {
+): AvailabilityProposal | null {
+  const results = getTopAvailabilityOverlaps(clientIds, availByClient, 1);
+  return results.length > 0 ? results[0] : null;
+}
+
+/** Get top-N day/time overlap proposals for a set of clients, sorted by overlap score */
+export function getTopAvailabilityOverlaps(
+  clientIds: string[] | Set<string>,
+  availByClient: Record<string, { dayOfWeek: number; dayName: string; startTime: string; endTime: string }[]>,
+  maxResults = 3
+): AvailabilityProposal[] {
   const ids = clientIds instanceof Set ? clientIds : new Set(clientIds);
-  if (ids.size === 0) return null;
+  if (ids.size === 0) return [];
   const dayStats: Record<number, { count: number; dayName: string; starts: string[]; ends: string[] }> = {};
 
   ids.forEach((cid) => {
@@ -196,19 +214,20 @@ export function getAvailabilityOverlap(
   });
 
   const entries = Object.values(dayStats).filter((d) => d.count >= 2);
-  if (entries.length === 0) return null;
+  if (entries.length === 0) return [];
   entries.sort((a, b) => b.count - a.count);
-  const best = entries[0];
-  const latestStart = best.starts.sort().reverse()[0];
-  const earliestEnd = best.ends.sort()[0];
 
-  return {
-    dayName: best.dayName,
-    startTime: latestStart <= earliestEnd ? latestStart : best.starts.sort()[0],
-    endTime: latestStart <= earliestEnd ? earliestEnd : best.ends.sort().reverse()[0],
-    overlap: best.count,
-    total: ids.size,
-  };
+  return entries.slice(0, maxResults).map((entry) => {
+    const latestStart = entry.starts.sort().reverse()[0];
+    const earliestEnd = entry.ends.sort()[0];
+    return {
+      dayName: entry.dayName,
+      startTime: latestStart <= earliestEnd ? latestStart : entry.starts.sort()[0],
+      endTime: latestStart <= earliestEnd ? earliestEnd : entry.ends.sort().reverse()[0],
+      overlap: entry.count,
+      total: ids.size,
+    };
+  });
 }
 
 /** Check if client has availability coverage for N months ahead */

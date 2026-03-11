@@ -1,13 +1,14 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, UserCog, Check, AlertTriangle, CalendarClock, Search, Calendar } from "lucide-react";
+import { Users, UserCog, Check, AlertTriangle, CalendarClock, Search, Calendar, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import {
@@ -21,7 +22,7 @@ import {
   getMissingFields,
   buildPrefsByClientMap,
   buildAvailabilityByClient,
-  getAvailabilityOverlap,
+  getTopAvailabilityOverlaps,
   type AgeCategory,
   type MatchType,
 } from "@/lib/clientUtils";
@@ -51,6 +52,7 @@ export default function GroupComposer() {
   const [filterArea, setFilterArea] = useState<string>("alle");
   const [expandedReserve, setExpandedReserve] = useState<Set<string>>(new Set());
   const [selectedStartDate, setSelectedStartDate] = useState<Record<string, string>>({});
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
 
   // Fetch waitlist clients
   const { data: waitlistClients = [] } = useQuery({
@@ -103,9 +105,9 @@ export default function GroupComposer() {
   // Build availability map (central helper, no fallbacks)
   const availByClient = useMemo(() => buildAvailabilityByClient(allAvailability as any), [allAvailability]);
 
-  // Find best overlapping timeslot (central helper)
-  const getSuggestion = (clientIds: Set<string>) => {
-    return getAvailabilityOverlap(clientIds, availByClient);
+  // Find top overlapping timeslots (central helper)
+  const getSuggestions = (clientIds: Set<string>) => {
+    return getTopAvailabilityOverlaps(clientIds, availByClient, 3);
   };
 
   const { data: allTrainers = [] } = useQuery({
@@ -425,13 +427,23 @@ export default function GroupComposer() {
           const reserveCandidates = showReserve ? getReserveCandidates(group) : [];
 
           return (
-            <Card key={key} className="border-border">
+            <Card key={key} className={`border-border ${expandedCard === key ? "col-span-2" : ""}`}>
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div>
-                    <CardTitle className="text-base font-bold text-foreground">
-                      {group.areaName} · {group.ageCategory}
-                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-base font-bold text-foreground">
+                        {group.areaName} · {group.ageCategory}
+                      </CardTitle>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => setExpandedCard(expandedCard === key ? null : key)}
+                      >
+                        <Maximize2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       <span className="text-blue-700">{intakeClients.length} intake afgerond</span>
                       {wachtlijstClients_.length > 0 && (
@@ -564,7 +576,7 @@ export default function GroupComposer() {
 
                 {/* Suggested timeslot */}
                 {(() => {
-                  const suggestion = getSuggestion(selected);
+                  const suggestions = getSuggestions(selected);
                   const clientsWithAvail = Array.from(selected).filter(id => availByClient[id]?.length > 0).length;
                   
                   if (clientsWithAvail === 0) {
@@ -576,7 +588,7 @@ export default function GroupComposer() {
                     );
                   }
                   
-                  if (!suggestion) {
+                  if (suggestions.length === 0) {
                     return (
                       <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 flex items-center gap-2">
                         <CalendarClock className="h-4 w-4 text-amber-600 shrink-0" />
@@ -586,22 +598,26 @@ export default function GroupComposer() {
                   }
 
                   return (
-                    <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <CalendarClock className="h-4 w-4 text-emerald-600 shrink-0" />
-                        <p className="text-xs font-semibold text-emerald-800">Voorstel trainingsmoment</p>
-                      </div>
-                      <div className="flex items-center gap-3 pl-6">
-                        <Badge variant="outline" className="border-emerald-300 text-emerald-700 text-xs capitalize">
-                          {suggestion.dayName}
-                        </Badge>
-                        <span className="text-sm font-medium text-foreground">
-                          {suggestion.startTime.slice(0, 5)} – {suggestion.endTime.slice(0, 5)}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          ({suggestion.overlap}/{suggestion.total} beschikbaar)
-                        </span>
-                      </div>
+                    <div className="space-y-2">
+                      {suggestions.map((suggestion, idx) => (
+                        <div key={idx} className={`rounded-lg border p-3 space-y-1 ${idx === 0 ? "border-emerald-200 bg-emerald-50/50" : "border-border bg-muted/20"}`}>
+                          <div className="flex items-center gap-2">
+                            <CalendarClock className={`h-4 w-4 shrink-0 ${idx === 0 ? "text-emerald-600" : "text-muted-foreground"}`} />
+                            <p className={`text-xs font-semibold ${idx === 0 ? "text-emerald-800" : "text-foreground"}`}>Voorstel {idx + 1}</p>
+                          </div>
+                          <div className="flex items-center gap-3 pl-6">
+                            <Badge variant="outline" className={`text-xs capitalize ${idx === 0 ? "border-emerald-300 text-emerald-700" : "border-border text-foreground"}`}>
+                              {suggestion.dayName}
+                            </Badge>
+                            <span className="text-sm font-medium text-foreground">
+                              {suggestion.startTime.slice(0, 5)} – {suggestion.endTime.slice(0, 5)}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              ({suggestion.overlap}/{suggestion.total} beschikbaar)
+                            </span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   );
                 })()}

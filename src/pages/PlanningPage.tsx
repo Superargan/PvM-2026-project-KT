@@ -543,13 +543,6 @@ export default function PlanningPage() {
 
   const today = format(new Date(), "yyyy-MM-dd");
 
-  // Get warning client names for tooltip
-  const getWarningClients = (ids: string[]) => {
-    return ids.map((id) => {
-      const c = allClients.find((cl: any) => cl.id === id);
-      return c ? `${c.first_name} ${c.last_name}` : id;
-    });
-  };
 
   return (
     <div className="space-y-5">
@@ -570,75 +563,59 @@ export default function PlanningPage() {
       </div>
 
       {/* Warning buttons */}
-      <TooltipProvider>
-        <div className="flex flex-wrap gap-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div>
-                <WarningButton count={warningCounts.noAvail} label="Beschikbaarheid nog doorgeven" icon={AlertTriangle} color="amber" />
-              </div>
-            </TooltipTrigger>
-            {warningCounts.noAvail > 0 && (
-              <TooltipContent className="max-w-xs">
-                <p className="text-xs font-medium mb-1">{warningCounts.noAvail} deelnemers zonder beschikbaarheid:</p>
-                <p className="text-xs text-muted-foreground">{getWarningClients(warningCounts.noAvailIds).slice(0, 5).join(", ")}{warningCounts.noAvailIds.length > 5 ? ` +${warningCounts.noAvailIds.length - 5}` : ""}</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div>
-                <WarningButton count={warningCounts.unusableAvail} label="Onbruikbare beschikbaarheid" icon={ShieldAlert} color="red" />
-              </div>
-            </TooltipTrigger>
-            {warningCounts.unusableAvail > 0 && (
-              <TooltipContent className="max-w-xs">
-                <p className="text-xs font-medium mb-1">{warningCounts.unusableAvail} deelnemers met onbruikbare beschikbaarheid:</p>
-                <p className="text-xs text-muted-foreground">{getWarningClients(warningCounts.unusableAvailIds).slice(0, 5).join(", ")}{warningCounts.unusableAvailIds.length > 5 ? ` +${warningCounts.unusableAvailIds.length - 5}` : ""}</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div>
-                <WarningButton count={warningCounts.staleCoverage} label="Beschikbaarheid actualiseren" icon={RefreshCw} color="amber" />
-              </div>
-            </TooltipTrigger>
-            {warningCounts.staleCoverage > 0 && (
-              <TooltipContent className="max-w-xs">
-                <p className="text-xs font-medium mb-1">{warningCounts.staleCoverage} deelnemers met verouderde beschikbaarheid:</p>
-                <p className="text-xs text-muted-foreground">{getWarningClients(warningCounts.staleCoverageIds).slice(0, 5).join(", ")}{warningCounts.staleCoverageIds.length > 5 ? ` +${warningCounts.staleCoverageIds.length - 5}` : ""}</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div>
-                <WarningButton count={warningCounts.noArea} label="Geen gebied" icon={MapPinOff} color="blue" />
-              </div>
-            </TooltipTrigger>
-            {warningCounts.noArea > 0 && (
-              <TooltipContent className="max-w-xs">
-                <p className="text-xs font-medium mb-1">{warningCounts.noArea} deelnemers zonder gebied:</p>
-                <p className="text-xs text-muted-foreground">{getWarningClients(warningCounts.noAreaIds).slice(0, 5).join(", ")}{warningCounts.noAreaIds.length > 5 ? ` +${warningCounts.noAreaIds.length - 5}` : ""}</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div>
-                <WarningButton count={warningCounts.overridden} label="Overruled (admin)" icon={ShieldCheck} color="purple" />
-              </div>
-            </TooltipTrigger>
-            {warningCounts.overridden > 0 && (
-              <TooltipContent className="max-w-xs">
-                <p className="text-xs font-medium mb-1">{warningCounts.overridden} deelnemers met admin override:</p>
-                <p className="text-xs text-muted-foreground">{getWarningClients(warningCounts.overriddenIds).slice(0, 5).join(", ")}{warningCounts.overriddenIds.length > 5 ? ` +${warningCounts.overriddenIds.length - 5}` : ""}</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-        </div>
-      </TooltipProvider>
+      <div className="flex flex-wrap gap-2">
+        <WarningButton count={warningCounts.noAvail} label="Beschikbaarheid nog doorgeven" icon={AlertTriangle} color="amber" onClick={() => setWarningFilter("noAvail")} />
+        <WarningButton count={warningCounts.unusableAvail} label="Onbruikbare beschikbaarheid" icon={ShieldAlert} color="red" onClick={() => setWarningFilter("unusable")} />
+        <WarningButton count={warningCounts.staleCoverage} label="Beschikbaarheid actualiseren" icon={RefreshCw} color="amber" onClick={() => setWarningFilter("stale")} />
+        <WarningButton count={warningCounts.noArea} label="Geen gebied" icon={MapPinOff} color="blue" onClick={() => setWarningFilter("noArea")} />
+        <WarningButton count={warningCounts.overridden} label="Overruled (admin)" icon={ShieldCheck} color="purple" onClick={() => setWarningFilter("overridden")} />
+      </div>
+
+      {/* Warning detail dialog */}
+      <Dialog open={warningFilter !== null} onOpenChange={(open) => { if (!open) setWarningFilter(null); }}>
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {warningFilter === "noAvail" && "Beschikbaarheid nog doorgeven"}
+              {warningFilter === "unusable" && "Onbruikbare beschikbaarheid"}
+              {warningFilter === "stale" && "Beschikbaarheid actualiseren"}
+              {warningFilter === "noArea" && "Geen gebied"}
+              {warningFilter === "overridden" && "Overruled (admin)"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-1">
+            {(() => {
+              const ids = warningFilter === "noAvail" ? warningCounts.noAvailIds
+                : warningFilter === "unusable" ? warningCounts.unusableAvailIds
+                : warningFilter === "stale" ? warningCounts.staleCoverageIds
+                : warningFilter === "noArea" ? warningCounts.noAreaIds
+                : warningFilter === "overridden" ? warningCounts.overriddenIds
+                : [];
+              return ids.map((id) => {
+                const c = allClients.find((cl: any) => cl.id === id);
+                if (!c) return null;
+                return (
+                  <button
+                    key={id}
+                    className="w-full flex items-center gap-2 rounded-md px-3 py-2 text-left hover:bg-muted/50 transition-colors"
+                    onClick={() => { setWarningFilter(null); navigate(`/clienten/${id}`); }}
+                  >
+                    <span className="text-sm font-medium text-foreground truncate">
+                      {c.first_name} {c.last_name}
+                    </span>
+                    <span className="text-xs text-muted-foreground ml-auto shrink-0">
+                      {(c as any).areas?.name ?? "Geen gebied"}
+                    </span>
+                    <Badge variant="outline" className="text-[10px] shrink-0">
+                      {c.intake_status ?? "—"}
+                    </Badge>
+                  </button>
+                );
+              });
+            })()}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Global filters */}
       <div className="flex flex-wrap items-center gap-3">
