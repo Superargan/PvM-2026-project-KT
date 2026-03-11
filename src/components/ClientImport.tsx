@@ -824,7 +824,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
           }
           const avails = availMap[idx] ?? [];
           for (const a of avails) {
-            const dates = generateDatesForDay(a.dayIndex, 90);
+            const dates = generateDatesForDay(a.dayIndex, 122);
             for (const date of dates) {
               availInserts.push({ client_id: row.id, available_date: date, start_time: a.startTime, end_time: a.endTime, notes: a.notes });
             }
