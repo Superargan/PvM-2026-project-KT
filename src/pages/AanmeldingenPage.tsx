@@ -18,7 +18,7 @@ import WaitlistManager from "@/components/WaitlistManager";
 import AreaPreferencesEditor from "@/components/AreaPreferencesEditor";
 import ClientImport from "@/components/ClientImport";
 import { downloadExport } from "@/lib/csvExport";
-import { calculateAge, statusLabels, statusStyles, filterClients } from "@/lib/clientUtils";
+import { calculateAge, statusLabels, statusStyles, filterClients, REQUIRED_CLIENT_CHECKS, getMissingFields } from "@/lib/clientUtils";
 import ClientFilters from "@/components/ClientFilters";
 import ClientListTable from "@/components/ClientListTable";
 
@@ -672,16 +672,7 @@ function FieldWrapper({ label, error, children }: { label: string; error?: strin
   );
 }
 
-const REQUIRED_CHECKS: { key: string; label: string; check: (c: any) => boolean }[] = [
-  { key: "date_of_birth", label: "Geboortedatum", check: (c) => !c.date_of_birth },
-  { key: "school_id", label: "School", check: (c) => !c.school_id },
-  { key: "guardian_phone", label: "Telefoon ouder", check: (c) => !c.guardian_phone },
-  { key: "guardian_name", label: "Naam ouder", check: (c) => !c.guardian_name },
-  { key: "waitlist_area_id", label: "Gebied", check: (c) => !c.waitlist_area_id },
-  { key: "gender", label: "Geslacht", check: (c) => !c.gender },
-  { key: "postal_code", label: "Postcode", check: (c) => !c.postal_code },
-  { key: "consent_data_processing", label: "AVG-toestemming", check: (c) => !c.consent_data_processing },
-];
+const REQUIRED_CHECKS = REQUIRED_CLIENT_CHECKS;
 
 function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, refetch }: {
   clients: any[];
@@ -696,24 +687,16 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
   const { toast } = useToast();
 
   const uniqueClients = Array.from(new Map(clients.map((c) => [c.id, c])).values());
-  const relevantForArea = new Set(["wachtlijst", "intake_afgerond", "actief"]);
 
   const flagged = uniqueClients.map((c: any) => {
-    const missing = Array.from(new Set(
-      REQUIRED_CHECKS
-        .filter((ch) => {
-          if (ch.key === "waitlist_area_id" && !relevantForArea.has(c.intake_status ?? "")) return false;
-          return ch.check(c);
-        })
-        .map((ch) => ch.label)
-    ));
+    const missing = getMissingFields(c);
     return { client: c, missing };
   }).filter((r) => r.missing.length > 0).sort((a, b) => b.missing.length - a.missing.length);
 
   const summaryCounts = REQUIRED_CHECKS.map((ch) => ({
     label: ch.label,
-    count: flagged.filter(({ client }) => {
-      if (ch.key === "waitlist_area_id" && !relevantForArea.has(client.intake_status ?? "")) return false;
+    count: uniqueClients.filter((client: any) => {
+      if (ch.onlyStatuses && !ch.onlyStatuses.includes(client.intake_status ?? "")) return false;
       return ch.check(client);
     }).length,
   })).filter((s) => s.count > 0);
@@ -759,7 +742,7 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          <span className="font-semibold text-foreground">{flagged.length}</span> van {uniqueClients.length} deelnemers hebben ontbrekende gegevens
+          <span className="font-semibold text-foreground">{flagged.length}</span> van {uniqueClients.length} aanmelders hebben ontbrekende gegevens
         </p>
         {flagged.length > 0 && (
           <Button size="sm" variant="outline" onClick={handleExport} className="gap-1.5">
@@ -783,7 +766,7 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
           <div className="flex items-center gap-2">
             <School className="h-4 w-4 text-muted-foreground" />
             <p className="text-sm font-semibold text-foreground">
-              {clientsWithoutSchool.length} deelnemer(s) zonder school — koppel hieronder
+              {clientsWithoutSchool.length} aanmelder(s) zonder school — koppel hieronder
             </p>
           </div>
           <div className="space-y-2">

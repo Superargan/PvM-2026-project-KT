@@ -10,6 +10,8 @@ import {
   matchSortOrder,
   statusLabels,
   allStatuses,
+  REQUIRED_CLIENT_CHECKS,
+  getMissingFields,
 } from "@/lib/clientUtils";
 import { differenceInYears, parseISO, subYears, format } from "date-fns";
 
@@ -145,5 +147,34 @@ describe("statusLabels — single definition", () => {
 
   it("allStatuses matches statusLabels keys", () => {
     expect(allStatuses.sort()).toEqual(Object.keys(statusLabels).sort());
+  });
+});
+
+describe("REQUIRED_CLIENT_CHECKS — centralized missing data checks", () => {
+  it("contains geboortedatum check", () => {
+    expect(REQUIRED_CLIENT_CHECKS.find((c) => c.key === "date_of_birth")).toBeDefined();
+  });
+
+  it("gebied check only applies to relevant statuses", () => {
+    const gebiedCheck = REQUIRED_CLIENT_CHECKS.find((c) => c.key === "waitlist_area_id");
+    expect(gebiedCheck?.onlyStatuses).toContain("wachtlijst");
+    expect(gebiedCheck?.onlyStatuses).toContain("intake_afgerond");
+  });
+});
+
+describe("getMissingFields — consistent across pages", () => {
+  it("flags missing date_of_birth for any status", () => {
+    const missing = getMissingFields({ intake_status: "nieuw" });
+    expect(missing).toContain("Geboortedatum");
+  });
+
+  it("does not flag gebied for nieuw status", () => {
+    const missing = getMissingFields({ intake_status: "nieuw" });
+    expect(missing).not.toContain("Gebied");
+  });
+
+  it("flags gebied for wachtlijst status", () => {
+    const missing = getMissingFields({ intake_status: "wachtlijst" });
+    expect(missing).toContain("Gebied");
   });
 });
