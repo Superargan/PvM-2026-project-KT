@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval, parseISO, startOfMonth, endOfMonth, addMonths, subMonths, getDay } from "date-fns";
 import { getAgeCategoryPlanning } from "@/lib/clientUtils";
+import { clientKeys, areaKeys } from "@/lib/queryKeys";
 import { nl } from "date-fns/locale";
 import { CalendarDays, ChevronLeft, ChevronRight, Users, UserCog, Clock, MapPin, Filter, Plus, X, FileSpreadsheet, Star, Palmtree, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
