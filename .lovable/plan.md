@@ -1,59 +1,59 @@
 
+# Plan: Definitieve implementatie — UITGEVOERD
 
-# Plan: Testomgeving 2025 met Kanjertrainingen
+## Status: ✅ Alle stappen voltooid
 
-## Huidige situatie
+### Stap 1: Database migraties ✅
+- `neighborhood_id` kolom op `clients` + backfill vanuit `schools`
+- `admin` enum-waarde toegevoegd aan `app_role`
+- `is_admin()` security definer functie
+- `availability_override_logs` tabel met unique partial index en RLS
 
-| Gegeven | Aantal |
-|---------|--------|
-| Programma's (2026, KT) | 28 (te_plannen) + 3 (ingepland) |
-| Trainers | 1 (Patrick van Mastricht) |
-| Scholen | 162 |
-| Gebieden | 14 (alle Rotterdamse gebieden) |
-| Cliënten | 1 |
-| Sessies | 10 |
+### Stap 2: Centrale helpers ✅
+6 pure functies in `src/lib/clientUtils.ts`:
+- `buildPrefsByClientMap()` — preference_order-aware
+- `buildAvailabilityByClient()` — alleen bruikbare records (start < end)
+- `getAvailabilityOverlap()` — beste dag/tijd overlap
+- `hasAvailabilityCoverage()` — rolling window check
+- `getClientDataCompleteness()` — volledige statusbepaling
+- `getPlannabilityStatus()` — 5 statussen
 
-Er bestaan nog geen 2025-programma's. Alle huidige KT-nummers beginnen met 26xxx.
+### Stap 3: WaitlistOverview refactoren ✅
+- Inline `Set<string>` prefsByClient vervangen door `buildPrefsByClientMap()`
+- Reserve-iteratie via `Object.entries(prefs)` i.p.v. `Set.forEach`
+- `neighborhood_id` toegevoegd aan query
 
-## Wat er nodig is
+### Stap 4: GroupComposer refactoren ✅
+- `availByClient` met fallback `"09:00"/"17:00"` → `buildAvailabilityByClient()`
+- `getSuggestion()` → `getAvailabilityOverlap()`
+- Dubbele `prefsByClient` → `buildPrefsByClientMap()`
+- Ongebruikte imports (`getDay`, `parseISO` uit date-fns) verwijderd
+- `neighborhood_id` toegevoegd aan query
 
-Om realistisch te testen hebben we voor 5 Kanjertrainingen (2025) het volgende nodig:
+### Stap 5: PlanningPage herontwerp ✅
+- Default tab: `"groepen"` (was `"agenda"`)
+- Tab volgorde: Groepen | Beschikbaarheid | Agenda
+- `allClients` query uitgebreid met `neighborhood_id`, `date_of_birth`, `intake_status`, `school_id`, `schools(name)`
 
-1. **5 KT-programma's** met naam `KT - 25001` t/m `KT - 25005`, status `afgerond`, met start/einddatum in 2025, leeftijdscategorie, en gekoppeld aan een gebied/school
-2. **Trainers** - minimaal 4-6 extra trainers om realistisch 2 per programma te koppelen
-3. **Cliënten** - minimaal 35-40 kinderen (7-8 per groep) met naam, geboortedatum, school
-4. **Sessies** - 10 bijeenkomsten per programma (standaard KT = 10 lessen)
-5. **Presentie** - aanwezigheidsregistratie per sessie per kind
-6. **Koppelingen** - program_staff en program_clients records
+### Stap 6: neighborhood_id sync ✅
+- `AanmeldenPublicPage.tsx`: `neighborhood_id` meegestuurd bij registratie
+- `ClientDetailPage.tsx`: `neighborhood_id` gesync bij school-wijziging
+- `AanmeldingenPage.tsx`: `neighborhood_id` gesync in updateField en handleAssignSchool
+- `ClientImport.tsx`: `neighborhood_id` afgeleid bij insert en update
 
-## Aanpak
+### Stap 7: Queries gelijktrekken ✅
+- `WaitlistOverview.tsx`: `neighborhood_id` in select
+- `GroupComposer.tsx`: `neighborhood_id` in select
+- `PlanningPage.tsx`: `neighborhood_id` in select
+- `WachtlijstPage.tsx`: `neighborhood_id` in select
+- `AanmeldingenPage.tsx`: gebruikt `*` (bevat automatisch `neighborhood_id`)
+- `ClientDetailPage.tsx`: gebruikt `*` (bevat automatisch `neighborhood_id`)
 
-### Stap 1: Testdata genereren via SQL
-Ik maak een script dat via database-inserts de volgende testdata aanmaakt:
+### Stap 8: Opruimen ✅
+- Alle tests (27) slagen
+- Ongebruikte imports verwijderd
 
-- **5 programma's**: KT - 25001 t/m 25005, verdeeld over verschillende gebieden, mix van 5-7 en 8-12 jaar, status `afgerond`, periode jan-jun 2025
-- **6 trainers**: realistische Nederlandse namen, gekoppeld aan scholen
-- **40 cliënten**: kinderen met naam, geboortedatum (passend bij leeftijdscategorie), school, oudergegevens, intake_status `afgerond`
-- **50 sessies**: 10 per programma, wekelijks verspreid over de periode
-- **Koppelingen**: elke training 2 trainers + 7-8 kinderen
-- **Presentie**: realistische aanwezigheid (~85%)
-
-### Stap 2: Bestanden inlezen
-Je noemde dat je bestanden hebt met 2025-gegevens. Na stap 1 kun je die uploaden zodat we echte data gebruiken in plaats van (of naast) gegenereerde testdata. We kunnen dan bestaande records bijwerken of aanvullen.
-
-### Stap 3: Validatie
-Na het inladen controleren we of:
-- Programma's correct op de kaarten verschijnen
-- Trainers en deelnemers zichtbaar zijn op de detailpagina
-- Presentie en sessies kloppen
-- Filters en rapportages werken met de 2025-data
-
-## Vraag aan jou
-
-Voordat ik begin:
-
-- **Wil je eerst met puur gegenereerde testdata starten (5 programma's)**, zodat je daarna je eigen bestanden kunt uploaden om aan te vullen of te corrigeren?
-- **Of wil je eerst je bestanden delen**, zodat ik de echte 2025-gegevens direct kan verwerken?
-
-De eerste optie is het snelst om mee te testen; de tweede geeft meteen realistische data.
-
+## Nog te implementeren (toekomstige stappen)
+- Waarschuwingsknoppen op PlanningPage (5 mutueel exclusieve tellingen)
+- Admin override UI (knop, reden-veld, badge met tooltip)
+- ClientFilters component vervanging van eigen filter-Selects op PlanningPage
