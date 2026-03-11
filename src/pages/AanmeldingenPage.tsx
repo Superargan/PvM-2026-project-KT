@@ -871,6 +871,30 @@ function DuplicateScan({ clients, isLoading, onNavigate, onEdit }: {
   onEdit: (client: any) => void;
 }) {
   const groups = findAllDuplicateGroups(clients);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDelete = async (client: any) => {
+    setDeletingId(client.id);
+    try {
+      await supabase.from("attendance").delete().eq("client_id", client.id);
+      await supabase.from("program_clients").delete().eq("client_id", client.id);
+      await supabase.from("client_assignments").delete().eq("client_id", client.id);
+      await supabase.from("client_availability").delete().eq("client_id", client.id);
+      await supabase.from("client_area_preferences").delete().eq("client_id", client.id);
+      await supabase.from("availability_override_logs").delete().eq("client_id", client.id);
+      await supabase.from("audit_log").delete().eq("client_id", client.id);
+      const { error } = await supabase.from("clients").delete().eq("id", client.id);
+      if (error) throw error;
+      toast({ title: `${client.first_name} ${client.last_name} verwijderd` });
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+    } catch (err: any) {
+      toast({ title: "Fout bij verwijderen", description: err.message, variant: "destructive" });
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (isLoading) {
     return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -918,9 +942,35 @@ function DuplicateScan({ clients, isLoading, onNavigate, onEdit }: {
                 {c.schools?.name && (
                   <span className="text-muted-foreground text-xs">{c.schools.name}</span>
                 )}
-                <Button size="sm" variant="ghost" className="ml-auto" onClick={() => onEdit(c)}>
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
+                <div className="ml-auto flex items-center gap-1">
+                  <Button size="sm" variant="ghost" onClick={() => onEdit(c)}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Duplicaat verwijderen?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Weet je zeker dat je <strong>{c.first_name} {c.last_name}</strong> wilt verwijderen? Dit verwijdert ook alle gekoppelde gegevens (presentie, programma-koppelingen, beschikbaarheid). Deze actie kan niet ongedaan worden gemaakt.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDelete(c)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          {deletingId === c.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verwijderen"}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
             ))}
           </div>
