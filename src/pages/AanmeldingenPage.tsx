@@ -49,6 +49,10 @@ const editSchema = z.object({
   notes: z.string().max(5000).optional(),
   dropout_reason: z.string().optional(),
   dropout_action: z.string().max(2000).optional(),
+  // Velden die mee moeten bij opslaan (sync met ClientDetailPage)
+  neighborhood_id: z.string().nullable().optional(),
+  waitlist_area_id: z.string().nullable().optional(),
+  all_areas_flexible: z.boolean().optional(),
 });
 
 type EditForm = z.infer<typeof editSchema>;
