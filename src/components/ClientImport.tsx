@@ -269,7 +269,7 @@ function generateDatesForDay(dayIndex: number, days: number = 122): string[] {
   return dates;
 }
 
-type ImportMode = "default" | "waitlist" | "intake_afgerond";
+type ImportMode = "default" | "waitlist" | "intake_afgerond" | "aanvulling";
 
 interface ClientImportProps {
   open: boolean;
@@ -280,6 +280,7 @@ interface ClientImportProps {
 }
 
 const MODE_OPTIONS: { value: ImportMode; label: string; description: string }[] = [
+  { value: "aanvulling", label: "Aanvullingen", description: "Vul bestaande deelnemers aan met extra gegevens (beschikbaarheid, gebieden, school, etc.)" },
   { value: "waitlist", label: "Wachtlijst", description: "Deelnemers worden op de wachtlijst geplaatst (status: wachtlijst)" },
   { value: "intake_afgerond", label: "Afgeronde intakes", description: "Deelnemers met afgeronde intake (status: intake_afgerond)" },
   { value: "default", label: "Nieuwe aanmeldingen", description: "Nieuwe deelnemers (status wordt automatisch bepaald)" },
