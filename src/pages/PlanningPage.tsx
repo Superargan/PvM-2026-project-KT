@@ -163,7 +163,7 @@ export default function PlanningPage() {
 
   // === DATA QUERIES ===
   const { data: intakes = [] } = useQuery({
-    queryKey: ["planning-intakes", dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryKey: clientKeys.planningIntakes(dateRange.start.toISOString(), dateRange.end.toISOString()),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
