@@ -2,10 +2,17 @@ import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval, parseISO, startOfMonth, endOfMonth, addMonths, subMonths, getDay } from "date-fns";
-import { getAgeCategoryPlanning } from "@/lib/clientUtils";
+import {
+  getAgeCategoryPlanning,
+  buildAvailabilityByClient,
+  buildPrefsByClientMap,
+  getClientDataCompleteness,
+  hasAvailabilityCoverage,
+  type ClientDataCompleteness,
+} from "@/lib/clientUtils";
 import { clientKeys, areaKeys } from "@/lib/queryKeys";
 import { nl } from "date-fns/locale";
-import { CalendarDays, ChevronLeft, ChevronRight, Users, UserCog, Clock, MapPin, Filter, Plus, X, FileSpreadsheet, Star, Palmtree, CalendarClock } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Users, Clock, Plus, X, FileSpreadsheet, Star, Palmtree, CalendarClock, AlertTriangle, ShieldAlert, MapPinOff, RefreshCw, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,12 +20,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import GroupComposer from "@/components/GroupComposer";
 import AvailabilityManager from "@/components/AvailabilityManager";
 import PlanningImport from "@/components/PlanningImport";
 import WaitlistOverview from "@/components/WaitlistOverview";
+import ClientFilters from "@/components/ClientFilters";
 import { isSpecialDay } from "@/lib/holidays";
 
 const trainerTypeLabels: Record<string, string> = {
@@ -47,7 +58,6 @@ function AvailabilitySummaryPanel({ filterArea, filterAge, areaName }: { filterA
         .in("intake_status", ["wachtlijst", "intake_afgerond"])
         .eq("waitlist_area_id", filterArea);
       if (error) throw error;
-      // Filter by age category
       return (data ?? []).filter((c: any) => {
         return getAgeCategoryPlanning(c.date_of_birth) === filterAge;
       });
@@ -125,6 +135,33 @@ function AvailabilitySummaryPanel({ filterArea, filterAge, areaName }: { filterA
   );
 }
 
+// Warning button component
+function WarningButton({ count, label, icon: Icon, color, onClick }: {
+  count: number;
+  label: string;
+  icon: any;
+  color: "amber" | "red" | "blue" | "purple";
+  onClick?: () => void;
+}) {
+  if (count === 0) return null;
+  const colorMap = {
+    amber: "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100",
+    red: "bg-red-50 text-red-800 border-red-200 hover:bg-red-100",
+    blue: "bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100",
+    purple: "bg-purple-50 text-purple-800 border-purple-200 hover:bg-purple-100",
+  };
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${colorMap[color]}`}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      <span>{count}</span>
+      <span className="hidden sm:inline">{label}</span>
+    </button>
+  );
+}
+
 export default function PlanningPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -140,9 +177,14 @@ export default function PlanningPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("groepen");
   const [showGroupComposer, setShowGroupComposer] = useState(false);
+  const [overrideDialogOpen, setOverrideDialogOpen] = useState(false);
+  const [overrideClientId, setOverrideClientId] = useState<string>("");
+  const [overrideReason, setOverrideReason] = useState("");
+  const [warningFilter, setWarningFilter] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { session } = useAuth();
 
   const dateRange = useMemo(() => {
     if (viewMode === "week") {
@@ -273,6 +315,58 @@ export default function PlanningPage() {
     },
   });
 
+  // All client availability (no date filter) for warning calculations
+  const { data: allClientAvailability = [] } = useQuery({
+    queryKey: clientKeys.list("all-availability"),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("client_availability")
+        .select("client_id, available_date, start_time, end_time");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Client area preferences for warning calculations
+  const { data: allPreferences = [] } = useQuery({
+    queryKey: clientKeys.list("all-preferences"),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("client_area_preferences")
+        .select("client_id, area_id, preference_order");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Override logs
+  const { data: overrideLogs = [], refetch: refetchOverrides } = useQuery({
+    queryKey: ["availability-override-logs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("availability_override_logs")
+        .select("*")
+        .eq("active", true);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Check if current user is admin
+  const { data: isAdmin = false } = useQuery({
+    queryKey: ["user-is-admin", session?.user?.id],
+    enabled: !!session?.user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session!.user.id)
+        .eq("role", "admin");
+      if (error) throw error;
+      return (data ?? []).length > 0;
+    },
+  });
+
   const { data: areas = [] } = useQuery({
     queryKey: areaKeys.all,
     queryFn: async () => {
@@ -283,6 +377,67 @@ export default function PlanningPage() {
   });
 
   // === DERIVED DATA ===
+  const overriddenClientIds = useMemo(() => {
+    return new Set(overrideLogs.map((o: any) => o.client_id as string));
+  }, [overrideLogs]);
+
+  const availByClient = useMemo(() => buildAvailabilityByClient(allClientAvailability), [allClientAvailability]);
+  const prefsByClient = useMemo(() => buildPrefsByClientMap(allPreferences), [allPreferences]);
+
+  // Warning counts
+  const warningCounts = useMemo(() => {
+    const planningClients = allClients.filter((c: any) => {
+      const s = c.intake_status ?? "nieuw";
+      return s === "intake_afgerond" || s === "wachtlijst";
+    });
+
+    let noAvail = 0;
+    let unusableAvail = 0;
+    let staleCoverage = 0;
+    let noArea = 0;
+    let overridden = 0;
+
+    const noAvailIds: string[] = [];
+    const unusableAvailIds: string[] = [];
+    const staleCoverageIds: string[] = [];
+    const noAreaIds: string[] = [];
+    const overriddenIds: string[] = [];
+
+    planningClients.forEach((c: any) => {
+      const comp = getClientDataCompleteness(c, availByClient, prefsByClient, overriddenClientIds);
+
+      if (comp.isOverridden) {
+        overridden++;
+        overriddenIds.push(c.id);
+        return; // mutually exclusive
+      }
+
+      if (comp.requiresAvailability && !comp.hasAvailability) {
+        noAvail++;
+        noAvailIds.push(c.id);
+      }
+
+      // For "unusable": has raw records but none usable (buildAvailabilityByClient filtered all out)
+      const rawRecords = allClientAvailability.filter((a: any) => a.client_id === c.id);
+      if (rawRecords.length > 0 && !comp.hasUsableAvailability) {
+        unusableAvail++;
+        unusableAvailIds.push(c.id);
+      }
+
+      if (comp.hasUsableAvailability && !hasAvailabilityCoverage(availByClient[c.id])) {
+        staleCoverage++;
+        staleCoverageIds.push(c.id);
+      }
+
+      if (comp.requiresAvailability && !comp.hasArea) {
+        noArea++;
+        noAreaIds.push(c.id);
+      }
+    });
+
+    return { noAvail, unusableAvail, staleCoverage, noArea, overridden, noAvailIds, unusableAvailIds, staleCoverageIds, noAreaIds, overriddenIds };
+  }, [allClients, availByClient, prefsByClient, overriddenClientIds, allClientAvailability]);
+
   const intakeAssignmentMap = useMemo(() => {
     const map: Record<string, string[]> = {};
     intakeAssignments.forEach((a: any) => {
@@ -355,7 +510,46 @@ export default function PlanningPage() {
     }
   };
 
+  const handleOverrideSave = async () => {
+    if (!overrideClientId || !overrideReason.trim() || !session?.user?.id) return;
+
+    // Deactivate existing
+    await supabase
+      .from("availability_override_logs")
+      .update({ active: false })
+      .eq("client_id", overrideClientId)
+      .eq("active", true);
+
+    const { error } = await supabase
+      .from("availability_override_logs")
+      .insert({
+        client_id: overrideClientId,
+        overridden_by: session.user.id,
+        reason: overrideReason.trim(),
+        override_type: "beschikbaarheid_verplichting",
+        active: true,
+      });
+
+    if (error) {
+      toast({ title: "Fout", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Override opgeslagen" });
+      refetchOverrides();
+      setOverrideDialogOpen(false);
+      setOverrideClientId("");
+      setOverrideReason("");
+    }
+  };
+
   const today = format(new Date(), "yyyy-MM-dd");
+
+  // Get warning client names for tooltip
+  const getWarningClients = (ids: string[]) => {
+    return ids.map((id) => {
+      const c = allClients.find((cl: any) => cl.id === id);
+      return c ? `${c.first_name} ${c.last_name}` : id;
+    });
+  };
 
   return (
     <div className="space-y-5">
@@ -375,9 +569,79 @@ export default function PlanningPage() {
         </div>
       </div>
 
+      {/* Warning buttons */}
+      <TooltipProvider>
+        <div className="flex flex-wrap gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <WarningButton count={warningCounts.noAvail} label="Beschikbaarheid nog doorgeven" icon={AlertTriangle} color="amber" />
+              </div>
+            </TooltipTrigger>
+            {warningCounts.noAvail > 0 && (
+              <TooltipContent className="max-w-xs">
+                <p className="text-xs font-medium mb-1">{warningCounts.noAvail} deelnemers zonder beschikbaarheid:</p>
+                <p className="text-xs text-muted-foreground">{getWarningClients(warningCounts.noAvailIds).slice(0, 5).join(", ")}{warningCounts.noAvailIds.length > 5 ? ` +${warningCounts.noAvailIds.length - 5}` : ""}</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <WarningButton count={warningCounts.unusableAvail} label="Onbruikbare beschikbaarheid" icon={ShieldAlert} color="red" />
+              </div>
+            </TooltipTrigger>
+            {warningCounts.unusableAvail > 0 && (
+              <TooltipContent className="max-w-xs">
+                <p className="text-xs font-medium mb-1">{warningCounts.unusableAvail} deelnemers met onbruikbare beschikbaarheid:</p>
+                <p className="text-xs text-muted-foreground">{getWarningClients(warningCounts.unusableAvailIds).slice(0, 5).join(", ")}{warningCounts.unusableAvailIds.length > 5 ? ` +${warningCounts.unusableAvailIds.length - 5}` : ""}</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <WarningButton count={warningCounts.staleCoverage} label="Beschikbaarheid actualiseren" icon={RefreshCw} color="amber" />
+              </div>
+            </TooltipTrigger>
+            {warningCounts.staleCoverage > 0 && (
+              <TooltipContent className="max-w-xs">
+                <p className="text-xs font-medium mb-1">{warningCounts.staleCoverage} deelnemers met verouderde beschikbaarheid:</p>
+                <p className="text-xs text-muted-foreground">{getWarningClients(warningCounts.staleCoverageIds).slice(0, 5).join(", ")}{warningCounts.staleCoverageIds.length > 5 ? ` +${warningCounts.staleCoverageIds.length - 5}` : ""}</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <WarningButton count={warningCounts.noArea} label="Geen gebied" icon={MapPinOff} color="blue" />
+              </div>
+            </TooltipTrigger>
+            {warningCounts.noArea > 0 && (
+              <TooltipContent className="max-w-xs">
+                <p className="text-xs font-medium mb-1">{warningCounts.noArea} deelnemers zonder gebied:</p>
+                <p className="text-xs text-muted-foreground">{getWarningClients(warningCounts.noAreaIds).slice(0, 5).join(", ")}{warningCounts.noAreaIds.length > 5 ? ` +${warningCounts.noAreaIds.length - 5}` : ""}</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <WarningButton count={warningCounts.overridden} label="Overruled (admin)" icon={ShieldCheck} color="purple" />
+              </div>
+            </TooltipTrigger>
+            {warningCounts.overridden > 0 && (
+              <TooltipContent className="max-w-xs">
+                <p className="text-xs font-medium mb-1">{warningCounts.overridden} deelnemers met admin override:</p>
+                <p className="text-xs text-muted-foreground">{getWarningClients(warningCounts.overriddenIds).slice(0, 5).join(", ")}{warningCounts.overriddenIds.length > 5 ? ` +${warningCounts.overriddenIds.length - 5}` : ""}</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+
       {/* Global filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <Filter className="h-4 w-4 text-muted-foreground" />
         <Select value={filterArea} onValueChange={setFilterArea}>
           <SelectTrigger className="w-40"><SelectValue placeholder="Gebied" /></SelectTrigger>
           <SelectContent className="bg-popover">
@@ -741,7 +1005,9 @@ export default function PlanningPage() {
                     <tr className="border-b border-border bg-muted/50">
                       <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Deelnemer</th>
                       <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gebied</th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
                       <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Beschikbaar</th>
+                      {isAdmin && <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Override</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -749,13 +1015,34 @@ export default function PlanningPage() {
                       .filter((c: any) => filterArea === "alle" || c.waitlist_area_id === filterArea)
                       .map((client: any) => {
                         const clientAvail = clientAvailability.filter((a: any) => a.client_id === client.id);
+                        const hasOverride = overriddenClientIds.has(client.id);
+                        const overrideLog = overrideLogs.find((o: any) => o.client_id === client.id);
                         return (
                           <tr key={client.id} className="hover:bg-muted/30 transition-colors">
                             <td className="px-3 py-2">
-                              <p className="text-sm font-semibold text-foreground">{client.first_name} {client.last_name}</p>
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-sm font-semibold text-foreground">{client.first_name} {client.last_name}</p>
+                                {hasOverride && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger>
+                                        <Badge className="text-[9px] h-4 bg-purple-100 text-purple-800 border-purple-300">
+                                          <ShieldCheck className="h-2.5 w-2.5 mr-0.5" />Override
+                                        </Badge>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p className="text-xs">Reden: {overrideLog?.reason ?? "—"}</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                              </div>
                             </td>
                             <td className="px-3 py-2">
                               <span className="text-sm text-card-foreground">{(client as any).areas?.name ?? "—"}</span>
+                            </td>
+                            <td className="px-3 py-2">
+                              <span className="text-xs text-muted-foreground">{client.intake_status ?? "—"}</span>
                             </td>
                             <td className="px-3 py-2">
                               <div className="flex flex-wrap gap-1">
@@ -768,11 +1055,28 @@ export default function PlanningPage() {
                                 )}
                               </div>
                             </td>
+                            {isAdmin && (
+                              <td className="px-3 py-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-xs h-7"
+                                  onClick={() => {
+                                    setOverrideClientId(client.id);
+                                    setOverrideReason("");
+                                    setOverrideDialogOpen(true);
+                                  }}
+                                >
+                                  <ShieldCheck className="h-3 w-3 mr-1" />
+                                  {hasOverride ? "Wijzig" : "Override"}
+                                </Button>
+                              </td>
+                            )}
                           </tr>
                         );
                       })}
                     {allClients.filter((c: any) => filterArea === "alle" || c.waitlist_area_id === filterArea).length === 0 && (
-                      <tr><td colSpan={3} className="px-3 py-6 text-center text-sm text-muted-foreground">Geen deelnemers</td></tr>
+                      <tr><td colSpan={isAdmin ? 5 : 4} className="px-3 py-6 text-center text-sm text-muted-foreground">Geen deelnemers</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -853,6 +1157,44 @@ export default function PlanningPage() {
               disabled={(availType === "trainer" ? !selectedStaffId : !selectedClientId) || !availDate}
             >
               Opslaan
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Admin Override dialog */}
+      <Dialog open={overrideDialogOpen} onOpenChange={setOverrideDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Admin override — beschikbaarheid</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Met een override wordt deze deelnemer als planbaar beschouwd, ongeacht ontbrekende beschikbaarheidsgegevens.
+            </p>
+            <div className="space-y-1.5">
+              <Label>Deelnemer</Label>
+              <p className="text-sm font-medium text-foreground">
+                {allClients.find((c: any) => c.id === overrideClientId)
+                  ? `${allClients.find((c: any) => c.id === overrideClientId)!.first_name} ${allClients.find((c: any) => c.id === overrideClientId)!.last_name}`
+                  : "—"}
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Reden (verplicht)</Label>
+              <Textarea
+                value={overrideReason}
+                onChange={(e) => setOverrideReason(e.target.value)}
+                placeholder="Bijv. beschikbaarheid telefonisch bevestigd..."
+                rows={3}
+              />
+            </div>
+            <Button
+              className="w-full"
+              onClick={handleOverrideSave}
+              disabled={!overrideReason.trim()}
+            >
+              Override opslaan
             </Button>
           </div>
         </DialogContent>
