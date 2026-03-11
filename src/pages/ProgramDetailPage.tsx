@@ -90,12 +90,67 @@ export default function ProgramDetailPage() {
   });
 
   const enrolledIds = enrolledClients.map((ec: any) => ec.client_id);
+  const activeEnrolled = enrolledClients.filter((ec: any) => !ec.early_dropout);
   const availableClients = allClients.filter((c: any) => !enrolledIds.includes(c.id));
 
-  // Add participant
+  // Fetch sessions for overlap check
+  const { data: programSessions = [] } = useQuery({
+    queryKey: ["program_sessions", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("program_sessions")
+        .select("session_date, start_time, end_time")
+        .eq("program_id", id!)
+        .not("session_date", "is", null);
+      if (error) throw error;
+      return data ?? [];
+    },
+    enabled: !!id,
+  });
+
+  // Add participant with capacity + overlap check
   const addMutation = useMutation({
     mutationFn: async () => {
       if (!selectedClientId) return;
+
+      const maxP = program?.max_participants ?? 14;
+      if (activeEnrolled.length >= maxP) {
+        throw new Error(`Max aantal deelnemers bereikt (${maxP}). Alleen een admin kan dit overrulen.`);
+      }
+
+      // Overlap check
+      if (programSessions.length > 0) {
+        const { data: otherEnrollments } = await supabase
+          .from("program_clients")
+          .select("program_id, programs(id, name)")
+          .eq("client_id", selectedClientId)
+          .neq("program_id", id!);
+
+        if (otherEnrollments && otherEnrollments.length > 0) {
+          const otherProgramIds = otherEnrollments.map((e: any) => e.program_id);
+          const { data: otherSessions } = await supabase
+            .from("program_sessions")
+            .select("session_date, start_time, end_time, program_id")
+            .in("program_id", otherProgramIds)
+            .not("session_date", "is", null);
+
+          if (otherSessions) {
+            for (const ps of programSessions) {
+              const overlap = otherSessions.find((os: any) =>
+                os.session_date === ps.session_date &&
+                os.start_time && ps.start_time &&
+                os.start_time < (ps.end_time ?? "23:59") &&
+                (os.end_time ?? "23:59") > ps.start_time
+              );
+              if (overlap) {
+                const prog = otherEnrollments.find((e: any) => e.program_id === overlap.program_id);
+                throw new Error(`Overlap op ${ps.session_date} met programma ${(prog as any)?.programs?.name ?? overlap.program_id}`);
+              }
+            }
+          }
+        }
+      }
+
       const { error } = await supabase.from("program_clients").insert({
         program_id: id!,
         client_id: selectedClientId,
