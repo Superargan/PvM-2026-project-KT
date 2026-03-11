@@ -22,6 +22,7 @@ import { downloadExport } from "@/lib/csvExport";
 import { calculateAge, statusLabels, statusStyles, filterClients, REQUIRED_CLIENT_CHECKS, getMissingFields } from "@/lib/clientUtils";
 import ClientFilters from "@/components/ClientFilters";
 import ClientListTable from "@/components/ClientListTable";
+import DuplicateWarning from "@/components/DuplicateWarning";
 
 const editSchema = z.object({
   first_name: z.string().trim().min(1, "Voornaam is verplicht").max(100),
