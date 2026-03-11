@@ -77,7 +77,7 @@ export default function ProgrammasPage() {
         .from("programs")
         .select("*, schools(name), program_clients(count), areas(name), neighborhoods(name)")
         .eq("archived", false)
-        .order("start_date", { ascending: true });
+        .order("training_number", { ascending: true });
       if (error) throw error;
       return data ?? [];
     },
