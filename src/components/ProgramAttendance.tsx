@@ -165,7 +165,14 @@ export default function ProgramAttendance({ programId, programName, programStart
       </TabsContent>
 
       <TabsContent value="bijeenkomsten">
-        <div className="space-y-3">
+        <ScheduleGenerator
+          programId={programId}
+          programName={programName}
+          programStartDate={programStartDate}
+          existingSessions={sessions}
+          onGenerated={() => qc.invalidateQueries({ queryKey: ["program_sessions", programId] })}
+        />
+        <div className="space-y-3 mt-4">
           {sessions.map((s: any) => (
             <SessionDetails key={s.id} session={s} programId={programId} />
           ))}

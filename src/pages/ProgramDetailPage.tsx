@@ -391,7 +391,7 @@ export default function ProgramDetailPage() {
         {/* Sessies tab */}
         <TabsContent value="sessies">
           <div className="rounded-xl border border-border bg-card p-6">
-            <ProgramAttendance programId={id!} programName={program.name} inline />
+            <ProgramAttendance programId={id!} programName={program.name} programStartDate={program.start_date} inline />
           </div>
         </TabsContent>
       </Tabs>
