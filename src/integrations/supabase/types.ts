@@ -265,6 +265,7 @@ export type Database = {
           address: string | null
           all_areas_flexible: boolean
           archived: boolean
+          area_notes: string | null
           city: string | null
           class_group: string | null
           consent_data_processing: boolean | null
@@ -301,6 +302,7 @@ export type Database = {
           address?: string | null
           all_areas_flexible?: boolean
           archived?: boolean
+          area_notes?: string | null
           city?: string | null
           class_group?: string | null
           consent_data_processing?: boolean | null
@@ -337,6 +339,7 @@ export type Database = {
           address?: string | null
           all_areas_flexible?: boolean
           archived?: boolean
+          area_notes?: string | null
           city?: string | null
           class_group?: string | null
           consent_data_processing?: boolean | null
