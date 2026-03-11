@@ -20,6 +20,9 @@ import {
   matchColors,
   statusBadgeStyles,
   getMissingFields,
+  buildPrefsByClientMap,
+  buildAvailabilityByClient,
+  getAvailabilityOverlap,
   type AgeCategory,
   type MatchType,
 } from "@/lib/clientUtils";
