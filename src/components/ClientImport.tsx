@@ -612,12 +612,23 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
 
     // Update existing records one by one
     for (const upd of updates) {
-      const { error } = await supabase.from("clients").update(upd.data).eq("id", upd.id);
-      if (error) {
-        errors.push(`Update ${upd.id}: ${error.message}`);
-      } else {
-        updated++;
+      if (Object.keys(upd.data).length > 0) {
+        const { error } = await supabase.from("clients").update(upd.data).eq("id", upd.id);
+        if (error) {
+          errors.push(`Update ${upd.id}: ${error.message}`);
+          continue;
+        }
       }
+      // Upsert reserve area preferences
+      if (upd.reserves && upd.reserves.length > 0) {
+        // Delete existing prefs, then insert new ones
+        await supabase.from("client_area_preferences").delete().eq("client_id", upd.id);
+        const prefInserts = upd.reserves.map((r) => ({
+          client_id: upd.id, area_id: r.area_id, preference_order: r.order,
+        }));
+        await supabase.from("client_area_preferences").insert(prefInserts);
+      }
+      updated++;
     }
 
     setResult({ added, skipped, updated, errors });
