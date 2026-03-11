@@ -10,6 +10,8 @@ import {
   matchSortOrder,
   statusLabels,
   allStatuses,
+  REQUIRED_CLIENT_CHECKS,
+  getMissingFields,
 } from "@/lib/clientUtils";
 import { differenceInYears, parseISO, subYears, format } from "date-fns";
 
