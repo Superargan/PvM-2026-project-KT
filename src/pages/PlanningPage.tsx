@@ -404,10 +404,6 @@ export default function PlanningPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="agenda">
-            <CalendarDays className="h-4 w-4 mr-1.5" />
-            Agenda
-          </TabsTrigger>
           <TabsTrigger value="groepen">
             <Users className="h-4 w-4 mr-1.5" />
             Wachtlijst & Groepen
@@ -415,6 +411,10 @@ export default function PlanningPage() {
           <TabsTrigger value="beschikbaarheid">
             <Clock className="h-4 w-4 mr-1.5" />
             Beschikbaarheid
+          </TabsTrigger>
+          <TabsTrigger value="agenda">
+            <CalendarDays className="h-4 w-4 mr-1.5" />
+            Agenda
           </TabsTrigger>
         </TabsList>
 
