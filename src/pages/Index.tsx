@@ -9,10 +9,9 @@ export default function Dashboard() {
     queryKey: ["clients", "dashboard", "participants"],
     queryFn: async () => {
       const { count } = await supabase
-        .from("clients")
-        .select("*", { count: "exact", head: true })
-        .eq("archived", false)
-        .in("intake_status", ["actief", "wachtlijst", "intake_gepland", "intake", "intake_afgerond", "nieuw"]);
+        .from("program_clients")
+        .select("*, clients!inner(archived)", { count: "exact", head: true })
+        .eq("clients.archived", false);
       return count ?? 0;
     },
   });
