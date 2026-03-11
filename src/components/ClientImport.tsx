@@ -613,6 +613,15 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         }
       }
 
+      // If no explicit "Gebied" column but we have reserve areas, use the first one as primary area
+      if (!waitlist_area_id && reserveAreaIds.length > 0) {
+        waitlist_area_id = reserveAreaIds[0].area_id;
+        // Remove it from reserves to avoid duplication
+        reserveAreaIds.splice(0, 1);
+        // Re-number remaining reserves
+        reserveAreaIds.forEach((r, i) => { r.order = i + 1; });
+      }
+
       // all_areas_flexible
       const flexRaw = findCol(row, "Flexibel", "flexibel", "Alle gebieden", "alle gebieden", "all_areas_flexible");
       const all_areas_flexible = flexRaw ? ["ja", "yes", "1", "true", "x"].includes(flexRaw.toLowerCase()) : false;
