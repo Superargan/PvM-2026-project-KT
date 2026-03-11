@@ -247,6 +247,7 @@ export type Database = {
           intake_notes: string | null
           intake_status: string | null
           last_name: string
+          neighborhood_id: string | null
           notes: string | null
           postal_code: string | null
           referral_reason: string | null
@@ -282,6 +283,7 @@ export type Database = {
           intake_notes?: string | null
           intake_status?: string | null
           last_name: string
+          neighborhood_id?: string | null
           notes?: string | null
           postal_code?: string | null
           referral_reason?: string | null
@@ -317,6 +319,7 @@ export type Database = {
           intake_notes?: string | null
           intake_status?: string | null
           last_name?: string
+          neighborhood_id?: string | null
           notes?: string | null
           postal_code?: string | null
           referral_reason?: string | null
@@ -329,6 +332,13 @@ export type Database = {
           whatsapp_consent?: boolean | null
         }
         Relationships: [
+          {
+            foreignKeyName: "clients_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "neighborhoods"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "clients_referrer_id_fkey"
             columns: ["referrer_id"]
@@ -1222,7 +1232,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "backoffice" | "trainer"
+      app_role: "backoffice" | "trainer" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1350,7 +1360,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["backoffice", "trainer"],
+      app_role: ["backoffice", "trainer", "admin"],
     },
   },
 } as const
