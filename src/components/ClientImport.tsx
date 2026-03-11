@@ -724,6 +724,25 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         all_areas_flexible,
       };
 
+      // Parse availability from day columns (Maandag-Zondag)
+      const parsedAvail: ParsedAvailability[] = [];
+      for (let di = 0; di < DAY_COLUMNS.length; di++) {
+        const dayName = DAY_COLUMNS[di];
+        const cellValue = findCol(row, dayName, dayName.toLowerCase());
+        const parsed = parseAvailabilityCell(cellValue);
+        if (parsed?.available) {
+          parsedAvail.push({
+            dayIndex: DAY_INDICES[di],
+            startTime: parsed.startTime,
+            endTime: parsed.endTime,
+            notes: parsed.notes,
+          });
+        }
+      }
+
+      // Stash availability for post-insert
+      (recordData as any).__availability = parsedAvail;
+
       // Stash reserve area preferences for post-insert
       (recordData as any).__reserveAreas = reserveAreaIds;
 
