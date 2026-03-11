@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { resolveAreaId, getAgeCategoryPlanning, type AgeCategory } from "@/lib/clientUtils";
+import { resolveAreaId, getAgeCategoryPlanning, getMissingFields, type AgeCategory } from "@/lib/clientUtils";
 
 interface Props {
   onSelectGroup?: (areaId: string, ageCategory: string) => void;
