@@ -598,6 +598,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         gender,
         class_group,
         school_id,
+        neighborhood_id,
         waitlist_area_id,
         guardian_name,
         guardian_phone_alt,
