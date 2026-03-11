@@ -855,7 +855,6 @@ function DuplicateScan({ clients, isLoading, onNavigate, onEdit }: {
   onNavigate: (id: string) => void;
   onEdit: (client: any) => void;
 }) {
-  const { findAllDuplicateGroups, statusLabels, calculateAge } = require("@/lib/clientUtils");
   const groups = findAllDuplicateGroups(clients);
 
   if (isLoading) {
