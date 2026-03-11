@@ -25,18 +25,21 @@ export default function SessionDetails({ session, programId }: Props) {
   const special = sessionDate ? isSpecialDay(sessionDate) : null;
   const hasConflict = special && (special.holidays.length > 0 || !!special.vacation);
 
-  // Update session date
-  const updateDate = useMutation({
+  const updateSession = useMutation({
     mutationFn: async () => {
       const { error } = await supabase
         .from("program_sessions")
-        .update({ session_date: sessionDate || null } as any)
+        .update({
+          session_date: sessionDate || null,
+          start_time: sessionStartTime || null,
+          end_time: sessionEndTime || null,
+        } as any)
         .eq("id", session.id);
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["program_sessions", programId] });
-      toast({ title: "Datum opgeslagen" });
+      toast({ title: "Sessie opgeslagen" });
     },
     onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
