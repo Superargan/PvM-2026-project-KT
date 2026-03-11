@@ -68,7 +68,9 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
   const matrix = useMemo(() => {
     const m: Record<string, Record<string, { intake: any[]; wachtlijst: any[]; reserveIntake: any[]; reserveWachtlijst: any[] }>> = {};
     let noArea = 0;
-    let noAge = 0;
+    let noDob = 0;
+    let outsideRange = 0;
+    let estimatedDob = 0;
 
     areas.forEach((a: any) => {
       m[a.id] = {
@@ -83,7 +85,13 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
       const primaryAreaId = resolveAreaId(c);
       const age = getAgeCategoryPlanning(c.date_of_birth);
       const isIntake = (c.intake_status ?? "wachtlijst") === "intake_afgerond";
-      if (!age) noAge++;
+      
+      if (!c.date_of_birth) {
+        noDob++;
+      } else if (!age) {
+        outsideRange++;
+      }
+      if (c.dob_estimated) estimatedDob++;
 
       if (!c.waitlist_area_id && c.schools?.neighborhoods?.area_id) {
         fixableClients.push({ clientId: c.id, areaId: c.schools.neighborhoods.area_id });
