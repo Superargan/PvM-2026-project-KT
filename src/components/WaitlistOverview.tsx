@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { resolveAreaId, getAgeCategoryPlanning, type AgeCategory } from "@/lib/clientUtils";
+import { resolveAreaId, getAgeCategoryPlanning, getMissingFields, type AgeCategory } from "@/lib/clientUtils";
 
 interface Props {
   onSelectGroup?: (areaId: string, ageCategory: string) => void;
@@ -180,7 +180,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
           )}
           {matrix.noAge > 0 && (
             <Badge variant="outline" className="text-sm px-3 py-1 border-destructive/30 text-destructive">
-              {matrix.noAge} zonder geboortedatum
+              {matrix.noAge} zonder (geldige) geboortedatum
             </Badge>
           )}
         </div>
