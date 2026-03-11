@@ -93,7 +93,7 @@ export default function AanmeldingenPage() {
   const { data: schools = [] } = useQuery({
     queryKey: ["schools-list"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("schools").select("id, name").order("name");
+      const { data, error } = await supabase.from("schools").select("id, name, neighborhood_id, neighborhoods(area_id)").order("name");
       if (error) throw error;
       return data ?? [];
     },
@@ -180,6 +180,14 @@ export default function AanmeldingenPage() {
   const updateField = (field: keyof EditForm, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
+    // Auto-fill area from school
+    if (field === "school_id" && editClient) {
+      const school = schools.find((s: any) => s.id === value);
+      const areaId = (school as any)?.neighborhoods?.area_id;
+      if (areaId) {
+        handleWaitlist(editClient.id, editClient.waitlist_status ?? "waiting", areaId);
+      }
+    }
   };
 
   const addAssignment = async (staffId: string) => {
