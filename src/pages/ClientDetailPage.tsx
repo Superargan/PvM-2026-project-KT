@@ -20,8 +20,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 import { calculateAge, statusLabels, statusStyles } from "@/lib/clientUtils";
-  niet_deelnemen: "status-rood",
-};
 
 function IntakeProgress({ client }: { client: any }) {
   const fields = [
