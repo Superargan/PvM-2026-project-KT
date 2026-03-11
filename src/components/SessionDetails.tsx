@@ -3,11 +3,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MapPin, Upload, FileText, Trash2, Loader2, CalendarDays } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, Upload, FileText, Trash2, Loader2, CalendarDays, Clock, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { isSpecialDay } from "@/lib/holidays";
 
 interface Props {
-  session: { id: string; session_number: number; location?: string | null; session_date?: string | null };
+  session: { id: string; session_number: number; location?: string | null; session_date?: string | null; start_time?: string | null; end_time?: string | null };
   programId: string;
 }
 
@@ -16,20 +18,28 @@ export default function SessionDetails({ session, programId }: Props) {
   const qc = useQueryClient();
   const [location, setLocation] = useState(session.location ?? "");
   const [sessionDate, setSessionDate] = useState(session.session_date ?? "");
+  const [sessionStartTime, setSessionStartTime] = useState(session.start_time?.substring(0, 5) ?? "");
+  const [sessionEndTime, setSessionEndTime] = useState(session.end_time?.substring(0, 5) ?? "");
   const [uploading, setUploading] = useState(false);
 
-  // Update session date
-  const updateDate = useMutation({
+  const special = sessionDate ? isSpecialDay(sessionDate) : null;
+  const hasConflict = special && (special.holidays.length > 0 || !!special.vacation);
+
+  const updateSession = useMutation({
     mutationFn: async () => {
       const { error } = await supabase
         .from("program_sessions")
-        .update({ session_date: sessionDate || null } as any)
+        .update({
+          session_date: sessionDate || null,
+          start_time: sessionStartTime || null,
+          end_time: sessionEndTime || null,
+        } as any)
         .eq("id", session.id);
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["program_sessions", programId] });
-      toast({ title: "Datum opgeslagen" });
+      toast({ title: "Sessie opgeslagen" });
     },
     onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
@@ -130,10 +140,16 @@ export default function SessionDetails({ session, programId }: Props) {
             {new Date(session.session_date).toLocaleDateString("nl-NL")}
           </span>
         )}
+        {hasConflict && (
+          <Badge variant="outline" className="ml-2 text-xs border-destructive/30 text-destructive">
+            <AlertTriangle className="h-3 w-3 mr-1" />
+            {special!.holidays.map(h => h.name).join(", ") || special!.vacation?.name}
+          </Badge>
+        )}
       </h4>
 
-      {/* Date */}
-      <div className="flex items-center gap-2">
+      {/* Date + Time */}
+      <div className="flex items-center gap-2 flex-wrap">
         <CalendarDays className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
         <Input
           type="date"
@@ -141,12 +157,32 @@ export default function SessionDetails({ session, programId }: Props) {
           onChange={(e) => setSessionDate(e.target.value)}
           className="h-7 text-xs w-40"
         />
+        <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        <Input
+          type="time"
+          value={sessionStartTime}
+          onChange={(e) => setSessionStartTime(e.target.value)}
+          className="h-7 text-xs w-24"
+          placeholder="Start"
+        />
+        <span className="text-xs text-muted-foreground">–</span>
+        <Input
+          type="time"
+          value={sessionEndTime}
+          onChange={(e) => setSessionEndTime(e.target.value)}
+          className="h-7 text-xs w-24"
+          placeholder="Eind"
+        />
         <Button
           size="sm"
           variant="outline"
           className="h-7 text-xs"
-          disabled={sessionDate === (session.session_date ?? "")}
-          onClick={() => updateDate.mutate()}
+          disabled={
+            sessionDate === (session.session_date ?? "") &&
+            sessionStartTime === (session.start_time?.substring(0, 5) ?? "") &&
+            sessionEndTime === (session.end_time?.substring(0, 5) ?? "")
+          }
+          onClick={() => updateSession.mutate()}
         >
           Opslaan
         </Button>

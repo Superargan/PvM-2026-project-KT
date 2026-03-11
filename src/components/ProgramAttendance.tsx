@@ -11,18 +11,20 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import SessionDetails from "@/components/SessionDetails";
+import ScheduleGenerator from "@/components/ScheduleGenerator";
 
 interface Props {
   programId: string;
   programName: string;
+  programStartDate?: string | null;
   inline?: boolean;
 }
 
-export default function ProgramAttendance({ programId, programName, inline = false }: Props) {
+export default function ProgramAttendance({ programId, programName, programStartDate, inline = false }: Props) {
   const [open, setOpen] = useState(inline ? true : false);
   const { toast } = useToast();
   const qc = useQueryClient();
-  const SESSION_COUNT = programName.startsWith("KT") ? 10 : 8;
+  const SESSION_COUNT = programName.startsWith("KT") ? 10 : programName.startsWith("SV") ? 12 : 10;
 
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
     queryKey: ["program_sessions", programId],
@@ -163,7 +165,14 @@ export default function ProgramAttendance({ programId, programName, inline = fal
       </TabsContent>
 
       <TabsContent value="bijeenkomsten">
-        <div className="space-y-3">
+        <ScheduleGenerator
+          programId={programId}
+          programName={programName}
+          programStartDate={programStartDate}
+          existingSessions={sessions}
+          onGenerated={() => qc.invalidateQueries({ queryKey: ["program_sessions", programId] })}
+        />
+        <div className="space-y-3 mt-4">
           {sessions.map((s: any) => (
             <SessionDetails key={s.id} session={s} programId={programId} />
           ))}
