@@ -544,7 +544,11 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         ...(selectedMode === "waitlist" ? { waitlist_status: "waiting" } : {}),
         registration_date: enrollDate || null,
         dob_estimated: dobEstimated,
+        all_areas_flexible,
       };
+
+      // Stash reserve area preferences for post-insert
+      (recordData as any).__reserveAreas = reserveAreaIds;
 
       // Check if record already exists
       const existingRecord = (nameDobKey && existingByNameDob.get(nameDobKey)) || existingByName.get(nameKey);
