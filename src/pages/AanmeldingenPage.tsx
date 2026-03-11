@@ -687,24 +687,16 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
   const { toast } = useToast();
 
   const uniqueClients = Array.from(new Map(clients.map((c) => [c.id, c])).values());
-  const relevantForArea = new Set(["wachtlijst", "intake_afgerond", "actief"]);
 
   const flagged = uniqueClients.map((c: any) => {
-    const missing = Array.from(new Set(
-      REQUIRED_CHECKS
-        .filter((ch) => {
-          if (ch.key === "waitlist_area_id" && !relevantForArea.has(c.intake_status ?? "")) return false;
-          return ch.check(c);
-        })
-        .map((ch) => ch.label)
-    ));
+    const missing = getMissingFields(c);
     return { client: c, missing };
   }).filter((r) => r.missing.length > 0).sort((a, b) => b.missing.length - a.missing.length);
 
   const summaryCounts = REQUIRED_CHECKS.map((ch) => ({
     label: ch.label,
-    count: flagged.filter(({ client }) => {
-      if (ch.key === "waitlist_area_id" && !relevantForArea.has(client.intake_status ?? "")) return false;
+    count: uniqueClients.filter((client: any) => {
+      if (ch.onlyStatuses && !ch.onlyStatuses.includes(client.intake_status ?? "")) return false;
       return ch.check(client);
     }).length,
   })).filter((s) => s.count > 0);
