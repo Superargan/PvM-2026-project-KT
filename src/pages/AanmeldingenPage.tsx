@@ -177,6 +177,10 @@ export default function AanmeldingenPage() {
       notes: client.notes ?? "",
       dropout_reason: client.dropout_reason ?? "",
       dropout_action: client.dropout_action ?? "",
+      // Sync-velden (leading vanuit clientkaart)
+      neighborhood_id: client.neighborhood_id ?? null,
+      waitlist_area_id: client.waitlist_area_id ?? null,
+      all_areas_flexible: client.all_areas_flexible ?? false,
     });
     setErrors({});
     setSelectedProgramId("");
