@@ -14,6 +14,7 @@ import { calculateAge, statusLabels, filterClients } from "@/lib/clientUtils";
 import { areaKeys } from "@/lib/queryKeys";
 import ClientFilters from "@/components/ClientFilters";
 import ClientListTable from "@/components/ClientListTable";
+import DuplicateWarning from "@/components/DuplicateWarning";
 
 export default function ClientenPage() {
   const [searchParams] = useSearchParams();
