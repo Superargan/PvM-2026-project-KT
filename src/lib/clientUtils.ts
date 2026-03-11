@@ -1,4 +1,4 @@
-import { differenceInYears, parseISO } from "date-fns";
+import { differenceInYears, parseISO, addMonths, isAfter } from "date-fns";
 
 export function calculateAge(dob: string | null): number | null {
   if (!dob) return null;
@@ -134,6 +134,139 @@ export function getMissingFields(client: any): string[] {
 }
 
 export const allStatuses = Object.keys(statusLabels);
+
+// ===== Centrale helpers (Stap 2) =====
+
+/** Build preference map: clientId → { areaId: preference_order } */
+export function buildPrefsByClientMap(
+  preferences: { client_id: string; area_id: string; preference_order: number }[]
+): Record<string, Record<string, number>> {
+  const m: Record<string, Record<string, number>> = {};
+  preferences.forEach((p) => {
+    if (!m[p.client_id]) m[p.client_id] = {};
+    m[p.client_id][p.area_id] = p.preference_order;
+  });
+  return m;
+}
+
+/** Build availability by client — only usable records (start < end, both present) */
+export function buildAvailabilityByClient(
+  availRecords: { client_id: string; available_date: string; start_time: string | null; end_time: string | null }[]
+): Record<string, { dayOfWeek: number; dayName: string; startTime: string; endTime: string; date: string }[]> {
+  const m: Record<string, { dayOfWeek: number; dayName: string; startTime: string; endTime: string; date: string }[]> = {};
+  const dayNames = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"];
+  availRecords.forEach((a) => {
+    if (!a.start_time || !a.end_time || a.start_time >= a.end_time) return;
+    if (!m[a.client_id]) m[a.client_id] = [];
+    const dow = parseISO(a.available_date).getDay();
+    m[a.client_id].push({
+      dayOfWeek: dow,
+      dayName: dayNames[dow],
+      startTime: a.start_time,
+      endTime: a.end_time,
+      date: a.available_date,
+    });
+  });
+  return m;
+}
+
+/** Get best day/time overlap for a set of clients */
+export function getAvailabilityOverlap(
+  clientIds: string[] | Set<string>,
+  availByClient: Record<string, { dayOfWeek: number; dayName: string; startTime: string; endTime: string }[]>
+): { dayName: string; startTime: string; endTime: string; overlap: number; total: number } | null {
+  const ids = clientIds instanceof Set ? clientIds : new Set(clientIds);
+  if (ids.size === 0) return null;
+  const dayStats: Record<number, { count: number; dayName: string; starts: string[]; ends: string[] }> = {};
+
+  ids.forEach((cid) => {
+    const avail = availByClient[cid];
+    if (!avail) return;
+    const seenDays = new Set<number>();
+    avail.forEach((a) => {
+      if (seenDays.has(a.dayOfWeek)) return;
+      seenDays.add(a.dayOfWeek);
+      if (!dayStats[a.dayOfWeek]) {
+        dayStats[a.dayOfWeek] = { count: 0, dayName: a.dayName, starts: [], ends: [] };
+      }
+      dayStats[a.dayOfWeek].count++;
+      dayStats[a.dayOfWeek].starts.push(a.startTime);
+      dayStats[a.dayOfWeek].ends.push(a.endTime);
+    });
+  });
+
+  const entries = Object.values(dayStats).filter((d) => d.count >= 2);
+  if (entries.length === 0) return null;
+  entries.sort((a, b) => b.count - a.count);
+  const best = entries[0];
+  const latestStart = best.starts.sort().reverse()[0];
+  const earliestEnd = best.ends.sort()[0];
+
+  return {
+    dayName: best.dayName,
+    startTime: latestStart <= earliestEnd ? latestStart : best.starts.sort()[0],
+    endTime: latestStart <= earliestEnd ? earliestEnd : best.ends.sort().reverse()[0],
+    overlap: best.count,
+    total: ids.size,
+  };
+}
+
+/** Check if client has availability coverage for N months ahead */
+export function hasAvailabilityCoverage(
+  clientAvail: { date: string }[] | undefined,
+  monthsAhead = 4
+): boolean {
+  if (!clientAvail || clientAvail.length === 0) return false;
+  const threshold = addMonths(new Date(), monthsAhead);
+  return clientAvail.some((a) => isAfter(parseISO(a.date), new Date()));
+}
+
+export type PlannabilityStatus =
+  | "volledig_planbaar"
+  | "planbaar_via_override"
+  | "planbaar_via_reserve"
+  | "incompleet"
+  | "niet_planbaar";
+
+export interface ClientDataCompleteness {
+  hasAvailability: boolean;
+  hasUsableAvailability: boolean;
+  requiresAvailability: boolean;
+  hasArea: boolean;
+  hasReserveArea: boolean;
+  hasNeighborhood: boolean;
+  isOverridden: boolean;
+}
+
+/** Determine data completeness for a client */
+export function getClientDataCompleteness(
+  client: any,
+  availByClient: Record<string, any[]>,
+  prefsByClient: Record<string, Record<string, number>>,
+  overriddenClientIds?: Set<string>
+): ClientDataCompleteness {
+  const status = client.intake_status ?? "nieuw";
+  const requiresAvailability = status === "intake_afgerond" || status === "wachtlijst";
+  const allAvail = availByClient[client.id];
+  const hasAvailability = !!allAvail && allAvail.length > 0;
+  const hasUsableAvailability = hasAvailability; // already filtered by buildAvailabilityByClient
+  const hasArea = !!client.waitlist_area_id;
+  const prefs = prefsByClient[client.id];
+  const hasReserveArea = !!prefs && Object.keys(prefs).length > 0;
+  const hasNeighborhood = !!client.neighborhood_id;
+  const isOverridden = overriddenClientIds?.has(client.id) ?? false;
+
+  return { hasAvailability, hasUsableAvailability, requiresAvailability, hasArea, hasReserveArea, hasNeighborhood, isOverridden };
+}
+
+/** Determine plannability status from completeness */
+export function getPlannabilityStatus(c: ClientDataCompleteness): PlannabilityStatus {
+  if (!c.requiresAvailability) return "niet_planbaar";
+  if (c.isOverridden) return "planbaar_via_override";
+  if (c.hasArea && c.hasUsableAvailability) return "volledig_planbaar";
+  if (!c.hasArea && (c.hasReserveArea) && c.hasUsableAvailability) return "planbaar_via_reserve";
+  return "incompleet";
+}
 
 export function filterClients(
   clients: any[],

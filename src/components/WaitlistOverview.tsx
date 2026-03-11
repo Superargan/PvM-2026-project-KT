@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { resolveAreaId, getAgeCategoryPlanning, getMissingFields, type AgeCategory } from "@/lib/clientUtils";
+import { resolveAreaId, getAgeCategoryPlanning, getMissingFields, buildPrefsByClientMap, getMatchType, type AgeCategory } from "@/lib/clientUtils";
 import { clientKeys, areaKeys } from "@/lib/queryKeys";
 
 interface Props {
@@ -26,7 +26,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, first_name, last_name, date_of_birth, dob_estimated, waitlist_area_id, all_areas_flexible, intake_status, school_id, schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
+        .select("id, first_name, last_name, date_of_birth, dob_estimated, waitlist_area_id, all_areas_flexible, intake_status, school_id, neighborhood_id, schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
         .eq("archived", false)
         .in("intake_status", ["wachtlijst", "intake_afgerond"]);
       if (error) throw error;
@@ -54,14 +54,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
     },
   });
 
-  const prefsByClient = useMemo(() => {
-    const m: Record<string, Set<string>> = {};
-    allPreferences.forEach((p: any) => {
-      if (!m[p.client_id]) m[p.client_id] = new Set();
-      m[p.client_id].add(p.area_id);
-    });
-    return m;
-  }, [allPreferences]);
+  const prefsByClient = useMemo(() => buildPrefsByClientMap(allPreferences as any), [allPreferences]);
 
   const ageCategories: AgeCategory[] = ["5-7 jaar", "8-12 jaar"];
 
@@ -110,10 +103,10 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
         else m[primaryAreaId][age].wachtlijst.push(c);
       }
 
-      // Reserve areas
-      const reserveAreas = prefsByClient[c.id];
-      if (reserveAreas) {
-        reserveAreas.forEach((areaId) => {
+      // Reserve areas (using preference_order via central helper)
+      const prefs = prefsByClient[c.id];
+      if (prefs) {
+        Object.entries(prefs).forEach(([areaId, _order]) => {
           if (areaId !== primaryAreaId && m[areaId]) {
             if (isIntake) m[areaId][age].reserveIntake.push(c);
             else m[areaId][age].reserveWachtlijst.push(c);
@@ -124,7 +117,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
       // Flexible
       if (c.all_areas_flexible) {
         areas.forEach((a: any) => {
-          if (a.id !== primaryAreaId && m[a.id] && !reserveAreas?.has(a.id)) {
+          if (a.id !== primaryAreaId && m[a.id] && !(prefs && prefs[a.id])) {
             if (isIntake) m[a.id][age].reserveIntake.push(c);
             else m[a.id][age].reserveWachtlijst.push(c);
           }

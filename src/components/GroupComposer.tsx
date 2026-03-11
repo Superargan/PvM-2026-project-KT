@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { getDay, parseISO } from "date-fns";
 import { Users, UserCog, Check, AlertTriangle, CalendarClock, Search, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +19,9 @@ import {
   matchColors,
   statusBadgeStyles,
   getMissingFields,
+  buildPrefsByClientMap,
+  buildAvailabilityByClient,
+  getAvailabilityOverlap,
   type AgeCategory,
   type MatchType,
 } from "@/lib/clientUtils";
@@ -56,7 +58,7 @@ export default function GroupComposer() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, first_name, last_name, date_of_birth, waitlist_area_id, all_areas_flexible, intake_status, school_id, schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
+        .select("id, first_name, last_name, date_of_birth, waitlist_area_id, all_areas_flexible, intake_status, school_id, neighborhood_id, schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
         .eq("archived", false)
         .in("intake_status", ["wachtlijst", "intake_afgerond"]);
       if (error) throw error;
@@ -98,59 +100,12 @@ export default function GroupComposer() {
     },
   });
 
-  // Build availability map
-  const availByClient = useMemo(() => {
-    const m: Record<string, { dayOfWeek: number; dayName: string; startTime: string; endTime: string }[]> = {};
-    const dayNames = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"];
-    allAvailability.forEach((a: any) => {
-      if (!m[a.client_id]) m[a.client_id] = [];
-      const dow = getDay(parseISO(a.available_date));
-      m[a.client_id].push({
-        dayOfWeek: dow,
-        dayName: dayNames[dow],
-        startTime: a.start_time ?? "09:00",
-        endTime: a.end_time ?? "17:00",
-      });
-    });
-    return m;
-  }, [allAvailability]);
+  // Build availability map (central helper, no fallbacks)
+  const availByClient = useMemo(() => buildAvailabilityByClient(allAvailability as any), [allAvailability]);
 
-  // Find best overlapping timeslot
+  // Find best overlapping timeslot (central helper)
   const getSuggestion = (clientIds: Set<string>) => {
-    if (clientIds.size === 0) return null;
-    const dayStats: Record<number, { count: number; dayName: string; starts: string[]; ends: string[] }> = {};
-    const dayNames = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"];
-    
-    clientIds.forEach((cid) => {
-      const avail = availByClient[cid];
-      if (!avail) return;
-      const seenDays = new Set<number>();
-      avail.forEach((a) => {
-        if (seenDays.has(a.dayOfWeek)) return;
-        seenDays.add(a.dayOfWeek);
-        if (!dayStats[a.dayOfWeek]) {
-          dayStats[a.dayOfWeek] = { count: 0, dayName: dayNames[a.dayOfWeek], starts: [], ends: [] };
-        }
-        dayStats[a.dayOfWeek].count++;
-        dayStats[a.dayOfWeek].starts.push(a.startTime);
-        dayStats[a.dayOfWeek].ends.push(a.endTime);
-      });
-    });
-
-    const entries = Object.values(dayStats).filter(d => d.count >= 2);
-    if (entries.length === 0) return null;
-    entries.sort((a, b) => b.count - a.count);
-    const best = entries[0];
-    const latestStart = best.starts.sort().reverse()[0];
-    const earliestEnd = best.ends.sort()[0];
-    
-    return {
-      dayName: best.dayName,
-      startTime: latestStart <= earliestEnd ? latestStart : best.starts.sort()[0],
-      endTime: latestStart <= earliestEnd ? earliestEnd : best.ends.sort().reverse()[0],
-      overlap: best.count,
-      total: clientIds.size,
-    };
+    return getAvailabilityOverlap(clientIds, availByClient);
   };
 
   const { data: allTrainers = [] } = useQuery({
@@ -167,15 +122,8 @@ export default function GroupComposer() {
     },
   });
 
-  // Preference map: clientId -> { areaId: preferenceOrder }
-  const prefsByClient = useMemo(() => {
-    const m: Record<string, Record<string, number>> = {};
-    allPreferences.forEach((p: any) => {
-      if (!m[p.client_id]) m[p.client_id] = {};
-      m[p.client_id][p.area_id] = p.preference_order;
-    });
-    return m;
-  }, [allPreferences]);
+  // Preference map (central helper)
+  const prefsByClient = useMemo(() => buildPrefsByClientMap(allPreferences as any), [allPreferences]);
 
   const areaMap = useMemo(() => {
     const m: Record<string, string> = {};

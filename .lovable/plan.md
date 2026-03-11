@@ -1,24 +1,59 @@
 
+# Plan: Definitieve implementatie — UITGEVOERD
 
-## Verificatie: plan klopt met de huidige code
+## Status: ✅ Alle stappen voltooid
 
-Alle regelnummers en inline logica in het plan zijn gecontroleerd tegen de huidige broncode. Bevindingen:
+### Stap 1: Database migraties ✅
+- `neighborhood_id` kolom op `clients` + backfill vanuit `schools`
+- `admin` enum-waarde toegevoegd aan `app_role`
+- `is_admin()` security definer functie
+- `availability_override_logs` tabel met unique partial index en RLS
 
-### Bevestigd correct
+### Stap 2: Centrale helpers ✅
+6 pure functies in `src/lib/clientUtils.ts`:
+- `buildPrefsByClientMap()` — preference_order-aware
+- `buildAvailabilityByClient()` — alleen bruikbare records (start < end)
+- `getAvailabilityOverlap()` — beste dag/tijd overlap
+- `hasAvailabilityCoverage()` — rolling window check
+- `getClientDataCompleteness()` — volledige statusbepaling
+- `getPlannabilityStatus()` — 5 statussen
 
-| Plan-referentie | Werkelijke code | Status |
-|---|---|---|
-| WaitlistOverview regel 29: select zonder `neighborhood_id` | Regel 29: `.select("id, first_name, ..., school_id, schools(...)")` — geen `neighborhood_id` | Correct |
-| WaitlistOverview regels 57-64: `prefsByClient` als `Set<string>` | Regels 57-64: `Record<string, Set<string>>`, `.add(p.area_id)`, geen `preference_order` gebruik | Correct |
-| WaitlistOverview regels 113-132: inline reserve/flexibel via Set | Regels 113-132: `reserveAreas.forEach(...)` + `reserveAreas?.has(a.id)` | Correct |
-| GroupComposer regel 59: select zonder `neighborhood_id` | Regel 59: `.select("id, first_name, ..., school_id, schools(...)")` — geen `neighborhood_id` | Correct |
-| GroupComposer regels 102-116: `availByClient` met fallback `"09:00"/"17:00"` | Regels 102-116: `a.start_time ?? "09:00"`, `a.end_time ?? "17:00"`, lokale `dayNames` | Correct |
-| GroupComposer regels 119-154: `getSuggestion()` | Regels 119-154: eigen overlap met `dayStats`, `latestStart`/`earliestEnd` | Correct |
-| GroupComposer regels 171-178: eigen `prefsByClient` | Regels 171-178: `Record<string, Record<string, number>>` — duplicaat van wat `buildPrefsByClientMap` wordt | Correct |
-| PlanningPage regel 141: `useState("agenda")` | Regel 141: `useState("agenda")` | Correct |
-| PlanningPage regels 379-403: eigen filters met `"alle"` | Regels 379-403: twee `Select`s met `"alle"` waarden | Correct |
+### Stap 3: WaitlistOverview refactoren ✅
+- Inline `Set<string>` prefsByClient vervangen door `buildPrefsByClientMap()`
+- Reserve-iteratie via `Object.entries(prefs)` i.p.v. `Set.forEach`
+- `neighborhood_id` toegevoegd aan query
 
-### Conclusie
+### Stap 4: GroupComposer refactoren ✅
+- `availByClient` met fallback `"09:00"/"17:00"` → `buildAvailabilityByClient()`
+- `getSuggestion()` → `getAvailabilityOverlap()`
+- Dubbele `prefsByClient` → `buildPrefsByClientMap()`
+- Ongebruikte imports (`getDay`, `parseISO` uit date-fns) verwijderd
+- `neighborhood_id` toegevoegd aan query
 
-Het plan is volledig consistent met de huidige codebase. Alle genoemde regelnummers, inline logica en querystructuren kloppen. Geen aanpassingen nodig — het plan kan ongewijzigd worden uitgevoerd.
+### Stap 5: PlanningPage herontwerp ✅
+- Default tab: `"groepen"` (was `"agenda"`)
+- Tab volgorde: Groepen | Beschikbaarheid | Agenda
+- `allClients` query uitgebreid met `neighborhood_id`, `date_of_birth`, `intake_status`, `school_id`, `schools(name)`
 
+### Stap 6: neighborhood_id sync ✅
+- `AanmeldenPublicPage.tsx`: `neighborhood_id` meegestuurd bij registratie
+- `ClientDetailPage.tsx`: `neighborhood_id` gesync bij school-wijziging
+- `AanmeldingenPage.tsx`: `neighborhood_id` gesync in updateField en handleAssignSchool
+- `ClientImport.tsx`: `neighborhood_id` afgeleid bij insert en update
+
+### Stap 7: Queries gelijktrekken ✅
+- `WaitlistOverview.tsx`: `neighborhood_id` in select
+- `GroupComposer.tsx`: `neighborhood_id` in select
+- `PlanningPage.tsx`: `neighborhood_id` in select
+- `WachtlijstPage.tsx`: `neighborhood_id` in select
+- `AanmeldingenPage.tsx`: gebruikt `*` (bevat automatisch `neighborhood_id`)
+- `ClientDetailPage.tsx`: gebruikt `*` (bevat automatisch `neighborhood_id`)
+
+### Stap 8: Opruimen ✅
+- Alle tests (27) slagen
+- Ongebruikte imports verwijderd
+
+## Nog te implementeren (toekomstige stappen)
+- Waarschuwingsknoppen op PlanningPage (5 mutueel exclusieve tellingen)
+- Admin override UI (knop, reden-veld, badge met tooltip)
+- ClientFilters component vervanging van eigen filter-Selects op PlanningPage

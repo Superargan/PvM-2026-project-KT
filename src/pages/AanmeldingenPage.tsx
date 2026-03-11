@@ -181,13 +181,14 @@ export default function AanmeldingenPage() {
   const updateField = (field: keyof EditForm, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
-    // Auto-fill area from school
+    // Auto-fill area and neighborhood from school
     if (field === "school_id" && editClient) {
       const school = schools.find((s: any) => s.id === value);
       const areaId = (school as any)?.neighborhoods?.area_id;
       if (areaId) {
         handleWaitlist(editClient.id, editClient.waitlist_status ?? "waiting", areaId);
       }
+      setForm((prev) => ({ ...prev, neighborhood_id: (school as any)?.neighborhood_id ?? null }));
     }
   };
 
@@ -717,7 +718,9 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
     const schoolId = schoolAssignments[clientId];
     if (!schoolId) return;
     setSavingSchool(clientId);
-    const { error } = await supabase.from("clients").update({ school_id: schoolId }).eq("id", clientId);
+    const school = schools.find((s: any) => s.id === schoolId);
+    const neighborhoodId = (school as any)?.neighborhood_id ?? null;
+    const { error } = await supabase.from("clients").update({ school_id: schoolId, neighborhood_id: neighborhoodId }).eq("id", clientId);
     setSavingSchool(null);
     if (error) {
       toast({ title: "Fout", description: error.message, variant: "destructive" });

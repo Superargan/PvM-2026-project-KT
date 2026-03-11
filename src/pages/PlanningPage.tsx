@@ -138,7 +138,7 @@ export default function PlanningPage() {
   const [availStart, setAvailStart] = useState("09:00");
   const [availEnd, setAvailEnd] = useState("17:00");
   const [importOpen, setImportOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("agenda");
+  const [activeTab, setActiveTab] = useState("groepen");
   const [showGroupComposer, setShowGroupComposer] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -251,7 +251,7 @@ export default function PlanningPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, first_name, last_name, waitlist_area_id, areas:waitlist_area_id(name)")
+        .select("id, first_name, last_name, waitlist_area_id, neighborhood_id, date_of_birth, intake_status, school_id, areas:waitlist_area_id(name), schools(name)")
         .eq("archived", false)
         .in("intake_status", ["nieuw", "intake_gepland", "intake", "intake_afgerond", "actief", "wachtlijst"])
         .order("first_name");
@@ -404,10 +404,6 @@ export default function PlanningPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="agenda">
-            <CalendarDays className="h-4 w-4 mr-1.5" />
-            Agenda
-          </TabsTrigger>
           <TabsTrigger value="groepen">
             <Users className="h-4 w-4 mr-1.5" />
             Wachtlijst & Groepen
@@ -415,6 +411,10 @@ export default function PlanningPage() {
           <TabsTrigger value="beschikbaarheid">
             <Clock className="h-4 w-4 mr-1.5" />
             Beschikbaarheid
+          </TabsTrigger>
+          <TabsTrigger value="agenda">
+            <CalendarDays className="h-4 w-4 mr-1.5" />
+            Agenda
           </TabsTrigger>
         </TabsList>
 
