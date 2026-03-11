@@ -725,7 +725,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         postal_code,
         guardian_phone,
         intake_date,
-        intake_status: selectedMode === "waitlist" ? "wachtlijst" : selectedMode === "intake_afgerond" ? "intake_afgerond" : intake_status,
+        intake_status: selectedMode === "aanvulling" ? undefined : selectedMode === "waitlist" ? "wachtlijst" : selectedMode === "intake_afgerond" ? "intake_afgerond" : intake_status,
         referral_reason: referral_reason,
         referrer_id,
         ...(selectedMode === "waitlist" ? { waitlist_status: "waiting" } : {}),
