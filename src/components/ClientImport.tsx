@@ -349,7 +349,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     console.log(`Import: detected date format = ${dateFormat}`);
 
     const inserts: any[] = [];
-    const updates: { id: string; data: any }[] = [];
+    const updates: { id: string; data: any; reserves?: { area_id: string; order: number }[] }[] = [];
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const rowNum = i + 2; // Excel row (header = 1)
