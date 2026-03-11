@@ -718,7 +718,9 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
     const schoolId = schoolAssignments[clientId];
     if (!schoolId) return;
     setSavingSchool(clientId);
-    const { error } = await supabase.from("clients").update({ school_id: schoolId }).eq("id", clientId);
+    const school = schools.find((s: any) => s.id === schoolId);
+    const neighborhoodId = (school as any)?.neighborhood_id ?? null;
+    const { error } = await supabase.from("clients").update({ school_id: schoolId, neighborhood_id: neighborhoodId }).eq("id", clientId);
     setSavingSchool(null);
     if (error) {
       toast({ title: "Fout", description: error.message, variant: "destructive" });
