@@ -782,10 +782,11 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
           updateData.dob_estimated = false;
         }
 
-        // Remove __reserveAreas from updateData
+        // Remove internal fields from updateData
         delete updateData.__reserveAreas;
-        if (Object.keys(updateData).length > 0 || reserveAreaIds.length > 0) {
-          updates.push({ id: existingRecord.id, data: updateData, reserves: reserveAreaIds });
+        delete updateData.__availability;
+        if (Object.keys(updateData).length > 0 || reserveAreaIds.length > 0 || parsedAvail.length > 0) {
+          updates.push({ id: existingRecord.id, data: updateData, reserves: reserveAreaIds, availability: parsedAvail });
         } else {
           skipped++;
         }
