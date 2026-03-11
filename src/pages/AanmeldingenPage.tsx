@@ -1,4 +1,4 @@
-import { CheckCircle2, Loader2, ExternalLink, Clock, UserPlus, X, CalendarDays, Upload, Search, Pencil, AlertTriangle, Download, School } from "lucide-react";
+import { CheckCircle2, Loader2, ExternalLink, Clock, UserPlus, X, CalendarDays, Upload, Search, Pencil, AlertTriangle, Download, School, Users } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
@@ -19,9 +19,10 @@ import WaitlistManager from "@/components/WaitlistManager";
 import AreaPreferencesEditor from "@/components/AreaPreferencesEditor";
 import ClientImport from "@/components/ClientImport";
 import { downloadExport } from "@/lib/csvExport";
-import { calculateAge, statusLabels, statusStyles, filterClients, REQUIRED_CLIENT_CHECKS, getMissingFields } from "@/lib/clientUtils";
+import { calculateAge, statusLabels, statusStyles, filterClients, REQUIRED_CLIENT_CHECKS, getMissingFields, findAllDuplicateGroups } from "@/lib/clientUtils";
 import ClientFilters from "@/components/ClientFilters";
 import ClientListTable from "@/components/ClientListTable";
+import DuplicateWarning from "@/components/DuplicateWarning";
 
 const editSchema = z.object({
   first_name: z.string().trim().min(1, "Voornaam is verplicht").max(100),
@@ -334,6 +335,9 @@ export default function AanmeldingenPage() {
           <TabsTrigger value="controle" className="gap-1.5">
             <AlertTriangle className="h-3.5 w-3.5" /> Controle
           </TabsTrigger>
+          <TabsTrigger value="duplicaten" className="gap-1.5">
+            <Users className="h-3.5 w-3.5" /> Duplicaten
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="lijst" className="space-y-4">
@@ -381,6 +385,9 @@ export default function AanmeldingenPage() {
         <TabsContent value="controle" className="space-y-4">
           <MissingDataCheck clients={clients.filter((c: any) => !["actief", "training_afgerond", "tussentijds_gestopt", "niet_deelnemen"].includes(c.intake_status ?? "nieuw"))} isLoading={isLoading} onNavigate={(id) => navigate(`/clienten/${id}`)} onEdit={openEdit} schools={schools} refetch={refetch} />
         </TabsContent>
+        <TabsContent value="duplicaten" className="space-y-4">
+          <DuplicateScan clients={clients} isLoading={isLoading} onNavigate={(id) => navigate(`/clienten/${id}`)} onEdit={openEdit} />
+        </TabsContent>
       </Tabs>
 
       {/* Edit dialog – full form */}
@@ -399,6 +406,13 @@ export default function AanmeldingenPage() {
                 <Input value={form.last_name ?? ""} onChange={(e) => updateField("last_name", e.target.value)} />
               </FieldWrapper>
             </div>
+            <DuplicateWarning
+              firstName={form.first_name ?? ""}
+              lastName={form.last_name ?? ""}
+              excludeId={editClient?.id}
+              clients={clients}
+              onNavigate={(id) => { setEditOpen(false); navigate(`/clienten/${id}`); }}
+            />
             <div className="grid grid-cols-3 gap-4">
               <FieldWrapper label="Geboortedatum" error={errors.date_of_birth}>
                 <Input type="date" value={form.date_of_birth ?? ""} onChange={(e) => updateField("date_of_birth", e.target.value)} max={new Date().toISOString().split("T")[0]} />
@@ -831,6 +845,72 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
         onEdit={onEdit}
         emptyMessage="✅ Alle gegevens zijn volledig ingevuld!"
       />
+    </div>
+  );
+}
+
+function DuplicateScan({ clients, isLoading, onNavigate, onEdit }: {
+  clients: any[];
+  isLoading: boolean;
+  onNavigate: (id: string) => void;
+  onEdit: (client: any) => void;
+}) {
+  const groups = findAllDuplicateGroups(clients);
+
+  if (isLoading) {
+    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  }
+
+  if (groups.length === 0) {
+    return (
+      <div className="rounded-xl border border-border bg-card p-6 text-center">
+        <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
+        <p className="text-sm font-semibold text-foreground">Geen duplicaten gevonden</p>
+        <p className="text-xs text-muted-foreground mt-1">Alle {clients.length} deelnemers hebben unieke namen.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        <span className="font-semibold text-foreground">{groups.length}</span> groep(en) met mogelijke duplicaten gevonden
+      </p>
+      {groups.map((group) => (
+        <div key={group.key} className="rounded-xl border border-amber-300 bg-card p-4 space-y-2">
+          <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Users className="h-4 w-4 text-amber-600" />
+            {group.clients[0].first_name} {group.clients[0].last_name}
+            <Badge variant="outline" className="text-[10px]">{group.clients.length}×</Badge>
+          </p>
+          <div className="divide-y divide-border">
+            {group.clients.map((c: any) => (
+              <div key={c.id} className="flex items-center gap-3 py-2 text-sm">
+                <span
+                  className="text-primary hover:underline cursor-pointer font-medium min-w-[140px]"
+                  onClick={() => onNavigate(c.id)}
+                >
+                  {c.first_name} {c.last_name}
+                </span>
+                {c.date_of_birth && (
+                  <span className="text-muted-foreground text-xs">
+                    geb. {c.date_of_birth} ({calculateAge(c.date_of_birth)} jr)
+                  </span>
+                )}
+                <Badge variant="outline" className="text-[10px]">
+                  {statusLabels[c.intake_status ?? "nieuw"] ?? c.intake_status}
+                </Badge>
+                {c.schools?.name && (
+                  <span className="text-muted-foreground text-xs">{c.schools.name}</span>
+                )}
+                <Button size="sm" variant="ghost" className="ml-auto" onClick={() => onEdit(c)}>
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

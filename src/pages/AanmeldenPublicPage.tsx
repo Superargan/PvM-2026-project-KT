@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle2, Loader2, ArrowLeft } from "lucide-react";
+import DuplicateWarning from "@/components/DuplicateWarning";
 
 const aanmeldSchema = z.object({
   first_name: z.string().trim().min(1, "Voornaam is verplicht").max(100),
@@ -151,6 +152,7 @@ export default function AanmeldenPublicPage() {
               <Input value={form.last_name ?? ""} onChange={(e) => updateField("last_name", e.target.value)} placeholder="Achternaam" />
             </FieldWrapper>
           </div>
+          <DuplicateWarning firstName={form.first_name ?? ""} lastName={form.last_name ?? ""} />
 
           <FieldWrapper label="Geboortedatum kind *" error={errors.date_of_birth}>
             <DateInput value={form.date_of_birth ?? ""} onChange={(v) => updateField("date_of_birth", v)} max={new Date().toISOString().split("T")[0]} />
