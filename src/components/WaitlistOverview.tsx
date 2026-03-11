@@ -83,8 +83,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
       const primaryAreaId = resolveAreaId(c);
       const age = getAgeCategoryPlanning(c.date_of_birth);
       const isIntake = (c.intake_status ?? "wachtlijst") === "intake_afgerond";
-      if (!c.date_of_birth) noAge++;
-      else if (!age) noAge++; // DOB exists but outside 5-12 range
+      if (!age) noAge++;
 
       if (!c.waitlist_area_id && c.schools?.neighborhoods?.area_id) {
         fixableClients.push({ clientId: c.id, areaId: c.schools.neighborhoods.area_id });
