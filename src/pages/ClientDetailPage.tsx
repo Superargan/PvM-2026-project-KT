@@ -234,11 +234,12 @@ export default function ClientDetailPage() {
   const updateField = (field: string, value: any) => {
     setForm((prev: any) => {
       const next = { ...prev, [field]: value };
-      // Auto-fill area from school
+      // Auto-fill area and neighborhood from school
       if (field === "school_id") {
         const school = schools.find((s: any) => s.id === value);
         const areaId = (school as any)?.neighborhoods?.area_id;
         if (areaId) next.waitlist_area_id = areaId;
+        next.neighborhood_id = (school as any)?.neighborhood_id ?? null;
       }
       return next;
     });

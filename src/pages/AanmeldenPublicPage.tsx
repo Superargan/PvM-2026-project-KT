@@ -86,11 +86,14 @@ export default function AanmeldenPublicPage() {
     }
 
     setSubmitting(true);
+    const school = schools.find((s: any) => s.id === result.data.school_id);
+    const neighborhoodId = (school as any)?.neighborhood_id ?? null;
     const insertData: any = {
       first_name: result.data.first_name,
       last_name: result.data.last_name,
       date_of_birth: result.data.date_of_birth,
       school_id: result.data.school_id,
+      neighborhood_id: neighborhoodId,
       guardian_name: result.data.guardian_name,
       guardian_phone: result.data.guardian_phone,
       guardian_email: result.data.guardian_email,
