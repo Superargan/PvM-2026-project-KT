@@ -26,6 +26,8 @@ export default function ClientenPage() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [addFirstName, setAddFirstName] = useState("");
+  const [addLastName, setAddLastName] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
 
