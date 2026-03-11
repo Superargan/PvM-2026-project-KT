@@ -385,6 +385,9 @@ export default function AanmeldingenPage() {
         <TabsContent value="controle" className="space-y-4">
           <MissingDataCheck clients={clients.filter((c: any) => !["actief", "training_afgerond", "tussentijds_gestopt", "niet_deelnemen"].includes(c.intake_status ?? "nieuw"))} isLoading={isLoading} onNavigate={(id) => navigate(`/clienten/${id}`)} onEdit={openEdit} schools={schools} refetch={refetch} />
         </TabsContent>
+        <TabsContent value="duplicaten" className="space-y-4">
+          <DuplicateScan clients={clients} isLoading={isLoading} onNavigate={(id) => navigate(`/clienten/${id}`)} onEdit={openEdit} />
+        </TabsContent>
       </Tabs>
 
       {/* Edit dialog – full form */}
