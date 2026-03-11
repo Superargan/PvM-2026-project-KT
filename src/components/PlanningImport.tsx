@@ -649,7 +649,7 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
           const entries = rowsToEntries(json, isTrainer);
           setParsedEntries(entries);
           if (entries.length > 0 && entries.length > json.length) {
-            setDetectedFormat(`Weekdag-rij-formaat: ${entries.length} beschikbaarheden (komende 3 maanden)`);
+            setDetectedFormat(`Weekdag-rij-formaat: ${entries.length} beschikbaarheden (komende 4 maanden)`);
           } else {
             setDetectedFormat(`Rij-formaat: ${entries.length} beschikbaarheden gevonden`);
           }
