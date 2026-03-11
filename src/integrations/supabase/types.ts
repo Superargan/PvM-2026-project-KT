@@ -681,30 +681,36 @@ export type Database = {
       program_sessions: {
         Row: {
           created_at: string
+          end_time: string | null
           id: string
           location: string | null
           notes: string | null
           program_id: string
           session_date: string | null
           session_number: number
+          start_time: string | null
         }
         Insert: {
           created_at?: string
+          end_time?: string | null
           id?: string
           location?: string | null
           notes?: string | null
           program_id: string
           session_date?: string | null
           session_number: number
+          start_time?: string | null
         }
         Update: {
           created_at?: string
+          end_time?: string | null
           id?: string
           location?: string | null
           notes?: string | null
           program_id?: string
           session_date?: string | null
           session_number?: number
+          start_time?: string | null
         }
         Relationships: [
           {
