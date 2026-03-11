@@ -247,7 +247,7 @@ export default function PlanningPage() {
   });
 
   const { data: allClients = [] } = useQuery({
-    queryKey: ["clients", "planning"],
+    queryKey: clientKeys.planning,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
