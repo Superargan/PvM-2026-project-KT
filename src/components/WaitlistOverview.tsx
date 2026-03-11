@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { resolveAreaId, getAgeCategoryPlanning, getMissingFields, type AgeCategory } from "@/lib/clientUtils";
+import { clientKeys, areaKeys } from "@/lib/queryKeys";
 
 interface Props {
   onSelectGroup?: (areaId: string, ageCategory: string) => void;
