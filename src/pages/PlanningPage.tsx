@@ -38,7 +38,7 @@ type ViewMode = "week" | "maand";
 // Compact availability summary panel for a selected area+age
 function AvailabilitySummaryPanel({ filterArea, filterAge, areaName }: { filterArea: string; filterAge: string; areaName: string }) {
   const { data: candidates = [] } = useQuery({
-    queryKey: ["clients", "avail-panel", filterArea, filterAge],
+    queryKey: clientKeys.planningAvailPanel(filterArea, filterAge),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
