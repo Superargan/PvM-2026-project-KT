@@ -481,7 +481,7 @@ function weekdayGridToEntries(
   rows: ParsedRow[],
   nameKey: string,
   weekdayColumns: { key: string; weekday: number; label: string }[],
-  months: number = 3
+  months: number = 4
 ): AvailabilityEntry[] {
   const entries: AvailabilityEntry[] = [];
   // Pre-compute all dates per weekday
@@ -639,7 +639,7 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
           const entries = weekdayGridToEntries(json, grid.nameKey, grid.weekdayColumns, 3);
           const weekdayNames = grid.weekdayColumns.map(wc => wc.label).join(", ");
           setParsedEntries(entries);
-          setDetectedFormat(`Weekdag-formaat: ${grid.weekdayColumns.length} dagen (${weekdayNames}) → ${entries.length} beschikbaarheden (komende 3 maanden)`);
+          setDetectedFormat(`Weekdag-formaat: ${grid.weekdayColumns.length} dagen (${weekdayNames}) → ${entries.length} beschikbaarheden (komende 4 maanden)`);
         } else if (grid.isGrid) {
           const entries = gridToEntries(json, grid.nameKey, grid.dateColumns);
           setParsedEntries(entries);
@@ -649,7 +649,7 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
           const entries = rowsToEntries(json, isTrainer);
           setParsedEntries(entries);
           if (entries.length > 0 && entries.length > json.length) {
-            setDetectedFormat(`Weekdag-rij-formaat: ${entries.length} beschikbaarheden (komende 3 maanden)`);
+            setDetectedFormat(`Weekdag-rij-formaat: ${entries.length} beschikbaarheden (komende 4 maanden)`);
           } else {
             setDetectedFormat(`Rij-formaat: ${entries.length} beschikbaarheden gevonden`);
           }
@@ -843,7 +843,7 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
           <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm space-y-1">
             <p className="font-medium text-foreground">{typeInfo.description}</p>
             <p className="text-muted-foreground text-xs">{typeInfo.columns}</p>
-            <p className="text-xs text-muted-foreground">Weekdagen (ma/di/wo…) → uitgebreid naar komende 3 maanden</p>
+            <p className="text-xs text-muted-foreground">Weekdagen (ma/di/wo…) → uitgebreid naar komende 4 maanden</p>
             <p className="text-xs text-muted-foreground">Kruisje (x) = hele dag • Tijd = vanaf-tijd • Lege cel = niet beschikbaar</p>
           </div>
 

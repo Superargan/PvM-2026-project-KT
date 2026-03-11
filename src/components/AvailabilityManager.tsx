@@ -69,7 +69,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
     }
     if (periodMode === "kwartaal") {
       const start = startOfMonth(currentDate);
-      return { start, end: endOfMonth(addMonths(start, 2)) };
+      return { start, end: endOfMonth(addMonths(start, 3)) };
     }
     return {
       start: startOfMonth(currentDate),
@@ -85,7 +85,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
     if (periodMode === "week") {
       setCurrentDate(dir === "prev" ? subWeeks(currentDate, 1) : addWeeks(currentDate, 1));
     } else if (periodMode === "kwartaal") {
-      setCurrentDate(dir === "prev" ? subMonths(currentDate, 3) : addMonths(currentDate, 3));
+      setCurrentDate(dir === "prev" ? subMonths(currentDate, 4) : addMonths(currentDate, 4));
     } else {
       setCurrentDate(dir === "prev" ? subMonths(currentDate, 1) : addMonths(currentDate, 1));
     }
@@ -368,7 +368,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
     return `${p.first_name} ${p.last_name}`;
   };
 
-  const periodLabel = periodMode === "week" ? "deze week" : periodMode === "maand" ? "deze maand" : "komende 3 maanden";
+  const periodLabel = periodMode === "week" ? "deze week" : periodMode === "maand" ? "deze maand" : "komende 4 maanden";
 
   return (
     <div className="space-y-4">
@@ -395,7 +395,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
             <SelectContent className="bg-popover">
               <SelectItem value="week">Week</SelectItem>
               <SelectItem value="maand">Maand</SelectItem>
-              <SelectItem value="kwartaal">3 Maanden</SelectItem>
+              <SelectItem value="kwartaal">4 Maanden</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -562,7 +562,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
           {selectedCount > 0 && (
             <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
               <strong className="text-foreground">{selectedCount}</strong> dagdelen geselecteerd per week.
-              {periodMode === "kwartaal" && " Dit patroon wordt toegepast op alle ~13 weken in de komende 3 maanden."}
+              {periodMode === "kwartaal" && " Dit patroon wordt toegepast op alle ~17 weken in de komende 4 maanden."}
               {periodMode === "maand" && " Dit patroon wordt toegepast op alle ~4 weken in deze maand."}
               {isDirty && <span className="text-amber-600 ml-2">• Onopgeslagen wijzigingen</span>}
             </div>
