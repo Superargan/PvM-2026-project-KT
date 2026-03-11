@@ -109,6 +109,44 @@ export type Database = {
           },
         ]
       }
+      availability_override_logs: {
+        Row: {
+          active: boolean
+          client_id: string
+          created_at: string
+          id: string
+          overridden_by: string
+          override_type: string
+          reason: string
+        }
+        Insert: {
+          active?: boolean
+          client_id: string
+          created_at?: string
+          id?: string
+          overridden_by: string
+          override_type?: string
+          reason: string
+        }
+        Update: {
+          active?: boolean
+          client_id?: string
+          created_at?: string
+          id?: string
+          overridden_by?: string
+          override_type?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "availability_override_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_area_preferences: {
         Row: {
           area_id: string
@@ -1223,6 +1261,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: { Args: never; Returns: boolean }
       is_backoffice: { Args: never; Returns: boolean }
       is_trainer: { Args: never; Returns: boolean }
       is_trainer_for_client: { Args: { _client_id: string }; Returns: boolean }
