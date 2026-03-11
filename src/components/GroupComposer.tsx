@@ -479,9 +479,10 @@ export default function GroupComposer() {
           const wachtlijstClients_ = group.clients.filter(cm => cm.client.intake_status !== "intake_afgerond");
           const showReserve = expandedReserve.has(key);
           const reserveCandidates = showReserve ? getReserveCandidates(group) : [];
+          const isGroupSimulated = simulatedGroups.has(key);
 
           return (
-            <Card key={key} className={`border-border ${expandedCard === key ? "col-span-2" : ""}`}>
+            <Card key={key} className={`border-border ${expandedCard === key ? "col-span-2" : ""} ${isGroupSimulated ? "ring-2 ring-primary/40 bg-primary/[0.02]" : ""}`}>
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div>
