@@ -103,10 +103,10 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
         else m[primaryAreaId][age].wachtlijst.push(c);
       }
 
-      // Reserve areas
-      const reserveAreas = prefsByClient[c.id];
-      if (reserveAreas) {
-        reserveAreas.forEach((areaId) => {
+      // Reserve areas (using preference_order via central helper)
+      const prefs = prefsByClient[c.id];
+      if (prefs) {
+        Object.entries(prefs).forEach(([areaId, _order]) => {
           if (areaId !== primaryAreaId && m[areaId]) {
             if (isIntake) m[areaId][age].reserveIntake.push(c);
             else m[areaId][age].reserveWachtlijst.push(c);
@@ -117,7 +117,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
       // Flexible
       if (c.all_areas_flexible) {
         areas.forEach((a: any) => {
-          if (a.id !== primaryAreaId && m[a.id] && !reserveAreas?.has(a.id)) {
+          if (a.id !== primaryAreaId && m[a.id] && !(prefs && prefs[a.id])) {
             if (isIntake) m[a.id][age].reserveIntake.push(c);
             else m[a.id][age].reserveWachtlijst.push(c);
           }

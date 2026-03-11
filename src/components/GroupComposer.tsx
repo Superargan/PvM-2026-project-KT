@@ -123,15 +123,8 @@ export default function GroupComposer() {
     },
   });
 
-  // Preference map: clientId -> { areaId: preferenceOrder }
-  const prefsByClient = useMemo(() => {
-    const m: Record<string, Record<string, number>> = {};
-    allPreferences.forEach((p: any) => {
-      if (!m[p.client_id]) m[p.client_id] = {};
-      m[p.client_id][p.area_id] = p.preference_order;
-    });
-    return m;
-  }, [allPreferences]);
+  // Preference map (central helper)
+  const prefsByClient = useMemo(() => buildPrefsByClientMap(allPreferences as any), [allPreferences]);
 
   const areaMap = useMemo(() => {
     const m: Record<string, string> = {};
