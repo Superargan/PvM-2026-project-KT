@@ -1,5 +1,5 @@
 
-# Plan: Definitieve implementatie — UITGEVOERD
+# Plan: Definitieve implementatie — VOLLEDIG UITGEVOERD
 
 ## Status: ✅ Alle stappen voltooid
 
@@ -34,6 +34,14 @@
 - Default tab: `"groepen"` (was `"agenda"`)
 - Tab volgorde: Groepen | Beschikbaarheid | Agenda
 - `allClients` query uitgebreid met `neighborhood_id`, `date_of_birth`, `intake_status`, `school_id`, `schools(name)`
+- **5 waarschuwingsknoppen** met mutueel exclusieve tellingen:
+  1. "Beschikbaarheid nog doorgeven" — requiresAvailability && !hasAvailability && !isOverridden
+  2. "Onbruikbare beschikbaarheid" — has raw records but none usable && !isOverridden
+  3. "Beschikbaarheid actualiseren" — onvoldoende 4-maanden dekking && !isOverridden
+  4. "Geen gebied" — requiresAvailability && !hasArea && !isOverridden
+  5. "Overruled (admin)" — clients met actieve override
+- **Admin override UI**: override-knop (alleen admins), verplicht reden-veld, badge met tooltip
+- Extra queries: all client_availability, client_area_preferences, availability_override_logs, user_roles admin check
 
 ### Stap 6: neighborhood_id sync ✅
 - `AanmeldenPublicPage.tsx`: `neighborhood_id` meegestuurd bij registratie
@@ -50,10 +58,5 @@
 - `ClientDetailPage.tsx`: gebruikt `*` (bevat automatisch `neighborhood_id`)
 
 ### Stap 8: Opruimen ✅
-- Alle tests (27) slagen
+- Alle tests slagen
 - Ongebruikte imports verwijderd
-
-## Nog te implementeren (toekomstige stappen)
-- Waarschuwingsknoppen op PlanningPage (5 mutueel exclusieve tellingen)
-- Admin override UI (knop, reden-veld, badge met tooltip)
-- ClientFilters component vervanging van eigen filter-Selects op PlanningPage
