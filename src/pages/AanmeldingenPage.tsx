@@ -178,7 +178,15 @@ export default function AanmeldingenPage() {
   };
 
   const updateField = (field: keyof EditForm, value: any) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === "school_id") {
+        const school = schools.find((s: any) => s.id === value);
+        const areaId = (school as any)?.neighborhoods?.area_id;
+        if (areaId) next.waitlist_area_id = areaId;
+      }
+      return next;
+    });
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
