@@ -908,7 +908,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     setSchoolResolutions({});
     setShowResolution(false);
     if (fileRef.current) fileRef.current.value = "";
-    if (modeProp === "choose") setSelectedMode("waitlist");
+    if (modeProp === "choose") setSelectedMode("aanvulling");
   };
 
   const mode = selectedMode; // alias for convenience
