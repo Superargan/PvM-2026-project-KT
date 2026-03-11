@@ -23,6 +23,7 @@ import {
   type AgeCategory,
   type MatchType,
 } from "@/lib/clientUtils";
+import { clientKeys, areaKeys } from "@/lib/queryKeys";
 
 interface ClientWithMatch {
   client: any;
