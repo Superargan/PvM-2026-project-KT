@@ -19,7 +19,7 @@ import WaitlistManager from "@/components/WaitlistManager";
 import AreaPreferencesEditor from "@/components/AreaPreferencesEditor";
 import ClientImport from "@/components/ClientImport";
 import { downloadExport } from "@/lib/csvExport";
-import { calculateAge, statusLabels, statusStyles, filterClients, REQUIRED_CLIENT_CHECKS, getMissingFields } from "@/lib/clientUtils";
+import { calculateAge, statusLabels, statusStyles, filterClients, REQUIRED_CLIENT_CHECKS, getMissingFields, findAllDuplicateGroups } from "@/lib/clientUtils";
 import ClientFilters from "@/components/ClientFilters";
 import ClientListTable from "@/components/ClientListTable";
 import DuplicateWarning from "@/components/DuplicateWarning";
