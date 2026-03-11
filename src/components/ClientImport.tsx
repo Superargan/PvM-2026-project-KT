@@ -570,8 +570,10 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         if (school_id) updateData.school_id = school_id;
         if (class_group) updateData.class_group = class_group;
 
-        if (Object.keys(updateData).length > 0) {
-          updates.push({ id: existingRecord.id, data: updateData });
+        // Remove __reserveAreas from updateData
+        delete updateData.__reserveAreas;
+        if (Object.keys(updateData).length > 0 || reserveAreaIds.length > 0) {
+          updates.push({ id: existingRecord.id, data: updateData, reserves: reserveAreaIds });
         } else {
           skipped++;
         }
