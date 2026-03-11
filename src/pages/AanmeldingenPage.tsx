@@ -672,16 +672,7 @@ function FieldWrapper({ label, error, children }: { label: string; error?: strin
   );
 }
 
-const REQUIRED_CHECKS: { key: string; label: string; check: (c: any) => boolean }[] = [
-  { key: "date_of_birth", label: "Geboortedatum", check: (c) => !c.date_of_birth },
-  { key: "school_id", label: "School", check: (c) => !c.school_id },
-  { key: "guardian_phone", label: "Telefoon ouder", check: (c) => !c.guardian_phone },
-  { key: "guardian_name", label: "Naam ouder", check: (c) => !c.guardian_name },
-  { key: "waitlist_area_id", label: "Gebied", check: (c) => !c.waitlist_area_id },
-  { key: "gender", label: "Geslacht", check: (c) => !c.gender },
-  { key: "postal_code", label: "Postcode", check: (c) => !c.postal_code },
-  { key: "consent_data_processing", label: "AVG-toestemming", check: (c) => !c.consent_data_processing },
-];
+const REQUIRED_CHECKS = REQUIRED_CLIENT_CHECKS;
 
 function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, refetch }: {
   clients: any[];
