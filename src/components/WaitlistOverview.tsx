@@ -186,9 +186,19 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
               {matrix.noArea} zonder gebied
             </Badge>
           )}
-          {matrix.noAge > 0 && (
+          {matrix.noDob > 0 && (
             <Badge variant="outline" className="text-sm px-3 py-1 border-destructive/30 text-destructive">
-              {matrix.noAge} zonder (geldige) geboortedatum
+              {matrix.noDob} zonder geboortedatum
+            </Badge>
+          )}
+          {matrix.outsideRange > 0 && (
+            <Badge variant="outline" className="text-sm px-3 py-1 border-purple-400 text-purple-700">
+              {matrix.outsideRange} buiten leeftijdsbereik (5-12)
+            </Badge>
+          )}
+          {matrix.estimatedDob > 0 && (
+            <Badge variant="outline" className="text-sm px-3 py-1 border-amber-400 text-amber-700">
+              ⚠ {matrix.estimatedDob} geschatte geboortedatum
             </Badge>
           )}
         </div>
