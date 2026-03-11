@@ -287,7 +287,7 @@ const MODE_OPTIONS: { value: ImportMode; label: string; description: string }[] 
 ];
 
 export default function ClientImport({ open, onOpenChange, onComplete, mode: modeProp = "default" }: ClientImportProps) {
-  const [selectedMode, setSelectedMode] = useState<ImportMode>(modeProp === "choose" ? "waitlist" : modeProp);
+  const [selectedMode, setSelectedMode] = useState<ImportMode>(modeProp === "choose" ? "aanvulling" : modeProp);
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [fileName, setFileName] = useState("");
   const [importing, setImporting] = useState(false);
