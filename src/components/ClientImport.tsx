@@ -618,6 +618,12 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         if (gender) updateData.gender = gender;
         if (school_id) updateData.school_id = school_id;
         if (class_group) updateData.class_group = class_group;
+        // Always overwrite DOB when imported value is a real (non-estimated) date,
+        // or when existing was estimated and import provides a value
+        if (date_of_birth && !dobEstimated) {
+          updateData.date_of_birth = date_of_birth;
+          updateData.dob_estimated = false;
+        }
 
         // Remove __reserveAreas from updateData
         delete updateData.__reserveAreas;
