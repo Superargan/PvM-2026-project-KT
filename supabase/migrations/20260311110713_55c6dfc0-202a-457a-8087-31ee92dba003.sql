@@ -1,0 +1,1 @@
+ALTER TABLE public.clients ADD COLUMN dob_estimated boolean NOT NULL DEFAULT false;

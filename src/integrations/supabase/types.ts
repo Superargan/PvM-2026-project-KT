@@ -232,6 +232,7 @@ export type Database = {
           consent_data_processing: boolean | null
           created_at: string
           date_of_birth: string | null
+          dob_estimated: boolean
           dropout_action: string | null
           dropout_reason: string | null
           first_name: string
@@ -266,6 +267,7 @@ export type Database = {
           consent_data_processing?: boolean | null
           created_at?: string
           date_of_birth?: string | null
+          dob_estimated?: boolean
           dropout_action?: string | null
           dropout_reason?: string | null
           first_name: string
@@ -300,6 +302,7 @@ export type Database = {
           consent_data_processing?: boolean | null
           created_at?: string
           date_of_birth?: string | null
+          dob_estimated?: boolean
           dropout_action?: string | null
           dropout_reason?: string | null
           first_name?: string

@@ -25,7 +25,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, first_name, last_name, date_of_birth, waitlist_area_id, all_areas_flexible, intake_status, school_id, schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
+        .select("id, first_name, last_name, date_of_birth, dob_estimated, waitlist_area_id, all_areas_flexible, intake_status, school_id, schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
         .eq("archived", false)
         .in("intake_status", ["wachtlijst", "intake_afgerond"]);
       if (error) throw error;
@@ -68,7 +68,9 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
   const matrix = useMemo(() => {
     const m: Record<string, Record<string, { intake: any[]; wachtlijst: any[]; reserveIntake: any[]; reserveWachtlijst: any[] }>> = {};
     let noArea = 0;
-    let noAge = 0;
+    let noDob = 0;
+    let outsideRange = 0;
+    let estimatedDob = 0;
 
     areas.forEach((a: any) => {
       m[a.id] = {
@@ -83,7 +85,13 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
       const primaryAreaId = resolveAreaId(c);
       const age = getAgeCategoryPlanning(c.date_of_birth);
       const isIntake = (c.intake_status ?? "wachtlijst") === "intake_afgerond";
-      if (!age) noAge++;
+      
+      if (!c.date_of_birth) {
+        noDob++;
+      } else if (!age) {
+        outsideRange++;
+      }
+      if (c.dob_estimated) estimatedDob++;
 
       if (!c.waitlist_area_id && c.schools?.neighborhoods?.area_id) {
         fixableClients.push({ clientId: c.id, areaId: c.schools.neighborhoods.area_id });
@@ -123,7 +131,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
       }
     });
 
-    return { m, noArea, noAge, fixableClients };
+    return { m, noArea, noDob, outsideRange, estimatedDob, fixableClients };
   }, [clients, areas, prefsByClient]);
 
   const activeAreas = useMemo(() => {
@@ -178,9 +186,19 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
               {matrix.noArea} zonder gebied
             </Badge>
           )}
-          {matrix.noAge > 0 && (
+          {matrix.noDob > 0 && (
             <Badge variant="outline" className="text-sm px-3 py-1 border-destructive/30 text-destructive">
-              {matrix.noAge} zonder (geldige) geboortedatum
+              {matrix.noDob} zonder geboortedatum
+            </Badge>
+          )}
+          {matrix.outsideRange > 0 && (
+            <Badge variant="outline" className="text-sm px-3 py-1 border-purple-400 text-purple-700">
+              {matrix.outsideRange} buiten leeftijdsbereik (5-12)
+            </Badge>
+          )}
+          {matrix.estimatedDob > 0 && (
+            <Badge variant="outline" className="text-sm px-3 py-1 border-amber-400 text-amber-700">
+              ⚠ {matrix.estimatedDob} geschatte geboortedatum
             </Badge>
           )}
         </div>
@@ -345,7 +363,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
                     </td>
                   ))}
                   <td className="px-4 py-2 text-center text-sm font-bold text-foreground">
-                    {clients.length - matrix.noArea - matrix.noAge}
+                    {clients.length - matrix.noArea - matrix.noDob - matrix.outsideRange}
                   </td>
                 </tr>
               </tfoot>

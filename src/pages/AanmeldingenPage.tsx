@@ -687,6 +687,7 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
   const { toast } = useToast();
 
   const uniqueClients = Array.from(new Map(clients.map((c) => [c.id, c])).values());
+  const estimatedDobClients = uniqueClients.filter((c: any) => c.dob_estimated);
 
   const flagged = uniqueClients.map((c: any) => {
     const missing = getMissingFields(c);
@@ -758,6 +759,11 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
               <span className="font-semibold text-destructive">{s.count}</span> zonder {s.label.toLowerCase()}
             </Badge>
           ))}
+          {estimatedDobClients.length > 0 && (
+            <Badge variant="outline" className="text-xs gap-1 border-amber-400 text-amber-700">
+              ⚠ <span className="font-semibold">{estimatedDobClients.length}</span> geschatte geboortedatum (uit import)
+            </Badge>
+          )}
         </div>
       )}
 

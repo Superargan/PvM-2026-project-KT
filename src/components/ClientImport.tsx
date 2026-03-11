@@ -379,6 +379,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       // Date of birth
       const dobRaw = findCol(row, "Geboortedatum", "geboortedatum", "date_of_birth", "Geboorte datum");
       let date_of_birth: string | null = parseExcelDate(dobRaw, dateFormat);
+      let dobEstimated = false;
 
       // Read age from dedicated "Leeftijd" column (NOT "Leeftijdsgroep")
       const ageKeys = Object.keys(row);
@@ -403,6 +404,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         // No DOB, estimate from age
         const now = new Date();
         date_of_birth = `${now.getFullYear() - parsedAge}-06-15`;
+        dobEstimated = true;
       }
 
       // Deduplicate: check name+dob first, then name-only
@@ -522,6 +524,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         referrer_id,
         ...(selectedMode === "waitlist" ? { waitlist_status: "waiting" } : {}),
         registration_date: enrollDate || null,
+        dob_estimated: dobEstimated,
       };
 
       // Check if record already exists
