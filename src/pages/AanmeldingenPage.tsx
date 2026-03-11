@@ -93,7 +93,7 @@ export default function AanmeldingenPage() {
   const { data: schools = [] } = useQuery({
     queryKey: ["schools-list"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("schools").select("id, name").order("name");
+      const { data, error } = await supabase.from("schools").select("id, name, neighborhood_id, neighborhoods(area_id)").order("name");
       if (error) throw error;
       return data ?? [];
     },
