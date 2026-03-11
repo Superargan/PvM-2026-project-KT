@@ -853,12 +853,26 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       }
       // Upsert reserve area preferences
       if (upd.reserves && upd.reserves.length > 0) {
-        // Delete existing prefs, then insert new ones
         await supabase.from("client_area_preferences").delete().eq("client_id", upd.id);
         const prefInserts = upd.reserves.map((r) => ({
           client_id: upd.id, area_id: r.area_id, preference_order: r.order,
         }));
         await supabase.from("client_area_preferences").insert(prefInserts);
+      }
+      // Upsert availability — delete existing future records, then insert new ones
+      if (upd.availability && upd.availability.length > 0) {
+        const today = new Date().toISOString().split("T")[0];
+        await supabase.from("client_availability").delete().eq("client_id", upd.id).gte("available_date", today);
+        const availInserts: { client_id: string; available_date: string; start_time: string; end_time: string; notes: string | null }[] = [];
+        for (const a of upd.availability) {
+          const dates = generateDatesForDay(a.dayIndex, 90);
+          for (const date of dates) {
+            availInserts.push({ client_id: upd.id, available_date: date, start_time: a.startTime, end_time: a.endTime, notes: a.notes });
+          }
+        }
+        for (let ai = 0; ai < availInserts.length; ai += 200) {
+          await supabase.from("client_availability").insert(availInserts.slice(ai, ai + 200));
+        }
       }
       updated++;
     }
