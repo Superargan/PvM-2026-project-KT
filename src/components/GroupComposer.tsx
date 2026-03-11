@@ -19,6 +19,7 @@ import {
   matchSortOrder,
   matchColors,
   statusBadgeStyles,
+  getMissingFields,
   type AgeCategory,
   type MatchType,
 } from "@/lib/clientUtils";
