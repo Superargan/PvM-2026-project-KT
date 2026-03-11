@@ -843,7 +843,7 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
           <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm space-y-1">
             <p className="font-medium text-foreground">{typeInfo.description}</p>
             <p className="text-muted-foreground text-xs">{typeInfo.columns}</p>
-            <p className="text-xs text-muted-foreground">Weekdagen (ma/di/wo…) → uitgebreid naar komende 3 maanden</p>
+            <p className="text-xs text-muted-foreground">Weekdagen (ma/di/wo…) → uitgebreid naar komende 4 maanden</p>
             <p className="text-xs text-muted-foreground">Kruisje (x) = hele dag • Tijd = vanaf-tijd • Lege cel = niet beschikbaar</p>
           </div>
 

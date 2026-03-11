@@ -562,7 +562,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
           {selectedCount > 0 && (
             <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
               <strong className="text-foreground">{selectedCount}</strong> dagdelen geselecteerd per week.
-              {periodMode === "kwartaal" && " Dit patroon wordt toegepast op alle ~13 weken in de komende 3 maanden."}
+              {periodMode === "kwartaal" && " Dit patroon wordt toegepast op alle ~17 weken in de komende 4 maanden."}
               {periodMode === "maand" && " Dit patroon wordt toegepast op alle ~4 weken in deze maand."}
               {isDirty && <span className="text-amber-600 ml-2">• Onopgeslagen wijzigingen</span>}
             </div>
