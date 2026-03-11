@@ -140,10 +140,16 @@ export default function SessionDetails({ session, programId }: Props) {
             {new Date(session.session_date).toLocaleDateString("nl-NL")}
           </span>
         )}
+        {hasConflict && (
+          <Badge variant="outline" className="ml-2 text-xs border-destructive/30 text-destructive">
+            <AlertTriangle className="h-3 w-3 mr-1" />
+            {special!.holidays.map(h => h.name).join(", ") || special!.vacation?.name}
+          </Badge>
+        )}
       </h4>
 
-      {/* Date */}
-      <div className="flex items-center gap-2">
+      {/* Date + Time */}
+      <div className="flex items-center gap-2 flex-wrap">
         <CalendarDays className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
         <Input
           type="date"
@@ -151,12 +157,32 @@ export default function SessionDetails({ session, programId }: Props) {
           onChange={(e) => setSessionDate(e.target.value)}
           className="h-7 text-xs w-40"
         />
+        <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        <Input
+          type="time"
+          value={sessionStartTime}
+          onChange={(e) => setSessionStartTime(e.target.value)}
+          className="h-7 text-xs w-24"
+          placeholder="Start"
+        />
+        <span className="text-xs text-muted-foreground">–</span>
+        <Input
+          type="time"
+          value={sessionEndTime}
+          onChange={(e) => setSessionEndTime(e.target.value)}
+          className="h-7 text-xs w-24"
+          placeholder="Eind"
+        />
         <Button
           size="sm"
           variant="outline"
           className="h-7 text-xs"
-          disabled={sessionDate === (session.session_date ?? "")}
-          onClick={() => updateDate.mutate()}
+          disabled={
+            sessionDate === (session.session_date ?? "") &&
+            sessionStartTime === (session.start_time?.substring(0, 5) ?? "") &&
+            sessionEndTime === (session.end_time?.substring(0, 5) ?? "")
+          }
+          onClick={() => updateSession.mutate()}
         >
           Opslaan
         </Button>
