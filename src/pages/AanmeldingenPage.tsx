@@ -49,6 +49,10 @@ const editSchema = z.object({
   notes: z.string().max(5000).optional(),
   dropout_reason: z.string().optional(),
   dropout_action: z.string().max(2000).optional(),
+  // Velden die mee moeten bij opslaan (sync met ClientDetailPage)
+  neighborhood_id: z.string().nullable().optional(),
+  waitlist_area_id: z.string().nullable().optional(),
+  all_areas_flexible: z.boolean().optional(),
 });
 
 type EditForm = z.infer<typeof editSchema>;
@@ -173,6 +177,10 @@ export default function AanmeldingenPage() {
       notes: client.notes ?? "",
       dropout_reason: client.dropout_reason ?? "",
       dropout_action: client.dropout_action ?? "",
+      // Sync-velden (leading vanuit clientkaart)
+      neighborhood_id: client.neighborhood_id ?? null,
+      waitlist_area_id: client.waitlist_area_id ?? null,
+      all_areas_flexible: client.all_areas_flexible ?? false,
     });
     setErrors({});
     setSelectedProgramId("");
@@ -180,17 +188,18 @@ export default function AanmeldingenPage() {
   };
 
   const updateField = (field: keyof EditForm, value: any) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
-    // Auto-fill area and neighborhood from school
-    if (field === "school_id" && editClient) {
-      const school = schools.find((s: any) => s.id === value);
-      const areaId = (school as any)?.neighborhoods?.area_id;
-      if (areaId) {
-        handleWaitlist(editClient.id, editClient.waitlist_status ?? "waiting", areaId);
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      // Auto-fill area and neighborhood from school (consistent met ClientDetailPage)
+      if (field === "school_id") {
+        const school = schools.find((s: any) => s.id === value);
+        const areaId = (school as any)?.neighborhoods?.area_id;
+        if (areaId) next.waitlist_area_id = areaId;
+        next.neighborhood_id = (school as any)?.neighborhood_id ?? null;
       }
-      setForm((prev) => ({ ...prev, neighborhood_id: (school as any)?.neighborhood_id ?? null }));
-    }
+      return next;
+    });
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
   const addAssignment = async (staffId: string) => {
