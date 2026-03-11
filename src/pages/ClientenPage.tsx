@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { downloadExport } from "@/lib/csvExport";
 import ClientImport from "@/components/ClientImport";
 import { calculateAge, statusLabels, filterClients } from "@/lib/clientUtils";
+import { areaKeys } from "@/lib/queryKeys";
 import ClientFilters from "@/components/ClientFilters";
 import ClientListTable from "@/components/ClientListTable";
 
@@ -57,7 +58,7 @@ export default function ClientenPage() {
   });
 
   const { data: areas = [] } = useQuery({
-    queryKey: ["areas-list"],
+    queryKey: areaKeys.all,
     queryFn: async () => {
       const { data, error } = await supabase.from("areas").select("id, name").order("name");
       if (error) throw error;

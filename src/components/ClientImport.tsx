@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { areaKeys } from "@/lib/queryKeys";
 
 interface ParsedRow {
   [key: string]: any;
@@ -191,14 +192,14 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
   const { data: schools = [] } = useQuery({
     queryKey: ["schools-import"],
     queryFn: async () => {
-      const { data } = await supabase.from("schools").select("id, name").order("name");
+      const { data } = await supabase.from("schools").select("id, name, neighborhood_id, neighborhoods(area_id)").order("name");
       return data ?? [];
     },
     enabled: open,
   });
 
   const { data: areas = [] } = useQuery({
-    queryKey: ["areas-import"],
+    queryKey: areaKeys.all,
     queryFn: async () => {
       const { data } = await supabase.from("areas").select("id, name").order("name");
       return data ?? [];
@@ -450,7 +451,14 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
 
       // Area
       const areaName = findCol(row, "Gebied", "gebied", "Area", "Primair gebied");
-      const waitlist_area_id = findAreaId(areaName);
+      let waitlist_area_id = findAreaId(areaName);
+      
+      // Auto-derive area from school if not explicitly provided
+      if (!waitlist_area_id && school_id) {
+        const school = schools.find((s: any) => s.id === school_id);
+        const derivedAreaId = (school as any)?.neighborhoods?.area_id;
+        if (derivedAreaId) waitlist_area_id = derivedAreaId;
+      }
 
       // Reserve areas — look for columns like "Reserve gebied 1", "Reservegebied", etc.
       const reserveAreaIds: { area_id: string; order: number }[] = [];
@@ -622,7 +630,15 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         }
         // Always update these if provided (even if existing has value)
         if (gender) updateData.gender = gender;
-        if (school_id) updateData.school_id = school_id;
+        if (school_id) {
+          updateData.school_id = school_id;
+          // Also derive area from school if client has no area yet
+          if (!existingRecord.waitlist_area_id) {
+            const school = schools.find((s: any) => s.id === school_id);
+            const derivedAreaId = (school as any)?.neighborhoods?.area_id;
+            if (derivedAreaId) updateData.waitlist_area_id = derivedAreaId;
+          }
+        }
         if (class_group) updateData.class_group = class_group;
         // Always overwrite DOB when imported value is a real (non-estimated) date,
         // or when existing was estimated and import provides a value

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
+import { areaKeys } from "@/lib/queryKeys";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -100,7 +101,7 @@ export default function AanmeldingenPage() {
   });
 
   const { data: areas = [] } = useQuery({
-    queryKey: ["areas-list"],
+    queryKey: areaKeys.all,
     queryFn: async () => {
       const { data, error } = await supabase.from("areas").select("id, name").order("name");
       if (error) throw error;

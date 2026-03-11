@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { resolveAreaId, getAgeCategoryPlanning, getMissingFields, type AgeCategory } from "@/lib/clientUtils";
+import { clientKeys, areaKeys } from "@/lib/queryKeys";
 
 interface Props {
   onSelectGroup?: (areaId: string, ageCategory: string) => void;
@@ -21,7 +22,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
   const [fixingAreas, setFixingAreas] = useState(false);
 
   const { data: clients = [] } = useQuery({
-    queryKey: ["clients", "waitlist-overview"],
+    queryKey: clientKeys.waitlistOverview,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
@@ -45,7 +46,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
   });
 
   const { data: areas = [] } = useQuery({
-    queryKey: ["waitlist-overview-areas"],
+    queryKey: areaKeys.all,
     queryFn: async () => {
       const { data, error } = await supabase.from("areas").select("id, name").order("name");
       if (error) throw error;

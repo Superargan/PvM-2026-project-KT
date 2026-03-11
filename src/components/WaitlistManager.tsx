@@ -11,6 +11,7 @@ import ClientImport from "@/components/ClientImport";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 import { getAgeGroup } from "@/lib/clientUtils";
+import { areaKeys } from "@/lib/queryKeys";
 
 const statusLabels: Record<string, string> = {
   waiting: "Wachtend",
@@ -27,7 +28,7 @@ export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => 
   const qc = useQueryClient();
 
   const { data: areas = [] } = useQuery({
-    queryKey: ["areas"],
+    queryKey: areaKeys.all,
     queryFn: async () => {
       const { data, error } = await supabase.from("areas").select("id, name").order("name");
       if (error) throw error;

@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Trash2, Clock, UserPlus, Upload } from "lucide-react";
 import ClientImport from "@/components/ClientImport";
 import { filterClients, statusLabels, statusStyles } from "@/lib/clientUtils";
+import { areaKeys } from "@/lib/queryKeys";
 import ClientFilters from "@/components/ClientFilters";
 import ClientListTable from "@/components/ClientListTable";
 
@@ -26,7 +27,7 @@ export default function WachtlijstPage() {
   const qc = useQueryClient();
 
   const { data: areas = [] } = useQuery({
-    queryKey: ["areas"],
+    queryKey: areaKeys.all,
     queryFn: async () => {
       const { data, error } = await supabase.from("areas").select("id, name").order("name");
       if (error) throw error;

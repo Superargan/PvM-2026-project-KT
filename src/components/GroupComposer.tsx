@@ -23,6 +23,7 @@ import {
   type AgeCategory,
   type MatchType,
 } from "@/lib/clientUtils";
+import { clientKeys, areaKeys } from "@/lib/queryKeys";
 
 interface ClientWithMatch {
   client: any;
@@ -51,7 +52,7 @@ export default function GroupComposer() {
 
   // Fetch waitlist clients
   const { data: waitlistClients = [] } = useQuery({
-    queryKey: ["clients", "group-composer"],
+    queryKey: clientKeys.groupComposer,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
@@ -77,7 +78,7 @@ export default function GroupComposer() {
 
   // Fetch areas
   const { data: areas = [] } = useQuery({
-    queryKey: ["group-composer-areas"],
+    queryKey: areaKeys.all,
     queryFn: async () => {
       const { data, error } = await supabase.from("areas").select("id, name").order("name");
       if (error) throw error;

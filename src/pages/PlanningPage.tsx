@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval, parseISO, startOfMonth, endOfMonth, addMonths, subMonths, getDay } from "date-fns";
 import { getAgeCategoryPlanning } from "@/lib/clientUtils";
+import { clientKeys, areaKeys } from "@/lib/queryKeys";
 import { nl } from "date-fns/locale";
 import { CalendarDays, ChevronLeft, ChevronRight, Users, UserCog, Clock, MapPin, Filter, Plus, X, FileSpreadsheet, Star, Palmtree, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,7 @@ type ViewMode = "week" | "maand";
 // Compact availability summary panel for a selected area+age
 function AvailabilitySummaryPanel({ filterArea, filterAge, areaName }: { filterArea: string; filterAge: string; areaName: string }) {
   const { data: candidates = [] } = useQuery({
-    queryKey: ["clients", "avail-panel", filterArea, filterAge],
+    queryKey: clientKeys.planningAvailPanel(filterArea, filterAge),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
@@ -56,7 +57,7 @@ function AvailabilitySummaryPanel({ filterArea, filterAge, areaName }: { filterA
   const candidateIds = candidates.map((c: any) => c.id);
 
   const { data: availData = [] } = useQuery({
-    queryKey: ["clients", "avail-panel-data", candidateIds],
+    queryKey: clientKeys.planningAvailPanelData(candidateIds),
     enabled: candidateIds.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -162,7 +163,7 @@ export default function PlanningPage() {
 
   // === DATA QUERIES ===
   const { data: intakes = [] } = useQuery({
-    queryKey: ["planning-intakes", dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryKey: clientKeys.planningIntakes(dateRange.start.toISOString(), dateRange.end.toISOString()),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
@@ -246,7 +247,7 @@ export default function PlanningPage() {
   });
 
   const { data: allClients = [] } = useQuery({
-    queryKey: ["clients", "planning"],
+    queryKey: clientKeys.planning,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
@@ -273,7 +274,7 @@ export default function PlanningPage() {
   });
 
   const { data: areas = [] } = useQuery({
-    queryKey: ["areas-list"],
+    queryKey: areaKeys.all,
     queryFn: async () => {
       const { data, error } = await supabase.from("areas").select("id, name").order("name");
       if (error) throw error;

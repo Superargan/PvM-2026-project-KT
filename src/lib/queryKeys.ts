@@ -12,6 +12,9 @@ export const clientKeys = {
   waitlist: (...args: string[]) => ["clients", "waitlist", ...args] as const,
   dashboard: (...args: string[]) => ["clients", "dashboard", ...args] as const,
   planning: ["clients", "planning"] as const,
+  planningIntakes: (start: string, end: string) => ["clients", "planning-intakes", start, end] as const,
+  planningAvailPanel: (area: string, age: string) => ["clients", "avail-panel", area, age] as const,
+  planningAvailPanelData: (ids: string[]) => ["clients", "avail-panel-data", ids] as const,
   bySchool: ["clients", "by-school"] as const,
   rapportages: ["clients", "rapportages"] as const,
   groupComposer: ["clients", "group-composer"] as const,
@@ -19,6 +22,11 @@ export const clientKeys = {
   avail: ["clients", "avail"] as const,
   forProgram: ["clients", "for-program"] as const,
   areaPreferences: (clientId?: string) => ["clients", "area-preferences", clientId] as const,
+};
+
+/** Shared area query key — use everywhere */
+export const areaKeys = {
+  all: ["areas"] as const,
 };
 
 /**
