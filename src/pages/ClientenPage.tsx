@@ -15,9 +15,11 @@ import ClientFilters from "@/components/ClientFilters";
 import ClientListTable from "@/components/ClientListTable";
 
 export default function ClientenPage() {
+  const [searchParams] = useSearchParams();
+  const initialSchool = searchParams.get("school") ?? "all";
   const [search, setSearch] = useState("");
   const [filterArea, setFilterArea] = useState<string>("all");
-  const [filterSchool, setFilterSchool] = useState<string>("all");
+  const [filterSchool, setFilterSchool] = useState<string>(initialSchool);
   const [filterAge, setFilterAge] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [addOpen, setAddOpen] = useState(false);
