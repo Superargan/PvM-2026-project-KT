@@ -52,7 +52,7 @@ export default function GroupComposer() {
 
   // Fetch waitlist clients
   const { data: waitlistClients = [] } = useQuery({
-    queryKey: ["clients", "group-composer"],
+    queryKey: clientKeys.groupComposer,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
