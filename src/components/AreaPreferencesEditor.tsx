@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { clientKeys } from "@/lib/queryKeys";
 
 interface Props {
@@ -13,6 +14,8 @@ interface Props {
   allAreasFlexible: boolean;
   onAllAreasFlexibleChange: (val: boolean) => void;
   areas: { id: string; name: string }[];
+  areaNotes?: string | null;
+  onAreaNotesChange?: (val: string) => void;
 }
 
 export default function AreaPreferencesEditor({
