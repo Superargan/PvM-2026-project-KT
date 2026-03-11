@@ -689,6 +689,7 @@ export type Database = {
           session_date: string | null
           session_number: number
           start_time: string | null
+          status: string
         }
         Insert: {
           created_at?: string
@@ -700,6 +701,7 @@ export type Database = {
           session_date?: string | null
           session_number: number
           start_time?: string | null
+          status?: string
         }
         Update: {
           created_at?: string
@@ -711,6 +713,7 @@ export type Database = {
           session_date?: string | null
           session_number?: number
           start_time?: string | null
+          status?: string
         }
         Relationships: [
           {
@@ -792,6 +795,7 @@ export type Database = {
           id: string
           location: string | null
           max_participants: number | null
+          min_participants: number | null
           name: string
           neighborhood_id: string | null
           school_id: string | null
@@ -810,6 +814,7 @@ export type Database = {
           id?: string
           location?: string | null
           max_participants?: number | null
+          min_participants?: number | null
           name: string
           neighborhood_id?: string | null
           school_id?: string | null
@@ -828,6 +833,7 @@ export type Database = {
           id?: string
           location?: string | null
           max_participants?: number | null
+          min_participants?: number | null
           name?: string
           neighborhood_id?: string | null
           school_id?: string | null
@@ -1017,6 +1023,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "session_documents_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "program_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_override_logs: {
+        Row: {
+          created_at: string
+          id: string
+          overridden_by: string
+          override_type: string
+          reason: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          overridden_by: string
+          override_type: string
+          reason: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          overridden_by?: string
+          override_type?: string
+          reason?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_override_logs_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "program_sessions"
