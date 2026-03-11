@@ -46,7 +46,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
   });
 
   const { data: areas = [] } = useQuery({
-    queryKey: ["waitlist-overview-areas"],
+    queryKey: areaKeys.all,
     queryFn: async () => {
       const { data, error } = await supabase.from("areas").select("id, name").order("name");
       if (error) throw error;
