@@ -1314,7 +1314,7 @@ export default function ScholenPage() {
                     Naar aanmeldingen
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => {
-                    navigate(`/clienten`);
+                    navigate(`/clienten?school=${selectedSchool.id}`);
                     setStatsDialogOpen(false);
                   }}>
                     Naar deelnemers
