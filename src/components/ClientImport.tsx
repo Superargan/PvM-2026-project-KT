@@ -865,7 +865,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         await supabase.from("client_availability").delete().eq("client_id", upd.id).gte("available_date", today);
         const availInserts: { client_id: string; available_date: string; start_time: string; end_time: string; notes: string | null }[] = [];
         for (const a of upd.availability) {
-          const dates = generateDatesForDay(a.dayIndex, 90);
+          const dates = generateDatesForDay(a.dayIndex, 122);
           for (const date of dates) {
             availInserts.push({ client_id: upd.id, available_date: date, start_time: a.startTime, end_time: a.endTime, notes: a.notes });
           }
