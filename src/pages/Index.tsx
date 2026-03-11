@@ -37,7 +37,11 @@ export default function Dashboard() {
     queryFn: async () => {
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
-      const { count } = await supabase.from("clients").select("*", { count: "exact", head: true }).eq("archived", false).gte("created_at", weekAgo.toISOString());
+      const year = weekAgo.getFullYear();
+      const month = String(weekAgo.getMonth() + 1).padStart(2, "0");
+      const day = String(weekAgo.getDate()).padStart(2, "0");
+      const weekAgoLocal = `${year}-${month}-${day}`;
+      const { count } = await supabase.from("clients").select("*", { count: "exact", head: true }).eq("archived", false).gte("registration_date", weekAgoLocal);
       return count ?? 0;
     },
   });
