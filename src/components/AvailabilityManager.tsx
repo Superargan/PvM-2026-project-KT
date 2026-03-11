@@ -368,7 +368,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
     return `${p.first_name} ${p.last_name}`;
   };
 
-  const periodLabel = periodMode === "week" ? "deze week" : periodMode === "maand" ? "deze maand" : "komende 3 maanden";
+  const periodLabel = periodMode === "week" ? "deze week" : periodMode === "maand" ? "deze maand" : "komende 4 maanden";
 
   return (
     <div className="space-y-4">
