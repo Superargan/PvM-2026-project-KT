@@ -105,9 +105,9 @@ export default function GroupComposer() {
   // Build availability map (central helper, no fallbacks)
   const availByClient = useMemo(() => buildAvailabilityByClient(allAvailability as any), [allAvailability]);
 
-  // Find best overlapping timeslot (central helper)
-  const getSuggestion = (clientIds: Set<string>) => {
-    return getAvailabilityOverlap(clientIds, availByClient);
+  // Find top overlapping timeslots (central helper)
+  const getSuggestions = (clientIds: Set<string>) => {
+    return getTopAvailabilityOverlaps(clientIds, availByClient, 3);
   };
 
   const { data: allTrainers = [] } = useQuery({
