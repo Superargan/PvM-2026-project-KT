@@ -217,8 +217,12 @@ export function hasAvailabilityCoverage(
   monthsAhead = 4
 ): boolean {
   if (!clientAvail || clientAvail.length === 0) return false;
-  const threshold = addMonths(new Date(), monthsAhead);
-  return clientAvail.some((a) => isAfter(parseISO(a.date), new Date()));
+  const now = new Date();
+  const threshold = addMonths(now, monthsAhead);
+  // Must have at least one future record AND at least one record beyond the threshold
+  const hasFuture = clientAvail.some((a) => isAfter(parseISO(a.date), now));
+  const hasLongTermCoverage = clientAvail.some((a) => isAfter(parseISO(a.date), threshold));
+  return hasFuture && hasLongTermCoverage;
 }
 
 export type PlannabilityStatus =
