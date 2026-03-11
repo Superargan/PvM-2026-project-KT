@@ -57,7 +57,7 @@ function AvailabilitySummaryPanel({ filterArea, filterAge, areaName }: { filterA
   const candidateIds = candidates.map((c: any) => c.id);
 
   const { data: availData = [] } = useQuery({
-    queryKey: ["clients", "avail-panel-data", candidateIds],
+    queryKey: clientKeys.planningAvailPanelData(candidateIds),
     enabled: candidateIds.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase
