@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { clientKeys } from "@/lib/queryKeys";
 
 interface Props {
@@ -13,6 +14,8 @@ interface Props {
   allAreasFlexible: boolean;
   onAllAreasFlexibleChange: (val: boolean) => void;
   areas: { id: string; name: string }[];
+  areaNotes?: string | null;
+  onAreaNotesChange?: (val: string) => void;
 }
 
 export default function AreaPreferencesEditor({
@@ -21,6 +24,8 @@ export default function AreaPreferencesEditor({
   allAreasFlexible,
   onAllAreasFlexibleChange,
   areas,
+  areaNotes,
+  onAreaNotesChange,
 }: Props) {
   const queryClient = useQueryClient();
   const [prefs, setPrefs] = useState<(string | null)[]>([null, null, null]);
@@ -148,6 +153,17 @@ export default function AreaPreferencesEditor({
           )}
         </div>
       )}
+
+      {/* Area notes */}
+      <div className="space-y-1">
+        <Label className="text-xs text-muted-foreground">Gebiedsnotities</Label>
+        <Textarea
+          placeholder="Notities over gebiedsvoorkeur, bijv. gegevens die niet automatisch aan een gebied gekoppeld zijn..."
+          value={areaNotes ?? ""}
+          onChange={(e) => onAreaNotesChange?.(e.target.value)}
+          className="min-h-[60px] text-sm"
+        />
+      </div>
     </div>
   );
 }

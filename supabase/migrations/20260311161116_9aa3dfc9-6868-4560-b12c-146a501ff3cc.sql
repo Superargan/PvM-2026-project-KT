@@ -1,0 +1,1 @@
+ALTER TABLE public.clients ADD COLUMN area_notes text DEFAULT NULL;
