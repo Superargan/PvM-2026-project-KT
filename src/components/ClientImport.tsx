@@ -403,6 +403,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         // No DOB, estimate from age
         const now = new Date();
         date_of_birth = `${now.getFullYear() - parsedAge}-06-15`;
+        dobEstimated = true;
       }
 
       // Deduplicate: check name+dob first, then name-only
