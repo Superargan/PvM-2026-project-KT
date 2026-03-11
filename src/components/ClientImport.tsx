@@ -424,8 +424,27 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       const school_id = findSchoolId(schoolName, schoolResolutions);
 
       // Area
-      const areaName = findCol(row, "Gebied", "gebied", "Area");
+      const areaName = findCol(row, "Gebied", "gebied", "Area", "Primair gebied");
       const waitlist_area_id = findAreaId(areaName);
+
+      // Reserve areas — look for columns like "Reserve gebied 1", "Reserve 1", "Reservegebied", etc.
+      const reserveAreaIds: { area_id: string; order: number }[] = [];
+      for (let ri = 1; ri <= 3; ri++) {
+        const reserveName = findCol(
+          row,
+          `Reserve gebied ${ri}`, `Reservegebied ${ri}`, `Reserve ${ri}`,
+          `reserve gebied ${ri}`, `reservegebied ${ri}`, `reserve ${ri}`,
+          ...(ri === 1 ? ["Reserve gebied", "Reservegebied", "reserve gebied", "reservegebied"] : [])
+        );
+        if (reserveName) {
+          const areaId = findAreaId(reserveName);
+          if (areaId) reserveAreaIds.push({ area_id: areaId, order: ri });
+        }
+      }
+
+      // all_areas_flexible
+      const flexRaw = findCol(row, "Flexibel", "flexibel", "Alle gebieden", "alle gebieden", "all_areas_flexible");
+      const all_areas_flexible = flexRaw ? ["ja", "yes", "1", "true", "x"].includes(flexRaw.toLowerCase()) : false;
 
       // Postal code
       const pcCijfers = findCol(row, "Postcode cijfers", "Postcode", "postcode");
