@@ -178,16 +178,16 @@ export default function AanmeldingenPage() {
   };
 
   const updateField = (field: keyof EditForm, value: any) => {
-    setForm((prev) => {
-      const next = { ...prev, [field]: value };
-      if (field === "school_id") {
-        const school = schools.find((s: any) => s.id === value);
-        const areaId = (school as any)?.neighborhoods?.area_id;
-        if (areaId) next.waitlist_area_id = areaId;
-      }
-      return next;
-    });
+    setForm((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
+    // Auto-fill area from school
+    if (field === "school_id" && editClient) {
+      const school = schools.find((s: any) => s.id === value);
+      const areaId = (school as any)?.neighborhoods?.area_id;
+      if (areaId) {
+        handleWaitlist(editClient.id, editClient.waitlist_status ?? "waiting", areaId);
+      }
+    }
   };
 
   const addAssignment = async (staffId: string) => {
