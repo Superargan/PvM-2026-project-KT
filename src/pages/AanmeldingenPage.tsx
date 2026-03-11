@@ -52,10 +52,12 @@ const editSchema = z.object({
 type EditForm = z.infer<typeof editSchema>;
 
 export default function AanmeldingenPage() {
+  const [searchParams] = useSearchParams();
+  const initialSchool = searchParams.get("school") ?? "all";
   const [activeTab, setActiveTab] = useState("lijst");
   const [search, setSearch] = useState("");
   const [filterArea, setFilterArea] = useState<string>("all");
-  const [filterSchool, setFilterSchool] = useState<string>("all");
+  const [filterSchool, setFilterSchool] = useState<string>(initialSchool);
   const [filterAge, setFilterAge] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [editOpen, setEditOpen] = useState(false);
