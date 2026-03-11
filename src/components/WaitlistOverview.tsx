@@ -180,7 +180,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
           )}
           {matrix.noAge > 0 && (
             <Badge variant="outline" className="text-sm px-3 py-1 border-destructive/30 text-destructive">
-              {matrix.noAge} zonder geboortedatum
+              {matrix.noAge} zonder (geldige) geboortedatum
             </Badge>
           )}
         </div>
