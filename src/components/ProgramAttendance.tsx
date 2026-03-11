@@ -3,7 +3,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, ClipboardList } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,19 +14,30 @@ import {
 } from "@/components/ui/table";
 import SessionDetails from "@/components/SessionDetails";
 import ScheduleGenerator from "@/components/ScheduleGenerator";
+import {
+  type SessionStatus, SESSION_STATUS_CONFIG, STATUS_FILTER_OPTIONS, getCapacityStatus,
+} from "@/lib/sessionStatus";
 
 interface Props {
   programId: string;
   programName: string;
   programStartDate?: string | null;
+  programEndDate?: string | null;
+  minParticipants?: number | null;
+  maxParticipants?: number | null;
+  enrolledCount?: number;
   inline?: boolean;
 }
 
-export default function ProgramAttendance({ programId, programName, programStartDate, inline = false }: Props) {
+export default function ProgramAttendance({
+  programId, programName, programStartDate, programEndDate,
+  minParticipants, maxParticipants, enrolledCount = 0, inline = false,
+}: Props) {
   const [open, setOpen] = useState(inline ? true : false);
   const { toast } = useToast();
   const qc = useQueryClient();
   const SESSION_COUNT = programName.startsWith("KT") ? 10 : programName.startsWith("SV") ? 12 : 10;
+  const [statusFilter, setStatusFilter] = useState("alle");
 
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
     queryKey: ["program_sessions", programId],
@@ -91,6 +104,21 @@ export default function ProgramAttendance({ programId, programName, programStart
     return map;
   }, [attendance]);
 
+  // Derive effective status per session (persisted status + capacity check)
+  const sessionsWithEffectiveStatus = useMemo(() => {
+    return sessions.map((s: any) => {
+      const persisted = (s.status ?? "beschikbaar") as SessionStatus;
+      const effective = getCapacityStatus(persisted, enrolledCount || enrolledClients.length, minParticipants ?? null, maxParticipants ?? null);
+      return { ...s, effectiveStatus: effective };
+    });
+  }, [sessions, enrolledCount, enrolledClients.length, minParticipants, maxParticipants]);
+
+  // Filter sessions
+  const filteredSessions = useMemo(() => {
+    if (statusFilter === "alle") return sessionsWithEffectiveStatus;
+    return sessionsWithEffectiveStatus.filter((s: any) => s.effectiveStatus === statusFilter);
+  }, [sessionsWithEffectiveStatus, statusFilter]);
+
   const toggleAttendance = useMutation({
     mutationFn: async ({ sessionId, clientId, present }: { sessionId: string; clientId: string; present: boolean }) => {
       const key = `${sessionId}_${clientId}`;
@@ -127,9 +155,19 @@ export default function ProgramAttendance({ programId, programName, programStart
               <TableHeader>
                 <TableRow>
                   <TableHead className="sticky left-0 bg-background z-10 min-w-[160px]">Deelnemer</TableHead>
-                  {sessions.map((s: any) => (
-                    <TableHead key={s.id} className="text-center min-w-[44px] px-1">{s.session_number}</TableHead>
-                  ))}
+                  {sessionsWithEffectiveStatus.map((s: any) => {
+                    const config = SESSION_STATUS_CONFIG[s.effectiveStatus as SessionStatus] ?? SESSION_STATUS_CONFIG.beschikbaar;
+                    return (
+                      <TableHead key={s.id} className="text-center min-w-[44px] px-1">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span>{s.session_number}</span>
+                          {s.effectiveStatus !== "beschikbaar" && (
+                            <span className={`inline-block w-2 h-2 rounded-full ${config.className.split(" ")[0]}`} title={config.label} />
+                          )}
+                        </div>
+                      </TableHead>
+                    );
+                  })}
                   <TableHead className="text-center min-w-[50px]">Totaal</TableHead>
                 </TableRow>
               </TableHeader>
@@ -164,18 +202,46 @@ export default function ProgramAttendance({ programId, programName, programStart
         )}
       </TabsContent>
 
-      <TabsContent value="bijeenkomsten">
+      <TabsContent value="bijeenkomsten" className="space-y-4">
         <ScheduleGenerator
           programId={programId}
           programName={programName}
           programStartDate={programStartDate}
+          programEndDate={programEndDate}
           existingSessions={sessions}
           onGenerated={() => qc.invalidateQueries({ queryKey: ["program_sessions", programId] })}
         />
-        <div className="space-y-3 mt-4">
-          {sessions.map((s: any) => (
+
+        {/* Status filter */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Filter:</span>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-7 text-xs w-auto min-w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-popover">
+              {STATUS_FILTER_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {/* Capacity info */}
+          {(minParticipants || maxParticipants) && (
+            <span className="text-xs text-muted-foreground ml-auto">
+              Deelnemers: {enrolledCount || enrolledClients.length}
+              {minParticipants ? ` (min: ${minParticipants})` : ""}
+              {maxParticipants ? ` (max: ${maxParticipants})` : ""}
+            </span>
+          )}
+        </div>
+
+        <div className="space-y-3">
+          {filteredSessions.map((s: any) => (
             <SessionDetails key={s.id} session={s} programId={programId} />
           ))}
+          {filteredSessions.length === 0 && sessions.length > 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">Geen sessies met deze status.</p>
+          )}
         </div>
       </TabsContent>
     </Tabs>
@@ -209,4 +275,3 @@ export default function ProgramAttendance({ programId, programName, programStart
     </Dialog>
   );
 }
-

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -14,33 +15,38 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  CalendarDays, Clock, Wand2, AlertTriangle, Check, Pencil, RotateCcw, Users, Info,
+  CalendarDays, Clock, Wand2, AlertTriangle, Check, Pencil, RotateCcw, Users, Info, ShieldAlert,
 } from "lucide-react";
-import { format, addWeeks, getDay, parse } from "date-fns";
+import { format, addWeeks, getDay } from "date-fns";
 import { nl } from "date-fns/locale";
 import { isSpecialDay, type Holiday, type SchoolVacation } from "@/lib/holidays";
+import {
+  type SessionStatus, type OverrideType,
+  getStatusForDate, SESSION_STATUS_CONFIG, getOverrideConfirmMessage,
+} from "@/lib/sessionStatus";
 
 interface Props {
   programId: string;
   programName: string;
   programStartDate?: string | null;
+  programEndDate?: string | null;
   existingSessions: any[];
   onGenerated: () => void;
 }
 
 interface GeneratedSession {
   session_number: number;
-  date: string; // YYYY-MM-DD
+  date: string;
   dayName: string;
   start_time: string;
   end_time: string;
   location: string;
   holidays: Holiday[];
   vacation?: SchoolVacation;
-  hasConflict: boolean;
-  skippedDate?: string; // original date that was skipped
+  status: SessionStatus;
+  skippedDate?: string;
   editing: boolean;
-  confirmed: boolean; // user confirmed a conflict date
+  overrideReason?: string;
 }
 
 const DAY_NAMES = ["Zondag", "Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag"];
@@ -66,44 +72,51 @@ function generateDates(
   count: number,
   startTime: string,
   endTime: string,
-  location: string
+  location: string,
+  programEndDate?: string | null
 ): GeneratedSession[] {
   const sessions: GeneratedSession[] = [];
   let current = new Date(startDate);
 
-  // Move to the first occurrence of the target weekday
   while (getDay(current) !== weekday) {
     current.setDate(current.getDate() + 1);
   }
 
   let sessionNum = 1;
-  while (sessions.length < count) {
-    const dateStr = format(current, "yyyy-MM-dd");
-    const special = isSpecialDay(dateStr);
-    const hasConflict = special.holidays.length > 0 || !!special.vacation;
+  const maxIterations = count * 4; // safety
+  let iterations = 0;
 
-    if (hasConflict) {
-      // Skip this date, try next week
+  while (sessions.length < count && iterations < maxIterations) {
+    iterations++;
+    const dateStr = format(current, "yyyy-MM-dd");
+
+    // Check if beyond program end date
+    if (programEndDate && dateStr > programEndDate) break;
+
+    const status = getStatusForDate(dateStr);
+    const special = isSpecialDay(dateStr);
+    const isBlocked = status === "feestdag" || status === "schoolvakantie";
+
+    if (isBlocked) {
+      // Skip and try next week
       const skippedDate = dateStr;
       current = addWeeks(current, 1);
-      // Check if next week is also conflicting - keep going
       const nextDateStr = format(current, "yyyy-MM-dd");
+      const nextStatus = getStatusForDate(nextDateStr);
       const nextSpecial = isSpecialDay(nextDateStr);
-      const nextHasConflict = nextSpecial.holidays.length > 0 || !!nextSpecial.vacation;
 
       sessions.push({
         session_number: sessionNum,
-        date: nextHasConflict ? nextDateStr : nextDateStr,
+        date: nextDateStr,
         dayName: DAY_NAMES[getDay(current)],
         start_time: startTime,
         end_time: endTime,
         location,
         holidays: nextSpecial.holidays,
         vacation: nextSpecial.vacation,
-        hasConflict: nextHasConflict,
+        status: nextStatus,
         skippedDate,
         editing: false,
-        confirmed: false,
       });
     } else {
       sessions.push({
@@ -113,11 +126,10 @@ function generateDates(
         start_time: startTime,
         end_time: endTime,
         location,
-        holidays: [],
-        vacation: undefined,
-        hasConflict: false,
+        holidays: special.holidays,
+        vacation: special.vacation,
+        status,
         editing: false,
-        confirmed: false,
       });
     }
 
@@ -128,20 +140,25 @@ function generateDates(
   return sessions;
 }
 
-export default function ScheduleGenerator({ programId, programName, programStartDate, existingSessions, onGenerated }: Props) {
+export default function ScheduleGenerator({ programId, programName, programStartDate, programEndDate, existingSessions, onGenerated }: Props) {
   const { toast } = useToast();
   const qc = useQueryClient();
 
   const sessionCount = getSessionCount(programName);
   const hasExistingDates = existingSessions.some((s: any) => s.session_date);
 
-  const [weekday, setWeekday] = useState<string>("3"); // Wednesday default
+  const [weekday, setWeekday] = useState<string>("3");
   const [startTime, setStartTime] = useState("14:00");
   const [endTime, setEndTime] = useState("15:30");
   const [startDate, setStartDate] = useState(programStartDate ?? "");
   const [location, setLocation] = useState("");
   const [generated, setGenerated] = useState<GeneratedSession[] | null>(null);
-  const [confirmConflict, setConfirmConflict] = useState<{ index: number; session: GeneratedSession } | null>(null);
+  const [overrideDialog, setOverrideDialog] = useState<{
+    index: number;
+    session: GeneratedSession;
+    overrideType: OverrideType;
+  } | null>(null);
+  const [overrideReason, setOverrideReason] = useState("");
 
   // Fetch enrolled clients for availability check
   const { data: enrolledClients = [] } = useQuery({
@@ -156,7 +173,7 @@ export default function ScheduleGenerator({ programId, programName, programStart
     },
   });
 
-  // Fetch client availability for all enrolled clients
+  // Fetch client availability
   const clientIds = enrolledClients.map((c: any) => c.id);
   const { data: availability = [] } = useQuery({
     queryKey: ["client_availability_for_schedule", clientIds],
@@ -197,11 +214,9 @@ export default function ScheduleGenerator({ programId, programName, programStart
       enrolledClients.forEach((client: any) => {
         const clientAvail = availability.filter((a: any) => a.client_id === client.id && a.available_date === sessionDate);
         if (clientAvail.length === 0) {
-          // Client has no availability record for this date
           if (!warnings[idx]) warnings[idx] = [];
           warnings[idx].push({ client, availableTimes: "geen beschikbaarheid opgegeven" });
         } else {
-          // Check if session time falls within availability
           const sessionStart = session.start_time;
           const sessionEnd = session.end_time;
           const fits = clientAvail.some((a: any) => {
@@ -227,13 +242,22 @@ export default function ScheduleGenerator({ programId, programName, programStart
       toast({ title: "Kies een startdatum", variant: "destructive" });
       return;
     }
+
+    // Validate: no past dates
+    const today = format(new Date(), "yyyy-MM-dd");
+    if (startDate < today) {
+      toast({ title: "Startdatum mag niet in het verleden liggen", variant: "destructive" });
+      return;
+    }
+
     const sessions = generateDates(
       new Date(startDate),
       parseInt(weekday),
       sessionCount,
       startTime,
       endTime,
-      location
+      location,
+      programEndDate
     );
     setGenerated(sessions);
   };
@@ -244,13 +268,14 @@ export default function ScheduleGenerator({ programId, programName, programStart
     const session = { ...updated[index] };
 
     if (field === "date") {
+      const newStatus = getStatusForDate(value);
       const special = isSpecialDay(value);
       session.date = value;
       session.dayName = DAY_NAMES[new Date(value).getDay()];
       session.holidays = special.holidays;
       session.vacation = special.vacation;
-      session.hasConflict = special.holidays.length > 0 || !!special.vacation;
-      session.confirmed = false;
+      session.status = newStatus;
+      session.overrideReason = undefined;
     } else if (field === "start_time") {
       session.start_time = value;
     } else if (field === "end_time") {
@@ -270,18 +295,27 @@ export default function ScheduleGenerator({ programId, programName, programStart
     setGenerated(updated);
   };
 
-  const handleConfirmConflict = (index: number) => {
-    if (!generated) return;
+  const handleOverrideConfirm = async () => {
+    if (!overrideDialog || !overrideReason.trim() || !generated) return;
+    const { index } = overrideDialog;
     const updated = [...generated];
-    updated[index] = { ...updated[index], confirmed: true };
+    updated[index] = {
+      ...updated[index],
+      status: "handmatig_vrijgegeven",
+      overrideReason: overrideReason.trim(),
+    };
     setGenerated(updated);
-    setConfirmConflict(null);
+    setOverrideDialog(null);
+    setOverrideReason("");
   };
 
   // Save to database
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!generated) return;
+
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user?.id;
 
       // Delete existing sessions for this program
       if (existingSessions.length > 0) {
@@ -292,7 +326,7 @@ export default function ScheduleGenerator({ programId, programName, programStart
         if (delErr) throw delErr;
       }
 
-      // Insert new sessions
+      // Insert new sessions with status
       const rows = generated.map((s) => ({
         program_id: programId,
         session_number: s.session_number,
@@ -300,10 +334,39 @@ export default function ScheduleGenerator({ programId, programName, programStart
         start_time: s.start_time || null,
         end_time: s.end_time || null,
         location: s.location || null,
+        status: s.status,
       }));
 
-      const { error } = await supabase.from("program_sessions").insert(rows as any);
+      const { data: insertedSessions, error } = await supabase
+        .from("program_sessions")
+        .insert(rows as any)
+        .select("id, session_number");
       if (error) throw error;
+
+      // Log overrides
+      const overrideSessions = generated.filter((s) => s.status === "handmatig_vrijgegeven" && s.overrideReason);
+      if (overrideSessions.length > 0 && insertedSessions && userId) {
+        const overrideLogs = overrideSessions.map((s) => {
+          const inserted = insertedSessions.find((is: any) => is.session_number === s.session_number);
+          if (!inserted) return null;
+          // Determine original override type from skipped/conflict info
+          const special = isSpecialDay(s.date);
+          let overrideType: OverrideType = "handmatige_blokkade";
+          if (special.holidays.length > 0) overrideType = "feestdag";
+          else if (special.vacation) overrideType = "schoolvakantie";
+
+          return {
+            session_id: inserted.id,
+            overridden_by: userId,
+            override_type: overrideType,
+            reason: s.overrideReason!,
+          };
+        }).filter(Boolean);
+
+        if (overrideLogs.length > 0) {
+          await supabase.from("session_override_logs").insert(overrideLogs as any);
+        }
+      }
 
       // Update program end_date based on last session
       const lastDate = generated[generated.length - 1]?.date;
@@ -322,7 +385,16 @@ export default function ScheduleGenerator({ programId, programName, programStart
   });
 
   const skippedDates = generated?.filter((s) => s.skippedDate) ?? [];
-  const unresolvedConflicts = generated?.filter((s) => s.hasConflict && !s.confirmed) ?? [];
+  const blockedSessions = generated?.filter((s) => s.status === "feestdag" || s.status === "schoolvakantie") ?? [];
+
+  const statusBadge = (status: SessionStatus) => {
+    const config = SESSION_STATUS_CONFIG[status];
+    return (
+      <Badge variant="outline" className={`text-xs ${config.className}`}>
+        {config.label}
+      </Badge>
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -361,6 +433,7 @@ export default function ScheduleGenerator({ programId, programName, programStart
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               className="h-8 text-sm"
+              min={format(new Date(), "yyyy-MM-dd")}
             />
           </div>
           <div>
@@ -446,93 +519,98 @@ export default function ScheduleGenerator({ programId, programName, programStart
                   <TableHead>Dag</TableHead>
                   <TableHead>Tijdstip</TableHead>
                   <TableHead>Locatie</TableHead>
-                  <TableHead className="w-12">Status</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {generated.map((session, idx) => (
-                  <TableRow
-                    key={idx}
-                    className={session.hasConflict && !session.confirmed ? "bg-destructive/5" : ""}
-                  >
-                    <TableCell className="font-medium text-sm">{session.session_number}</TableCell>
-                    <TableCell>
-                      {session.editing ? (
-                        <Input
-                          type="date"
-                          value={session.date}
-                          onChange={(e) => handleEditSession(idx, "date", e.target.value)}
-                          className="h-7 text-xs w-40"
-                        />
-                      ) : (
-                        <span className="text-sm">
-                          {format(new Date(session.date), "d MMMM yyyy", { locale: nl })}
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{session.dayName}</TableCell>
-                    <TableCell>
-                      {session.editing ? (
-                        <div className="flex gap-1">
+                {generated.map((session, idx) => {
+                  const isBlocked = session.status === "feestdag" || session.status === "schoolvakantie";
+                  return (
+                    <TableRow
+                      key={idx}
+                      className={isBlocked ? "bg-destructive/5" : ""}
+                    >
+                      <TableCell className="font-medium text-sm">{session.session_number}</TableCell>
+                      <TableCell>
+                        {session.editing ? (
                           <Input
-                            type="time"
-                            value={session.start_time}
-                            onChange={(e) => handleEditSession(idx, "start_time", e.target.value)}
-                            className="h-7 text-xs w-24"
+                            type="date"
+                            value={session.date}
+                            onChange={(e) => handleEditSession(idx, "date", e.target.value)}
+                            className="h-7 text-xs w-40"
                           />
+                        ) : (
+                          <span className="text-sm">
+                            {format(new Date(session.date), "d MMMM yyyy", { locale: nl })}
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{session.dayName}</TableCell>
+                      <TableCell>
+                        {session.editing ? (
+                          <div className="flex gap-1">
+                            <Input
+                              type="time"
+                              value={session.start_time}
+                              onChange={(e) => handleEditSession(idx, "start_time", e.target.value)}
+                              className="h-7 text-xs w-24"
+                            />
+                            <Input
+                              type="time"
+                              value={session.end_time}
+                              onChange={(e) => handleEditSession(idx, "end_time", e.target.value)}
+                              className="h-7 text-xs w-24"
+                            />
+                          </div>
+                        ) : (
+                          <span className="text-sm">{session.start_time}–{session.end_time}</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {session.editing ? (
                           <Input
-                            type="time"
-                            value={session.end_time}
-                            onChange={(e) => handleEditSession(idx, "end_time", e.target.value)}
-                            className="h-7 text-xs w-24"
+                            value={session.location}
+                            onChange={(e) => handleEditSession(idx, "location", e.target.value)}
+                            className="h-7 text-xs w-40"
                           />
+                        ) : (
+                          <span className="text-sm text-muted-foreground">{session.location || "—"}</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          {statusBadge(session.status)}
+                          {isBlocked && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 text-amber-600"
+                              title="Override (alleen admin)"
+                              onClick={() => {
+                                const overrideType: OverrideType = session.status === "feestdag" ? "feestdag" : "schoolvakantie";
+                                setOverrideDialog({ index: idx, session, overrideType });
+                                setOverrideReason("");
+                              }}
+                            >
+                              <ShieldAlert className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
                         </div>
-                      ) : (
-                        <span className="text-sm">{session.start_time}–{session.end_time}</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {session.editing ? (
-                        <Input
-                          value={session.location}
-                          onChange={(e) => handleEditSession(idx, "location", e.target.value)}
-                          className="h-7 text-xs w-40"
-                        />
-                      ) : (
-                        <span className="text-sm text-muted-foreground">{session.location || "—"}</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {session.hasConflict && !session.confirmed ? (
-                        <Badge
-                          variant="outline"
-                          className="text-xs border-destructive/30 text-destructive cursor-pointer"
-                          onClick={() => setConfirmConflict({ index: idx, session })}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0"
+                          onClick={() => toggleEdit(idx)}
                         >
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          {session.holidays.length > 0 ? "Feestdag" : "Vakantie"}
-                        </Badge>
-                      ) : session.confirmed ? (
-                        <Badge variant="outline" className="text-xs border-amber-400 text-amber-600">
-                          <Check className="h-3 w-3 mr-1" /> OK
-                        </Badge>
-                      ) : (
-                        <Check className="h-4 w-4 text-green-600" />
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 w-7 p-0"
-                        onClick={() => toggleEdit(idx)}
-                      >
-                        {session.editing ? <Check className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                          {session.editing ? <Check className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
@@ -569,7 +647,7 @@ export default function ScheduleGenerator({ programId, programName, programStart
           <div className="flex items-center gap-3">
             <Button
               onClick={() => saveMutation.mutate()}
-              disabled={saveMutation.isPending || unresolvedConflicts.length > 0}
+              disabled={saveMutation.isPending}
               className="gap-1.5"
             >
               {saveMutation.isPending ? (
@@ -579,9 +657,9 @@ export default function ScheduleGenerator({ programId, programName, programStart
               )}
               Bevestig planning
             </Button>
-            {unresolvedConflicts.length > 0 && (
-              <span className="text-xs text-destructive">
-                {unresolvedConflicts.length} conflict(en) moeten bevestigd worden
+            {blockedSessions.length > 0 && (
+              <span className="text-xs text-amber-600">
+                {blockedSessions.length} sessie(s) geblokkeerd (feestdag/vakantie)
               </span>
             )}
             <Button
@@ -596,40 +674,51 @@ export default function ScheduleGenerator({ programId, programName, programStart
         </div>
       )}
 
-      {/* Confirm conflict dialog */}
-      <AlertDialog open={!!confirmConflict} onOpenChange={() => setConfirmConflict(null)}>
+      {/* Override confirmation dialog */}
+      <AlertDialog open={!!overrideDialog} onOpenChange={() => { setOverrideDialog(null); setOverrideReason(""); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              Feestdag / vakantie
+              <ShieldAlert className="h-5 w-5 text-amber-600" />
+              Override bevestigen
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              {confirmConflict && (
-                <>
-                  <p>
-                    <strong>{format(new Date(confirmConflict.session.date), "EEEE d MMMM yyyy", { locale: nl })}</strong> valt op:
-                  </p>
-                  <ul className="list-disc ml-4">
-                    {confirmConflict.session.holidays.map((h) => (
-                      <li key={h.date + h.name}>{h.name} ({h.type})</li>
-                    ))}
-                    {confirmConflict.session.vacation && (
-                      <li>{confirmConflict.session.vacation.name}</li>
-                    )}
-                  </ul>
-                  <p>Weet je zeker dat je op deze datum wilt plannen?</p>
-                </>
-              )}
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                {overrideDialog && (
+                  <>
+                    <p>{getOverrideConfirmMessage(overrideDialog.overrideType)}</p>
+                    <p>
+                      <strong>{format(new Date(overrideDialog.session.date), "EEEE d MMMM yyyy", { locale: nl })}</strong>
+                      {overrideDialog.session.holidays.length > 0 && (
+                        <> — {overrideDialog.session.holidays.map(h => h.name).join(", ")}</>
+                      )}
+                      {overrideDialog.session.vacation && (
+                        <> — {overrideDialog.session.vacation.name}</>
+                      )}
+                    </p>
+                    <div>
+                      <label className="text-xs font-medium text-foreground block mb-1">Reden (verplicht)</label>
+                      <Textarea
+                        value={overrideReason}
+                        onChange={(e) => setOverrideReason(e.target.value)}
+                        placeholder="Geef een reden voor deze override..."
+                        rows={3}
+                        className="text-foreground"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuleren</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => confirmConflict && handleConfirmConflict(confirmConflict.index)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleOverrideConfirm}
+              disabled={!overrideReason.trim()}
+              className="bg-amber-600 text-white hover:bg-amber-700"
             >
-              Ja, toch plannen
+              Ja, toch vrijgeven
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
