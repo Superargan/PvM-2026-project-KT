@@ -424,8 +424,27 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       const school_id = findSchoolId(schoolName, schoolResolutions);
 
       // Area
-      const areaName = findCol(row, "Gebied", "gebied", "Area");
+      const areaName = findCol(row, "Gebied", "gebied", "Area", "Primair gebied");
       const waitlist_area_id = findAreaId(areaName);
+
+      // Reserve areas — look for columns like "Reserve gebied 1", "Reserve 1", "Reservegebied", etc.
+      const reserveAreaIds: { area_id: string; order: number }[] = [];
+      for (let ri = 1; ri <= 3; ri++) {
+        const reserveName = findCol(
+          row,
+          `Reserve gebied ${ri}`, `Reservegebied ${ri}`, `Reserve ${ri}`,
+          `reserve gebied ${ri}`, `reservegebied ${ri}`, `reserve ${ri}`,
+          ...(ri === 1 ? ["Reserve gebied", "Reservegebied", "reserve gebied", "reservegebied"] : [])
+        );
+        if (reserveName) {
+          const areaId = findAreaId(reserveName);
+          if (areaId) reserveAreaIds.push({ area_id: areaId, order: ri });
+        }
+      }
+
+      // all_areas_flexible
+      const flexRaw = findCol(row, "Flexibel", "flexibel", "Alle gebieden", "alle gebieden", "all_areas_flexible");
+      const all_areas_flexible = flexRaw ? ["ja", "yes", "1", "true", "x"].includes(flexRaw.toLowerCase()) : false;
 
       // Postal code
       const pcCijfers = findCol(row, "Postcode cijfers", "Postcode", "postcode");
@@ -525,7 +544,11 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         ...(selectedMode === "waitlist" ? { waitlist_status: "waiting" } : {}),
         registration_date: enrollDate || null,
         dob_estimated: dobEstimated,
+        all_areas_flexible,
       };
+
+      // Stash reserve area preferences for post-insert
+      (recordData as any).__reserveAreas = reserveAreaIds;
 
       // Check if record already exists
       const existingRecord = (nameDobKey && existingByNameDob.get(nameDobKey)) || existingByName.get(nameKey);
@@ -560,11 +583,28 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     // Batch insert new records (chunks of 50)
     for (let i = 0; i < inserts.length; i += 50) {
       const chunk = inserts.slice(i, i + 50);
-      const { error } = await supabase.from("clients").insert(chunk);
+      // Extract and remove __reserveAreas before inserting
+      const reserveMap = chunk.map((r: any) => {
+        const reserves = r.__reserveAreas ?? [];
+        delete r.__reserveAreas;
+        return reserves;
+      });
+      const { data: insertedRows, error } = await supabase.from("clients").insert(chunk).select("id");
       if (error) {
         errors.push(`Nieuwe rijen ${i + 2}: ${error.message}`);
       } else {
-        added += chunk.length;
+        added += (insertedRows ?? chunk).length;
+        // Insert reserve area preferences for newly inserted clients
+        const prefInserts: { client_id: string; area_id: string; preference_order: number }[] = [];
+        (insertedRows ?? []).forEach((row: any, idx: number) => {
+          const reserves = reserveMap[idx] ?? [];
+          for (const r of reserves) {
+            prefInserts.push({ client_id: row.id, area_id: r.area_id, preference_order: r.order });
+          }
+        });
+        if (prefInserts.length > 0) {
+          await supabase.from("client_area_preferences").insert(prefInserts);
+        }
       }
     }
 
