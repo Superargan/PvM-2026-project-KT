@@ -11,10 +11,12 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import SessionDetails from "@/components/SessionDetails";
+import ScheduleGenerator from "@/components/ScheduleGenerator";
 
 interface Props {
   programId: string;
   programName: string;
+  programStartDate?: string | null;
   inline?: boolean;
 }
 
