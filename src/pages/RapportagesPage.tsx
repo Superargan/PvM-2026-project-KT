@@ -10,11 +10,12 @@ import { Button } from "@/components/ui/button";
 import { downloadExport, ExportColumn } from "@/lib/csvExport";
 import { useToast } from "@/hooks/use-toast";
 import {
-  startOfWeek, startOfMonth, startOfYear, format, getISOWeek, differenceInYears, parseISO,
+  startOfWeek, startOfMonth, startOfYear, format, getISOWeek,
 } from "date-fns";
 import { nl } from "date-fns/locale";
 import InvoiceManager from "@/components/InvoiceManager";
 import * as XLSX from "xlsx";
+import { getAgeCategoryReport as ageCategory, getAgeCategoryReportLabel as ageCategoryLabel } from "@/lib/clientUtils";
 
 type Granularity = "week" | "maand" | "jaar";
 type Breakdown = "totaal" | "school" | "gebied" | "leeftijd" | "geslacht";
@@ -29,23 +30,6 @@ function periodKey(date: Date, gran: Granularity): string {
   if (gran === "week") return `${date.getFullYear()}-W${String(getISOWeek(date)).padStart(2, "0")}`;
   if (gran === "maand") return format(date, "yyyy-MM");
   return String(date.getFullYear());
-}
-
-function ageCategory(dob: string | null): string {
-  if (!dob) return "Onbekend";
-  const age = differenceInYears(new Date(), parseISO(dob));
-  if (age < 6) return "0-5";
-  if (age < 10) return "6-9";
-  if (age < 13) return "10-12";
-  if (age < 16) return "13-15";
-  return "16+";
-}
-
-function ageCategoryLabel(dob: string | null): string {
-  if (!dob) return "Onbekend";
-  const age = differenceInYears(new Date(), parseISO(dob));
-  if (age <= 7) return "5 - 7 jaar";
-  return "8 - 12 jaar";
 }
 
 function genderLabel(g: string | null): string {

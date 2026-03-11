@@ -48,11 +48,7 @@ function AvailabilitySummaryPanel({ filterArea, filterAge, areaName }: { filterA
       if (error) throw error;
       // Filter by age category
       return (data ?? []).filter((c: any) => {
-        if (!c.date_of_birth) return false;
-        const age = differenceInYears(new Date(), parseISO(c.date_of_birth));
-        if (filterAge === "5-7 jaar") return age >= 5 && age <= 7;
-        if (filterAge === "8-12 jaar") return age >= 8 && age <= 12;
-        return false;
+        return getAgeCategoryPlanning(c.date_of_birth) === filterAge;
       });
     },
   });
