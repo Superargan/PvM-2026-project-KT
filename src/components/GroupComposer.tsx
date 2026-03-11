@@ -427,13 +427,23 @@ export default function GroupComposer() {
           const reserveCandidates = showReserve ? getReserveCandidates(group) : [];
 
           return (
-            <Card key={key} className="border-border">
+            <Card key={key} className={`border-border ${expandedCard === key ? "col-span-2" : ""}`}>
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div>
-                    <CardTitle className="text-base font-bold text-foreground">
-                      {group.areaName} · {group.ageCategory}
-                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-base font-bold text-foreground">
+                        {group.areaName} · {group.ageCategory}
+                      </CardTitle>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => setExpandedCard(expandedCard === key ? null : key)}
+                      >
+                        <Maximize2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       <span className="text-blue-700">{intakeClients.length} intake afgerond</span>
                       {wachtlijstClients_.length > 0 && (
