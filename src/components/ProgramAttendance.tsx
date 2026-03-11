@@ -24,7 +24,7 @@ export default function ProgramAttendance({ programId, programName, programStart
   const [open, setOpen] = useState(inline ? true : false);
   const { toast } = useToast();
   const qc = useQueryClient();
-  const SESSION_COUNT = programName.startsWith("KT") ? 10 : 8;
+  const SESSION_COUNT = programName.startsWith("KT") ? 10 : programName.startsWith("SV") ? 12 : 10;
 
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
     queryKey: ["program_sessions", programId],
