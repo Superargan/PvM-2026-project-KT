@@ -69,7 +69,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
     }
     if (periodMode === "kwartaal") {
       const start = startOfMonth(currentDate);
-      return { start, end: endOfMonth(addMonths(start, 2)) };
+      return { start, end: endOfMonth(addMonths(start, 3)) };
     }
     return {
       start: startOfMonth(currentDate),
