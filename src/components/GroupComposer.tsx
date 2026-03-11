@@ -673,8 +673,8 @@ export default function GroupComposer() {
 
       {/* Clients without area/age */}
       {(() => {
-        const noArea = unassigned.filter((c: any) => getMissingFields(c).includes("Gebied"));
-        const noAge = unassigned.filter((c: any) => getMissingFields(c).includes("Geboortedatum"));
+        const noArea = unassigned.filter((c: any) => !resolveAreaId(c));
+        const noAge = unassigned.filter((c: any) => !getAgeCategoryPlanning(c.date_of_birth));
         return (
           <>
             {noArea.length > 0 && (
