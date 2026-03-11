@@ -677,14 +677,28 @@ export default function GroupComposer() {
                   );
                 })()}
 
-                {/* Create button */}
-                <Button
-                  className="w-full"
-                  onClick={() => createGroup(group)}
-                  disabled={isCreating || selected.size === 0}
-                >
-                  {isCreating ? "Aanmaken..." : `Groep aanmaken (${selected.size} aanmelders)`}
-                </Button>
+                {/* Simulation + Create buttons */}
+                <div className="flex gap-2">
+                  <Button
+                    variant={isGroupSimulated ? "secondary" : "outline"}
+                    className={`flex-1 gap-1.5 ${isGroupSimulated ? "border-primary/30" : ""}`}
+                    onClick={() => toggleSimulation(key, group)}
+                    disabled={selected.size === 0}
+                  >
+                    {isGroupSimulated ? (
+                      <><CheckCircle2 className="h-4 w-4" /> Geaccepteerd</>
+                    ) : (
+                      <><FlaskConical className="h-4 w-4" /> Simuleer</>
+                    )}
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={() => createGroup(group)}
+                    disabled={isCreating || selected.size === 0}
+                  >
+                    {isCreating ? "Aanmaken..." : `Aanmaken (${selected.size})`}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           );
