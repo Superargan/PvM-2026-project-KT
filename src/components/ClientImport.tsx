@@ -637,9 +637,11 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         if (gender) updateData.gender = gender;
         if (school_id) {
           updateData.school_id = school_id;
+          // Also set neighborhood from school
+          const school = schools.find((s: any) => s.id === school_id);
+          updateData.neighborhood_id = (school as any)?.neighborhood_id ?? null;
           // Also derive area from school if client has no area yet
           if (!existingRecord.waitlist_area_id) {
-            const school = schools.find((s: any) => s.id === school_id);
             const derivedAreaId = (school as any)?.neighborhoods?.area_id;
             if (derivedAreaId) updateData.waitlist_area_id = derivedAreaId;
           }
