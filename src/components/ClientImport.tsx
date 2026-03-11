@@ -289,16 +289,41 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     }
   };
 
+  /** Common area abbreviations / aliases */
+  const AREA_ALIASES: Record<string, string[]> = {
+    "hillegersberg-schiebroek": ["his", "hillegersberg", "schiebroek"],
+    "kralingen-crooswijk": ["kralingen", "crooswijk"],
+    "prins alexander": ["prins alexander", "prinsalexander"],
+    "ijsselmonde": ["ijsselmonde"],
+    "hoek van holland": ["hvh", "hoek van holland"],
+  };
+
   const findAreaId = (name: string | undefined): string | null => {
     if (!name) return null;
     const norm = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    if (!norm) return null;
+    
+    // Exact match
     const exact = areas.find((a) => a.name.toLowerCase().trim() === norm);
     if (exact) return exact.id;
+    
+    // Contains match
     const contains = areas.find((a) => {
       const aNorm = a.name.toLowerCase().trim();
       return aNorm.includes(norm) || norm.includes(aNorm);
     });
-    return contains?.id ?? null;
+    if (contains) return contains.id;
+    
+    // Alias match
+    for (const area of areas) {
+      const areaKey = area.name.toLowerCase().trim();
+      const aliases = AREA_ALIASES[areaKey];
+      if (aliases && aliases.some(alias => norm === alias || norm.includes(alias) || alias.includes(norm))) {
+        return area.id;
+      }
+    }
+    
+    return null;
   };
 
   const findReferrerId = (name: string | undefined, schoolId: string | null): string | null => {
