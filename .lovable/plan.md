@@ -1,59 +1,43 @@
 
 
-# Plan: Testomgeving 2025 met Kanjertrainingen
+# Plan: Test voor Single Source of Truth in gedeelde logica
 
-## Huidige situatie
+## Bevindingen
 
-| Gegeven | Aantal |
-|---------|--------|
-| Programma's (2026, KT) | 28 (te_plannen) + 3 (ingepland) |
-| Trainers | 1 (Patrick van Mastricht) |
-| Scholen | 162 |
-| Gebieden | 14 (alle Rotterdamse gebieden) |
-| Cliënten | 1 |
-| Sessies | 10 |
+Er zijn meerdere plekken waar dezelfde logica is gedupliceerd in plaats van `clientUtils.ts` te gebruiken:
 
-Er bestaan nog geen 2025-programma's. Alle huidige KT-nummers beginnen met 26xxx.
+| Duplicatie | Locatie | Probleem |
+|---|---|---|
+| `calculateAge` | `ClientDetailPage.tsx` regel 23-30 | Eigen implementatie (handmatige berekening i.p.v. `differenceInYears`) |
+| `ageCategory` / `ageCategoryLabel` | `RapportagesPage.tsx` regel 34-48 | Eigen leeftijdscategorie-functies, andere grenzen (0-5, 6-9 vs 5-7, 8-12) |
+| Inline leeftijdsberekening | `WaitlistManager.tsx` regel 141-143 | `differenceInYears` + inline ageGroup logica |
+| Inline leeftijdsberekening | `PlanningPage.tsx` regel 51-53 | `differenceInYears` + inline filterlogica |
 
-## Wat er nodig is
+## Wat de test valideert
 
-Om realistisch te testen hebben we voor 5 Kanjertrainingen (2025) het volgende nodig:
+Een unit test in `src/test/singleSourceOfTruth.test.ts` die:
 
-1. **5 KT-programma's** met naam `KT - 25001` t/m `KT - 25005`, status `afgerond`, met start/einddatum in 2025, leeftijdscategorie, en gekoppeld aan een gebied/school
-2. **Trainers** - minimaal 4-6 extra trainers om realistisch 2 per programma te koppelen
-3. **Cliënten** - minimaal 35-40 kinderen (7-8 per groep) met naam, geboortedatum, school
-4. **Sessies** - 10 bijeenkomsten per programma (standaard KT = 10 lessen)
-5. **Presentie** - aanwezigheidsregistratie per sessie per kind
-6. **Koppelingen** - program_staff en program_clients records
+1. **Controleert dat `calculateAge` consistent werkt** -- dezelfde input geeft dezelfde output ongeacht welke methode wordt gebruikt (handmatig vs date-fns)
+2. **Controleert dat `getAgeCategoryPlanning` de enige bron is voor leeftijdscategorieën** -- test de grenzen (4, 5, 7, 8, 12, 13 jaar)
+3. **Controleert dat `resolveAreaId` correct fallback-logica toepast** -- waitlist_area_id > school > null
+4. **Controleert dat `getMatchType` consistent match-prioritering toepast**
 
-## Aanpak
+## Aanvullende fix
 
-### Stap 1: Testdata genereren via SQL
-Ik maak een script dat via database-inserts de volgende testdata aanmaakt:
+Naast de test ook de duplicaties oplossen:
+- `ClientDetailPage.tsx`: lokale `calculateAge` vervangen door import uit `clientUtils`
+- `WaitlistManager.tsx`: inline leeftijdsberekening vervangen door `calculateAge` + `getAgeGroup`
+- `RapportagesPage.tsx`: `ageCategory`/`ageCategoryLabel` vervangen door import uit `clientUtils`
+- `PlanningPage.tsx`: inline `differenceInYears` vervangen door `getAgeCategoryPlanning`
 
-- **5 programma's**: KT - 25001 t/m 25005, verdeeld over verschillende gebieden, mix van 5-7 en 8-12 jaar, status `afgerond`, periode jan-jun 2025
-- **6 trainers**: realistische Nederlandse namen, gekoppeld aan scholen
-- **40 cliënten**: kinderen met naam, geboortedatum (passend bij leeftijdscategorie), school, oudergegevens, intake_status `afgerond`
-- **50 sessies**: 10 per programma, wekelijks verspreid over de periode
-- **Koppelingen**: elke training 2 trainers + 7-8 kinderen
-- **Presentie**: realistische aanwezigheid (~85%)
+## Technische details
 
-### Stap 2: Bestanden inlezen
-Je noemde dat je bestanden hebt met 2025-gegevens. Na stap 1 kun je die uploaden zodat we echte data gebruiken in plaats van (of naast) gegenereerde testdata. We kunnen dan bestaande records bijwerken of aanvullen.
+**Nieuwe bestanden:**
+- `src/test/singleSourceOfTruth.test.ts` -- vitest unit tests
 
-### Stap 3: Validatie
-Na het inladen controleren we of:
-- Programma's correct op de kaarten verschijnen
-- Trainers en deelnemers zichtbaar zijn op de detailpagina
-- Presentie en sessies kloppen
-- Filters en rapportages werken met de 2025-data
-
-## Vraag aan jou
-
-Voordat ik begin:
-
-- **Wil je eerst met puur gegenereerde testdata starten (5 programma's)**, zodat je daarna je eigen bestanden kunt uploaden om aan te vullen of te corrigeren?
-- **Of wil je eerst je bestanden delen**, zodat ik de echte 2025-gegevens direct kan verwerken?
-
-De eerste optie is het snelst om mee te testen; de tweede geeft meteen realistische data.
+**Gewijzigde bestanden:**
+- `src/pages/ClientDetailPage.tsx` -- verwijder lokale `calculateAge`, import uit clientUtils
+- `src/components/WaitlistManager.tsx` -- gebruik `calculateAge` + `getAgeGroup` uit clientUtils
+- `src/pages/RapportagesPage.tsx` -- gebruik functies uit clientUtils
+- `src/pages/PlanningPage.tsx` -- gebruik `getAgeCategoryPlanning` uit clientUtils
 
