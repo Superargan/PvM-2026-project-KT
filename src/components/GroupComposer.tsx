@@ -101,59 +101,12 @@ export default function GroupComposer() {
     },
   });
 
-  // Build availability map
-  const availByClient = useMemo(() => {
-    const m: Record<string, { dayOfWeek: number; dayName: string; startTime: string; endTime: string }[]> = {};
-    const dayNames = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"];
-    allAvailability.forEach((a: any) => {
-      if (!m[a.client_id]) m[a.client_id] = [];
-      const dow = getDay(parseISO(a.available_date));
-      m[a.client_id].push({
-        dayOfWeek: dow,
-        dayName: dayNames[dow],
-        startTime: a.start_time ?? "09:00",
-        endTime: a.end_time ?? "17:00",
-      });
-    });
-    return m;
-  }, [allAvailability]);
+  // Build availability map (central helper, no fallbacks)
+  const availByClient = useMemo(() => buildAvailabilityByClient(allAvailability as any), [allAvailability]);
 
-  // Find best overlapping timeslot
+  // Find best overlapping timeslot (central helper)
   const getSuggestion = (clientIds: Set<string>) => {
-    if (clientIds.size === 0) return null;
-    const dayStats: Record<number, { count: number; dayName: string; starts: string[]; ends: string[] }> = {};
-    const dayNames = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"];
-    
-    clientIds.forEach((cid) => {
-      const avail = availByClient[cid];
-      if (!avail) return;
-      const seenDays = new Set<number>();
-      avail.forEach((a) => {
-        if (seenDays.has(a.dayOfWeek)) return;
-        seenDays.add(a.dayOfWeek);
-        if (!dayStats[a.dayOfWeek]) {
-          dayStats[a.dayOfWeek] = { count: 0, dayName: dayNames[a.dayOfWeek], starts: [], ends: [] };
-        }
-        dayStats[a.dayOfWeek].count++;
-        dayStats[a.dayOfWeek].starts.push(a.startTime);
-        dayStats[a.dayOfWeek].ends.push(a.endTime);
-      });
-    });
-
-    const entries = Object.values(dayStats).filter(d => d.count >= 2);
-    if (entries.length === 0) return null;
-    entries.sort((a, b) => b.count - a.count);
-    const best = entries[0];
-    const latestStart = best.starts.sort().reverse()[0];
-    const earliestEnd = best.ends.sort()[0];
-    
-    return {
-      dayName: best.dayName,
-      startTime: latestStart <= earliestEnd ? latestStart : best.starts.sort()[0],
-      endTime: latestStart <= earliestEnd ? earliestEnd : best.ends.sort().reverse()[0],
-      overlap: best.count,
-      total: clientIds.size,
-    };
+    return getAvailabilityOverlap(clientIds, availByClient);
   };
 
   const { data: allTrainers = [] } = useQuery({
