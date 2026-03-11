@@ -11,6 +11,7 @@ import ClientImport from "@/components/ClientImport";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 import { getAgeGroup } from "@/lib/clientUtils";
+import { areaKeys } from "@/lib/queryKeys";
 
 const statusLabels: Record<string, string> = {
   waiting: "Wachtend",

@@ -2,6 +2,7 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { areaKeys } from "@/lib/queryKeys";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, Save, User, ClipboardList, BookOpen, Shield, FileText, Download, CalendarDays, Trash2 } from "lucide-react";
 import AvailabilityManager from "@/components/AvailabilityManager";
