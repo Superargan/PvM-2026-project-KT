@@ -255,7 +255,7 @@ function parseAvailabilityCell(val: string | undefined): { available: boolean; s
 }
 
 /** Generate dates for a specific day of week over the next N days */
-function generateDatesForDay(dayIndex: number, days: number = 90): string[] {
+function generateDatesForDay(dayIndex: number, days: number = 122): string[] {
   const dates: string[] = [];
   const start = new Date();
   start.setHours(0, 0, 0, 0);
@@ -824,7 +824,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
           }
           const avails = availMap[idx] ?? [];
           for (const a of avails) {
-            const dates = generateDatesForDay(a.dayIndex, 90);
+            const dates = generateDatesForDay(a.dayIndex, 122);
             for (const date of dates) {
               availInserts.push({ client_id: row.id, available_date: date, start_time: a.startTime, end_time: a.endTime, notes: a.notes });
             }
@@ -865,7 +865,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         await supabase.from("client_availability").delete().eq("client_id", upd.id).gte("available_date", today);
         const availInserts: { client_id: string; available_date: string; start_time: string; end_time: string; notes: string | null }[] = [];
         for (const a of upd.availability) {
-          const dates = generateDatesForDay(a.dayIndex, 90);
+          const dates = generateDatesForDay(a.dayIndex, 122);
           for (const date of dates) {
             availInserts.push({ client_id: upd.id, available_date: date, start_time: a.startTime, end_time: a.endTime, notes: a.notes });
           }
