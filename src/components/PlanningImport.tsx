@@ -481,7 +481,7 @@ function weekdayGridToEntries(
   rows: ParsedRow[],
   nameKey: string,
   weekdayColumns: { key: string; weekday: number; label: string }[],
-  months: number = 3
+  months: number = 4
 ): AvailabilityEntry[] {
   const entries: AvailabilityEntry[] = [];
   // Pre-compute all dates per weekday
