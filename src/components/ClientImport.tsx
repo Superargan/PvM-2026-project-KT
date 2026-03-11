@@ -798,11 +798,16 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     // Batch insert new records (chunks of 50)
     for (let i = 0; i < inserts.length; i += 50) {
       const chunk = inserts.slice(i, i + 50);
-      // Extract and remove __reserveAreas before inserting
+      // Extract and remove internal fields before inserting
       const reserveMap = chunk.map((r: any) => {
         const reserves = r.__reserveAreas ?? [];
         delete r.__reserveAreas;
         return reserves;
+      });
+      const availMap = chunk.map((r: any) => {
+        const avail = r.__availability ?? [];
+        delete r.__availability;
+        return avail as ParsedAvailability[];
       });
       const { data: insertedRows, error } = await supabase.from("clients").insert(chunk).select("id");
       if (error) {
@@ -811,14 +816,28 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         added += (insertedRows ?? chunk).length;
         // Insert reserve area preferences for newly inserted clients
         const prefInserts: { client_id: string; area_id: string; preference_order: number }[] = [];
+        const availInserts: { client_id: string; available_date: string; start_time: string; end_time: string; notes: string | null }[] = [];
         (insertedRows ?? []).forEach((row: any, idx: number) => {
           const reserves = reserveMap[idx] ?? [];
           for (const r of reserves) {
             prefInserts.push({ client_id: row.id, area_id: r.area_id, preference_order: r.order });
           }
+          const avails = availMap[idx] ?? [];
+          for (const a of avails) {
+            const dates = generateDatesForDay(a.dayIndex, 90);
+            for (const date of dates) {
+              availInserts.push({ client_id: row.id, available_date: date, start_time: a.startTime, end_time: a.endTime, notes: a.notes });
+            }
+          }
         });
         if (prefInserts.length > 0) {
           await supabase.from("client_area_preferences").insert(prefInserts);
+        }
+        if (availInserts.length > 0) {
+          // Insert in chunks of 200 to avoid payload limits
+          for (let ai = 0; ai < availInserts.length; ai += 200) {
+            await supabase.from("client_availability").insert(availInserts.slice(ai, ai + 200));
+          }
         }
       }
     }
