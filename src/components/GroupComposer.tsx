@@ -134,6 +134,18 @@ export default function GroupComposer() {
     return m;
   }, [areas]);
 
+  // Compute which clients are "claimed" by simulated groups
+  const simulatedClientIds = useMemo(() => {
+    const ids = new Set<string>();
+    simulatedGroups.forEach(simKey => {
+      const sel = selectedClients[simKey];
+      if (sel) sel.forEach(id => ids.add(id));
+    });
+    return ids;
+  }, [simulatedGroups, selectedClients]);
+
+  const isSimulating = simulatedGroups.size > 0;
+
   // Group clients by area + age category
   const groups: GroupedClients[] = useMemo(() => {
     const map = new Map<string, GroupedClients>();
@@ -142,9 +154,12 @@ export default function GroupComposer() {
       const ageCategories: AgeCategory[] = ["5-7 jaar", "8-12 jaar"];
       ageCategories.forEach((ageCategory) => {
         const key = `${area.id}__${ageCategory}`;
+        const isSimulated = simulatedGroups.has(key);
         const matchedClients: ClientWithMatch[] = [];
 
         waitlistClients.forEach((client: any) => {
+          // If this group is NOT simulated, exclude clients claimed by other simulated groups
+          if (!isSimulated && simulatedClientIds.has(client.id)) return;
           const ageCat = getAgeCategoryPlanning(client.date_of_birth);
           if (ageCat !== ageCategory) return;
           const mt = getMatchType(client, area.id, prefsByClient);
@@ -165,17 +180,40 @@ export default function GroupComposer() {
     });
 
     return Array.from(map.values()).sort((a, b) => b.clients.length - a.clients.length);
-  }, [waitlistClients, areas, areaMap, prefsByClient]);
+  }, [waitlistClients, areas, areaMap, prefsByClient, simulatedGroups, simulatedClientIds]);
 
   // Clients without area or age
   const unassigned = useMemo(() => {
-    return waitlistClients.filter((c: any) => !resolveAreaId(c) || !getAgeCategoryPlanning(c.date_of_birth));
-  }, [waitlistClients]);
+    return waitlistClients.filter((c: any) => {
+      if (simulatedClientIds.has(c.id)) return false;
+      return !resolveAreaId(c) || !getAgeCategoryPlanning(c.date_of_birth);
+    });
+  }, [waitlistClients, simulatedClientIds]);
 
   const filteredGroups = useMemo(() => {
     if (filterArea === "alle") return groups;
     return groups.filter(g => g.areaId === filterArea);
   }, [groups, filterArea]);
+
+  const toggleSimulation = (key: string, group: GroupedClients) => {
+    setSimulatedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        // Ensure selectedClients is populated for this key
+        if (!selectedClients[key]) {
+          setSelectedClients(sc => ({ ...sc, [key]: new Set(group.clients.map(cm => cm.client.id)) }));
+        }
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const resetSimulation = () => {
+    setSimulatedGroups(new Set());
+  };
 
   const oudertrainers = useMemo(() => {
     return allTrainers.filter((t: any) =>
