@@ -848,3 +848,70 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
     </div>
   );
 }
+
+function DuplicateScan({ clients, isLoading, onNavigate, onEdit }: {
+  clients: any[];
+  isLoading: boolean;
+  onNavigate: (id: string) => void;
+  onEdit: (client: any) => void;
+}) {
+  const { findAllDuplicateGroups, statusLabels, calculateAge } = require("@/lib/clientUtils");
+  const groups = findAllDuplicateGroups(clients);
+
+  if (isLoading) {
+    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  }
+
+  if (groups.length === 0) {
+    return (
+      <div className="rounded-xl border border-border bg-card p-6 text-center">
+        <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
+        <p className="text-sm font-semibold text-foreground">Geen duplicaten gevonden</p>
+        <p className="text-xs text-muted-foreground mt-1">Alle {clients.length} deelnemers hebben unieke namen.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        <span className="font-semibold text-foreground">{groups.length}</span> groep(en) met mogelijke duplicaten gevonden
+      </p>
+      {groups.map((group) => (
+        <div key={group.key} className="rounded-xl border border-amber-300 bg-card p-4 space-y-2">
+          <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Users className="h-4 w-4 text-amber-600" />
+            {group.clients[0].first_name} {group.clients[0].last_name}
+            <Badge variant="outline" className="text-[10px]">{group.clients.length}×</Badge>
+          </p>
+          <div className="divide-y divide-border">
+            {group.clients.map((c: any) => (
+              <div key={c.id} className="flex items-center gap-3 py-2 text-sm">
+                <span
+                  className="text-primary hover:underline cursor-pointer font-medium min-w-[140px]"
+                  onClick={() => onNavigate(c.id)}
+                >
+                  {c.first_name} {c.last_name}
+                </span>
+                {c.date_of_birth && (
+                  <span className="text-muted-foreground text-xs">
+                    geb. {c.date_of_birth} ({calculateAge(c.date_of_birth)} jr)
+                  </span>
+                )}
+                <Badge variant="outline" className="text-[10px]">
+                  {statusLabels[c.intake_status ?? "nieuw"] ?? c.intake_status}
+                </Badge>
+                {c.schools?.name && (
+                  <span className="text-muted-foreground text-xs">{c.schools.name}</span>
+                )}
+                <Button size="sm" variant="ghost" className="ml-auto" onClick={() => onEdit(c)}>
+                  <Pencil className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
