@@ -143,9 +143,10 @@ export default function ClientenPage() {
               </DialogHeader>
               <form onSubmit={handleAddClient} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div><Label>Voornaam *</Label><Input name="first_name" required /></div>
-                  <div><Label>Achternaam *</Label><Input name="last_name" required /></div>
+                  <div><Label>Voornaam *</Label><Input name="first_name" required value={addFirstName} onChange={(e) => setAddFirstName(e.target.value)} /></div>
+                  <div><Label>Achternaam *</Label><Input name="last_name" required value={addLastName} onChange={(e) => setAddLastName(e.target.value)} /></div>
                 </div>
+                <DuplicateWarning firstName={addFirstName} lastName={addLastName} onNavigate={(id) => { setAddOpen(false); navigate(`/clienten/${id}`); }} />
                 <div><Label>Geboortedatum</Label><Input name="date_of_birth" type="date" /></div>
                 <div><Label>Naam ouder/verzorger</Label><Input name="guardian_name" /></div>
                 <div className="grid grid-cols-2 gap-4">
