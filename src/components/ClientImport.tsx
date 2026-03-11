@@ -427,18 +427,42 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       const areaName = findCol(row, "Gebied", "gebied", "Area", "Primair gebied");
       const waitlist_area_id = findAreaId(areaName);
 
-      // Reserve areas — look for columns like "Reserve gebied 1", "Reserve 1", "Reservegebied", etc.
+      // Reserve areas — look for columns like "Reserve gebied 1", "Reservegebied", etc.
       const reserveAreaIds: { area_id: string; order: number }[] = [];
+      
+      // First try numbered columns (Reserve gebied 1, 2, 3)
+      let foundNumberedReserve = false;
       for (let ri = 1; ri <= 3; ri++) {
         const reserveName = findCol(
           row,
           `Reserve gebied ${ri}`, `Reservegebied ${ri}`, `Reserve ${ri}`,
           `reserve gebied ${ri}`, `reservegebied ${ri}`, `reserve ${ri}`,
-          ...(ri === 1 ? ["Reserve gebied", "Reservegebied", "reserve gebied", "reservegebied"] : [])
         );
         if (reserveName) {
+          foundNumberedReserve = true;
           const areaId = findAreaId(reserveName);
           if (areaId) reserveAreaIds.push({ area_id: areaId, order: ri });
+        }
+      }
+
+      // If no numbered columns found, try single "Reservegebied" column with comma/en-separated values
+      if (!foundNumberedReserve) {
+        const singleReserve = findCol(row, "Reservegebied", "Reserve gebied", "reservegebied", "reserve gebied");
+        if (singleReserve) {
+          // Split on comma, " en ", " of ", semicolon — but NOT on " - " (that's area-neighborhood)
+          const parts = singleReserve
+            .split(/[,;]|\sen\s/)
+            .map((p: string) => p.trim())
+            .filter(Boolean);
+          let order = 1;
+          for (const part of parts) {
+            // Extract area name: strip neighborhood suffix after " - "
+            const areaNamePart = part.split(/\s*-\s*/)[0].trim();
+            const areaId = findAreaId(areaNamePart);
+            if (areaId && !reserveAreaIds.some(r => r.area_id === areaId)) {
+              reserveAreaIds.push({ area_id: areaId, order: order++ });
+            }
+          }
         }
       }
 
