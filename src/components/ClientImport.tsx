@@ -454,7 +454,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       
       // Auto-derive area from school if not explicitly provided
       if (!waitlist_area_id && school_id) {
-        const school = allSchools.find((s: any) => s.id === school_id);
+        const school = schools.find((s: any) => s.id === school_id);
         const derivedAreaId = (school as any)?.neighborhoods?.area_id;
         if (derivedAreaId) waitlist_area_id = derivedAreaId;
       }
