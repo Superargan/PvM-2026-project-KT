@@ -134,6 +134,9 @@ function mapOutlookRow(row: Record<string, any>) {
 
 export default function ScholenPage() {
   const [search, setSearch] = useState("");
+  const [filterAreaId, setFilterAreaId] = useState<string>("all");
+  const [filterNeighborhoodId, setFilterNeighborhoodId] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("aanmeldingen");
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
