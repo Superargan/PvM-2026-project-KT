@@ -173,7 +173,7 @@ export default function ScholenPage() {
     queryFn: async () => {
       let query = supabase
         .from("schools")
-        .select("*, neighborhoods(name, areas(name)), referrers(id, name, function_title, email, phone)")
+        .select("*, neighborhoods(name, area_id, areas(name)), referrers(id, name, function_title, email, phone)")
         .order("name");
 
       if (search.trim()) {
