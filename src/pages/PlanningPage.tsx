@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval, parseISO, startOfMonth, endOfMonth, addMonths, subMonths, differenceInYears, getDay } from "date-fns";
+import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval, parseISO, startOfMonth, endOfMonth, addMonths, subMonths, getDay } from "date-fns";
+import { getAgeCategoryPlanning } from "@/lib/clientUtils";
 import { nl } from "date-fns/locale";
 import { CalendarDays, ChevronLeft, ChevronRight, Users, UserCog, Clock, MapPin, Filter, Plus, X, FileSpreadsheet, Star, Palmtree, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -47,11 +48,7 @@ function AvailabilitySummaryPanel({ filterArea, filterAge, areaName }: { filterA
       if (error) throw error;
       // Filter by age category
       return (data ?? []).filter((c: any) => {
-        if (!c.date_of_birth) return false;
-        const age = differenceInYears(new Date(), parseISO(c.date_of_birth));
-        if (filterAge === "5-7 jaar") return age >= 5 && age <= 7;
-        if (filterAge === "8-12 jaar") return age >= 8 && age <= 12;
-        return false;
+        return getAgeCategoryPlanning(c.date_of_birth) === filterAge;
       });
     },
   });

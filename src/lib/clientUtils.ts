@@ -70,6 +70,27 @@ export function getAgeGroup(dob: string | null): string {
   return `${age} jaar`;
 }
 
+/** Rapportage-specifieke leeftijdscategorie (fijnmaziger) */
+export function getAgeCategoryReport(dob: string | null): string {
+  if (!dob) return "Onbekend";
+  const age = calculateAge(dob);
+  if (age === null) return "Onbekend";
+  if (age < 6) return "0-5";
+  if (age < 10) return "6-9";
+  if (age < 13) return "10-12";
+  if (age < 16) return "13-15";
+  return "16+";
+}
+
+/** Rapportage leeftijdslabel (planning-stijl) */
+export function getAgeCategoryReportLabel(dob: string | null): string {
+  if (!dob) return "Onbekend";
+  const age = calculateAge(dob);
+  if (age === null) return "Onbekend";
+  if (age <= 7) return "5 - 7 jaar";
+  return "8 - 12 jaar";
+}
+
 export const statusLabels: Record<string, string> = {
   nieuw: "Aanmelding",
   intake_gepland: "Intake gepland",

@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, UserPlus, Clock, XCircle, Upload, Pencil } from "lucide-react";
 import ClientImport from "@/components/ClientImport";
-import { format, differenceInYears } from "date-fns";
+import { format } from "date-fns";
 import { nl } from "date-fns/locale";
+import { getAgeGroup } from "@/lib/clientUtils";
 
 const statusLabels: Record<string, string> = {
   waiting: "Wachtend",
@@ -138,10 +139,7 @@ export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => 
             </TableHeader>
             <TableBody>
               {waitlistClients.map((client: any) => {
-                const age = client.date_of_birth ? differenceInYears(new Date(), new Date(client.date_of_birth)) : null;
-                const ageGroup = age !== null
-                  ? age >= 5 && age <= 7 ? "5-7 jaar" : age >= 8 && age <= 12 ? "8-12 jaar" : `${age} jaar`
-                  : "—";
+                const ageGroup = getAgeGroup(client.date_of_birth);
 
                 return (
                 <TableRow key={client.id}>

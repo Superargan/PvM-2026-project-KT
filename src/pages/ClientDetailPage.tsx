@@ -19,37 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
-
-function calculateAge(dob: string | null): number | null {
-  if (!dob) return null;
-  const birth = new Date(dob);
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--;
-  return age;
-}
-
-const statusLabels: Record<string, string> = {
-  nieuw: "Aanmelding",
-  intake_gepland: "Intake gepland",
-  intake_afgerond: "Intake afgerond",
-  wachtlijst: "Wachtlijst",
-  actief: "Deelnemer",
-  training_afgerond: "Training afgerond",
-  tussentijds_gestopt: "Tussentijds gestopt",
-  niet_deelnemen: "Niet deelnemen",
-};
-
-const statusStyles: Record<string, string> = {
-  nieuw: "status-rood",
-  intake_gepland: "status-oranje",
-  intake_afgerond: "status-groen",
-  wachtlijst: "status-oranje",
-  actief: "status-groen",
-  training_afgerond: "status-groen",
-  tussentijds_gestopt: "status-rood",
-  niet_deelnemen: "status-rood",
-};
+import { calculateAge, statusLabels, statusStyles } from "@/lib/clientUtils";
 
 function IntakeProgress({ client }: { client: any }) {
   const fields = [
