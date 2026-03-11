@@ -22,7 +22,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
   const [fixingAreas, setFixingAreas] = useState(false);
 
   const { data: clients = [] } = useQuery({
-    queryKey: ["clients", "waitlist-overview"],
+    queryKey: clientKeys.waitlistOverview,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
