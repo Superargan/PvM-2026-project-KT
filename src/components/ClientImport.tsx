@@ -518,8 +518,11 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         }
       }
 
-      // Phone
-      const guardian_phone = findCol(row, "Telefoonnummer", "telefoon", "Telefoon", "Tel", "phone") ?? null;
+      // Guardian fields
+      const guardian_name = findCol(row, "Naam ouder", "Naam verzorger", "Ouder", "Verzorger", "Naam ouder/verzorger", "guardian_name") ?? null;
+      const guardian_phone = findCol(row, "Telefoonnummer", "telefoon", "Telefoon", "Tel", "phone", "Telefoonnummer ouder", "Tel ouder") ?? null;
+      const guardian_phone_alt = findCol(row, "Telefoon alt", "Telefoonnummer 2", "Tel 2", "guardian_phone_alt", "Tweede telefoonnummer") ?? null;
+      const guardian_email = findCol(row, "E-mail ouder", "Email ouder", "E-mail", "Email", "guardian_email", "Emailadres") ?? null;
 
       // Intake date
       const intakeDateRaw = findCol(row, "Datum Intake", "Intake datum", "datum intake", "intake_date");
@@ -584,6 +587,9 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         class_group,
         school_id,
         waitlist_area_id,
+        guardian_name,
+        guardian_phone_alt,
+        guardian_email,
         postal_code,
         guardian_phone,
         intake_date,
