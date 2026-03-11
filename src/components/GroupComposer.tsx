@@ -444,6 +444,21 @@ export default function GroupComposer() {
         )}
       </div>
 
+      {/* Simulation banner */}
+      {isSimulating && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <FlaskConical className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-foreground">
+              Simulatie actief — {simulatedGroups.size} groep(en) proforma geaccepteerd, {simulatedClientIds.size} deelnemers gereserveerd
+            </span>
+          </div>
+          <Button variant="outline" size="sm" onClick={resetSimulation} className="gap-1.5">
+            <RotateCcw className="h-3 w-3" /> Reset simulatie
+          </Button>
+        </div>
+      )}
+
       {filteredGroups.length === 0 && (
         <div className="rounded-xl border border-border bg-card p-8 text-center">
           <Users className="h-10 w-10 mx-auto text-muted-foreground/50 mb-2" />
