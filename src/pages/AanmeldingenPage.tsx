@@ -188,17 +188,18 @@ export default function AanmeldingenPage() {
   };
 
   const updateField = (field: keyof EditForm, value: any) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
-    // Auto-fill area and neighborhood from school
-    if (field === "school_id" && editClient) {
-      const school = schools.find((s: any) => s.id === value);
-      const areaId = (school as any)?.neighborhoods?.area_id;
-      if (areaId) {
-        handleWaitlist(editClient.id, editClient.waitlist_status ?? "waiting", areaId);
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      // Auto-fill area and neighborhood from school (consistent met ClientDetailPage)
+      if (field === "school_id") {
+        const school = schools.find((s: any) => s.id === value);
+        const areaId = (school as any)?.neighborhoods?.area_id;
+        if (areaId) next.waitlist_area_id = areaId;
+        next.neighborhood_id = (school as any)?.neighborhood_id ?? null;
       }
-      setForm((prev) => ({ ...prev, neighborhood_id: (school as any)?.neighborhood_id ?? null }));
-    }
+      return next;
+    });
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
   const addAssignment = async (staffId: string) => {
