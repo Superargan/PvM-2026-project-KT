@@ -49,7 +49,7 @@ export default function ProgrammasPage() {
   const { toast } = useToast();
 
   const { data: areas = [] } = useQuery({
-    queryKey: ["areas"],
+    queryKey: areaKeys.all,
     queryFn: async () => {
       const { data, error } = await supabase.from("areas").select("*").order("name");
       if (error) throw error;

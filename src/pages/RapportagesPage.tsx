@@ -99,7 +99,7 @@ export default function RapportagesPage() {
   });
 
   const { data: areas = [] } = useQuery({
-    queryKey: ["rpt_areas"],
+    queryKey: areaKeys.all,
     queryFn: async () => {
       const { data, error } = await supabase.from("areas").select("id, name");
       if (error) throw error;

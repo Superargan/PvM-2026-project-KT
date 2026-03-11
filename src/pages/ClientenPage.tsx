@@ -57,7 +57,7 @@ export default function ClientenPage() {
   });
 
   const { data: areas = [] } = useQuery({
-    queryKey: ["areas-list"],
+    queryKey: areaKeys.all,
     queryFn: async () => {
       const { data, error } = await supabase.from("areas").select("id, name").order("name");
       if (error) throw error;

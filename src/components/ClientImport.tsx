@@ -198,7 +198,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
   });
 
   const { data: areas = [] } = useQuery({
-    queryKey: ["areas-import"],
+    queryKey: areaKeys.all,
     queryFn: async () => {
       const { data } = await supabase.from("areas").select("id, name").order("name");
       return data ?? [];

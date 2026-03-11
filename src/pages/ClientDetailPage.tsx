@@ -87,7 +87,7 @@ export default function ClientDetailPage() {
 
   // Fetch areas for dropdown
   const { data: areas = [] } = useQuery({
-    queryKey: ["areas-list"],
+    queryKey: areaKeys.all,
     queryFn: async () => {
       const { data } = await supabase.from("areas").select("id, name").order("name");
       return data ?? [];
