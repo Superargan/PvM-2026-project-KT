@@ -453,11 +453,15 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       const areaName = findCol(row, "Gebied", "gebied", "Area", "Primair gebied");
       let waitlist_area_id = findAreaId(areaName);
       
-      // Auto-derive area from school if not explicitly provided
-      if (!waitlist_area_id && school_id) {
+      // Auto-derive area and neighborhood from school if not explicitly provided
+      let neighborhood_id: string | null = null;
+      if (school_id) {
         const school = schools.find((s: any) => s.id === school_id);
-        const derivedAreaId = (school as any)?.neighborhoods?.area_id;
-        if (derivedAreaId) waitlist_area_id = derivedAreaId;
+        neighborhood_id = (school as any)?.neighborhood_id ?? null;
+        if (!waitlist_area_id) {
+          const derivedAreaId = (school as any)?.neighborhoods?.area_id;
+          if (derivedAreaId) waitlist_area_id = derivedAreaId;
+        }
       }
 
       // Reserve areas — look for columns like "Reserve gebied 1", "Reservegebied", etc.
