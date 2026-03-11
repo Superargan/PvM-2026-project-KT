@@ -363,7 +363,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
                     </td>
                   ))}
                   <td className="px-4 py-2 text-center text-sm font-bold text-foreground">
-                    {clients.length - matrix.noArea - matrix.noAge}
+                    {clients.length - matrix.noArea - matrix.noDob - matrix.outsideRange}
                   </td>
                 </tr>
               </tfoot>
