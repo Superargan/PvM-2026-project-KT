@@ -289,16 +289,41 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     }
   };
 
+  /** Common area abbreviations / aliases */
+  const AREA_ALIASES: Record<string, string[]> = {
+    "hillegersberg-schiebroek": ["his", "hillegersberg", "schiebroek"],
+    "kralingen-crooswijk": ["kralingen", "crooswijk"],
+    "prins alexander": ["prins alexander", "prinsalexander"],
+    "ijsselmonde": ["ijsselmonde"],
+    "hoek van holland": ["hvh", "hoek van holland"],
+  };
+
   const findAreaId = (name: string | undefined): string | null => {
     if (!name) return null;
     const norm = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    if (!norm) return null;
+    
+    // Exact match
     const exact = areas.find((a) => a.name.toLowerCase().trim() === norm);
     if (exact) return exact.id;
+    
+    // Contains match
     const contains = areas.find((a) => {
       const aNorm = a.name.toLowerCase().trim();
       return aNorm.includes(norm) || norm.includes(aNorm);
     });
-    return contains?.id ?? null;
+    if (contains) return contains.id;
+    
+    // Alias match
+    for (const area of areas) {
+      const areaKey = area.name.toLowerCase().trim();
+      const aliases = AREA_ALIASES[areaKey];
+      if (aliases && aliases.some(alias => norm === alias || norm.includes(alias) || alias.includes(norm))) {
+        return area.id;
+      }
+    }
+    
+    return null;
   };
 
   const findReferrerId = (name: string | undefined, schoolId: string | null): string | null => {
@@ -427,18 +452,42 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       const areaName = findCol(row, "Gebied", "gebied", "Area", "Primair gebied");
       const waitlist_area_id = findAreaId(areaName);
 
-      // Reserve areas — look for columns like "Reserve gebied 1", "Reserve 1", "Reservegebied", etc.
+      // Reserve areas — look for columns like "Reserve gebied 1", "Reservegebied", etc.
       const reserveAreaIds: { area_id: string; order: number }[] = [];
+      
+      // First try numbered columns (Reserve gebied 1, 2, 3)
+      let foundNumberedReserve = false;
       for (let ri = 1; ri <= 3; ri++) {
         const reserveName = findCol(
           row,
           `Reserve gebied ${ri}`, `Reservegebied ${ri}`, `Reserve ${ri}`,
           `reserve gebied ${ri}`, `reservegebied ${ri}`, `reserve ${ri}`,
-          ...(ri === 1 ? ["Reserve gebied", "Reservegebied", "reserve gebied", "reservegebied"] : [])
         );
         if (reserveName) {
+          foundNumberedReserve = true;
           const areaId = findAreaId(reserveName);
           if (areaId) reserveAreaIds.push({ area_id: areaId, order: ri });
+        }
+      }
+
+      // If no numbered columns found, try single "Reservegebied" column with comma/en-separated values
+      if (!foundNumberedReserve) {
+        const singleReserve = findCol(row, "Reservegebied", "Reserve gebied", "reservegebied", "reserve gebied");
+        if (singleReserve) {
+          // Split on comma, " en ", " of ", semicolon — but NOT on " - " (that's area-neighborhood)
+          const parts = singleReserve
+            .split(/[,;]|\sen\s/)
+            .map((p: string) => p.trim())
+            .filter(Boolean);
+          let order = 1;
+          for (const part of parts) {
+            // Extract area name: strip neighborhood suffix after " - "
+            const areaNamePart = part.split(/\s*-\s*/)[0].trim();
+            const areaId = findAreaId(areaNamePart);
+            if (areaId && !reserveAreaIds.some(r => r.area_id === areaId)) {
+              reserveAreaIds.push({ area_id: areaId, order: order++ });
+            }
+          }
         }
       }
 
