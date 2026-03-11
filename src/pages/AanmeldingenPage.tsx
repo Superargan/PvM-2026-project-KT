@@ -783,7 +783,7 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
           <div className="flex items-center gap-2">
             <School className="h-4 w-4 text-muted-foreground" />
             <p className="text-sm font-semibold text-foreground">
-              {clientsWithoutSchool.length} deelnemer(s) zonder school — koppel hieronder
+              {clientsWithoutSchool.length} aanmelder(s) zonder school — koppel hieronder
             </p>
           </div>
           <div className="space-y-2">
