@@ -583,11 +583,28 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     // Batch insert new records (chunks of 50)
     for (let i = 0; i < inserts.length; i += 50) {
       const chunk = inserts.slice(i, i + 50);
-      const { error } = await supabase.from("clients").insert(chunk);
+      // Extract and remove __reserveAreas before inserting
+      const reserveMap = chunk.map((r: any) => {
+        const reserves = r.__reserveAreas ?? [];
+        delete r.__reserveAreas;
+        return reserves;
+      });
+      const { data: insertedRows, error } = await supabase.from("clients").insert(chunk).select("id");
       if (error) {
         errors.push(`Nieuwe rijen ${i + 2}: ${error.message}`);
       } else {
-        added += chunk.length;
+        added += (insertedRows ?? chunk).length;
+        // Insert reserve area preferences for newly inserted clients
+        const prefInserts: { client_id: string; area_id: string; preference_order: number }[] = [];
+        (insertedRows ?? []).forEach((row: any, idx: number) => {
+          const reserves = reserveMap[idx] ?? [];
+          for (const r of reserves) {
+            prefInserts.push({ client_id: row.id, area_id: r.area_id, preference_order: r.order });
+          }
+        });
+        if (prefInserts.length > 0) {
+          await supabase.from("client_area_preferences").insert(prefInserts);
+        }
       }
     }
 
