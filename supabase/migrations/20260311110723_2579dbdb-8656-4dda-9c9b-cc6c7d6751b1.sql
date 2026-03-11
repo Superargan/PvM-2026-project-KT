@@ -1,0 +1,1 @@
+UPDATE public.clients SET dob_estimated = true WHERE date_of_birth IS NOT NULL AND EXTRACT(MONTH FROM date_of_birth) = 6 AND EXTRACT(DAY FROM date_of_birth) = 15;
