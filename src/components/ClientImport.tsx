@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { areaKeys } from "@/lib/queryKeys";
 
 interface ParsedRow {
   [key: string]: any;
