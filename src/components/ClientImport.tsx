@@ -629,7 +629,15 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         }
         // Always update these if provided (even if existing has value)
         if (gender) updateData.gender = gender;
-        if (school_id) updateData.school_id = school_id;
+        if (school_id) {
+          updateData.school_id = school_id;
+          // Also derive area from school if client has no area yet
+          if (!existingRecord.waitlist_area_id) {
+            const school = schools.find((s: any) => s.id === school_id);
+            const derivedAreaId = (school as any)?.neighborhoods?.area_id;
+            if (derivedAreaId) updateData.waitlist_area_id = derivedAreaId;
+          }
+        }
         if (class_group) updateData.class_group = class_group;
         // Always overwrite DOB when imported value is a real (non-estimated) date,
         // or when existing was estimated and import provides a value
