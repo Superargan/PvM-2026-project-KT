@@ -918,7 +918,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>
-            {mode === "waitlist" ? "Wachtlijst importeren uit Excel" : mode === "intake_afgerond" ? "Afgeronde intakes importeren uit Excel" : "Deelnemers importeren uit Excel"}
+            {mode === "aanvulling" ? "Aanvullingen importeren uit Excel" : mode === "waitlist" ? "Wachtlijst importeren uit Excel" : mode === "intake_afgerond" ? "Afgeronde intakes importeren uit Excel" : "Deelnemers importeren uit Excel"}
           </DialogTitle>
         </DialogHeader>
 
