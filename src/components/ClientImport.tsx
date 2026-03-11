@@ -269,7 +269,7 @@ function generateDatesForDay(dayIndex: number, days: number = 122): string[] {
   return dates;
 }
 
-type ImportMode = "default" | "waitlist" | "intake_afgerond";
+type ImportMode = "default" | "waitlist" | "intake_afgerond" | "aanvulling";
 
 interface ClientImportProps {
   open: boolean;
@@ -280,13 +280,14 @@ interface ClientImportProps {
 }
 
 const MODE_OPTIONS: { value: ImportMode; label: string; description: string }[] = [
+  { value: "aanvulling", label: "Aanvullingen", description: "Vul bestaande deelnemers aan met extra gegevens (beschikbaarheid, gebieden, school, etc.)" },
   { value: "waitlist", label: "Wachtlijst", description: "Deelnemers worden op de wachtlijst geplaatst (status: wachtlijst)" },
   { value: "intake_afgerond", label: "Afgeronde intakes", description: "Deelnemers met afgeronde intake (status: intake_afgerond)" },
   { value: "default", label: "Nieuwe aanmeldingen", description: "Nieuwe deelnemers (status wordt automatisch bepaald)" },
 ];
 
 export default function ClientImport({ open, onOpenChange, onComplete, mode: modeProp = "default" }: ClientImportProps) {
-  const [selectedMode, setSelectedMode] = useState<ImportMode>(modeProp === "choose" ? "waitlist" : modeProp);
+  const [selectedMode, setSelectedMode] = useState<ImportMode>(modeProp === "choose" ? "aanvulling" : modeProp);
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [fileName, setFileName] = useState("");
   const [importing, setImporting] = useState(false);
@@ -463,7 +464,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     // Fetch existing clients to deduplicate
     const { data: existingClients } = await supabase
       .from("clients")
-      .select("id, first_name, last_name, date_of_birth, school_id, gender, class_group, guardian_phone, postal_code");
+      .select("id, first_name, last_name, date_of_birth, school_id, gender, class_group, guardian_phone, guardian_phone_alt, guardian_email, guardian_name, postal_code, intake_status, waitlist_area_id, all_areas_flexible, neighborhood_id, referrer_id, referral_reason, intake_date, registration_date, dob_estimated");
 
     // Build lookup maps: name-only key and name+dob key
     const existingByName = new Map<string, any>();
@@ -612,6 +613,15 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         }
       }
 
+      // If no explicit "Gebied" column but we have reserve areas, use the first one as primary area
+      if (!waitlist_area_id && reserveAreaIds.length > 0) {
+        waitlist_area_id = reserveAreaIds[0].area_id;
+        // Remove it from reserves to avoid duplication
+        reserveAreaIds.splice(0, 1);
+        // Re-number remaining reserves
+        reserveAreaIds.forEach((r, i) => { r.order = i + 1; });
+      }
+
       // all_areas_flexible
       const flexRaw = findCol(row, "Flexibel", "flexibel", "Alle gebieden", "alle gebieden", "all_areas_flexible");
       const all_areas_flexible = flexRaw ? ["ja", "yes", "1", "true", "x"].includes(flexRaw.toLowerCase()) : false;
@@ -715,7 +725,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         postal_code,
         guardian_phone,
         intake_date,
-        intake_status: selectedMode === "waitlist" ? "wachtlijst" : selectedMode === "intake_afgerond" ? "intake_afgerond" : intake_status,
+        intake_status: selectedMode === "aanvulling" ? undefined : selectedMode === "waitlist" ? "wachtlijst" : selectedMode === "intake_afgerond" ? "intake_afgerond" : intake_status,
         referral_reason: referral_reason,
         referrer_id,
         ...(selectedMode === "waitlist" ? { waitlist_status: "waiting" } : {}),
@@ -898,7 +908,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     setSchoolResolutions({});
     setShowResolution(false);
     if (fileRef.current) fileRef.current.value = "";
-    if (modeProp === "choose") setSelectedMode("waitlist");
+    if (modeProp === "choose") setSelectedMode("aanvulling");
   };
 
   const mode = selectedMode; // alias for convenience
@@ -908,7 +918,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>
-            {mode === "waitlist" ? "Wachtlijst importeren uit Excel" : mode === "intake_afgerond" ? "Afgeronde intakes importeren uit Excel" : "Deelnemers importeren uit Excel"}
+            {mode === "aanvulling" ? "Aanvullingen importeren uit Excel" : mode === "waitlist" ? "Wachtlijst importeren uit Excel" : mode === "intake_afgerond" ? "Afgeronde intakes importeren uit Excel" : "Deelnemers importeren uit Excel"}
           </DialogTitle>
         </DialogHeader>
 
