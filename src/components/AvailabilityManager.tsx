@@ -395,7 +395,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
             <SelectContent className="bg-popover">
               <SelectItem value="week">Week</SelectItem>
               <SelectItem value="maand">Maand</SelectItem>
-              <SelectItem value="kwartaal">3 Maanden</SelectItem>
+              <SelectItem value="kwartaal">4 Maanden</SelectItem>
             </SelectContent>
           </Select>
         </div>
