@@ -153,6 +153,17 @@ export default function AreaPreferencesEditor({
           )}
         </div>
       )}
+
+      {/* Area notes */}
+      <div className="space-y-1">
+        <Label className="text-xs text-muted-foreground">Gebiedsnotities</Label>
+        <Textarea
+          placeholder="Notities over gebiedsvoorkeur, bijv. gegevens die niet automatisch aan een gebied gekoppeld zijn..."
+          value={areaNotes ?? ""}
+          onChange={(e) => onAreaNotesChange?.(e.target.value)}
+          className="min-h-[60px] text-sm"
+        />
+      </div>
     </div>
   );
 }
