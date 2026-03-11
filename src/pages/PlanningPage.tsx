@@ -138,7 +138,7 @@ export default function PlanningPage() {
   const [availStart, setAvailStart] = useState("09:00");
   const [availEnd, setAvailEnd] = useState("17:00");
   const [importOpen, setImportOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("agenda");
+  const [activeTab, setActiveTab] = useState("groepen");
   const [showGroupComposer, setShowGroupComposer] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
