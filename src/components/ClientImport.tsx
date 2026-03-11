@@ -255,7 +255,7 @@ function parseAvailabilityCell(val: string | undefined): { available: boolean; s
 }
 
 /** Generate dates for a specific day of week over the next N days */
-function generateDatesForDay(dayIndex: number, days: number = 90): string[] {
+function generateDatesForDay(dayIndex: number, days: number = 122): string[] {
   const dates: string[] = [];
   const start = new Date();
   start.setHours(0, 0, 0, 0);
