@@ -310,3 +310,65 @@ export function filterClients(
     return true;
   });
 }
+
+// ===== Duplicate name detection =====
+
+function normalizeName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z]/g, "")
+    .trim();
+}
+
+export interface DuplicateMatch {
+  client: any;
+  matchType: "exact" | "fuzzy";
+}
+
+/** Find potential duplicate clients by first+last name */
+export function findPotentialDuplicates(
+  firstName: string,
+  lastName: string,
+  existingClients: any[],
+  excludeId?: string
+): DuplicateMatch[] {
+  if (!firstName.trim() || !lastName.trim()) return [];
+  const normFirst = normalizeName(firstName);
+  const normLast = normalizeName(lastName);
+  if (normFirst.length < 2 || normLast.length < 2) return [];
+
+  const matches: DuplicateMatch[] = [];
+  for (const c of existingClients) {
+    if (excludeId && c.id === excludeId) continue;
+    const cFirst = normalizeName(c.first_name ?? "");
+    const cLast = normalizeName(c.last_name ?? "");
+
+    if (cFirst === normFirst && cLast === normLast) {
+      matches.push({ client: c, matchType: "exact" });
+    } else if (
+      (cFirst === normFirst && cLast.startsWith(normLast.slice(0, 3))) ||
+      (cLast === normLast && cFirst.startsWith(normFirst.slice(0, 3)))
+    ) {
+      matches.push({ client: c, matchType: "fuzzy" });
+    }
+  }
+  return matches;
+}
+
+/** Find all groups of clients with duplicate names */
+export function findAllDuplicateGroups(
+  clients: any[]
+): { key: string; clients: any[] }[] {
+  const groups: Record<string, any[]> = {};
+  for (const c of clients) {
+    const key = `${normalizeName(c.first_name ?? "")}|${normalizeName(c.last_name ?? "")}`;
+    if (!key || key === "|") continue;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(c);
+  }
+  return Object.entries(groups)
+    .filter(([, arr]) => arr.length > 1)
+    .map(([key, clients]) => ({ key, clients }));
+}
