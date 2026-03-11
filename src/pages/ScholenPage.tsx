@@ -890,9 +890,58 @@ export default function ScholenPage() {
         />
       </div>
 
+      <div className="flex flex-wrap gap-2 items-center">
+        <Select value={filterAreaId} onValueChange={(v) => { setFilterAreaId(v); setFilterNeighborhoodId("all"); }}>
+          <SelectTrigger className="w-[180px]"><SelectValue placeholder="Gebied" /></SelectTrigger>
+          <SelectContent className="bg-popover">
+            <SelectItem value="all">Alle gebieden</SelectItem>
+            {areas.map((a: any) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={filterNeighborhoodId} onValueChange={setFilterNeighborhoodId} disabled={filterAreaId === "all"}>
+          <SelectTrigger className="w-[180px]"><SelectValue placeholder="Wijk" /></SelectTrigger>
+          <SelectContent className="bg-popover">
+            <SelectItem value="all">Alle wijken</SelectItem>
+            {(filterAreaId !== "all" ? (areas.find((a: any) => a.id === filterAreaId) as any)?.neighborhoods ?? [] : []).map((n: any) => (
+              <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+          <SelectContent className="bg-popover">
+            <SelectItem value="aanmeldingen">Meeste aanmeldingen</SelectItem>
+            <SelectItem value="naam-az">Naam A-Z</SelectItem>
+            <SelectItem value="naam-za">Naam Z-A</SelectItem>
+          </SelectContent>
+        </Select>
+        {(filterAreaId !== "all" || filterNeighborhoodId !== "all") && (
+          <Button variant="ghost" size="sm" onClick={() => { setFilterAreaId("all"); setFilterNeighborhoodId("all"); }}>
+            <X className="h-3 w-3 mr-1" /> Wis filters
+          </Button>
+        )}
+      </div>
+
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-      ) : (
+      ) : (() => {
+        const filtered = schools.filter((school: any) => {
+          if (filterAreaId !== "all") {
+            const schoolAreaId = school.neighborhoods?.area_id;
+            if (schoolAreaId !== filterAreaId) return false;
+          }
+          if (filterNeighborhoodId !== "all") {
+            if (school.neighborhood_id !== filterNeighborhoodId) return false;
+          }
+          return true;
+        });
+        const sorted = [...filtered].sort((a: any, b: any) => {
+          if (sortBy === "aanmeldingen") return (getTotalClients(b.id)) - (getTotalClients(a.id));
+          if (sortBy === "naam-az") return (a.name ?? "").localeCompare(b.name ?? "", "nl");
+          if (sortBy === "naam-za") return (b.name ?? "").localeCompare(a.name ?? "", "nl");
+          return 0;
+        });
+        return (
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
           <table className="w-full">
             <thead>
@@ -908,10 +957,10 @@ export default function ScholenPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {schools.length === 0 && (
-                <tr><td colSpan={7} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen scholen gevonden</td></tr>
+              {sorted.length === 0 && (
+                <tr><td colSpan={8} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen scholen gevonden</td></tr>
               )}
-              {schools.map((school: any) => (
+              {sorted.map((school: any) => (
                 <tr key={school.id} className="transition-colors hover:bg-muted/30">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
