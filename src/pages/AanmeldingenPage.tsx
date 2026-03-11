@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import WaitlistManager from "@/components/WaitlistManager";
 import AreaPreferencesEditor from "@/components/AreaPreferencesEditor";
@@ -52,10 +52,12 @@ const editSchema = z.object({
 type EditForm = z.infer<typeof editSchema>;
 
 export default function AanmeldingenPage() {
+  const [searchParams] = useSearchParams();
+  const initialSchool = searchParams.get("school") ?? "all";
   const [activeTab, setActiveTab] = useState("lijst");
   const [search, setSearch] = useState("");
   const [filterArea, setFilterArea] = useState<string>("all");
-  const [filterSchool, setFilterSchool] = useState<string>("all");
+  const [filterSchool, setFilterSchool] = useState<string>(initialSchool);
   const [filterAge, setFilterAge] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [editOpen, setEditOpen] = useState(false);

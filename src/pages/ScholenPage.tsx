@@ -1308,13 +1308,13 @@ export default function ScholenPage() {
                 })()}
                 <div className="flex gap-2 mt-2">
                   <Button size="sm" variant="outline" onClick={() => {
-                    navigate(`/aanmeldingen`);
+                    navigate(`/aanmeldingen?school=${selectedSchool.id}`);
                     setStatsDialogOpen(false);
                   }}>
                     Naar aanmeldingen
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => {
-                    navigate(`/clienten`);
+                    navigate(`/clienten?school=${selectedSchool.id}`);
                     setStatsDialogOpen(false);
                   }}>
                     Naar deelnemers
