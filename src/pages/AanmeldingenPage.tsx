@@ -400,6 +400,13 @@ export default function AanmeldingenPage() {
                 <Input value={form.last_name ?? ""} onChange={(e) => updateField("last_name", e.target.value)} />
               </FieldWrapper>
             </div>
+            <DuplicateWarning
+              firstName={form.first_name ?? ""}
+              lastName={form.last_name ?? ""}
+              excludeId={editClient?.id}
+              clients={clients}
+              onNavigate={(id) => { setEditOpen(false); navigate(`/clienten/${id}`); }}
+            />
             <div className="grid grid-cols-3 gap-4">
               <FieldWrapper label="Geboortedatum" error={errors.date_of_birth}>
                 <Input type="date" value={form.date_of_birth ?? ""} onChange={(e) => updateField("date_of_birth", e.target.value)} max={new Date().toISOString().split("T")[0]} />
