@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, UserCog, Check, AlertTriangle, CalendarClock, Search, Calendar, Maximize2 } from "lucide-react";
+import { Users, UserCog, Check, AlertTriangle, CalendarClock, Search, Calendar, Maximize2, FlaskConical, RotateCcw, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,6 +53,7 @@ export default function GroupComposer() {
   const [expandedReserve, setExpandedReserve] = useState<Set<string>>(new Set());
   const [selectedStartDate, setSelectedStartDate] = useState<Record<string, string>>({});
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [simulatedGroups, setSimulatedGroups] = useState<Set<string>>(new Set());
 
   // Fetch waitlist clients
   const { data: waitlistClients = [] } = useQuery({
@@ -133,6 +134,18 @@ export default function GroupComposer() {
     return m;
   }, [areas]);
 
+  // Compute which clients are "claimed" by simulated groups
+  const simulatedClientIds = useMemo(() => {
+    const ids = new Set<string>();
+    simulatedGroups.forEach(simKey => {
+      const sel = selectedClients[simKey];
+      if (sel) sel.forEach(id => ids.add(id));
+    });
+    return ids;
+  }, [simulatedGroups, selectedClients]);
+
+  const isSimulating = simulatedGroups.size > 0;
+
   // Group clients by area + age category
   const groups: GroupedClients[] = useMemo(() => {
     const map = new Map<string, GroupedClients>();
@@ -141,9 +154,12 @@ export default function GroupComposer() {
       const ageCategories: AgeCategory[] = ["5-7 jaar", "8-12 jaar"];
       ageCategories.forEach((ageCategory) => {
         const key = `${area.id}__${ageCategory}`;
+        const isSimulated = simulatedGroups.has(key);
         const matchedClients: ClientWithMatch[] = [];
 
         waitlistClients.forEach((client: any) => {
+          // If this group is NOT simulated, exclude clients claimed by other simulated groups
+          if (!isSimulated && simulatedClientIds.has(client.id)) return;
           const ageCat = getAgeCategoryPlanning(client.date_of_birth);
           if (ageCat !== ageCategory) return;
           const mt = getMatchType(client, area.id, prefsByClient);
@@ -164,17 +180,40 @@ export default function GroupComposer() {
     });
 
     return Array.from(map.values()).sort((a, b) => b.clients.length - a.clients.length);
-  }, [waitlistClients, areas, areaMap, prefsByClient]);
+  }, [waitlistClients, areas, areaMap, prefsByClient, simulatedGroups, simulatedClientIds]);
 
   // Clients without area or age
   const unassigned = useMemo(() => {
-    return waitlistClients.filter((c: any) => !resolveAreaId(c) || !getAgeCategoryPlanning(c.date_of_birth));
-  }, [waitlistClients]);
+    return waitlistClients.filter((c: any) => {
+      if (simulatedClientIds.has(c.id)) return false;
+      return !resolveAreaId(c) || !getAgeCategoryPlanning(c.date_of_birth);
+    });
+  }, [waitlistClients, simulatedClientIds]);
 
   const filteredGroups = useMemo(() => {
     if (filterArea === "alle") return groups;
     return groups.filter(g => g.areaId === filterArea);
   }, [groups, filterArea]);
+
+  const toggleSimulation = (key: string, group: GroupedClients) => {
+    setSimulatedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        // Ensure selectedClients is populated for this key
+        if (!selectedClients[key]) {
+          setSelectedClients(sc => ({ ...sc, [key]: new Set(group.clients.map(cm => cm.client.id)) }));
+        }
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const resetSimulation = () => {
+    setSimulatedGroups(new Set());
+  };
 
   const oudertrainers = useMemo(() => {
     return allTrainers.filter((t: any) =>
@@ -405,6 +444,21 @@ export default function GroupComposer() {
         )}
       </div>
 
+      {/* Simulation banner */}
+      {isSimulating && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <FlaskConical className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-foreground">
+              Simulatie actief — {simulatedGroups.size} groep(en) proforma geaccepteerd, {simulatedClientIds.size} deelnemers gereserveerd
+            </span>
+          </div>
+          <Button variant="outline" size="sm" onClick={resetSimulation} className="gap-1.5">
+            <RotateCcw className="h-3 w-3" /> Reset simulatie
+          </Button>
+        </div>
+      )}
+
       {filteredGroups.length === 0 && (
         <div className="rounded-xl border border-border bg-card p-8 text-center">
           <Users className="h-10 w-10 mx-auto text-muted-foreground/50 mb-2" />
@@ -425,9 +479,10 @@ export default function GroupComposer() {
           const wachtlijstClients_ = group.clients.filter(cm => cm.client.intake_status !== "intake_afgerond");
           const showReserve = expandedReserve.has(key);
           const reserveCandidates = showReserve ? getReserveCandidates(group) : [];
+          const isGroupSimulated = simulatedGroups.has(key);
 
           return (
-            <Card key={key} className={`border-border ${expandedCard === key ? "col-span-2" : ""}`}>
+            <Card key={key} className={`border-border ${expandedCard === key ? "col-span-2" : ""} ${isGroupSimulated ? "ring-2 ring-primary/40 bg-primary/[0.02]" : ""}`}>
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div>
@@ -622,14 +677,28 @@ export default function GroupComposer() {
                   );
                 })()}
 
-                {/* Create button */}
-                <Button
-                  className="w-full"
-                  onClick={() => createGroup(group)}
-                  disabled={isCreating || selected.size === 0}
-                >
-                  {isCreating ? "Aanmaken..." : `Groep aanmaken (${selected.size} aanmelders)`}
-                </Button>
+                {/* Simulation + Create buttons */}
+                <div className="flex gap-2">
+                  <Button
+                    variant={isGroupSimulated ? "secondary" : "outline"}
+                    className={`flex-1 gap-1.5 ${isGroupSimulated ? "border-primary/30" : ""}`}
+                    onClick={() => toggleSimulation(key, group)}
+                    disabled={selected.size === 0}
+                  >
+                    {isGroupSimulated ? (
+                      <><CheckCircle2 className="h-4 w-4" /> Geaccepteerd</>
+                    ) : (
+                      <><FlaskConical className="h-4 w-4" /> Simuleer</>
+                    )}
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={() => createGroup(group)}
+                    disabled={isCreating || selected.size === 0}
+                  >
+                    {isCreating ? "Aanmaken..." : `Aanmaken (${selected.size})`}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           );
