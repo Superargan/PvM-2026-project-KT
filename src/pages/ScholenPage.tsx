@@ -1088,7 +1088,8 @@ export default function ScholenPage() {
             </tbody>
           </table>
         </div>
-      )}
+        );
+      })()}
 
       {/* Contact person management dialog */}
       <Dialog open={contactDialogOpen} onOpenChange={(open) => {
