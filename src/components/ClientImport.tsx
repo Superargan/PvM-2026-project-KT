@@ -557,7 +557,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         // Update existing record with non-null imported values
         const updateData: any = {};
         for (const [key, value] of Object.entries(recordData)) {
-          if (key === "created_at") continue; // Don't overwrite created_at
+          if (key === "created_at" || key === "__reserveAreas") continue;
           if (value !== null && value !== undefined && value !== "") {
             // Only update if existing value is empty/null
             if (!existingRecord[key] || existingRecord[key] === "") {
