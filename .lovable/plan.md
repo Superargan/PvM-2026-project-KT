@@ -1,62 +1,41 @@
 
-# Plan: Definitieve implementatie — VOLLEDIG UITGEVOERD
 
-## Status: ✅ Alle stappen voltooid
+## Plan: Meerdere trainingsvoorstellen, uitklapbare kaarten en doorklikbare foutmeldingen
 
-### Stap 1: Database migraties ✅
-- `neighborhood_id` kolom op `clients` + backfill vanuit `schools`
-- `admin` enum-waarde toegevoegd aan `app_role`
-- `is_admin()` security definer functie
-- `availability_override_logs` tabel met unique partial index en RLS
+### 1. Meerdere trainingsvoorstellen per groep
 
-### Stap 2: Centrale helpers ✅
-6 pure functies in `src/lib/clientUtils.ts`:
-- `buildPrefsByClientMap()` — preference_order-aware
-- `buildAvailabilityByClient()` — alleen bruikbare records (start < end)
-- `getAvailabilityOverlap()` — beste dag/tijd overlap
-- `hasAvailabilityCoverage()` — rolling window check
-- `getClientDataCompleteness()` — volledige statusbepaling
-- `getPlannabilityStatus()` — 5 statussen
+**Huidige situatie**: `getAvailabilityOverlap` in `clientUtils.ts` retourneert slechts 1 voorstel. `GroupComposer` toont dit ene voorstel per groepskaart.
 
-### Stap 3: WaitlistOverview refactoren ✅
-- Inline `Set<string>` prefsByClient vervangen door `buildPrefsByClientMap()`
-- Reserve-iteratie via `Object.entries(prefs)` i.p.v. `Set.forEach`
-- `neighborhood_id` toegevoegd aan query
+**Aanpassing**:
+- Wijzig `getAvailabilityOverlap` (of maak een variant `getTopAvailabilityOverlaps`) die de top-3 niet-overlappende tijdslots retourneert, gesorteerd op overlap-score.
+- Pas `GroupComposer` aan om alle 3 voorstellen te renderen, elk met dag, tijdslot en aantal beschikbare deelnemers. Nummer ze als "Voorstel 1", "Voorstel 2", "Voorstel 3".
 
-### Stap 4: GroupComposer refactoren ✅
-- `availByClient` met fallback `"09:00"/"17:00"` → `buildAvailabilityByClient()`
-- `getSuggestion()` → `getAvailabilityOverlap()`
-- Dubbele `prefsByClient` → `buildPrefsByClientMap()`
-- Ongebruikte imports (`getDay`, `parseISO` uit date-fns) verwijderd
-- `neighborhood_id` toegevoegd aan query
+### 2. Uitklapbare groepskaarten (groter / volledig scherm)
 
-### Stap 5: PlanningPage herontwerp ✅
-- Default tab: `"groepen"` (was `"agenda"`)
-- Tab volgorde: Groepen | Beschikbaarheid | Agenda
-- `allClients` query uitgebreid met `neighborhood_id`, `date_of_birth`, `intake_status`, `school_id`, `schools(name)`
-- **5 waarschuwingsknoppen** met mutueel exclusieve tellingen:
-  1. "Beschikbaarheid nog doorgeven" — requiresAvailability && !hasAvailability && !isOverridden
-  2. "Onbruikbare beschikbaarheid" — has raw records but none usable && !isOverridden
-  3. "Beschikbaarheid actualiseren" — onvoldoende 4-maanden dekking && !isOverridden
-  4. "Geen gebied" — requiresAvailability && !hasArea && !isOverridden
-  5. "Overruled (admin)" — clients met actieve override
-- **Admin override UI**: override-knop (alleen admins), verplicht reden-veld, badge met tooltip
-- Extra queries: all client_availability, client_area_preferences, availability_override_logs, user_roles admin check
+**Huidige situatie**: Groepskaarten staan in een vaste `grid md:grid-cols-2` layout.
 
-### Stap 6: neighborhood_id sync ✅
-- `AanmeldenPublicPage.tsx`: `neighborhood_id` meegestuurd bij registratie
-- `ClientDetailPage.tsx`: `neighborhood_id` gesync bij school-wijziging
-- `AanmeldingenPage.tsx`: `neighborhood_id` gesync in updateField en handleAssignSchool
-- `ClientImport.tsx`: `neighborhood_id` afgeleid bij insert en update
+**Aanpassing**:
+- Voeg een expand-knop toe aan elke `Card` header (Maximize2 icon).
+- Bij klik opent een `Dialog` met `max-w-4xl` die de volledige kaartinhoud toont in een ruimere layout (clientlijst zonder max-height beperking, trainerselectie naast elkaar, alle voorstellen zichtbaar).
+- Alternatief: toggle de kaart naar `col-span-2` voor een "groot" formaat, met een tweede klik naar een fullscreen Dialog.
 
-### Stap 7: Queries gelijktrekken ✅
-- `WaitlistOverview.tsx`: `neighborhood_id` in select
-- `GroupComposer.tsx`: `neighborhood_id` in select
-- `PlanningPage.tsx`: `neighborhood_id` in select
-- `WachtlijstPage.tsx`: `neighborhood_id` in select
-- `AanmeldingenPage.tsx`: gebruikt `*` (bevat automatisch `neighborhood_id`)
-- `ClientDetailPage.tsx`: gebruikt `*` (bevat automatisch `neighborhood_id`)
+### 3. Doorklikbare foutmeldingen
 
-### Stap 8: Opruimen ✅
-- Alle tests slagen
-- Ongebruikte imports verwijderd
+**Huidige situatie**: De 5 `WarningButton`s tonen alleen tooltips met namen. `warningFilter` state bestaat maar is niet gekoppeld aan een dialog.
+
+**Aanpassing**:
+- Koppel `onClick` aan elke `WarningButton` om `warningFilter` te zetten (bijv. `"noAvail"`, `"unusable"`, etc.).
+- Voeg een `Dialog` toe die opent wanneer `warningFilter` niet null is. Inhoud:
+  - Titel met waarschuwingstype
+  - Doorzoekbare lijst van betreffende deelnemers
+  - Elke deelnemer is een klikbare link (`navigate(/clienten/{id})`) die direct naar het dossier navigeert
+  - Toon ook gebied en status per deelnemer voor context
+
+### Bestanden die wijzigen
+
+| Bestand | Wijziging |
+|---|---|
+| `src/lib/clientUtils.ts` | Nieuwe functie `getTopAvailabilityOverlaps` die meerdere voorstellen retourneert |
+| `src/components/GroupComposer.tsx` | Meerdere voorstellen tonen, expand-knop + fullscreen Dialog per kaart |
+| `src/pages/PlanningPage.tsx` | Warning dialog met doorklikbare deelnemerslijst, onClick handlers op WarningButtons |
+
