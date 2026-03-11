@@ -3,11 +3,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { MapPin, Upload, FileText, Trash2, Loader2, CalendarDays } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, Upload, FileText, Trash2, Loader2, CalendarDays, Clock, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { isSpecialDay } from "@/lib/holidays";
 
 interface Props {
-  session: { id: string; session_number: number; location?: string | null; session_date?: string | null };
+  session: { id: string; session_number: number; location?: string | null; session_date?: string | null; start_time?: string | null; end_time?: string | null };
   programId: string;
 }
 
@@ -16,7 +18,12 @@ export default function SessionDetails({ session, programId }: Props) {
   const qc = useQueryClient();
   const [location, setLocation] = useState(session.location ?? "");
   const [sessionDate, setSessionDate] = useState(session.session_date ?? "");
+  const [sessionStartTime, setSessionStartTime] = useState(session.start_time?.substring(0, 5) ?? "");
+  const [sessionEndTime, setSessionEndTime] = useState(session.end_time?.substring(0, 5) ?? "");
   const [uploading, setUploading] = useState(false);
+
+  const special = sessionDate ? isSpecialDay(sessionDate) : null;
+  const hasConflict = special && (special.holidays.length > 0 || !!special.vacation);
 
   // Update session date
   const updateDate = useMutation({
