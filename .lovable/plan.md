@@ -1,59 +1,24 @@
 
 
-# Plan: Testomgeving 2025 met Kanjertrainingen
+## Verificatie: plan klopt met de huidige code
 
-## Huidige situatie
+Alle regelnummers en inline logica in het plan zijn gecontroleerd tegen de huidige broncode. Bevindingen:
 
-| Gegeven | Aantal |
-|---------|--------|
-| Programma's (2026, KT) | 28 (te_plannen) + 3 (ingepland) |
-| Trainers | 1 (Patrick van Mastricht) |
-| Scholen | 162 |
-| Gebieden | 14 (alle Rotterdamse gebieden) |
-| Cliënten | 1 |
-| Sessies | 10 |
+### Bevestigd correct
 
-Er bestaan nog geen 2025-programma's. Alle huidige KT-nummers beginnen met 26xxx.
+| Plan-referentie | Werkelijke code | Status |
+|---|---|---|
+| WaitlistOverview regel 29: select zonder `neighborhood_id` | Regel 29: `.select("id, first_name, ..., school_id, schools(...)")` — geen `neighborhood_id` | Correct |
+| WaitlistOverview regels 57-64: `prefsByClient` als `Set<string>` | Regels 57-64: `Record<string, Set<string>>`, `.add(p.area_id)`, geen `preference_order` gebruik | Correct |
+| WaitlistOverview regels 113-132: inline reserve/flexibel via Set | Regels 113-132: `reserveAreas.forEach(...)` + `reserveAreas?.has(a.id)` | Correct |
+| GroupComposer regel 59: select zonder `neighborhood_id` | Regel 59: `.select("id, first_name, ..., school_id, schools(...)")` — geen `neighborhood_id` | Correct |
+| GroupComposer regels 102-116: `availByClient` met fallback `"09:00"/"17:00"` | Regels 102-116: `a.start_time ?? "09:00"`, `a.end_time ?? "17:00"`, lokale `dayNames` | Correct |
+| GroupComposer regels 119-154: `getSuggestion()` | Regels 119-154: eigen overlap met `dayStats`, `latestStart`/`earliestEnd` | Correct |
+| GroupComposer regels 171-178: eigen `prefsByClient` | Regels 171-178: `Record<string, Record<string, number>>` — duplicaat van wat `buildPrefsByClientMap` wordt | Correct |
+| PlanningPage regel 141: `useState("agenda")` | Regel 141: `useState("agenda")` | Correct |
+| PlanningPage regels 379-403: eigen filters met `"alle"` | Regels 379-403: twee `Select`s met `"alle"` waarden | Correct |
 
-## Wat er nodig is
+### Conclusie
 
-Om realistisch te testen hebben we voor 5 Kanjertrainingen (2025) het volgende nodig:
-
-1. **5 KT-programma's** met naam `KT - 25001` t/m `KT - 25005`, status `afgerond`, met start/einddatum in 2025, leeftijdscategorie, en gekoppeld aan een gebied/school
-2. **Trainers** - minimaal 4-6 extra trainers om realistisch 2 per programma te koppelen
-3. **Cliënten** - minimaal 35-40 kinderen (7-8 per groep) met naam, geboortedatum, school
-4. **Sessies** - 10 bijeenkomsten per programma (standaard KT = 10 lessen)
-5. **Presentie** - aanwezigheidsregistratie per sessie per kind
-6. **Koppelingen** - program_staff en program_clients records
-
-## Aanpak
-
-### Stap 1: Testdata genereren via SQL
-Ik maak een script dat via database-inserts de volgende testdata aanmaakt:
-
-- **5 programma's**: KT - 25001 t/m 25005, verdeeld over verschillende gebieden, mix van 5-7 en 8-12 jaar, status `afgerond`, periode jan-jun 2025
-- **6 trainers**: realistische Nederlandse namen, gekoppeld aan scholen
-- **40 cliënten**: kinderen met naam, geboortedatum (passend bij leeftijdscategorie), school, oudergegevens, intake_status `afgerond`
-- **50 sessies**: 10 per programma, wekelijks verspreid over de periode
-- **Koppelingen**: elke training 2 trainers + 7-8 kinderen
-- **Presentie**: realistische aanwezigheid (~85%)
-
-### Stap 2: Bestanden inlezen
-Je noemde dat je bestanden hebt met 2025-gegevens. Na stap 1 kun je die uploaden zodat we echte data gebruiken in plaats van (of naast) gegenereerde testdata. We kunnen dan bestaande records bijwerken of aanvullen.
-
-### Stap 3: Validatie
-Na het inladen controleren we of:
-- Programma's correct op de kaarten verschijnen
-- Trainers en deelnemers zichtbaar zijn op de detailpagina
-- Presentie en sessies kloppen
-- Filters en rapportages werken met de 2025-data
-
-## Vraag aan jou
-
-Voordat ik begin:
-
-- **Wil je eerst met puur gegenereerde testdata starten (5 programma's)**, zodat je daarna je eigen bestanden kunt uploaden om aan te vullen of te corrigeren?
-- **Of wil je eerst je bestanden delen**, zodat ik de echte 2025-gegevens direct kan verwerken?
-
-De eerste optie is het snelst om mee te testen; de tweede geeft meteen realistische data.
+Het plan is volledig consistent met de huidige codebase. Alle genoemde regelnummers, inline logica en querystructuren kloppen. Geen aanpassingen nodig — het plan kan ongewijzigd worden uitgevoerd.
 
