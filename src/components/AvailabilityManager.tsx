@@ -85,7 +85,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
     if (periodMode === "week") {
       setCurrentDate(dir === "prev" ? subWeeks(currentDate, 1) : addWeeks(currentDate, 1));
     } else if (periodMode === "kwartaal") {
-      setCurrentDate(dir === "prev" ? subMonths(currentDate, 3) : addMonths(currentDate, 3));
+      setCurrentDate(dir === "prev" ? subMonths(currentDate, 4) : addMonths(currentDate, 4));
     } else {
       setCurrentDate(dir === "prev" ? subMonths(currentDate, 1) : addMonths(currentDate, 1));
     }
