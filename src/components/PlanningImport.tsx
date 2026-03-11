@@ -639,7 +639,7 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
           const entries = weekdayGridToEntries(json, grid.nameKey, grid.weekdayColumns, 3);
           const weekdayNames = grid.weekdayColumns.map(wc => wc.label).join(", ");
           setParsedEntries(entries);
-          setDetectedFormat(`Weekdag-formaat: ${grid.weekdayColumns.length} dagen (${weekdayNames}) → ${entries.length} beschikbaarheden (komende 3 maanden)`);
+          setDetectedFormat(`Weekdag-formaat: ${grid.weekdayColumns.length} dagen (${weekdayNames}) → ${entries.length} beschikbaarheden (komende 4 maanden)`);
         } else if (grid.isGrid) {
           const entries = gridToEntries(json, grid.nameKey, grid.dateColumns);
           setParsedEntries(entries);
