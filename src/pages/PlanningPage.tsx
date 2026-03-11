@@ -543,13 +543,6 @@ export default function PlanningPage() {
 
   const today = format(new Date(), "yyyy-MM-dd");
 
-  // Get warning client names for tooltip
-  const getWarningClients = (ids: string[]) => {
-    return ids.map((id) => {
-      const c = allClients.find((cl: any) => cl.id === id);
-      return c ? `${c.first_name} ${c.last_name}` : id;
-    });
-  };
 
   return (
     <div className="space-y-5">
