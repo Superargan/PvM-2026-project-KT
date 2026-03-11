@@ -759,7 +759,7 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          <span className="font-semibold text-foreground">{flagged.length}</span> van {uniqueClients.length} deelnemers hebben ontbrekende gegevens
+          <span className="font-semibold text-foreground">{flagged.length}</span> van {uniqueClients.length} aanmelders hebben ontbrekende gegevens
         </p>
         {flagged.length > 0 && (
           <Button size="sm" variant="outline" onClick={handleExport} className="gap-1.5">
