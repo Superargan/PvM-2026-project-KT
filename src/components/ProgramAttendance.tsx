@@ -20,7 +20,7 @@ interface Props {
   inline?: boolean;
 }
 
-export default function ProgramAttendance({ programId, programName, inline = false }: Props) {
+export default function ProgramAttendance({ programId, programName, programStartDate, inline = false }: Props) {
   const [open, setOpen] = useState(inline ? true : false);
   const { toast } = useToast();
   const qc = useQueryClient();
