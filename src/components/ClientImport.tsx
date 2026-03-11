@@ -349,7 +349,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     console.log(`Import: detected date format = ${dateFormat}`);
 
     const inserts: any[] = [];
-    const updates: { id: string; data: any }[] = [];
+    const updates: { id: string; data: any; reserves?: { area_id: string; order: number }[] }[] = [];
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const rowNum = i + 2; // Excel row (header = 1)
@@ -557,7 +557,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         // Update existing record with non-null imported values
         const updateData: any = {};
         for (const [key, value] of Object.entries(recordData)) {
-          if (key === "created_at") continue; // Don't overwrite created_at
+          if (key === "created_at" || key === "__reserveAreas") continue;
           if (value !== null && value !== undefined && value !== "") {
             // Only update if existing value is empty/null
             if (!existingRecord[key] || existingRecord[key] === "") {
@@ -570,8 +570,10 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         if (school_id) updateData.school_id = school_id;
         if (class_group) updateData.class_group = class_group;
 
-        if (Object.keys(updateData).length > 0) {
-          updates.push({ id: existingRecord.id, data: updateData });
+        // Remove __reserveAreas from updateData
+        delete updateData.__reserveAreas;
+        if (Object.keys(updateData).length > 0 || reserveAreaIds.length > 0) {
+          updates.push({ id: existingRecord.id, data: updateData, reserves: reserveAreaIds });
         } else {
           skipped++;
         }
@@ -610,12 +612,23 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
 
     // Update existing records one by one
     for (const upd of updates) {
-      const { error } = await supabase.from("clients").update(upd.data).eq("id", upd.id);
-      if (error) {
-        errors.push(`Update ${upd.id}: ${error.message}`);
-      } else {
-        updated++;
+      if (Object.keys(upd.data).length > 0) {
+        const { error } = await supabase.from("clients").update(upd.data).eq("id", upd.id);
+        if (error) {
+          errors.push(`Update ${upd.id}: ${error.message}`);
+          continue;
+        }
       }
+      // Upsert reserve area preferences
+      if (upd.reserves && upd.reserves.length > 0) {
+        // Delete existing prefs, then insert new ones
+        await supabase.from("client_area_preferences").delete().eq("client_id", upd.id);
+        const prefInserts = upd.reserves.map((r) => ({
+          client_id: upd.id, area_id: r.area_id, preference_order: r.order,
+        }));
+        await supabase.from("client_area_preferences").insert(prefInserts);
+      }
+      updated++;
     }
 
     setResult({ added, skipped, updated, errors });
