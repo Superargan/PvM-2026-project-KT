@@ -561,7 +561,7 @@ export default function ScheduleGenerator({ programId, programName, programStart
                     </ul>
                   </div>
                 );
-              })})}
+              })}
             </div>
           )}
 
