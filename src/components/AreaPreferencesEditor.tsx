@@ -24,6 +24,8 @@ export default function AreaPreferencesEditor({
   allAreasFlexible,
   onAllAreasFlexibleChange,
   areas,
+  areaNotes,
+  onAreaNotesChange,
 }: Props) {
   const queryClient = useQueryClient();
   const [prefs, setPrefs] = useState<(string | null)[]>([null, null, null]);
