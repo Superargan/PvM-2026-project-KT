@@ -25,7 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import GroupComposer from "@/components/GroupComposer";
+import GroupComposer, { type GroupComposerHandle } from "@/components/GroupComposer";
 import ScenarioOverview from "@/components/ScenarioOverview";
 import AvailabilityManager from "@/components/AvailabilityManager";
 import PlanningImport from "@/components/PlanningImport";
