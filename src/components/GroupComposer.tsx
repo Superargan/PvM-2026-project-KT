@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Users, UserCog, Check, AlertTriangle, CalendarClock, Search, Calendar, Maximize2, FlaskConical, RotateCcw, CheckCircle2, Save, Upload, ShieldAlert } from "lucide-react";
@@ -45,6 +45,11 @@ interface GroupedClients {
   clients: ClientWithMatch[];
 }
 
+export interface GroupComposerHandle {
+  triggerSave: () => Promise<boolean>;
+  hasActiveSimulation: boolean;
+}
+
 interface GroupComposerProps {
   activeScenarioId?: string | null;
   onSaveScenario?: (scenarioId: string) => void;
@@ -52,7 +57,7 @@ interface GroupComposerProps {
   onLoadScenario?: (scenarioId: string) => void;
 }
 
-export default function GroupComposer({ activeScenarioId, onSaveScenario, onClearScenario, onLoadScenario }: GroupComposerProps) {
+const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(function GroupComposer({ activeScenarioId, onSaveScenario, onClearScenario, onLoadScenario }, ref) {
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -497,6 +502,18 @@ export default function GroupComposer({ activeScenarioId, onSaveScenario, onClea
       setSaving(false);
     }
   };
+
+  // Expose save + active simulation state to parent via ref (T07-T10)
+  useImperativeHandle(ref, () => ({
+    triggerSave: async () => {
+      if (scenarioName.trim()) {
+        return handleSaveScenario();
+      }
+      setSaveDialogOpen(true);
+      return false;
+    },
+    hasActiveSimulation: isSimulating,
+  }), [isSimulating, scenarioName]);
 
   // === SCENARIO CONVERT ===
   const handleConvert = async () => {
@@ -1272,4 +1289,6 @@ export default function GroupComposer({ activeScenarioId, onSaveScenario, onClea
       </Dialog>
     </div>
   );
-}
+});
+
+export default GroupComposer;

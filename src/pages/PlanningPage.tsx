@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval, parseISO, startOfMonth, endOfMonth, addMonths, subMonths, getDay } from "date-fns";
@@ -25,7 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import GroupComposer from "@/components/GroupComposer";
+import GroupComposer, { type GroupComposerHandle } from "@/components/GroupComposer";
 import ScenarioOverview from "@/components/ScenarioOverview";
 import AvailabilityManager from "@/components/AvailabilityManager";
 import PlanningImport from "@/components/PlanningImport";
@@ -183,6 +183,7 @@ export default function PlanningPage() {
   const [overrideReason, setOverrideReason] = useState("");
   const [warningFilter, setWarningFilter] = useState<string | null>(null);
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
+  const groupComposerRef = useRef<GroupComposerHandle>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -853,20 +854,20 @@ export default function PlanningPage() {
 
         {/* === WACHTLIJST & GROEPEN TAB === */}
         <TabsContent value="groepen" className="space-y-6">
+          {/* ScenarioOverview always renders — werkstate-bescherming (T07-T10) */}
+          <ScenarioOverview
+            onLoadScenario={(scenarioId) => {
+              setActiveScenarioId(scenarioId);
+              setShowGroupComposer(true);
+            }}
+            hasActiveSimulation={groupComposerRef.current?.hasActiveSimulation ?? false}
+            onRequestSaveFirst={async () => {
+              return groupComposerRef.current?.triggerSave() ?? false;
+            }}
+          />
+
           {!showGroupComposer ? (
             <>
-              <ScenarioOverview
-                onLoadScenario={(scenarioId) => {
-                  setActiveScenarioId(scenarioId);
-                  setShowGroupComposer(true);
-                }}
-                hasActiveSimulation={showGroupComposer}
-                onRequestSaveFirst={async () => {
-                  // This would need GroupComposer to expose save - for now return false
-                  return false;
-                }}
-              />
-
               <WaitlistOverview
                 onSelectGroup={(areaId, age) => {
                   setFilterArea(areaId);
@@ -900,6 +901,7 @@ export default function PlanningPage() {
                 ← Terug naar overzicht
               </Button>
               <GroupComposer
+                ref={groupComposerRef}
                 activeScenarioId={activeScenarioId}
                 onSaveScenario={(id) => setActiveScenarioId(id)}
                 onClearScenario={() => setActiveScenarioId(null)}

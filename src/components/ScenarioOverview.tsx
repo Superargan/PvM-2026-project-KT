@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { scenarioKeys } from "@/lib/queryKeys";
@@ -68,6 +68,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
   const queryClient = useQueryClient();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [workstateDialogScenarioId, setWorkstateDialogScenarioId] = useState<string | null>(null);
+  const [expandedValidation, setExpandedValidation] = useState<string | null>(null);
 
   const { data: scenarios = [], isLoading } = useQuery({
     queryKey: scenarioKeys.all,
@@ -75,7 +76,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
       const { data, error } = await supabase
         .from("simulation_scenarios")
         .select(`
-          id, name, description, status, validation_status, last_validated_at, created_at, updated_at,
+          id, name, description, status, validation_status, validation_details, last_validated_at, created_at, updated_at,
           simulation_scenario_slots (
             id, conversion_status, converted_program_id, conversion_error, label, confirmed
           )
@@ -191,7 +192,8 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
               const ValidationIcon = validationIcons[scenario.validation_status] ?? HelpCircle;
 
               return (
-                <tr key={scenario.id} className="hover:bg-muted/30 transition-colors">
+                <React.Fragment key={scenario.id}>
+                <tr className="hover:bg-muted/30 transition-colors">
                   <td className="px-3 py-2">
                     <p className="text-sm font-semibold text-foreground">{scenario.name}</p>
                     {scenario.description && (
@@ -207,7 +209,12 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <div className="flex items-center gap-1">
+                          <button
+                            className="flex items-center gap-1 cursor-pointer"
+                            onClick={() => setExpandedValidation(
+                              expandedValidation === scenario.id ? null : scenario.id
+                            )}
+                          >
                             <Badge variant="outline" className={`text-[10px] gap-0.5 ${validationColors[scenario.validation_status] ?? ""}`}>
                               <ValidationIcon className="h-3 w-3" />
                               {validationLabels[scenario.validation_status] ?? scenario.validation_status}
@@ -218,7 +225,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                                 &gt;24u
                               </Badge>
                             )}
-                          </div>
+                          </button>
                         </TooltipTrigger>
                         <TooltipContent side="top">
                           <p className="text-xs">
@@ -226,6 +233,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                               ? `Laatst gevalideerd: ${formatDistanceToNow(parseISO(scenario.last_validated_at), { locale: nl, addSuffix: true })}`
                               : "Nog niet gevalideerd"}
                             {isStale && " — hervalidatie aanbevolen"}
+                            {scenario.validation_details && " — klik voor details"}
                           </p>
                         </TooltipContent>
                       </Tooltip>
@@ -277,7 +285,54 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                     </div>
                   </td>
                 </tr>
-              );
+                {/* Expandable validation details (T12) */}
+                {expandedValidation === scenario.id && scenario.validation_details && (() => {
+                  const details = scenario.validation_details as any;
+                  const slotResults = details?.slotResults ?? [];
+                  if (slotResults.length === 0) return (
+                    <tr><td colSpan={7} className="px-4 py-3 bg-muted/20 text-xs text-muted-foreground">Geen validatiedetails beschikbaar.</td></tr>
+                  );
+                  return (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-3 bg-muted/20">
+                        <div className="space-y-2">
+                          {slotResults.map((sr: any, i: number) => (
+                            <div key={sr.slotId ?? i} className={`rounded-lg border p-2 text-xs ${
+                              sr.status === "geldig" ? "border-emerald-200 bg-emerald-50/50" :
+                              sr.status === "aandacht_vereist" ? "border-amber-200 bg-amber-50/50" :
+                              "border-red-200 bg-red-50/50"
+                            }`}>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-semibold text-foreground">Slot {i + 1}</span>
+                                <Badge variant="outline" className={`text-[9px] ${validationColors[sr.status] ?? ""}`}>
+                                  {validationLabels[sr.status] ?? sr.status}
+                                </Badge>
+                              </div>
+                              {(sr.slotIssues ?? []).length > 0 && (
+                                <ul className="list-disc list-inside text-red-700 mb-1">
+                                  {sr.slotIssues.map((issue: string, j: number) => (
+                                    <li key={j}>{issue}</li>
+                                  ))}
+                                </ul>
+                              )}
+                              {(sr.memberResults ?? []).filter((mr: any) => mr.issues?.length > 0).map((mr: any) => (
+                                <div key={mr.clientId} className="flex items-start gap-1.5 ml-3 mt-0.5">
+                                  <span className="text-muted-foreground">•</span>
+                                  <span className="text-foreground font-medium">{mr.clientId.slice(0, 8)}…</span>
+                                  <span className={mr.status === "ongeldig" ? "text-red-700" : "text-amber-700"}>
+                                    {mr.issues.join("; ")}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })()}
+              </React.Fragment>
+            );
             })}
           </tbody>
         </table>
