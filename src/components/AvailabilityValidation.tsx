@@ -91,7 +91,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
     rawByClient[a.client_id].push(a);
   });
 
-  const threshold = addMonths(now, 4);
+  const threshold = addMonths(now, 3);
 
   const validations: ClientValidation[] = clients.map((c: any) => {
     const raw = rawByClient[c.id] ?? [];
