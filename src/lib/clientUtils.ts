@@ -273,7 +273,7 @@ export function getClientDataCompleteness(
   const allAvail = availByClient[client.id];
   const hasAvailability = !!allAvail && allAvail.length > 0;
   const hasUsableAvailability = hasAvailability; // already filtered by buildAvailabilityByClient
-  const hasArea = !!client.waitlist_area_id;
+  const hasArea = !!resolveAreaId(client);
   const prefs = prefsByClient[client.id];
   const hasReserveArea = !!prefs && Object.keys(prefs).length > 0;
   const hasNeighborhood = !!client.neighborhood_id;
