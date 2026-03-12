@@ -391,3 +391,212 @@ export function findAllDuplicateGroups(
     .filter(([, arr]) => arr.length > 1)
     .map(([key, clients]) => ({ key, clients }));
 }
+
+// ===== Scenario validatie (Stap 4) =====
+
+export type SlotValidationStatus = "geldig" | "aandacht_vereist" | "ongeldig";
+export type ScenarioValidationStatus = "geldig" | "aandacht_vereist" | "ongeldig";
+
+export interface MemberValidationResult {
+  clientId: string;
+  status: SlotValidationStatus;
+  issues: string[];
+}
+
+export interface SlotValidationResult {
+  slotId: string;
+  status: SlotValidationStatus;
+  slotIssues: string[];
+  memberResults: MemberValidationResult[];
+}
+
+export interface ScenarioValidationResult {
+  status: ScenarioValidationStatus;
+  slotResults: SlotValidationResult[];
+}
+
+const DAY_NAME_TO_DOW: Record<string, string> = {
+  ma: "maandag", di: "dinsdag", wo: "woensdag", do: "donderdag", vr: "vrijdag",
+};
+
+/**
+ * Validate a single scenario slot with its members.
+ *
+ * AC-2: "al ingepland" = client_id in programClientIds (program_clients where programs.archived IS NOT TRUE)
+ */
+export function validateScenarioSlot(
+  slot: {
+    id: string;
+    area_id: string;
+    age_category: string | null;
+    mode: string | null;
+    proposal_idx: number | null;
+    day_name: string | null;
+    start_time: string | null;
+    end_time: string | null;
+  },
+  members: { client_id: string; has_override: boolean }[],
+  clients: Record<string, any>,
+  availByClient: Record<string, { dayOfWeek: number; dayName: string; startTime: string; endTime: string; date: string }[]>,
+  prefsByClient: Record<string, Record<string, number>>,
+  programClientIds: Set<string>,
+  overriddenClientIds: Set<string>,
+  areaIds: Set<string>
+): SlotValidationResult {
+  const slotIssues: string[] = [];
+  let slotStatus: SlotValidationStatus = "geldig";
+
+  // Slot-level checks
+  if (!slot.area_id || !areaIds.has(slot.area_id)) {
+    slotIssues.push("Ongeldig gebied");
+    slotStatus = "ongeldig";
+  }
+
+  if (slot.mode === "manual") {
+    if (!slot.day_name) {
+      slotIssues.push("Dag ontbreekt (manual mode)");
+      slotStatus = "ongeldig";
+    }
+    if (!slot.start_time || !slot.end_time) {
+      slotIssues.push("Start/eindtijd ontbreekt (manual mode)");
+      slotStatus = "ongeldig";
+    } else if (slot.start_time >= slot.end_time) {
+      slotIssues.push("Eindtijd moet na starttijd liggen");
+      slotStatus = "ongeldig";
+    }
+  }
+
+  if (slot.mode === "proposal" && (slot.proposal_idx === null || slot.proposal_idx === undefined)) {
+    slotIssues.push("proposal_idx ontbreekt (proposal mode)");
+    slotStatus = "ongeldig";
+  }
+
+  // Member-level checks
+  const memberResults: MemberValidationResult[] = [];
+
+  for (const member of members) {
+    const issues: string[] = [];
+    let memberStatus: SlotValidationStatus = "geldig";
+    const client = clients[member.client_id];
+
+    if (!client) {
+      issues.push("Deelnemer niet gevonden");
+      memberStatus = "ongeldig";
+      memberResults.push({ clientId: member.client_id, status: memberStatus, issues });
+      continue;
+    }
+
+    // Status check
+    const intakeStatus = client.intake_status ?? "nieuw";
+    if (!["intake_afgerond", "wachtlijst"].includes(intakeStatus)) {
+      issues.push(`Status niet toelaatbaar: ${intakeStatus}`);
+      memberStatus = "ongeldig";
+    }
+
+    // Already planned check (AC-2)
+    if (programClientIds.has(member.client_id)) {
+      issues.push("Deelnemer is al ingepland in een actief programma");
+      memberStatus = "ongeldig";
+    }
+
+    // Area match check
+    if (slotStatus !== "ongeldig" && slot.area_id) {
+      const mt = getMatchType(client, slot.area_id, prefsByClient);
+      if (!mt) {
+        if (member.has_override && overriddenClientIds.has(member.client_id)) {
+          // Override covers area mismatch
+        } else {
+          issues.push("Gebied matcht niet (geen primair, reserve of flexibel)");
+          memberStatus = memberStatus === "ongeldig" ? "ongeldig" : "aandacht_vereist";
+        }
+      }
+    }
+
+    // Availability check (only for manual mode with concrete day/time)
+    if (slot.mode === "manual" && slot.day_name && slot.start_time && slot.end_time) {
+      const targetDayName = DAY_NAME_TO_DOW[slot.day_name] ?? slot.day_name;
+      const clientAvail = availByClient[member.client_id];
+
+      if (!clientAvail || clientAvail.length === 0) {
+        if (member.has_override && overriddenClientIds.has(member.client_id)) {
+          // Override covers missing availability
+        } else {
+          issues.push("Geen beschikbaarheid ingevuld");
+          memberStatus = memberStatus === "ongeldig" ? "ongeldig" : "aandacht_vereist";
+        }
+      } else {
+        const matchesDay = clientAvail.some(
+          (a) => a.dayName === targetDayName && a.startTime <= slot.start_time! && a.endTime >= slot.end_time!
+        );
+        if (!matchesDay) {
+          if (member.has_override && overriddenClientIds.has(member.client_id)) {
+            // Override covers availability mismatch
+          } else {
+            issues.push("Beschikbaarheid gewijzigd: past niet meer op dit tijdslot");
+            memberStatus = memberStatus === "ongeldig" ? "ongeldig" : "aandacht_vereist";
+          }
+        }
+      }
+
+      // 4-month coverage check
+      if (clientAvail && clientAvail.length > 0 && !hasAvailabilityCoverage(clientAvail)) {
+        if (!(member.has_override && overriddenClientIds.has(member.client_id))) {
+          issues.push("Onvoldoende dekking: beschikbaarheid loopt niet 4 maanden vooruit");
+          memberStatus = memberStatus === "ongeldig" ? "ongeldig" : "aandacht_vereist";
+        }
+      }
+    }
+
+    // Override expired check
+    if (member.has_override && !overriddenClientIds.has(member.client_id)) {
+      issues.push("Override vervallen");
+      memberStatus = memberStatus === "ongeldig" ? "ongeldig" : "aandacht_vereist";
+    }
+
+    memberResults.push({ clientId: member.client_id, status: memberStatus, issues });
+  }
+
+  // Aggregate member statuses into slot status
+  for (const mr of memberResults) {
+    if (mr.status === "ongeldig") slotStatus = "ongeldig";
+    else if (mr.status === "aandacht_vereist" && slotStatus !== "ongeldig") slotStatus = "aandacht_vereist";
+  }
+
+  return { slotId: slot.id, status: slotStatus, slotIssues, memberResults };
+}
+
+/**
+ * Validate an entire scenario (all slots + members).
+ * Aggregates: ongeldig if ≥1 ongeldig, aandacht if ≥1 aandacht, else geldig.
+ */
+export function validateScenario(
+  slots: { id: string; area_id: string; age_category: string | null; mode: string | null; proposal_idx: number | null; day_name: string | null; start_time: string | null; end_time: string | null }[],
+  membersBySlot: Record<string, { client_id: string; has_override: boolean }[]>,
+  clients: Record<string, any>,
+  availByClient: Record<string, { dayOfWeek: number; dayName: string; startTime: string; endTime: string; date: string }[]>,
+  prefsByClient: Record<string, Record<string, number>>,
+  programClientIds: Set<string>,
+  overriddenClientIds: Set<string>,
+  areaIds: Set<string>
+): ScenarioValidationResult {
+  const slotResults = slots.map((slot) =>
+    validateScenarioSlot(
+      slot,
+      membersBySlot[slot.id] ?? [],
+      clients,
+      availByClient,
+      prefsByClient,
+      programClientIds,
+      overriddenClientIds,
+      areaIds
+    )
+  );
+
+  let status: ScenarioValidationStatus = "geldig";
+  for (const sr of slotResults) {
+    if (sr.status === "ongeldig") { status = "ongeldig"; break; }
+    if (sr.status === "aandacht_vereist") status = "aandacht_vereist";
+  }
+
+  return { status, slotResults };
+}
