@@ -349,6 +349,9 @@ export default function AanmeldingenPage() {
           <TabsTrigger value="duplicaten" className="gap-1.5">
             <Users className="h-3.5 w-3.5" /> Duplicaten
           </TabsTrigger>
+          <TabsTrigger value="beschikbaarheid" className="gap-1.5">
+            <CalendarCheck className="h-3.5 w-3.5" /> Beschikbaarheid
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="lijst" className="space-y-4">
