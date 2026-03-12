@@ -29,6 +29,12 @@ export const areaKeys = {
   all: ["areas"] as const,
 };
 
+/** Scenario query keys — separate prefix from clients */
+export const scenarioKeys = {
+  all: ["scenarios"] as const,
+  detail: (id: string) => ["scenarios", id] as const,
+};
+
 /**
  * Invalidate ALL client-related queries in one call.
  * Because all keys start with ["clients"], this matches everything.

@@ -1,14 +1,17 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, UserCog, Check, AlertTriangle, CalendarClock, Search, Calendar, Maximize2, FlaskConical, RotateCcw, CheckCircle2 } from "lucide-react";
+import { Users, UserCog, Check, AlertTriangle, CalendarClock, Search, Calendar, Maximize2, FlaskConical, RotateCcw, CheckCircle2, Save, Upload, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import {
@@ -23,10 +26,11 @@ import {
   buildPrefsByClientMap,
   buildAvailabilityByClient,
   getTopAvailabilityOverlaps,
+  validateScenario,
   type AgeCategory,
   type MatchType,
 } from "@/lib/clientUtils";
-import { clientKeys, areaKeys } from "@/lib/queryKeys";
+import { clientKeys, areaKeys, scenarioKeys } from "@/lib/queryKeys";
 
 interface ClientWithMatch {
   client: any;
@@ -41,7 +45,14 @@ interface GroupedClients {
   clients: ClientWithMatch[];
 }
 
-export default function GroupComposer() {
+interface GroupComposerProps {
+  activeScenarioId?: string | null;
+  onSaveScenario?: (scenarioId: string) => void;
+  onClearScenario?: () => void;
+  onLoadScenario?: (scenarioId: string) => void;
+}
+
+export default function GroupComposer({ activeScenarioId, onSaveScenario, onClearScenario, onLoadScenario }: GroupComposerProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -53,8 +64,18 @@ export default function GroupComposer() {
   const [expandedReserve, setExpandedReserve] = useState<Set<string>>(new Set());
   const [selectedStartDate, setSelectedStartDate] = useState<Record<string, string>>({});
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
-  // key = groupKey, value = { proposalIdx, suggestion }
   const [simulatedGroups, setSimulatedGroups] = useState<Map<string, { proposalIdx: number; suggestion: any }>>(new Map());
+
+  // Scenario state
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [scenarioName, setScenarioName] = useState("");
+  const [scenarioDescription, setScenarioDescription] = useState("");
+  const [scenarioStatus, setScenarioStatus] = useState("concept");
+  const [saving, setSaving] = useState(false);
+  const [converting, setConverting] = useState(false);
+  const [convertResultDialog, setConvertResultDialog] = useState<any[] | null>(null);
+  const [lastSavedSnapshot, setLastSavedSnapshot] = useState<string | null>(null);
+  const [loadedScenarioName, setLoadedScenarioName] = useState<string | null>(null);
 
   // Fetch waitlist clients
   const { data: waitlistClients = [] } = useQuery({
@@ -104,13 +125,38 @@ export default function GroupComposer() {
     },
   });
 
-  // Build availability map (central helper, no fallbacks)
-  const availByClient = useMemo(() => buildAvailabilityByClient(allAvailability as any), [allAvailability]);
+  // Fetch program_clients for "al ingepland" check (AC-2)
+  const { data: programClients = [] } = useQuery({
+    queryKey: ["program-clients-active"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("program_clients")
+        .select("client_id, programs!inner(archived)")
+        .eq("programs.archived", false);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
 
-  // Find top overlapping timeslots (central helper)
-  const getSuggestions = (clientIds: Set<string>) => {
-    return getTopAvailabilityOverlaps(clientIds, availByClient, 3);
-  };
+  const programClientIds = useMemo(() => new Set(programClients.map((pc: any) => pc.client_id)), [programClients]);
+
+  // Fetch override logs
+  const { data: overrideLogs = [] } = useQuery({
+    queryKey: ["availability-override-logs-active"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("availability_override_logs")
+        .select("client_id")
+        .eq("active", true);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const overriddenClientIds = useMemo(() => new Set(overrideLogs.map((o: any) => o.client_id as string)), [overrideLogs]);
+
+  const availByClient = useMemo(() => buildAvailabilityByClient(allAvailability as any), [allAvailability]);
+  const getSuggestions = (clientIds: Set<string>) => getTopAvailabilityOverlaps(clientIds, availByClient, 3);
 
   const { data: allTrainers = [] } = useQuery({
     queryKey: ["group-composer-trainers"],
@@ -126,7 +172,6 @@ export default function GroupComposer() {
     },
   });
 
-  // Preference map (central helper)
   const prefsByClient = useMemo(() => buildPrefsByClientMap(allPreferences as any), [allPreferences]);
 
   const areaMap = useMemo(() => {
@@ -134,6 +179,88 @@ export default function GroupComposer() {
     areas.forEach((a: any) => { m[a.id] = a.name; });
     return m;
   }, [areas]);
+
+  const areaIds = useMemo(() => new Set(areas.map((a: any) => a.id as string)), [areas]);
+
+  // Current state snapshot for dirty detection
+  const getCurrentSnapshot = useCallback(() => {
+    return JSON.stringify({
+      simulatedGroups: Array.from(simulatedGroups.entries()),
+      selectedClients: Object.fromEntries(
+        Object.entries(selectedClients).map(([k, v]) => [k, Array.from(v)])
+      ),
+    });
+  }, [simulatedGroups, selectedClients]);
+
+  const isDirty = useMemo(() => {
+    if (!activeScenarioId) return simulatedGroups.size > 0;
+    const current = getCurrentSnapshot();
+    return current !== lastSavedSnapshot;
+  }, [activeScenarioId, getCurrentSnapshot, lastSavedSnapshot, simulatedGroups.size]);
+
+  // Load scenario from DB
+  useEffect(() => {
+    if (!activeScenarioId) return;
+
+    const loadScenario = async () => {
+      const { data: scenario, error } = await supabase
+        .from("simulation_scenarios")
+        .select(`
+          id, name, description, status,
+          simulation_scenario_slots (
+            id, area_id, age_category, label, mode, proposal_idx,
+            day_name, start_time, end_time, confirmed, notes,
+            simulation_scenario_members (client_id, has_override)
+          )
+        `)
+        .eq("id", activeScenarioId)
+        .single();
+
+      if (error || !scenario) {
+        toast({ title: "Scenario niet gevonden", variant: "destructive" });
+        return;
+      }
+
+      setLoadedScenarioName(scenario.name);
+      setScenarioName(scenario.name);
+      setScenarioDescription(scenario.description ?? "");
+      setScenarioStatus(scenario.status);
+
+      // Deserialize into simulatedGroups + selectedClients
+      const newSimulated = new Map<string, { proposalIdx: number; suggestion: any }>();
+      const newSelected: Record<string, Set<string>> = {};
+
+      (scenario.simulation_scenario_slots ?? []).forEach((slot: any) => {
+        const groupKey = `${slot.area_id}__${slot.age_category ?? ""}`;
+        newSimulated.set(groupKey, {
+          proposalIdx: slot.proposal_idx ?? 0,
+          suggestion: slot.mode === "manual" ? {
+            dayName: slot.day_name,
+            startTime: slot.start_time,
+            endTime: slot.end_time,
+          } : null,
+        });
+
+        const memberIds = (slot.simulation_scenario_members ?? []).map((m: any) => m.client_id);
+        newSelected[groupKey] = new Set(memberIds);
+      });
+
+      setSimulatedGroups(newSimulated);
+      setSelectedClients(newSelected);
+
+      // Set snapshot after loading
+      setTimeout(() => {
+        setLastSavedSnapshot(JSON.stringify({
+          simulatedGroups: Array.from(newSimulated.entries()),
+          selectedClients: Object.fromEntries(
+            Object.entries(newSelected).map(([k, v]) => [k, Array.from(v)])
+          ),
+        }));
+      }, 0);
+    };
+
+    loadScenario();
+  }, [activeScenarioId]);
 
   // Compute which clients are "claimed" by simulated groups
   const simulatedClientIds = useMemo(() => {
@@ -159,7 +286,6 @@ export default function GroupComposer() {
         const matchedClients: ClientWithMatch[] = [];
 
         waitlistClients.forEach((client: any) => {
-          // If this group is NOT simulated, exclude clients claimed by other simulated groups
           if (!isSimulated && simulatedClientIds.has(client.id)) return;
           const ageCat = getAgeCategoryPlanning(client.date_of_birth);
           if (ageCat !== ageCategory) return;
@@ -183,7 +309,6 @@ export default function GroupComposer() {
     return Array.from(map.values()).sort((a, b) => b.clients.length - a.clients.length);
   }, [waitlistClients, areas, areaMap, prefsByClient, simulatedGroups, simulatedClientIds]);
 
-  // Clients without area or age
   const unassigned = useMemo(() => {
     return waitlistClients.filter((c: any) => {
       if (simulatedClientIds.has(c.id)) return false;
@@ -203,7 +328,6 @@ export default function GroupComposer() {
       if (existing && existing.proposalIdx === proposalIdx) {
         next.delete(key);
       } else {
-        // Ensure selectedClients is populated for this key
         if (!selectedClients[key]) {
           setSelectedClients(sc => ({ ...sc, [key]: new Set(group.clients.map(cm => cm.client.id)) }));
         }
@@ -215,6 +339,9 @@ export default function GroupComposer() {
 
   const resetSimulation = () => {
     setSimulatedGroups(new Map());
+    setLastSavedSnapshot(null);
+    setLoadedScenarioName(null);
+    onClearScenario?.();
   };
 
   const oudertrainers = useMemo(() => {
@@ -278,7 +405,6 @@ export default function GroupComposer() {
     });
   };
 
-  // Find extra reserve-area candidates not already in a group
   const getReserveCandidates = (group: GroupedClients): ClientWithMatch[] => {
     const existingIds = new Set(group.clients.map(cm => cm.client.id));
     const candidates: ClientWithMatch[] = [];
@@ -288,7 +414,6 @@ export default function GroupComposer() {
       const ageCat = getAgeCategoryPlanning(client.date_of_birth);
       if (ageCat !== group.ageCategory) return;
 
-      // Check if this client has the group's area as a reserve preference
       const prefs = prefsByClient[client.id];
       if (prefs && prefs[group.areaId]) {
         const order = prefs[group.areaId];
@@ -303,6 +428,228 @@ export default function GroupComposer() {
 
     candidates.sort((a, b) => a.sortOrder - b.sortOrder);
     return candidates;
+  };
+
+  // === SCENARIO SAVE ===
+  const handleSaveScenario = async (): Promise<boolean> => {
+    if (!scenarioName.trim()) {
+      toast({ title: "Vul een naam in", variant: "destructive" });
+      return false;
+    }
+
+    setSaving(true);
+    try {
+      // Serialize simulatedGroups + selectedClients into slots + members
+      const slots: any[] = [];
+      simulatedGroups.forEach((val, groupKey) => {
+        const [areaId, ageCategory] = groupKey.split("__");
+        const members = Array.from(selectedClients[groupKey] ?? []).map(clientId => ({
+          client_id: clientId,
+          has_override: overriddenClientIds.has(clientId),
+        }));
+
+        slots.push({
+          area_id: areaId,
+          age_category: ageCategory || null,
+          label: null,
+          mode: val.suggestion ? "manual" : "proposal",
+          proposal_idx: val.suggestion ? null : val.proposalIdx,
+          day_name: val.suggestion?.dayName ? (
+            val.suggestion.dayName === "maandag" ? "ma" :
+            val.suggestion.dayName === "dinsdag" ? "di" :
+            val.suggestion.dayName === "woensdag" ? "wo" :
+            val.suggestion.dayName === "donderdag" ? "do" :
+            val.suggestion.dayName === "vrijdag" ? "vr" :
+            val.suggestion.dayName
+          ) : null,
+          start_time: val.suggestion?.startTime ?? null,
+          end_time: val.suggestion?.endTime ?? null,
+          confirmed: false,
+          notes: null,
+          members,
+        });
+      });
+
+      const { data, error } = await supabase.rpc("save_scenario", {
+        p_scenario_id: activeScenarioId ?? null,
+        p_name: scenarioName,
+        p_description: scenarioDescription || null,
+        p_status: scenarioStatus,
+        p_slots: slots,
+      });
+
+      if (error) throw error;
+
+      const savedId = data as string;
+      toast({ title: activeScenarioId ? "Scenario bijgewerkt" : "Scenario opgeslagen" });
+      queryClient.invalidateQueries({ queryKey: scenarioKeys.all });
+
+      // Update snapshot
+      setLastSavedSnapshot(getCurrentSnapshot());
+      setLoadedScenarioName(scenarioName);
+      onSaveScenario?.(savedId);
+      setSaveDialogOpen(false);
+      return true;
+    } catch (err: any) {
+      toast({ title: "Fout bij opslaan", description: err.message, variant: "destructive" });
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // === SCENARIO CONVERT ===
+  const handleConvert = async () => {
+    if (!activeScenarioId) {
+      toast({ title: "Sla eerst het scenario op", variant: "destructive" });
+      return;
+    }
+    if (isDirty) {
+      toast({ title: "Sla eerst op", description: "Er zijn onopgeslagen wijzigingen.", variant: "destructive" });
+      return;
+    }
+
+    setConverting(true);
+    try {
+      // Fresh validation on DB data
+      const { data: scenario, error: fetchErr } = await supabase
+        .from("simulation_scenarios")
+        .select(`
+          id, validation_status,
+          simulation_scenario_slots (
+            id, area_id, age_category, mode, proposal_idx, day_name, start_time, end_time, confirmed,
+            simulation_scenario_members (client_id, has_override)
+          )
+        `)
+        .eq("id", activeScenarioId)
+        .single();
+
+      if (fetchErr || !scenario) throw fetchErr ?? new Error("Scenario niet gevonden");
+
+      const slots = scenario.simulation_scenario_slots ?? [];
+      const clientsMap: Record<string, any> = {};
+      waitlistClients.forEach((c: any) => { clientsMap[c.id] = c; });
+
+      const membersBySlot: Record<string, { client_id: string; has_override: boolean }[]> = {};
+      slots.forEach((s: any) => {
+        membersBySlot[s.id] = (s.simulation_scenario_members ?? []).map((m: any) => ({
+          client_id: m.client_id,
+          has_override: m.has_override,
+        }));
+      });
+
+      const validation = validateScenario(
+        slots,
+        membersBySlot,
+        clientsMap,
+        availByClient,
+        prefsByClient,
+        programClientIds,
+        overriddenClientIds,
+        areaIds
+      );
+
+      // Update validation in DB
+      await supabase
+        .from("simulation_scenarios")
+        .update({
+          validation_status: validation.status,
+          validation_details: validation as any,
+          last_validated_at: new Date().toISOString(),
+        })
+        .eq("id", activeScenarioId);
+
+      if (validation.status === "ongeldig") {
+        toast({
+          title: "Omzetting geblokkeerd",
+          description: "Het scenario is ongeldig. Los de problemen op en hervalideer.",
+          variant: "destructive",
+        });
+        queryClient.invalidateQueries({ queryKey: scenarioKeys.all });
+        return;
+      }
+
+      if (validation.status === "aandacht_vereist") {
+        const proceed = window.confirm(
+          "Het scenario vereist aandacht. Wil je toch doorgaan met omzetten?"
+        );
+        if (!proceed) return;
+      }
+
+      // Call convert RPC
+      const { data: results, error: convertErr } = await supabase.rpc("convert_scenario_to_planning", {
+        p_scenario_id: activeScenarioId,
+      });
+
+      if (convertErr) throw convertErr;
+
+      setConvertResultDialog(results as any[]);
+      queryClient.invalidateQueries({ queryKey: scenarioKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
+    } catch (err: any) {
+      toast({ title: "Fout bij omzetten", description: err.message, variant: "destructive" });
+    } finally {
+      setConverting(false);
+    }
+  };
+
+  // === VALIDATE ===
+  const handleValidate = async () => {
+    if (!activeScenarioId) return;
+
+    const { data: scenario, error } = await supabase
+      .from("simulation_scenarios")
+      .select(`
+        id,
+        simulation_scenario_slots (
+          id, area_id, age_category, mode, proposal_idx, day_name, start_time, end_time,
+          simulation_scenario_members (client_id, has_override)
+        )
+      `)
+      .eq("id", activeScenarioId)
+      .single();
+
+    if (error || !scenario) {
+      toast({ title: "Scenario niet gevonden", variant: "destructive" });
+      return;
+    }
+
+    const slots = scenario.simulation_scenario_slots ?? [];
+    const clientsMap: Record<string, any> = {};
+    waitlistClients.forEach((c: any) => { clientsMap[c.id] = c; });
+
+    const membersBySlot: Record<string, { client_id: string; has_override: boolean }[]> = {};
+    slots.forEach((s: any) => {
+      membersBySlot[s.id] = (s.simulation_scenario_members ?? []).map((m: any) => ({
+        client_id: m.client_id,
+        has_override: m.has_override,
+      }));
+    });
+
+    const validation = validateScenario(
+      slots,
+      membersBySlot,
+      clientsMap,
+      availByClient,
+      prefsByClient,
+      programClientIds,
+      overriddenClientIds,
+      areaIds
+    );
+
+    await supabase
+      .from("simulation_scenarios")
+      .update({
+        validation_status: validation.status,
+        validation_details: validation as any,
+        last_validated_at: new Date().toISOString(),
+      })
+      .eq("id", activeScenarioId);
+
+    queryClient.invalidateQueries({ queryKey: scenarioKeys.all });
+    toast({
+      title: `Validatie: ${validation.status === "geldig" ? "Geldig ✓" : validation.status === "aandacht_vereist" ? "Aandacht vereist ⚠" : "Ongeldig ✗"}`,
+    });
   };
 
   const createGroup = async (g: GroupedClients) => {
@@ -370,7 +717,6 @@ export default function GroupComposer() {
     }
   };
 
-  // Render a client row with status + match badges
   const renderClientRow = (cm: ClientWithMatch, group: GroupedClients, selected: Set<string>) => {
     const { client, matchType } = cm;
     const age = calculateAge(client.date_of_birth);
@@ -446,9 +792,8 @@ export default function GroupComposer() {
         )}
       </div>
 
-      {/* Simulation banner */}
+      {/* Simulation / scenario banner */}
       {isSimulating && (() => {
-        // Compute area-level impact
         const affectedAreas = new Set<string>();
         simulatedGroups.forEach((val, simKey) => {
           const areaId = simKey.split("__")[0];
@@ -474,12 +819,56 @@ export default function GroupComposer() {
               <div className="flex items-center gap-2">
                 <FlaskConical className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium text-foreground">
-                  Simulatie actief — {simulatedGroups.size} voorstel(len) gesimuleerd, {simulatedClientIds.size} deelnemers gereserveerd
+                  {loadedScenarioName
+                    ? `Scenario: ${loadedScenarioName}`
+                    : "Losse simulatie"
+                  }
+                  {" — "}{simulatedGroups.size} voorstel(len), {simulatedClientIds.size} deelnemers
                 </span>
+                {isDirty && (
+                  <Badge variant="outline" className="text-[10px] border-amber-300 text-amber-700 gap-0.5">
+                    <AlertTriangle className="h-2.5 w-2.5" />
+                    Wijzigingen niet opgeslagen
+                  </Badge>
+                )}
               </div>
-              <Button variant="outline" size="sm" onClick={resetSimulation} className="gap-1.5">
-                <RotateCcw className="h-3 w-3" /> Reset
-              </Button>
+              <div className="flex items-center gap-1.5">
+                <Button variant="outline" size="sm" onClick={() => setSaveDialogOpen(true)} className="gap-1.5">
+                  <Save className="h-3 w-3" /> Opslaan
+                </Button>
+                {activeScenarioId && (
+                  <>
+                    <Button variant="outline" size="sm" onClick={handleValidate} className="gap-1.5">
+                      <CheckCircle2 className="h-3 w-3" /> Hervalideren
+                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={handleConvert}
+                              disabled={isDirty || converting}
+                              className="gap-1.5"
+                            >
+                              <Upload className="h-3 w-3" /> {converting ? "Omzetten..." : "Omzetten naar planning"}
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        {isDirty && (
+                          <TooltipContent>
+                            <p className="text-xs">Sla eerst op voordat je kunt omzetten</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+                  </>
+                )}
+                <Button variant="outline" size="sm" onClick={resetSimulation} className="gap-1.5">
+                  <RotateCcw className="h-3 w-3" /> Reset
+                </Button>
+              </div>
             </div>
             {impactedCount > 0 && (
               <p className="text-xs text-muted-foreground pl-6">
@@ -557,7 +946,6 @@ export default function GroupComposer() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Client list split by status */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Aanmelders</span>
@@ -569,7 +957,6 @@ export default function GroupComposer() {
                     </button>
                   </div>
                   <div className="max-h-56 overflow-y-auto space-y-0.5 pr-1">
-                    {/* Intake afgerond section */}
                     {intakeClients.length > 0 && (
                       <>
                         <div className="text-[10px] font-semibold text-blue-700 uppercase tracking-wider px-2 pt-1 pb-0.5">
@@ -578,7 +965,6 @@ export default function GroupComposer() {
                         {intakeClients.map(cm => renderClientRow(cm, group, selected))}
                       </>
                     )}
-                    {/* Wachtlijst section */}
                     {wachtlijstClients_.length > 0 && (
                       <>
                         <div className="text-[10px] font-semibold text-orange-700 uppercase tracking-wider px-2 pt-2 pb-0.5">
@@ -590,7 +976,6 @@ export default function GroupComposer() {
                   </div>
                 </div>
 
-                {/* Reserve area search button */}
                 <Button
                   variant="outline"
                   size="sm"
@@ -616,7 +1001,6 @@ export default function GroupComposer() {
                   </div>
                 )}
 
-                {/* Vermoedelijke startdatum */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                     <Calendar className="h-3 w-3" /> Vermoedelijke startdatum
@@ -629,7 +1013,6 @@ export default function GroupComposer() {
                   />
                 </div>
 
-                {/* Trainer selection */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
@@ -673,7 +1056,6 @@ export default function GroupComposer() {
                   </div>
                 </div>
 
-                {/* Suggested timeslot */}
                 {(() => {
                   const suggestions = getSuggestions(selected);
                   const clientsWithAvail = Array.from(selected).filter(id => availByClient[id]?.length > 0).length;
@@ -740,7 +1122,6 @@ export default function GroupComposer() {
                   );
                 })()}
 
-                {/* Create button */}
                 <Button
                   className="w-full"
                   onClick={() => createGroup(group)}
@@ -801,6 +1182,94 @@ export default function GroupComposer() {
           </>
         );
       })()}
+
+      {/* Save scenario dialog */}
+      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{activeScenarioId ? "Scenario bijwerken" : "Opslaan als scenario"}</DialogTitle>
+            <DialogDescription>
+              Geef het scenario een naam en optioneel een beschrijving.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Naam *</Label>
+              <Input
+                value={scenarioName}
+                onChange={(e) => setScenarioName(e.target.value)}
+                placeholder="bijv. Kralingen 5-7 Q2"
+              />
+            </div>
+            <div>
+              <Label>Beschrijving</Label>
+              <Textarea
+                value={scenarioDescription}
+                onChange={(e) => setScenarioDescription(e.target.value)}
+                placeholder="Optionele toelichting..."
+                rows={2}
+              />
+            </div>
+            <div>
+              <Label>Status</Label>
+              <Select value={scenarioStatus} onValueChange={setScenarioStatus}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="concept">Concept</SelectItem>
+                  <SelectItem value="vastgezet">Vastgezet</SelectItem>
+                  <SelectItem value="in_uitwerking">In uitwerking</SelectItem>
+                  <SelectItem value="gecontroleerd">Gecontroleerd</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>Annuleren</Button>
+            <Button onClick={handleSaveScenario} disabled={saving}>
+              {saving ? "Opslaan..." : "Opslaan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Convert result dialog */}
+      <Dialog open={convertResultDialog !== null} onOpenChange={(open) => { if (!open) setConvertResultDialog(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Omzettingsresultaat</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            {(convertResultDialog ?? []).map((result: any, idx: number) => (
+              <div key={idx} className={`rounded-lg border p-3 ${result.status === "gelukt" ? "border-emerald-300 bg-emerald-50" : "border-red-300 bg-red-50"}`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold">
+                    Slot {result.label ?? idx + 1}
+                  </span>
+                  <Badge variant="outline" className={result.status === "gelukt" ? "border-emerald-300 text-emerald-700" : "border-red-300 text-red-700"}>
+                    {result.status === "gelukt" ? "✓ Omgezet" : "✗ Mislukt"}
+                  </Badge>
+                </div>
+                {result.program_id && (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="text-xs p-0 h-auto mt-1"
+                    onClick={() => { setConvertResultDialog(null); navigate(`/programmas/${result.program_id}`); }}
+                  >
+                    Bekijk programma →
+                  </Button>
+                )}
+                {result.error && (
+                  <p className="text-xs text-red-700 mt-1">{result.error}</p>
+                )}
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setConvertResultDialog(null)}>Sluiten</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

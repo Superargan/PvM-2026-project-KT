@@ -1119,6 +1119,172 @@ export type Database = {
           },
         ]
       }
+      simulation_scenario_members: {
+        Row: {
+          client_id: string
+          has_override: boolean
+          id: string
+          notes: string | null
+          scenario_slot_id: string
+          validation_reasons: string[] | null
+          validation_status: string | null
+        }
+        Insert: {
+          client_id: string
+          has_override?: boolean
+          id?: string
+          notes?: string | null
+          scenario_slot_id: string
+          validation_reasons?: string[] | null
+          validation_status?: string | null
+        }
+        Update: {
+          client_id?: string
+          has_override?: boolean
+          id?: string
+          notes?: string | null
+          scenario_slot_id?: string
+          validation_reasons?: string[] | null
+          validation_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulation_scenario_members_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulation_scenario_members_scenario_slot_id_fkey"
+            columns: ["scenario_slot_id"]
+            isOneToOne: false
+            referencedRelation: "simulation_scenario_slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      simulation_scenario_slots: {
+        Row: {
+          age_category: string | null
+          area_id: string
+          confirmed: boolean
+          conversion_error: string | null
+          conversion_status: string
+          converted_at: string | null
+          converted_program_id: string | null
+          day_name: string | null
+          end_time: string | null
+          id: string
+          label: string | null
+          mode: string | null
+          notes: string | null
+          proposal_idx: number | null
+          scenario_id: string
+          start_time: string | null
+        }
+        Insert: {
+          age_category?: string | null
+          area_id: string
+          confirmed?: boolean
+          conversion_error?: string | null
+          conversion_status?: string
+          converted_at?: string | null
+          converted_program_id?: string | null
+          day_name?: string | null
+          end_time?: string | null
+          id?: string
+          label?: string | null
+          mode?: string | null
+          notes?: string | null
+          proposal_idx?: number | null
+          scenario_id: string
+          start_time?: string | null
+        }
+        Update: {
+          age_category?: string | null
+          area_id?: string
+          confirmed?: boolean
+          conversion_error?: string | null
+          conversion_status?: string
+          converted_at?: string | null
+          converted_program_id?: string | null
+          day_name?: string | null
+          end_time?: string | null
+          id?: string
+          label?: string | null
+          mode?: string | null
+          notes?: string | null
+          proposal_idx?: number | null
+          scenario_id?: string
+          start_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulation_scenario_slots_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulation_scenario_slots_converted_program_id_fkey"
+            columns: ["converted_program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulation_scenario_slots_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "simulation_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      simulation_scenarios: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          last_validated_at: string | null
+          name: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          validation_details: Json | null
+          validation_status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          last_validated_at?: string | null
+          name: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          validation_details?: Json | null
+          validation_status?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          last_validated_at?: string | null
+          name?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          validation_details?: Json | null
+          validation_status?: string
+        }
+        Relationships: []
+      }
       staff: {
         Row: {
           address: string | null
@@ -1257,6 +1423,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      convert_scenario_to_planning: {
+        Args: { p_scenario_id: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1271,6 +1441,16 @@ export type Database = {
       is_trainer_for_program: {
         Args: { _program_id: string }
         Returns: boolean
+      }
+      save_scenario: {
+        Args: {
+          p_description?: string
+          p_name?: string
+          p_scenario_id?: string
+          p_slots?: Json
+          p_status?: string
+        }
+        Returns: string
       }
     }
     Enums: {
