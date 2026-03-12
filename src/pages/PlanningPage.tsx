@@ -55,7 +55,7 @@ function AvailabilitySummaryPanel({ filterArea, filterAge, areaName }: { filterA
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, first_name, last_name, date_of_birth, waitlist_area_id, intake_status, school_id, schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
+        .select("id, first_name, last_name, date_of_birth, waitlist_area_id, neighborhood_id, intake_status, school_id, neighborhoods:neighborhood_id(id, area_id, areas(id, name)), schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
         .eq("archived", false)
         .in("intake_status", ["wachtlijst", "intake_afgerond"]);
       if (error) throw error;
@@ -212,7 +212,7 @@ export default function PlanningPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, first_name, last_name, intake_status, intake_date, date_of_birth, waitlist_area_id, school_id, schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
+        .select("id, first_name, last_name, intake_status, intake_date, date_of_birth, waitlist_area_id, neighborhood_id, school_id, neighborhoods:neighborhood_id(id, area_id, areas(id, name)), schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
         .eq("archived", false)
         .in("intake_status", ["intake_gepland", "intake", "intake_afgerond"])
         .gte("intake_date", format(dateRange.start, "yyyy-MM-dd"))
@@ -296,7 +296,7 @@ export default function PlanningPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, first_name, last_name, waitlist_area_id, neighborhood_id, date_of_birth, intake_status, school_id, schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
+        .select("id, first_name, last_name, waitlist_area_id, neighborhood_id, date_of_birth, intake_status, school_id, neighborhoods:neighborhood_id(id, area_id, areas(id, name)), schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
         .eq("archived", false)
         .in("intake_status", ["nieuw", "intake_gepland", "intake", "intake_afgerond", "actief", "wachtlijst"])
         .order("first_name");
@@ -308,11 +308,10 @@ export default function PlanningPage() {
   // Helper to get resolved area name for a client
   const getResolvedAreaName = (client: any): string => {
     if (client.waitlist_area_id) {
-      // Try areas from waitlist_area_id join first
       const areaName = areas.find((a: any) => a.id === client.waitlist_area_id)?.name;
       if (areaName) return areaName;
     }
-    // Fallback to school→neighborhood→area chain
+    if (client.neighborhoods?.areas?.name) return client.neighborhoods.areas.name;
     return client.schools?.neighborhoods?.areas?.name ?? "—";
   };
 
@@ -398,11 +397,16 @@ export default function PlanningPage() {
   const availByClient = useMemo(() => buildAvailabilityByClient(allClientAvailability), [allClientAvailability]);
   const prefsByClient = useMemo(() => buildPrefsByClientMap(allPreferences), [allPreferences]);
 
-  // Warning counts
+  // Warning counts (consistent met matrix-logica in WaitlistOverview)
   const warningCounts = useMemo(() => {
     const planningClients = allClients.filter((c: any) => {
       const s = c.intake_status ?? "nieuw";
       return s === "intake_afgerond" || s === "wachtlijst";
+    });
+
+    const rawAvailByClient: Record<string, number> = {};
+    allClientAvailability.forEach((a: any) => {
+      rawAvailByClient[a.client_id] = (rawAvailByClient[a.client_id] ?? 0) + 1;
     });
 
     let noAvail = 0;
@@ -418,34 +422,41 @@ export default function PlanningPage() {
     const overriddenIds: string[] = [];
 
     planningClients.forEach((c: any) => {
+      // Zelfde basis als matrix: alleen deelnemers met geldige leeftijdscategorie
+      const ageCategory = getAgeCategoryPlanning(c.date_of_birth);
+      if (!ageCategory) return;
+
       const comp = getClientDataCompleteness(c, availByClient, prefsByClient, overriddenClientIds);
 
+      // Categorieën zijn bewust exclusief om dubbeltelling te voorkomen
       if (comp.isOverridden) {
         overridden++;
         overriddenIds.push(c.id);
-        return; // mutually exclusive
-      }
-
-      if (comp.requiresAvailability && !comp.hasAvailability) {
-        noAvail++;
-        noAvailIds.push(c.id);
-      }
-
-      // For "unusable": has raw records but none usable (buildAvailabilityByClient filtered all out)
-      const rawRecords = allClientAvailability.filter((a: any) => a.client_id === c.id);
-      if (rawRecords.length > 0 && !comp.hasUsableAvailability) {
-        unusableAvail++;
-        unusableAvailIds.push(c.id);
-      }
-
-      if (comp.hasUsableAvailability && !hasAvailabilityCoverage(availByClient[c.id])) {
-        staleCoverage++;
-        staleCoverageIds.push(c.id);
+        return;
       }
 
       if (comp.requiresAvailability && !comp.hasArea) {
         noArea++;
         noAreaIds.push(c.id);
+        return;
+      }
+
+      const rawCount = rawAvailByClient[c.id] ?? 0;
+      if (comp.requiresAvailability && rawCount > 0 && !comp.hasUsableAvailability) {
+        unusableAvail++;
+        unusableAvailIds.push(c.id);
+        return;
+      }
+
+      if (comp.requiresAvailability && !comp.hasAvailability) {
+        noAvail++;
+        noAvailIds.push(c.id);
+        return;
+      }
+
+      if (comp.requiresAvailability && comp.hasUsableAvailability && !hasAvailabilityCoverage(availByClient[c.id])) {
+        staleCoverage++;
+        staleCoverageIds.push(c.id);
       }
     });
 

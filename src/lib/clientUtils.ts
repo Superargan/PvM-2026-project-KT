@@ -18,6 +18,7 @@ export function getAgeCategoryPlanning(dob: string | null): AgeCategory | null {
 
 export function resolveAreaId(client: any): string | null {
   if (client.waitlist_area_id) return client.waitlist_area_id;
+  if (client.neighborhoods?.area_id) return client.neighborhoods.area_id;
   return client.schools?.neighborhoods?.area_id ?? null;
 }
 
