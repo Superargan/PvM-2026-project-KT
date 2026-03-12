@@ -53,7 +53,8 @@ export default function GroupComposer() {
   const [expandedReserve, setExpandedReserve] = useState<Set<string>>(new Set());
   const [selectedStartDate, setSelectedStartDate] = useState<Record<string, string>>({});
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
-  const [simulatedGroups, setSimulatedGroups] = useState<Set<string>>(new Set());
+  // key = groupKey, value = { proposalIdx, suggestion }
+  const [simulatedGroups, setSimulatedGroups] = useState<Map<string, { proposalIdx: number; suggestion: any }>>(new Map());
 
   // Fetch waitlist clients
   const { data: waitlistClients = [] } = useQuery({
@@ -137,7 +138,7 @@ export default function GroupComposer() {
   // Compute which clients are "claimed" by simulated groups
   const simulatedClientIds = useMemo(() => {
     const ids = new Set<string>();
-    simulatedGroups.forEach(simKey => {
+    simulatedGroups.forEach((val, simKey) => {
       const sel = selectedClients[simKey];
       if (sel) sel.forEach(id => ids.add(id));
     });
@@ -195,24 +196,25 @@ export default function GroupComposer() {
     return groups.filter(g => g.areaId === filterArea);
   }, [groups, filterArea]);
 
-  const toggleSimulation = (key: string, group: GroupedClients) => {
+  const toggleSimulation = (key: string, group: GroupedClients, proposalIdx: number, suggestion: any) => {
     setSimulatedGroups(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) {
+      const next = new Map(prev);
+      const existing = next.get(key);
+      if (existing && existing.proposalIdx === proposalIdx) {
         next.delete(key);
       } else {
         // Ensure selectedClients is populated for this key
         if (!selectedClients[key]) {
           setSelectedClients(sc => ({ ...sc, [key]: new Set(group.clients.map(cm => cm.client.id)) }));
         }
-        next.add(key);
+        next.set(key, { proposalIdx, suggestion });
       }
       return next;
     });
   };
 
   const resetSimulation = () => {
-    setSimulatedGroups(new Set());
+    setSimulatedGroups(new Map());
   };
 
   const oudertrainers = useMemo(() => {
@@ -445,19 +447,61 @@ export default function GroupComposer() {
       </div>
 
       {/* Simulation banner */}
-      {isSimulating && (
-        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FlaskConical className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-foreground">
-              Simulatie actief — {simulatedGroups.size} groep(en) proforma geaccepteerd, {simulatedClientIds.size} deelnemers gereserveerd
-            </span>
+      {isSimulating && (() => {
+        // Compute area-level impact
+        const affectedAreas = new Set<string>();
+        simulatedGroups.forEach((val, simKey) => {
+          const areaId = simKey.split("__")[0];
+          affectedAreas.add(areaId);
+        });
+        const otherGroupsInSameArea = filteredGroups.filter(g => {
+          const gKey = getGroupKey(g);
+          return !simulatedGroups.has(gKey) && affectedAreas.has(g.areaId);
+        });
+        const impactedCount = otherGroupsInSameArea.reduce((sum, g) => {
+          const originalCount = waitlistClients.filter((c: any) => {
+            const ageCat = getAgeCategoryPlanning(c.date_of_birth);
+            if (ageCat !== g.ageCategory) return false;
+            const mt = getMatchType(c, g.areaId, prefsByClient);
+            return !!mt;
+          }).length;
+          return sum + Math.max(0, originalCount - g.clients.length);
+        }, 0);
+
+        return (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FlaskConical className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-foreground">
+                  Simulatie actief — {simulatedGroups.size} voorstel(len) gesimuleerd, {simulatedClientIds.size} deelnemers gereserveerd
+                </span>
+              </div>
+              <Button variant="outline" size="sm" onClick={resetSimulation} className="gap-1.5">
+                <RotateCcw className="h-3 w-3" /> Reset
+              </Button>
+            </div>
+            {impactedCount > 0 && (
+              <p className="text-xs text-muted-foreground pl-6">
+                ↳ {impactedCount} deelnemer(s) weggevallen uit {otherGroupsInSameArea.length} andere groep(en) in {affectedAreas.size === 1 ? "hetzelfde gebied" : `${affectedAreas.size} gebieden`}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-1.5 pl-6">
+              {Array.from(simulatedGroups.entries()).map(([simKey, val]) => {
+                const parts = simKey.split("__");
+                const areaName = areaMap[parts[0]] ?? "Onbekend";
+                return (
+                  <Badge key={simKey} variant="outline" className="text-xs border-primary/30 text-primary gap-1">
+                    <CheckCircle2 className="h-3 w-3" />
+                    {areaName} · {parts[1]} — Voorstel {val.proposalIdx + 1}
+                    {val.suggestion && <span className="text-muted-foreground">({val.suggestion.dayName} {val.suggestion.startTime?.slice(0,5)})</span>}
+                  </Badge>
+                );
+              })}
+            </div>
           </div>
-          <Button variant="outline" size="sm" onClick={resetSimulation} className="gap-1.5">
-            <RotateCcw className="h-3 w-3" /> Reset simulatie
-          </Button>
-        </div>
-      )}
+        );
+      })()}
 
       {filteredGroups.length === 0 && (
         <div className="rounded-xl border border-border bg-card p-8 text-center">
@@ -633,6 +677,7 @@ export default function GroupComposer() {
                 {(() => {
                   const suggestions = getSuggestions(selected);
                   const clientsWithAvail = Array.from(selected).filter(id => availByClient[id]?.length > 0).length;
+                  const simulated = simulatedGroups.get(key);
                   
                   if (clientsWithAvail === 0) {
                     return (
@@ -654,51 +699,55 @@ export default function GroupComposer() {
 
                   return (
                     <div className="space-y-2">
-                      {suggestions.map((suggestion, idx) => (
-                        <div key={idx} className={`rounded-lg border p-3 space-y-1 ${idx === 0 ? "border-emerald-200 bg-emerald-50/50" : "border-border bg-muted/20"}`}>
-                          <div className="flex items-center gap-2">
-                            <CalendarClock className={`h-4 w-4 shrink-0 ${idx === 0 ? "text-emerald-600" : "text-muted-foreground"}`} />
-                            <p className={`text-xs font-semibold ${idx === 0 ? "text-emerald-800" : "text-foreground"}`}>Voorstel {idx + 1}</p>
+                      {suggestions.map((suggestion, idx) => {
+                        const isThisSimulated = simulated?.proposalIdx === idx;
+                        return (
+                          <div key={idx} className={`rounded-lg border p-3 space-y-1 ${isThisSimulated ? "border-primary ring-1 ring-primary/30 bg-primary/5" : idx === 0 ? "border-emerald-200 bg-emerald-50/50" : "border-border bg-muted/20"}`}>
+                            <div className="flex items-center gap-2 justify-between">
+                              <div className="flex items-center gap-2">
+                                <CalendarClock className={`h-4 w-4 shrink-0 ${isThisSimulated ? "text-primary" : idx === 0 ? "text-emerald-600" : "text-muted-foreground"}`} />
+                                <p className={`text-xs font-semibold ${isThisSimulated ? "text-primary" : idx === 0 ? "text-emerald-800" : "text-foreground"}`}>Voorstel {idx + 1}</p>
+                              </div>
+                              <Button
+                                variant={isThisSimulated ? "secondary" : "ghost"}
+                                size="sm"
+                                className={`h-7 text-xs gap-1 ${isThisSimulated ? "border-primary/30" : ""}`}
+                                onClick={() => toggleSimulation(key, group, idx, suggestion)}
+                                disabled={selected.size === 0}
+                              >
+                                {isThisSimulated ? (
+                                  <><CheckCircle2 className="h-3 w-3" /> Gesimuleerd</>
+                                ) : (
+                                  <><FlaskConical className="h-3 w-3" /> Simuleer</>
+                                )}
+                              </Button>
+                            </div>
+                            <div className="flex items-center gap-3 pl-6">
+                              <Badge variant="outline" className={`text-xs capitalize ${isThisSimulated ? "border-primary/30 text-primary" : idx === 0 ? "border-emerald-300 text-emerald-700" : "border-border text-foreground"}`}>
+                                {suggestion.dayName}
+                              </Badge>
+                              <span className="text-sm font-medium text-foreground">
+                                {suggestion.startTime.slice(0, 5)} – {suggestion.endTime.slice(0, 5)}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                ({suggestion.overlap}/{suggestion.total} beschikbaar)
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-3 pl-6">
-                            <Badge variant="outline" className={`text-xs capitalize ${idx === 0 ? "border-emerald-300 text-emerald-700" : "border-border text-foreground"}`}>
-                              {suggestion.dayName}
-                            </Badge>
-                            <span className="text-sm font-medium text-foreground">
-                              {suggestion.startTime.slice(0, 5)} – {suggestion.endTime.slice(0, 5)}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              ({suggestion.overlap}/{suggestion.total} beschikbaar)
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   );
                 })()}
 
-                {/* Simulation + Create buttons */}
-                <div className="flex gap-2">
-                  <Button
-                    variant={isGroupSimulated ? "secondary" : "outline"}
-                    className={`flex-1 gap-1.5 ${isGroupSimulated ? "border-primary/30" : ""}`}
-                    onClick={() => toggleSimulation(key, group)}
-                    disabled={selected.size === 0}
-                  >
-                    {isGroupSimulated ? (
-                      <><CheckCircle2 className="h-4 w-4" /> Geaccepteerd</>
-                    ) : (
-                      <><FlaskConical className="h-4 w-4" /> Simuleer</>
-                    )}
-                  </Button>
-                  <Button
-                    className="flex-1"
-                    onClick={() => createGroup(group)}
-                    disabled={isCreating || selected.size === 0}
-                  >
-                    {isCreating ? "Aanmaken..." : `Aanmaken (${selected.size})`}
-                  </Button>
-                </div>
+                {/* Create button */}
+                <Button
+                  className="w-full"
+                  onClick={() => createGroup(group)}
+                  disabled={isCreating || selected.size === 0}
+                >
+                  {isCreating ? "Aanmaken..." : `Groep aanmaken (${selected.size})`}
+                </Button>
               </CardContent>
             </Card>
           );
