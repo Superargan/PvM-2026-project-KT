@@ -154,6 +154,91 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
     return order[a.result] - order[b.result];
   });
 
+  /** Detect weekly pattern per client from existing records, then upsert for next 122 days */
+  const handleRefreshAvailability = async () => {
+    setRefreshing(true);
+    let updatedCount = 0;
+    let errorCount = 0;
+
+    try {
+      for (const c of clients) {
+        const raw = rawByClient[c.id] ?? [];
+        if (raw.length === 0) continue;
+
+        // Detect pattern: group by day-of-week, pick most common start/end time
+        const dayPatterns: Record<number, { start_time: string; end_time: string; count: number }> = {};
+        for (const r of raw) {
+          if (!r.start_time || !r.end_time || r.start_time >= r.end_time) continue;
+          const dow = new Date(r.available_date + "T00:00:00").getDay();
+          const key = dow;
+          const existing = dayPatterns[key];
+          if (!existing || r.start_time + r.end_time === existing.start_time + existing.end_time) {
+            dayPatterns[key] = {
+              start_time: r.start_time,
+              end_time: r.end_time,
+              count: (existing?.count ?? 0) + 1,
+            };
+          } else {
+            // Track most frequent pattern per day
+            const alt = { start_time: r.start_time, end_time: r.end_time, count: 1 };
+            if (!existing || alt.count > existing.count) {
+              dayPatterns[key] = alt;
+            }
+          }
+        }
+
+        if (Object.keys(dayPatterns).length === 0) continue;
+
+        // Generate dates for next 122 days
+        const inserts: { client_id: string; available_date: string; start_time: string; end_time: string }[] = [];
+        const start = new Date();
+        start.setHours(0, 0, 0, 0);
+        for (let i = 0; i < 122; i++) {
+          const d = new Date(start);
+          d.setDate(d.getDate() + i);
+          const dow = d.getDay();
+          const pattern = dayPatterns[dow];
+          if (pattern) {
+            inserts.push({
+              client_id: c.id,
+              available_date: d.toISOString().split("T")[0],
+              start_time: pattern.start_time,
+              end_time: pattern.end_time,
+            });
+          }
+        }
+
+        if (inserts.length === 0) continue;
+
+        // Upsert in batches of 200
+        for (let i = 0; i < inserts.length; i += 200) {
+          const { error } = await supabase
+            .from("client_availability")
+            .upsert(inserts.slice(i, i + 200), { onConflict: "client_id,available_date" });
+          if (error) {
+            console.error(`Refresh mislukt voor ${c.id}:`, error.message);
+            errorCount++;
+            break;
+          }
+        }
+        updatedCount++;
+      }
+
+      toast({
+        title: "Beschikbaarheid geactualiseerd",
+        description: `${updatedCount} deelnemer(s) bijgewerkt voor de komende 4 maanden.${errorCount > 0 ? ` ${errorCount} fout(en).` : ""}`,
+      });
+
+      // Refresh data
+      queryClient.invalidateQueries({ queryKey: ["availability-validation-data"] });
+      queryClient.invalidateQueries({ queryKey: ["availability-validation-clients"] });
+    } catch (err: any) {
+      toast({ title: "Fout", description: err.message, variant: "destructive" });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const handleExport = () => {
     const columns = [
       { key: "naam", label: "Naam" },
@@ -205,9 +290,15 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
         <p className="text-sm text-muted-foreground">
           Beschikbaarheidscontrole voor <span className="font-semibold text-foreground">{clients.length}</span> planbare deelnemers
         </p>
-        <Button size="sm" variant="outline" onClick={handleExport} className="gap-1.5">
-          <Download className="h-3.5 w-3.5" /> Exporteer
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={handleRefreshAvailability} disabled={refreshing} className="gap-1.5">
+            {refreshing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+            Actualiseer 4 maanden
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleExport} className="gap-1.5">
+            <Download className="h-3.5 w-3.5" /> Exporteer
+          </Button>
+        </div>
       </div>
 
       {/* Stats badges */}
