@@ -284,7 +284,54 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                     </div>
                   </td>
                 </tr>
-              );
+                {/* Expandable validation details (T12) */}
+                {expandedValidation === scenario.id && scenario.validation_details && (() => {
+                  const details = scenario.validation_details as any;
+                  const slotResults = details?.slotResults ?? [];
+                  if (slotResults.length === 0) return (
+                    <tr><td colSpan={7} className="px-4 py-3 bg-muted/20 text-xs text-muted-foreground">Geen validatiedetails beschikbaar.</td></tr>
+                  );
+                  return (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-3 bg-muted/20">
+                        <div className="space-y-2">
+                          {slotResults.map((sr: any, i: number) => (
+                            <div key={sr.slotId ?? i} className={`rounded-lg border p-2 text-xs ${
+                              sr.status === "geldig" ? "border-emerald-200 bg-emerald-50/50" :
+                              sr.status === "aandacht_vereist" ? "border-amber-200 bg-amber-50/50" :
+                              "border-red-200 bg-red-50/50"
+                            }`}>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-semibold text-foreground">Slot {i + 1}</span>
+                                <Badge variant="outline" className={`text-[9px] ${validationColors[sr.status] ?? ""}`}>
+                                  {validationLabels[sr.status] ?? sr.status}
+                                </Badge>
+                              </div>
+                              {(sr.slotIssues ?? []).length > 0 && (
+                                <ul className="list-disc list-inside text-red-700 mb-1">
+                                  {sr.slotIssues.map((issue: string, j: number) => (
+                                    <li key={j}>{issue}</li>
+                                  ))}
+                                </ul>
+                              )}
+                              {(sr.memberResults ?? []).filter((mr: any) => mr.issues?.length > 0).map((mr: any) => (
+                                <div key={mr.clientId} className="flex items-start gap-1.5 ml-3 mt-0.5">
+                                  <span className="text-muted-foreground">•</span>
+                                  <span className="text-foreground font-medium">{mr.clientId.slice(0, 8)}…</span>
+                                  <span className={mr.status === "ongeldig" ? "text-red-700" : "text-amber-700"}>
+                                    {mr.issues.join("; ")}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })()}
+              </React.Fragment>
+            );
             })}
           </tbody>
         </table>
