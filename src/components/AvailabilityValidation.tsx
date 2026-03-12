@@ -26,6 +26,10 @@ interface ClientValidation {
 }
 
 export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id: string) => void }) {
+  const [refreshing, setRefreshing] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   // Clients that require availability
   const { data: clients = [], isLoading: loadingClients } = useQuery({
     queryKey: ["availability-validation-clients"],
