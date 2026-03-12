@@ -1,5 +1,31 @@
 import { differenceInYears, parseISO, addMonths, isAfter } from "date-fns";
 
+/**
+ * Standaard select-fragment voor alle client-queries die gebiedsresolutie nodig hebben.
+ * Bevat de volledige fallback-keten: waitlist_area_id → neighborhood_id → school.neighborhood.
+ * Gebruik dit als basis en voeg eventuele extra velden toe per component.
+ */
+export const CLIENT_AREA_SELECT = `id, first_name, last_name, date_of_birth, waitlist_area_id, neighborhood_id, all_areas_flexible, intake_status, school_id, dob_estimated, neighborhoods:neighborhood_id(id, area_id, areas(id, name)), schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))`;
+
+/**
+ * Resolve de gebiedsnaam voor een client via de standaard fallback-keten.
+ * Vereist dat de query CLIENT_AREA_SELECT (of equivalent) bevat.
+ *
+ * Keten: waitlist_area_id → lookup in areas array → client.neighborhoods.areas.name → client.schools.neighborhoods.areas.name
+ */
+export function getResolvedAreaName(client: any, areas?: { id: string; name: string }[]): string {
+  if (client.waitlist_area_id && areas) {
+    const found = areas.find((a) => a.id === client.waitlist_area_id);
+    if (found) return found.name;
+  }
+  // Fallback: direct join op areas via waitlist_area_id (als die in de query zit als `areas:waitlist_area_id(name)`)
+  if ((client as any).areas?.name) return (client as any).areas.name;
+  // Fallback: neighborhood → area
+  if (client.neighborhoods?.areas?.name) return client.neighborhoods.areas.name;
+  // Fallback: school → neighborhood → area
+  return client.schools?.neighborhoods?.areas?.name ?? "—";
+}
+
 export function calculateAge(dob: string | null): number | null {
   if (!dob) return null;
   return differenceInYears(new Date(), parseISO(dob));
@@ -542,7 +568,7 @@ export function validateScenarioSlot(
       // 4-month coverage check
       if (clientAvail && clientAvail.length > 0 && !hasAvailabilityCoverage(clientAvail)) {
         if (!(member.has_override && overriddenClientIds.has(member.client_id))) {
-          issues.push("Onvoldoende dekking: beschikbaarheid loopt niet 3 maanden vooruit");
+          issues.push("Beschikbaarheidsdekking onder 3 maanden — actualisatie nodig");
           memberStatus = memberStatus === "ongeldig" ? "ongeldig" : "aandacht_vereist";
         }
       }

@@ -49,7 +49,7 @@ export default function WachtlijstPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, first_name, last_name, date_of_birth, school_id, neighborhood_id, waitlist_status, waitlist_area_id, dropout_reason, dropout_action, intake_date, intake_status, registration_date, guardian_phone, guardian_name, created_at, schools(name), areas:waitlist_area_id(name)")
+        .select("id, first_name, last_name, date_of_birth, school_id, neighborhood_id, waitlist_status, waitlist_area_id, all_areas_flexible, dropout_reason, dropout_action, intake_date, intake_status, registration_date, guardian_phone, guardian_name, created_at, neighborhoods:neighborhood_id(id, area_id, areas(id, name)), schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
         .not("waitlist_status", "is", null)
         .eq("intake_status", "wachtlijst")
         .eq("archived", false)

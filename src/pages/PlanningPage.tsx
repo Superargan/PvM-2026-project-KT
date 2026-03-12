@@ -9,6 +9,7 @@ import {
   getClientDataCompleteness,
   hasAvailabilityCoverage,
   resolveAreaId,
+  getResolvedAreaName,
   type ClientDataCompleteness,
 } from "@/lib/clientUtils";
 import { clientKeys, areaKeys } from "@/lib/queryKeys";
@@ -305,15 +306,8 @@ export default function PlanningPage() {
     },
   });
 
-  // Helper to get resolved area name for a client
-  const getResolvedAreaName = (client: any): string => {
-    if (client.waitlist_area_id) {
-      const areaName = areas.find((a: any) => a.id === client.waitlist_area_id)?.name;
-      if (areaName) return areaName;
-    }
-    if (client.neighborhoods?.areas?.name) return client.neighborhoods.areas.name;
-    return client.schools?.neighborhoods?.areas?.name ?? "—";
-  };
+  // Use central helper for resolved area name
+  const getAreaNameForClient = (client: any): string => getResolvedAreaName(client, areas);
 
   const { data: clientAvailability = [], refetch: refetchClientAvail } = useQuery({
     queryKey: ["planning-client-availability", dateRange.start.toISOString(), dateRange.end.toISOString()],
@@ -330,7 +324,7 @@ export default function PlanningPage() {
 
   // All client availability (no date filter) for warning calculations — paginated to avoid 1000-row limit
   const { data: allClientAvailability = [] } = useQuery({
-    queryKey: clientKeys.list("all-availability"),
+    queryKey: clientKeys.allAvailability,
     queryFn: async () => {
       const results: any[] = [];
       let from = 0;
@@ -351,7 +345,7 @@ export default function PlanningPage() {
 
   // Client area preferences for warning calculations
   const { data: allPreferences = [] } = useQuery({
-    queryKey: clientKeys.list("all-preferences"),
+    queryKey: clientKeys.allAreaPreferences,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("client_area_preferences")
@@ -363,7 +357,7 @@ export default function PlanningPage() {
 
   // Override logs
   const { data: overrideLogs = [], refetch: refetchOverrides } = useQuery({
-    queryKey: ["availability-override-logs"],
+    queryKey: clientKeys.overrideLogs,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("availability_override_logs")

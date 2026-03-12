@@ -89,7 +89,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, first_name, last_name, date_of_birth, waitlist_area_id, all_areas_flexible, intake_status, school_id, neighborhood_id, schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
+        .select("id, first_name, last_name, date_of_birth, waitlist_area_id, all_areas_flexible, intake_status, school_id, neighborhood_id, neighborhoods:neighborhood_id(id, area_id, areas(id, name)), schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
         .eq("archived", false)
         .in("intake_status", ["wachtlijst", "intake_afgerond"]);
       if (error) throw error;
@@ -99,7 +99,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
 
   // Fetch area preferences
   const { data: allPreferences = [] } = useQuery({
-    queryKey: ["clients", "group-composer-prefs"],
+    queryKey: clientKeys.allAreaPreferences,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("client_area_preferences")
@@ -121,7 +121,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
 
   // Fetch all client availability — paginated to avoid 1000-row limit
   const { data: allAvailability = [] } = useQuery({
-    queryKey: ["clients", "group-composer-avail"],
+    queryKey: clientKeys.allAvailability,
     queryFn: async () => {
       const results: any[] = [];
       let from = 0;
@@ -157,7 +157,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
 
   // Fetch override logs
   const { data: overrideLogs = [] } = useQuery({
-    queryKey: ["availability-override-logs-active"],
+    queryKey: clientKeys.overrideLogs,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("availability_override_logs")

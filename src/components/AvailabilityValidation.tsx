@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { buildAvailabilityByClient, hasAvailabilityCoverage, statusLabels } from "@/lib/clientUtils";
+import { buildAvailabilityByClient, hasAvailabilityCoverage, statusLabels, getResolvedAreaName } from "@/lib/clientUtils";
 import { clientKeys, areaKeys } from "@/lib/queryKeys";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, first_name, last_name, date_of_birth, intake_status, waitlist_area_id, school_id, schools(name), areas:waitlist_area_id(name)")
+        .select("id, first_name, last_name, date_of_birth, intake_status, waitlist_area_id, school_id, neighborhood_id, neighborhoods:neighborhood_id(id, area_id, areas(id, name)), schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
         .eq("archived", false)
         .in("intake_status", ["intake_afgerond", "wachtlijst"])
         .order("last_name");
@@ -133,7 +133,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
 
     return {
       client: c,
-      areaName: (c as any).areas?.name ?? "—",
+      areaName: getResolvedAreaName(c),
       totalRecords: raw.length,
       usableRecords: usable.length,
       futureDays: futureUsable.length,
