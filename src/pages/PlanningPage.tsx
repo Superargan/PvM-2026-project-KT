@@ -306,15 +306,8 @@ export default function PlanningPage() {
     },
   });
 
-  // Helper to get resolved area name for a client
-  const getResolvedAreaName = (client: any): string => {
-    if (client.waitlist_area_id) {
-      const areaName = areas.find((a: any) => a.id === client.waitlist_area_id)?.name;
-      if (areaName) return areaName;
-    }
-    if (client.neighborhoods?.areas?.name) return client.neighborhoods.areas.name;
-    return client.schools?.neighborhoods?.areas?.name ?? "—";
-  };
+  // Use central helper for resolved area name
+  const getAreaNameForClient = (client: any): string => getResolvedAreaName(client, areas);
 
   const { data: clientAvailability = [], refetch: refetchClientAvail } = useQuery({
     queryKey: ["planning-client-availability", dateRange.start.toISOString(), dateRange.end.toISOString()],
