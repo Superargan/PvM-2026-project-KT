@@ -109,7 +109,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
       reason = "Er zijn geen beschikbaarheidsrecords vastgelegd.";
     } else if (hasCoverage) {
       result = "voldoende";
-      reason = "Beschikbaarheid dekt minimaal 4 maanden vooruit.";
+      reason = "Beschikbaarheid dekt minimaal 3 maanden vooruit.";
     } else {
       result = "onvolledig";
       // Determine specific reason
