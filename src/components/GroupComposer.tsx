@@ -45,6 +45,11 @@ interface GroupedClients {
   clients: ClientWithMatch[];
 }
 
+export interface GroupComposerHandle {
+  triggerSave: () => Promise<boolean>;
+  hasActiveSimulation: boolean;
+}
+
 interface GroupComposerProps {
   activeScenarioId?: string | null;
   onSaveScenario?: (scenarioId: string) => void;
@@ -52,7 +57,7 @@ interface GroupComposerProps {
   onLoadScenario?: (scenarioId: string) => void;
 }
 
-export default function GroupComposer({ activeScenarioId, onSaveScenario, onClearScenario, onLoadScenario }: GroupComposerProps) {
+const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(function GroupComposer({ activeScenarioId, onSaveScenario, onClearScenario, onLoadScenario }, ref) {
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
