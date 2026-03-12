@@ -196,24 +196,25 @@ export default function GroupComposer() {
     return groups.filter(g => g.areaId === filterArea);
   }, [groups, filterArea]);
 
-  const toggleSimulation = (key: string, group: GroupedClients) => {
+  const toggleSimulation = (key: string, group: GroupedClients, proposalIdx: number, suggestion: any) => {
     setSimulatedGroups(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) {
+      const next = new Map(prev);
+      const existing = next.get(key);
+      if (existing && existing.proposalIdx === proposalIdx) {
         next.delete(key);
       } else {
         // Ensure selectedClients is populated for this key
         if (!selectedClients[key]) {
           setSelectedClients(sc => ({ ...sc, [key]: new Set(group.clients.map(cm => cm.client.id)) }));
         }
-        next.add(key);
+        next.set(key, { proposalIdx, suggestion });
       }
       return next;
     });
   };
 
   const resetSimulation = () => {
-    setSimulatedGroups(new Set());
+    setSimulatedGroups(new Map());
   };
 
   const oudertrainers = useMemo(() => {
