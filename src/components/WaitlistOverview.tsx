@@ -35,7 +35,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
   });
 
   const { data: allPreferences = [] } = useQuery({
-    queryKey: ["clients", "waitlist-overview-prefs"],
+    queryKey: clientKeys.allAreaPreferences,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("client_area_preferences")

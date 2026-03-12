@@ -157,7 +157,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
 
   // Fetch override logs
   const { data: overrideLogs = [] } = useQuery({
-    queryKey: ["availability-override-logs-active"],
+    queryKey: clientKeys.overrideLogs,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("availability_override_logs")

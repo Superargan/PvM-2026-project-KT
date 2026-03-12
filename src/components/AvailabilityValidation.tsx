@@ -133,7 +133,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
 
     return {
       client: c,
-      areaName: (c as any).areas?.name ?? "—",
+      areaName: getResolvedAreaName(c),
       totalRecords: raw.length,
       usableRecords: usable.length,
       futureDays: futureUsable.length,

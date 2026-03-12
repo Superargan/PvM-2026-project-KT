@@ -357,7 +357,7 @@ export default function PlanningPage() {
 
   // Override logs
   const { data: overrideLogs = [], refetch: refetchOverrides } = useQuery({
-    queryKey: ["availability-override-logs"],
+    queryKey: clientKeys.overrideLogs,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("availability_override_logs")
