@@ -8,6 +8,7 @@ import {
   buildPrefsByClientMap,
   getClientDataCompleteness,
   hasAvailabilityCoverage,
+  resolveAreaId,
   type ClientDataCompleteness,
 } from "@/lib/clientUtils";
 import { clientKeys, areaKeys } from "@/lib/queryKeys";
