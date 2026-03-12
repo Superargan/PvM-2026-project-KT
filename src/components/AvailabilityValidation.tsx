@@ -5,7 +5,8 @@ import { clientKeys, areaKeys } from "@/lib/queryKeys";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CheckCircle2, AlertTriangle, XCircle, Download, Loader2, CalendarDays } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { CheckCircle2, AlertTriangle, XCircle, Download, Loader2, CalendarDays, Info } from "lucide-react";
 import { downloadExport } from "@/lib/csvExport";
 import { addMonths, format, parseISO, isAfter } from "date-fns";
 
@@ -19,6 +20,7 @@ interface ClientValidation {
   futureDays: number;
   lastDate: string | null;
   result: ValidationResult;
+  reason: string;
 }
 
 export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id: string) => void }) {
@@ -75,6 +77,8 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
     rawByClient[a.client_id].push(a);
   });
 
+  const threshold = addMonths(now, 4);
+
   const validations: ClientValidation[] = clients.map((c: any) => {
     const raw = rawByClient[c.id] ?? [];
     const usable = availByClient[c.id] ?? [];
@@ -84,12 +88,33 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
     const hasCoverage = hasAvailabilityCoverage(usable);
 
     let result: ValidationResult = "geen";
+    let reason = "";
+
     if (raw.length === 0) {
       result = "geen";
+      reason = "Er zijn geen beschikbaarheidsrecords vastgelegd.";
     } else if (hasCoverage) {
       result = "voldoende";
+      reason = "Beschikbaarheid dekt minimaal 4 maanden vooruit.";
     } else {
       result = "onvolledig";
+      // Determine specific reason
+      const reasons: string[] = [];
+      if (usable.length === 0 && raw.length > 0) {
+        reasons.push("Alle records zijn onbruikbaar (start-/eindtijd ontbreekt of ongeldig).");
+      } else {
+        if (futureUsable.length === 0) {
+          reasons.push("Geen toekomstige beschikbaarheid — alle records liggen in het verleden.");
+        } else {
+          const hasLongTerm = usable.some((a) => isAfter(parseISO(a.date), threshold));
+          if (!hasLongTerm) {
+            const lastUsable = lastDate ? format(parseISO(lastDate), "dd-MM-yyyy") : "—";
+            const thresholdStr = format(threshold, "dd-MM-yyyy");
+            reasons.push(`Dekking loopt t/m ${lastUsable}, maar moet doorlopen tot minimaal ${thresholdStr}.`);
+          }
+        }
+      }
+      reason = reasons.join(" ");
     }
 
     return {
@@ -100,6 +125,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
       futureDays: futureUsable.length,
       lastDate,
       result,
+      reason,
     };
   });
 
@@ -124,6 +150,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
       { key: "toekomst", label: "Toekomstige dagen" },
       { key: "laatsteDatum", label: "Laatste datum" },
       { key: "resultaat", label: "Resultaat" },
+      { key: "toelichting", label: "Toelichting" },
     ];
     const resultLabels: Record<ValidationResult, string> = {
       voldoende: "Voldoende (4 mnd)",
@@ -139,6 +166,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
       toekomst: v.futureDays,
       laatsteDatum: v.lastDate ? format(parseISO(v.lastDate), "dd-MM-yyyy") : "",
       resultaat: resultLabels[v.result],
+      toelichting: v.reason,
     }));
     downloadExport("beschikbaarheid-validatie.xlsx", columns, rows, "xlsx");
   };
@@ -184,71 +212,98 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
         </Badge>
       </div>
 
-      {/* Table */}
-      <div className="rounded-xl border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Naam</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Gebied</TableHead>
-              <TableHead className="text-right">Records</TableHead>
-              <TableHead className="text-right">Bruikbaar</TableHead>
-              <TableHead className="text-right">Toekomst</TableHead>
-              <TableHead>Laatste datum</TableHead>
-              <TableHead>Resultaat</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sorted.map((v) => (
-              <TableRow key={v.client.id}>
-                <TableCell>
-                  <span
-                    className="text-sm font-medium text-primary hover:underline cursor-pointer"
-                    onClick={() => onNavigate(v.client.id)}
-                  >
-                    {v.client.first_name} {v.client.last_name}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="text-[10px]">
-                    {statusLabels[v.client.intake_status] ?? v.client.intake_status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">{v.areaName}</TableCell>
-                <TableCell className="text-right text-sm">{v.totalRecords}</TableCell>
-                <TableCell className="text-right text-sm">
-                  {v.usableRecords}
-                  {v.totalRecords > 0 && v.usableRecords < v.totalRecords && (
-                    <span className="ml-1 text-amber-600 text-xs">({v.totalRecords - v.usableRecords} onbruikbaar)</span>
-                  )}
-                </TableCell>
-                <TableCell className="text-right text-sm">{v.futureDays}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {v.lastDate ? format(parseISO(v.lastDate), "dd-MM-yyyy") : "—"}
-                </TableCell>
-                <TableCell>
-                  {v.result === "voldoende" && (
-                    <Badge variant="outline" className="text-[10px] border-emerald-400 text-emerald-700 gap-1">
-                      <CheckCircle2 className="h-3 w-3" /> Voldoende
-                    </Badge>
-                  )}
-                  {v.result === "onvolledig" && (
-                    <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-700 gap-1">
-                      <AlertTriangle className="h-3 w-3" /> Onvolledig
-                    </Badge>
-                  )}
-                  {v.result === "geen" && (
-                    <Badge variant="outline" className="text-[10px] border-destructive text-destructive gap-1">
-                      <XCircle className="h-3 w-3" /> Geen
-                    </Badge>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      {/* Legend */}
+      <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-xs text-muted-foreground space-y-1">
+        <p><strong className="text-foreground">Voldoende:</strong> Er zijn bruikbare records met toekomstige data die minimaal 4 maanden vooruit lopen.</p>
+        <p><strong className="text-foreground">Onvolledig:</strong> Er zijn records, maar de dekking loopt niet ver genoeg vooruit, of de records zijn onbruikbaar (start-/eindtijd ontbreekt).</p>
+        <p><strong className="text-foreground">Geen:</strong> Er zijn helemaal geen beschikbaarheidsrecords vastgelegd voor deze deelnemer.</p>
       </div>
+
+      {/* Table */}
+      <TooltipProvider>
+        <div className="rounded-xl border border-border bg-card">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Naam</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Gebied</TableHead>
+                <TableHead className="text-right">Records</TableHead>
+                <TableHead className="text-right">Bruikbaar</TableHead>
+                <TableHead className="text-right">Toekomst</TableHead>
+                <TableHead>Laatste datum</TableHead>
+                <TableHead>Resultaat</TableHead>
+                <TableHead>Toelichting</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sorted.map((v) => (
+                <TableRow key={v.client.id}>
+                  <TableCell>
+                    <span
+                      className="text-sm font-medium text-primary hover:underline cursor-pointer"
+                      onClick={() => onNavigate(v.client.id)}
+                    >
+                      {v.client.first_name} {v.client.last_name}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-[10px]">
+                      {statusLabels[v.client.intake_status] ?? v.client.intake_status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{v.areaName}</TableCell>
+                  <TableCell className="text-right text-sm">{v.totalRecords}</TableCell>
+                  <TableCell className="text-right text-sm">
+                    {v.usableRecords}
+                    {v.totalRecords > 0 && v.usableRecords < v.totalRecords && (
+                      <span className="ml-1 text-amber-600 text-xs">({v.totalRecords - v.usableRecords} onbruikbaar)</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right text-sm">{v.futureDays}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {v.lastDate ? format(parseISO(v.lastDate), "dd-MM-yyyy") : "—"}
+                  </TableCell>
+                  <TableCell>
+                    {v.result === "voldoende" && (
+                      <Badge variant="outline" className="text-[10px] border-emerald-400 text-emerald-700 gap-1">
+                        <CheckCircle2 className="h-3 w-3" /> Voldoende
+                      </Badge>
+                    )}
+                    {v.result === "onvolledig" && (
+                      <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-700 gap-1">
+                        <AlertTriangle className="h-3 w-3" /> Onvolledig
+                      </Badge>
+                    )}
+                    {v.result === "geen" && (
+                      <Badge variant="outline" className="text-[10px] border-destructive text-destructive gap-1">
+                        <XCircle className="h-3 w-3" /> Geen
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground max-w-[240px]">
+                    {v.reason && v.result !== "voldoende" ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="flex items-center gap-1 cursor-help">
+                            <Info className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{v.reason}</span>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-xs text-xs">
+                          {v.reason}
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : v.result === "voldoende" ? (
+                      <span className="text-emerald-600">✓ OK</span>
+                    ) : null}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </TooltipProvider>
     </div>
   );
 }
