@@ -345,7 +345,7 @@ export default function PlanningPage() {
 
   // Client area preferences for warning calculations
   const { data: allPreferences = [] } = useQuery({
-    queryKey: clientKeys.list("all-preferences"),
+    queryKey: clientKeys.allAreaPreferences,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("client_area_preferences")
