@@ -6,14 +6,17 @@ import {
   getAgeCategoryReport,
   getAgeCategoryReportLabel,
   resolveAreaId,
+  getResolvedAreaName,
   getMatchType,
   matchSortOrder,
   statusLabels,
   allStatuses,
   REQUIRED_CLIENT_CHECKS,
   getMissingFields,
+  hasAvailabilityCoverage,
+  CLIENT_AREA_SELECT,
 } from "@/lib/clientUtils";
-import { differenceInYears, parseISO, subYears, format } from "date-fns";
+import { differenceInYears, parseISO, subYears, format, addMonths } from "date-fns";
 
 function dobForAge(age: number): string {
   const d = subYears(new Date(), age);
@@ -90,9 +93,13 @@ describe("getAgeCategoryReport — rapportage categorieën", () => {
   });
 });
 
-describe("resolveAreaId", () => {
+describe("resolveAreaId — fallback chain", () => {
   it("prefers waitlist_area_id", () => {
     expect(resolveAreaId({ waitlist_area_id: "a1", schools: { neighborhoods: { area_id: "a2" } } })).toBe("a1");
+  });
+
+  it("falls back to neighborhood_id.area_id", () => {
+    expect(resolveAreaId({ waitlist_area_id: null, neighborhoods: { area_id: "a3" }, schools: null })).toBe("a3");
   });
 
   it("falls back to school neighborhood", () => {
@@ -101,6 +108,33 @@ describe("resolveAreaId", () => {
 
   it("returns null when nothing available", () => {
     expect(resolveAreaId({ waitlist_area_id: null, schools: null })).toBeNull();
+  });
+});
+
+describe("getResolvedAreaName — central area name resolution", () => {
+  const areas = [
+    { id: "a1", name: "Noord" },
+    { id: "a2", name: "Zuid" },
+  ];
+
+  it("resolves via waitlist_area_id + areas array", () => {
+    expect(getResolvedAreaName({ waitlist_area_id: "a1" }, areas)).toBe("Noord");
+  });
+
+  it("falls back to neighborhoods.areas.name", () => {
+    expect(getResolvedAreaName({ waitlist_area_id: null, neighborhoods: { areas: { name: "Oost" } } }, areas)).toBe("Oost");
+  });
+
+  it("falls back to schools.neighborhoods.areas.name", () => {
+    expect(getResolvedAreaName({ waitlist_area_id: null, schools: { neighborhoods: { areas: { name: "West" } } } }, areas)).toBe("West");
+  });
+
+  it("returns '—' when no resolution possible", () => {
+    expect(getResolvedAreaName({ waitlist_area_id: null, schools: null }, areas)).toBe("—");
+  });
+
+  it("works without areas array via direct join", () => {
+    expect(getResolvedAreaName({ waitlist_area_id: "a1", areas: { name: "Direct" } })).toBe("Direct");
   });
 });
 
@@ -176,5 +210,50 @@ describe("getMissingFields — consistent across pages", () => {
   it("flags gebied for wachtlijst status", () => {
     const missing = getMissingFields({ intake_status: "wachtlijst" });
     expect(missing).toContain("Gebied");
+  });
+});
+
+describe("hasAvailabilityCoverage — signaleringsgrens 3 maanden", () => {
+  it("returns false for empty/undefined", () => {
+    expect(hasAvailabilityCoverage(undefined)).toBe(false);
+    expect(hasAvailabilityCoverage([])).toBe(false);
+  });
+
+  it("returns true when records span beyond 3 months", () => {
+    const future4m = format(addMonths(new Date(), 4), "yyyy-MM-dd");
+    const tomorrow = format(new Date(Date.now() + 86400000), "yyyy-MM-dd");
+    expect(hasAvailabilityCoverage([{ date: tomorrow }, { date: future4m }])).toBe(true);
+  });
+
+  it("returns false when all records within 3 months", () => {
+    const tomorrow = format(new Date(Date.now() + 86400000), "yyyy-MM-dd");
+    expect(hasAvailabilityCoverage([{ date: tomorrow }])).toBe(false);
+  });
+
+  it("default threshold is 3 months (signaleringsgrens)", () => {
+    // Calling with explicit 3 should give same result as default
+    const future4m = format(addMonths(new Date(), 4), "yyyy-MM-dd");
+    const tomorrow = format(new Date(Date.now() + 86400000), "yyyy-MM-dd");
+    const avail = [{ date: tomorrow }, { date: future4m }];
+    expect(hasAvailabilityCoverage(avail)).toBe(hasAvailabilityCoverage(avail, 3));
+  });
+});
+
+describe("CLIENT_AREA_SELECT — contains all required relations", () => {
+  it("includes neighborhoods:neighborhood_id relation", () => {
+    expect(CLIENT_AREA_SELECT).toContain("neighborhoods:neighborhood_id(");
+  });
+
+  it("includes schools with nested neighborhoods", () => {
+    expect(CLIENT_AREA_SELECT).toContain("schools(");
+    expect(CLIENT_AREA_SELECT).toContain("neighborhoods(id, area_id, areas(id, name))");
+  });
+
+  it("includes core client fields", () => {
+    expect(CLIENT_AREA_SELECT).toContain("waitlist_area_id");
+    expect(CLIENT_AREA_SELECT).toContain("neighborhood_id");
+    expect(CLIENT_AREA_SELECT).toContain("all_areas_flexible");
+    expect(CLIENT_AREA_SELECT).toContain("intake_status");
+    expect(CLIENT_AREA_SELECT).toContain("date_of_birth");
   });
 });
