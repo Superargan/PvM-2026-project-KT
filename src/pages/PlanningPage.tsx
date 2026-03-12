@@ -618,7 +618,7 @@ export default function PlanningPage() {
                       {c.first_name} {c.last_name}
                     </span>
                     <span className="text-xs text-muted-foreground ml-auto shrink-0">
-                      {(c as any).areas?.name ?? "Geen gebied"}
+                      {getResolvedAreaName(c) !== "—" ? getResolvedAreaName(c) : "Geen gebied"}
                     </span>
                     <Badge variant="outline" className="text-[10px] shrink-0">
                       {c.intake_status ?? "—"}
