@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Users, UserCog, Check, AlertTriangle, CalendarClock, Search, Calendar, Maximize2, FlaskConical, RotateCcw, CheckCircle2, Save, Upload, ShieldAlert } from "lucide-react";
