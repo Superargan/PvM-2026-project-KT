@@ -556,7 +556,7 @@ describe("hasAvailabilityCoverage", () => {
     ])).toBe(false);
   });
 
-  it("returns true when has records beyond 4 months", () => {
+  it("returns true when has records beyond 3 months", () => {
     const tomorrow = format(new Date(Date.now() + 86400000), "yyyy-MM-dd");
     const fiveMonths = format(addMonths(new Date(), 5), "yyyy-MM-dd");
     expect(hasAvailabilityCoverage([
