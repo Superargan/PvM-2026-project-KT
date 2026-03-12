@@ -99,7 +99,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
 
   // Fetch area preferences
   const { data: allPreferences = [] } = useQuery({
-    queryKey: ["clients", "group-composer-prefs"],
+    queryKey: clientKeys.allAreaPreferences,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("client_area_preferences")
