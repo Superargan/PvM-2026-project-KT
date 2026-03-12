@@ -1,4 +1,5 @@
-import { CheckCircle2, Loader2, ExternalLink, Clock, UserPlus, X, CalendarDays, Upload, Search, Pencil, AlertTriangle, Download, School, Users, Trash2 } from "lucide-react";
+import { CheckCircle2, Loader2, ExternalLink, Clock, UserPlus, X, CalendarDays, Upload, Search, Pencil, AlertTriangle, Download, School, Users, Trash2, CalendarCheck } from "lucide-react";
+import AvailabilityValidation from "@/components/AvailabilityValidation";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
