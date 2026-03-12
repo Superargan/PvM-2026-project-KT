@@ -192,7 +192,8 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
               const ValidationIcon = validationIcons[scenario.validation_status] ?? HelpCircle;
 
               return (
-                <tr key={scenario.id} className="hover:bg-muted/30 transition-colors">
+                <React.Fragment key={scenario.id}>
+                <tr className="hover:bg-muted/30 transition-colors">
                   <td className="px-3 py-2">
                     <p className="text-sm font-semibold text-foreground">{scenario.name}</p>
                     {scenario.description && (
