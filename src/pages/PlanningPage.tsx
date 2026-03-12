@@ -854,20 +854,20 @@ export default function PlanningPage() {
 
         {/* === WACHTLIJST & GROEPEN TAB === */}
         <TabsContent value="groepen" className="space-y-6">
+          {/* ScenarioOverview always renders — werkstate-bescherming (T07-T10) */}
+          <ScenarioOverview
+            onLoadScenario={(scenarioId) => {
+              setActiveScenarioId(scenarioId);
+              setShowGroupComposer(true);
+            }}
+            hasActiveSimulation={groupComposerRef.current?.hasActiveSimulation ?? false}
+            onRequestSaveFirst={async () => {
+              return groupComposerRef.current?.triggerSave() ?? false;
+            }}
+          />
+
           {!showGroupComposer ? (
             <>
-              <ScenarioOverview
-                onLoadScenario={(scenarioId) => {
-                  setActiveScenarioId(scenarioId);
-                  setShowGroupComposer(true);
-                }}
-                hasActiveSimulation={showGroupComposer}
-                onRequestSaveFirst={async () => {
-                  // This would need GroupComposer to expose save - for now return false
-                  return false;
-                }}
-              />
-
               <WaitlistOverview
                 onSelectGroup={(areaId, age) => {
                   setFilterArea(areaId);
@@ -901,6 +901,7 @@ export default function PlanningPage() {
                 ← Terug naar overzicht
               </Button>
               <GroupComposer
+                ref={groupComposerRef}
                 activeScenarioId={activeScenarioId}
                 onSaveScenario={(id) => setActiveScenarioId(id)}
                 onClearScenario={() => setActiveScenarioId(null)}
