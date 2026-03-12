@@ -119,15 +119,24 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     },
   });
 
-  // Fetch all client availability
+  // Fetch all client availability — paginated to avoid 1000-row limit
   const { data: allAvailability = [] } = useQuery({
     queryKey: ["clients", "group-composer-avail"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("client_availability")
-        .select("client_id, available_date, start_time, end_time");
-      if (error) throw error;
-      return data ?? [];
+      const results: any[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from("client_availability")
+          .select("client_id, available_date, start_time, end_time")
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (data) results.push(...data);
+        if (!data || data.length < pageSize) break;
+        from += pageSize;
+      }
+      return results;
     },
   });
 
