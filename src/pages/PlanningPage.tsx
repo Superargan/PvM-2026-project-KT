@@ -898,8 +898,8 @@ export default function PlanningPage() {
           ) : (
             <>
               <Button variant="ghost" size="sm" onClick={() => {
-                const hasUnsaved = groupComposerRef.current?.hasActiveSimulation;
-                if (hasUnsaved) {
+                const dirty = groupComposerRef.current?.isDirty;
+                if (dirty) {
                   if (!window.confirm("Je hebt niet-opgeslagen wijzigingen. Weet je zeker dat je terug wilt?")) {
                     return;
                   }

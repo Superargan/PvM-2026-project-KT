@@ -514,7 +514,8 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
       return false;
     },
     hasActiveSimulation: isSimulating,
-  }), [isSimulating, scenarioName]);
+    isDirty,
+  }), [isSimulating, scenarioName, isDirty]);
 
   // === SCENARIO CONVERT ===
   const handleConvert = async () => {
