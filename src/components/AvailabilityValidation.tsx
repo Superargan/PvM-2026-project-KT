@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { buildAvailabilityByClient, hasAvailabilityCoverage, statusLabels } from "@/lib/clientUtils";
 import { clientKeys, areaKeys } from "@/lib/queryKeys";
@@ -6,9 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { CheckCircle2, AlertTriangle, XCircle, Download, Loader2, CalendarDays, Info } from "lucide-react";
+import { CheckCircle2, AlertTriangle, XCircle, Download, Loader2, CalendarDays, Info, RefreshCw } from "lucide-react";
 import { downloadExport } from "@/lib/csvExport";
 import { addMonths, format, parseISO, isAfter } from "date-fns";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 type ValidationResult = "voldoende" | "onvolledig" | "geen";
 
