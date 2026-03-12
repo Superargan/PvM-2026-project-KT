@@ -447,19 +447,61 @@ export default function GroupComposer() {
       </div>
 
       {/* Simulation banner */}
-      {isSimulating && (
-        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FlaskConical className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-foreground">
-              Simulatie actief — {simulatedGroups.size} groep(en) proforma geaccepteerd, {simulatedClientIds.size} deelnemers gereserveerd
-            </span>
+      {isSimulating && (() => {
+        // Compute area-level impact
+        const affectedAreas = new Set<string>();
+        simulatedGroups.forEach((val, simKey) => {
+          const areaId = simKey.split("__")[0];
+          affectedAreas.add(areaId);
+        });
+        const otherGroupsInSameArea = filteredGroups.filter(g => {
+          const gKey = getGroupKey(g);
+          return !simulatedGroups.has(gKey) && affectedAreas.has(g.areaId);
+        });
+        const impactedCount = otherGroupsInSameArea.reduce((sum, g) => {
+          const originalCount = waitlistClients.filter((c: any) => {
+            const ageCat = getAgeCategoryPlanning(c.date_of_birth);
+            if (ageCat !== g.ageCategory) return false;
+            const mt = getMatchType(c, g.areaId, prefsByClient);
+            return !!mt;
+          }).length;
+          return sum + Math.max(0, originalCount - g.clients.length);
+        }, 0);
+
+        return (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FlaskConical className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-foreground">
+                  Simulatie actief — {simulatedGroups.size} voorstel(len) gesimuleerd, {simulatedClientIds.size} deelnemers gereserveerd
+                </span>
+              </div>
+              <Button variant="outline" size="sm" onClick={resetSimulation} className="gap-1.5">
+                <RotateCcw className="h-3 w-3" /> Reset
+              </Button>
+            </div>
+            {impactedCount > 0 && (
+              <p className="text-xs text-muted-foreground pl-6">
+                ↳ {impactedCount} deelnemer(s) weggevallen uit {otherGroupsInSameArea.length} andere groep(en) in {affectedAreas.size === 1 ? "hetzelfde gebied" : `${affectedAreas.size} gebieden`}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-1.5 pl-6">
+              {Array.from(simulatedGroups.entries()).map(([simKey, val]) => {
+                const parts = simKey.split("__");
+                const areaName = areaMap[parts[0]] ?? "Onbekend";
+                return (
+                  <Badge key={simKey} variant="outline" className="text-xs border-primary/30 text-primary gap-1">
+                    <CheckCircle2 className="h-3 w-3" />
+                    {areaName} · {parts[1]} — Voorstel {val.proposalIdx + 1}
+                    {val.suggestion && <span className="text-muted-foreground">({val.suggestion.dayName} {val.suggestion.startTime?.slice(0,5)})</span>}
+                  </Badge>
+                );
+              })}
+            </div>
           </div>
-          <Button variant="outline" size="sm" onClick={resetSimulation} className="gap-1.5">
-            <RotateCcw className="h-3 w-3" /> Reset simulatie
-          </Button>
-        </div>
-      )}
+        );
+      })()}
 
       {filteredGroups.length === 0 && (
         <div className="rounded-xl border border-border bg-card p-8 text-center">
