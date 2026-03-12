@@ -208,7 +208,12 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <div className="flex items-center gap-1">
+                          <button
+                            className="flex items-center gap-1 cursor-pointer"
+                            onClick={() => setExpandedValidation(
+                              expandedValidation === scenario.id ? null : scenario.id
+                            )}
+                          >
                             <Badge variant="outline" className={`text-[10px] gap-0.5 ${validationColors[scenario.validation_status] ?? ""}`}>
                               <ValidationIcon className="h-3 w-3" />
                               {validationLabels[scenario.validation_status] ?? scenario.validation_status}
@@ -219,7 +224,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                                 &gt;24u
                               </Badge>
                             )}
-                          </div>
+                          </button>
                         </TooltipTrigger>
                         <TooltipContent side="top">
                           <p className="text-xs">
@@ -227,6 +232,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                               ? `Laatst gevalideerd: ${formatDistanceToNow(parseISO(scenario.last_validated_at), { locale: nl, addSuffix: true })}`
                               : "Nog niet gevalideerd"}
                             {isStale && " — hervalidatie aanbevolen"}
+                            {scenario.validation_details && " — klik voor details"}
                           </p>
                         </TooltipContent>
                       </Tooltip>
