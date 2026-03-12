@@ -55,13 +55,12 @@ function AvailabilitySummaryPanel({ filterArea, filterAge, areaName }: { filterA
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, first_name, last_name, date_of_birth, waitlist_area_id, intake_status")
+        .select("id, first_name, last_name, date_of_birth, waitlist_area_id, intake_status, school_id, schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
         .eq("archived", false)
-        .in("intake_status", ["wachtlijst", "intake_afgerond"])
-        .eq("waitlist_area_id", filterArea);
+        .in("intake_status", ["wachtlijst", "intake_afgerond"]);
       if (error) throw error;
       return (data ?? []).filter((c: any) => {
-        return getAgeCategoryPlanning(c.date_of_birth) === filterAge;
+        return resolveAreaId(c) === filterArea && getAgeCategoryPlanning(c.date_of_birth) === filterAge;
       });
     },
   });
