@@ -846,7 +846,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         if (availInserts.length > 0) {
           // Insert in chunks of 200 to avoid payload limits
           for (let ai = 0; ai < availInserts.length; ai += 200) {
-            await supabase.from("client_availability").insert(availInserts.slice(ai, ai + 200));
+            await supabase.from("client_availability").upsert(availInserts.slice(ai, ai + 200), { onConflict: 'client_id,available_date' });
           }
         }
       }
