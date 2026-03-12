@@ -324,91 +324,147 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
         <p><strong className="text-foreground">Geen:</strong> Er zijn helemaal geen beschikbaarheidsrecords vastgelegd voor deze deelnemer.</p>
       </div>
 
-      {/* Table */}
-      <TooltipProvider>
-        <div className="rounded-xl border border-border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Naam</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Gebied</TableHead>
-                <TableHead className="text-right">Records</TableHead>
-                <TableHead className="text-right">Bruikbaar</TableHead>
-                <TableHead className="text-right">Toekomst</TableHead>
-                <TableHead>Laatste datum</TableHead>
-                <TableHead>Resultaat</TableHead>
-                <TableHead>Toelichting</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sorted.map((v) => (
-                <TableRow key={v.client.id}>
-                  <TableCell>
-                    <span
-                      className="text-sm font-medium text-primary hover:underline cursor-pointer"
-                      onClick={() => onNavigate(v.client.id)}
-                    >
-                      {v.client.first_name} {v.client.last_name}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-[10px]">
-                      {statusLabels[v.client.intake_status] ?? v.client.intake_status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{v.areaName}</TableCell>
-                  <TableCell className="text-right text-sm">{v.totalRecords}</TableCell>
-                  <TableCell className="text-right text-sm">
-                    {v.usableRecords}
-                    {v.totalRecords > 0 && v.usableRecords < v.totalRecords && (
-                      <span className="ml-1 text-amber-600 text-xs">({v.totalRecords - v.usableRecords} onbruikbaar)</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right text-sm">{v.futureDays}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {v.lastDate ? format(parseISO(v.lastDate), "dd-MM-yyyy") : "—"}
-                  </TableCell>
-                  <TableCell>
-                    {v.result === "voldoende" && (
-                      <Badge variant="outline" className="text-[10px] border-emerald-400 text-emerald-700 gap-1">
-                        <CheckCircle2 className="h-3 w-3" /> Voldoende
-                      </Badge>
-                    )}
-                    {v.result === "onvolledig" && (
-                      <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-700 gap-1">
-                        <AlertTriangle className="h-3 w-3" /> Onvolledig
-                      </Badge>
-                    )}
-                    {v.result === "geen" && (
-                      <Badge variant="outline" className="text-[10px] border-destructive text-destructive gap-1">
-                        <XCircle className="h-3 w-3" /> Geen
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground max-w-[240px]">
-                    {v.reason && v.result !== "voldoende" ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="flex items-center gap-1 cursor-help">
-                            <Info className="h-3 w-3 shrink-0" />
-                            <span className="truncate">{v.reason}</span>
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent side="left" className="max-w-xs text-xs">
-                          {v.reason}
-                        </TooltipContent>
-                      </Tooltip>
-                    ) : v.result === "voldoende" ? (
-                      <span className="text-emerald-600">✓ OK</span>
-                    ) : null}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+      {/* Two-column layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left column: Voldoende + Onvolledig */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+            Beschikbaarheid ingevuld
+            <Badge variant="outline" className="text-[10px] ml-1">{sorted.filter(v => v.result !== "geen").length}</Badge>
+          </h3>
+          <TooltipProvider>
+            <div className="rounded-xl border border-border bg-card">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Naam</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Gebied</TableHead>
+                    <TableHead className="text-right">Bruikbaar</TableHead>
+                    <TableHead className="text-right">Toekomst</TableHead>
+                    <TableHead>Laatste datum</TableHead>
+                    <TableHead>Resultaat</TableHead>
+                    <TableHead>Toelichting</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sorted.filter(v => v.result !== "geen").map((v) => (
+                    <TableRow key={v.client.id}>
+                      <TableCell>
+                        <span
+                          className="text-sm font-medium text-primary hover:underline cursor-pointer"
+                          onClick={() => onNavigate(v.client.id)}
+                        >
+                          {v.client.first_name} {v.client.last_name}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-[10px]">
+                          {statusLabels[v.client.intake_status] ?? v.client.intake_status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{v.areaName}</TableCell>
+                      <TableCell className="text-right text-sm">
+                        {v.usableRecords}
+                        {v.totalRecords > 0 && v.usableRecords < v.totalRecords && (
+                          <span className="ml-1 text-amber-600 text-xs">({v.totalRecords - v.usableRecords} onbruikbaar)</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right text-sm">{v.futureDays}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {v.lastDate ? format(parseISO(v.lastDate), "dd-MM-yyyy") : "—"}
+                      </TableCell>
+                      <TableCell>
+                        {v.result === "voldoende" && (
+                          <Badge variant="outline" className="text-[10px] border-emerald-400 text-emerald-700 gap-1">
+                            <CheckCircle2 className="h-3 w-3" /> Voldoende
+                          </Badge>
+                        )}
+                        {v.result === "onvolledig" && (
+                          <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-700 gap-1">
+                            <AlertTriangle className="h-3 w-3" /> Onvolledig
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground max-w-[240px]">
+                        {v.reason && v.result !== "voldoende" ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="flex items-center gap-1 cursor-help">
+                                <Info className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{v.reason}</span>
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="left" className="max-w-xs text-xs">
+                              {v.reason}
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : v.result === "voldoende" ? (
+                          <span className="text-emerald-600">✓ OK</span>
+                        ) : null}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {sorted.filter(v => v.result !== "geen").length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-6">
+                        Geen deelnemers met beschikbaarheid.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </TooltipProvider>
         </div>
-      </TooltipProvider>
+
+        {/* Right column: Geen beschikbaarheid */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-destructive flex items-center gap-1.5">
+            <XCircle className="h-4 w-4" />
+            Geen beschikbaarheid
+            <Badge variant="outline" className="text-[10px] border-destructive text-destructive ml-1">{counts.geen}</Badge>
+          </h3>
+          <div className="rounded-xl border border-destructive/30 bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Naam</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Gebied</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sorted.filter(v => v.result === "geen").map((v) => (
+                  <TableRow key={v.client.id}>
+                    <TableCell>
+                      <span
+                        className="text-sm font-medium text-primary hover:underline cursor-pointer"
+                        onClick={() => onNavigate(v.client.id)}
+                      >
+                        {v.client.first_name} {v.client.last_name}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px]">
+                        {statusLabels[v.client.intake_status] ?? v.client.intake_status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{v.areaName}</TableCell>
+                  </TableRow>
+                ))}
+                {counts.geen === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center text-sm text-muted-foreground py-6">
+                      Alle deelnemers hebben beschikbaarheid. ✓
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
