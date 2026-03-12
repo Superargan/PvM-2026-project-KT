@@ -846,7 +846,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         if (availInserts.length > 0) {
           // Insert in chunks of 200 to avoid payload limits
           for (let ai = 0; ai < availInserts.length; ai += 200) {
-            await supabase.from("client_availability").insert(availInserts.slice(ai, ai + 200));
+            await supabase.from("client_availability").upsert(availInserts.slice(ai, ai + 200), { onConflict: 'client_id,available_date' });
           }
         }
       }
@@ -886,7 +886,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         }
         console.log(`Beschikbaarheid invoegen voor ${upd.id}: ${availInserts.length} records (${upd.availability.length} dagen)`);
         for (let ai = 0; ai < availInserts.length; ai += 200) {
-          const { error: insErr } = await supabase.from("client_availability").insert(availInserts.slice(ai, ai + 200));
+          const { error: insErr } = await supabase.from("client_availability").upsert(availInserts.slice(ai, ai + 200), { onConflict: 'client_id,available_date' });
           if (insErr) {
             console.error(`Beschikbaarheid invoegen mislukt voor ${upd.id} (batch ${ai}):`, insErr.message);
             errors.push(`Beschikbaarheid invoegen mislukt voor ${upd.id}: ${insErr.message}`);
