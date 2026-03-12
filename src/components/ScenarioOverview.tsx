@@ -68,6 +68,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
   const queryClient = useQueryClient();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [workstateDialogScenarioId, setWorkstateDialogScenarioId] = useState<string | null>(null);
+  const [expandedValidation, setExpandedValidation] = useState<string | null>(null);
 
   const { data: scenarios = [], isLoading } = useQuery({
     queryKey: scenarioKeys.all,
