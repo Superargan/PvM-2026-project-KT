@@ -503,6 +503,18 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     }
   };
 
+  // Expose save + active simulation state to parent via ref (T07-T10)
+  useImperativeHandle(ref, () => ({
+    triggerSave: async () => {
+      if (scenarioName.trim()) {
+        return handleSaveScenario();
+      }
+      setSaveDialogOpen(true);
+      return false;
+    },
+    hasActiveSimulation: isSimulating,
+  }), [isSimulating, scenarioName]);
+
   // === SCENARIO CONVERT ===
   const handleConvert = async () => {
     if (!activeScenarioId) {
