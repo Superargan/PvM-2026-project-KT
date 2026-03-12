@@ -763,7 +763,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         // Update existing record with non-null imported values
         const updateData: any = {};
         for (const [key, value] of Object.entries(recordData)) {
-          if (key === "created_at" || key === "__reserveAreas") continue;
+          if (key === "created_at" || key === "__reserveAreas" || key === "__availability") continue;
           if (value !== null && value !== undefined && value !== "") {
             // Only update if existing value is empty/null
             if (!existingRecord[key] || existingRecord[key] === "") {
@@ -872,7 +872,11 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       // Upsert availability — delete existing future records, then insert new ones
       if (upd.availability && upd.availability.length > 0) {
         const today = new Date().toISOString().split("T")[0];
-        await supabase.from("client_availability").delete().eq("client_id", upd.id).gte("available_date", today);
+        const { error: delErr } = await supabase.from("client_availability").delete().eq("client_id", upd.id).gte("available_date", today);
+        if (delErr) {
+          console.error(`Beschikbaarheid verwijderen mislukt voor ${upd.id}:`, delErr.message);
+          errors.push(`Beschikbaarheid verwijderen mislukt voor ${upd.id}: ${delErr.message}`);
+        }
         const availInserts: { client_id: string; available_date: string; start_time: string; end_time: string; notes: string | null }[] = [];
         for (const a of upd.availability) {
           const dates = generateDatesForDay(a.dayIndex, 122);
@@ -880,8 +884,13 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
             availInserts.push({ client_id: upd.id, available_date: date, start_time: a.startTime, end_time: a.endTime, notes: a.notes });
           }
         }
+        console.log(`Beschikbaarheid invoegen voor ${upd.id}: ${availInserts.length} records (${upd.availability.length} dagen)`);
         for (let ai = 0; ai < availInserts.length; ai += 200) {
-          await supabase.from("client_availability").insert(availInserts.slice(ai, ai + 200));
+          const { error: insErr } = await supabase.from("client_availability").insert(availInserts.slice(ai, ai + 200));
+          if (insErr) {
+            console.error(`Beschikbaarheid invoegen mislukt voor ${upd.id} (batch ${ai}):`, insErr.message);
+            errors.push(`Beschikbaarheid invoegen mislukt voor ${upd.id}: ${insErr.message}`);
+          }
         }
       }
       updated++;
