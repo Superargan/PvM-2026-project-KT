@@ -324,7 +324,7 @@ export default function PlanningPage() {
 
   // All client availability (no date filter) for warning calculations — paginated to avoid 1000-row limit
   const { data: allClientAvailability = [] } = useQuery({
-    queryKey: clientKeys.list("all-availability"),
+    queryKey: clientKeys.allAvailability,
     queryFn: async () => {
       const results: any[] = [];
       let from = 0;
