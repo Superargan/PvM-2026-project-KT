@@ -1091,7 +1091,7 @@ export default function PlanningPage() {
                           </tr>
                         );
                       })}
-                    {allClients.filter((c: any) => filterArea === "alle" || c.waitlist_area_id === filterArea).length === 0 && (
+                    {allClients.filter((c: any) => filterArea === "alle" || resolveAreaId(c) === filterArea).length === 0 && (
                       <tr><td colSpan={isAdmin ? 5 : 4} className="px-3 py-6 text-center text-sm text-muted-foreground">Geen deelnemers</td></tr>
                     )}
                   </tbody>

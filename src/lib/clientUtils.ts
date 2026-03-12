@@ -309,7 +309,7 @@ export function filterClients(
       if (!name.includes(s) && !guardian.includes(s)) return false;
     }
     if (filters.area && filters.area !== "all") {
-      const clientAreaId = c.waitlist_area_id;
+      const clientAreaId = resolveAreaId(c);
       if (clientAreaId !== filters.area) return false;
     }
     if (filters.school && filters.school !== "all") {
