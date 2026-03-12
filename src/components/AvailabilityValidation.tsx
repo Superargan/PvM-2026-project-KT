@@ -46,19 +46,27 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
     queryKey: ["availability-validation-data", clientIds.length],
     enabled: clientIds.length > 0,
     queryFn: async () => {
-      // Batch in chunks of 200 to avoid URI-too-long
+      // Batch in chunks of 50 clients to avoid URI-too-long,
+      // and paginate each chunk to overcome the 1000-row default limit
       const chunks: string[][] = [];
-      for (let i = 0; i < clientIds.length; i += 200) {
-        chunks.push(clientIds.slice(i, i + 200));
+      for (let i = 0; i < clientIds.length; i += 50) {
+        chunks.push(clientIds.slice(i, i + 50));
       }
       const results: any[] = [];
       for (const chunk of chunks) {
-        const { data, error } = await supabase
-          .from("client_availability")
-          .select("client_id, available_date, start_time, end_time")
-          .in("client_id", chunk);
-        if (error) throw error;
-        if (data) results.push(...data);
+        let from = 0;
+        const pageSize = 1000;
+        while (true) {
+          const { data, error } = await supabase
+            .from("client_availability")
+            .select("client_id, available_date, start_time, end_time")
+            .in("client_id", chunk)
+            .range(from, from + pageSize - 1);
+          if (error) throw error;
+          if (data) results.push(...data);
+          if (!data || data.length < pageSize) break;
+          from += pageSize;
+        }
       }
       return results;
     },
