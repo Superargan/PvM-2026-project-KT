@@ -212,7 +212,7 @@ export default function PlanningPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, first_name, last_name, intake_status, intake_date, date_of_birth, schools(name), waitlist_area_id, areas:waitlist_area_id(name)")
+        .select("id, first_name, last_name, intake_status, intake_date, date_of_birth, waitlist_area_id, school_id, schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
         .eq("archived", false)
         .in("intake_status", ["intake_gepland", "intake", "intake_afgerond"])
         .gte("intake_date", format(dateRange.start, "yyyy-MM-dd"))
