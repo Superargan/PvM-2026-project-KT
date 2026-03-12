@@ -759,7 +759,7 @@ export default function PlanningPage() {
                             Intake: {intake.first_name} {intake.last_name}
                           </span>
                           <span className="text-[10px] text-amber-700 truncate ml-auto">
-                            {intake.schools?.name ?? ""} {(intake as any).areas?.name ? `· ${(intake as any).areas.name}` : ""}
+                            {intake.schools?.name ?? ""} {(() => { const aName = getResolvedAreaName(intake); return aName !== "—" ? `· ${aName}` : ""; })()}
                           </span>
                           {(intakeAssignmentMap[intake.id] ?? []).map((name: string, i: number) => (
                             <Badge key={i} variant="secondary" className="text-[9px] h-4 shrink-0">{name}</Badge>
