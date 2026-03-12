@@ -398,11 +398,16 @@ export default function PlanningPage() {
   const availByClient = useMemo(() => buildAvailabilityByClient(allClientAvailability), [allClientAvailability]);
   const prefsByClient = useMemo(() => buildPrefsByClientMap(allPreferences), [allPreferences]);
 
-  // Warning counts
+  // Warning counts (consistent met matrix-logica in WaitlistOverview)
   const warningCounts = useMemo(() => {
     const planningClients = allClients.filter((c: any) => {
       const s = c.intake_status ?? "nieuw";
       return s === "intake_afgerond" || s === "wachtlijst";
+    });
+
+    const rawAvailByClient: Record<string, number> = {};
+    allClientAvailability.forEach((a: any) => {
+      rawAvailByClient[a.client_id] = (rawAvailByClient[a.client_id] ?? 0) + 1;
     });
 
     let noAvail = 0;
@@ -418,34 +423,41 @@ export default function PlanningPage() {
     const overriddenIds: string[] = [];
 
     planningClients.forEach((c: any) => {
+      // Zelfde basis als matrix: alleen deelnemers met geldige leeftijdscategorie
+      const ageCategory = getAgeCategoryPlanning(c.date_of_birth);
+      if (!ageCategory) return;
+
       const comp = getClientDataCompleteness(c, availByClient, prefsByClient, overriddenClientIds);
 
+      // Categorieën zijn bewust exclusief om dubbeltelling te voorkomen
       if (comp.isOverridden) {
         overridden++;
         overriddenIds.push(c.id);
-        return; // mutually exclusive
-      }
-
-      if (comp.requiresAvailability && !comp.hasAvailability) {
-        noAvail++;
-        noAvailIds.push(c.id);
-      }
-
-      // For "unusable": has raw records but none usable (buildAvailabilityByClient filtered all out)
-      const rawRecords = allClientAvailability.filter((a: any) => a.client_id === c.id);
-      if (rawRecords.length > 0 && !comp.hasUsableAvailability) {
-        unusableAvail++;
-        unusableAvailIds.push(c.id);
-      }
-
-      if (comp.hasUsableAvailability && !hasAvailabilityCoverage(availByClient[c.id])) {
-        staleCoverage++;
-        staleCoverageIds.push(c.id);
+        return;
       }
 
       if (comp.requiresAvailability && !comp.hasArea) {
         noArea++;
         noAreaIds.push(c.id);
+        return;
+      }
+
+      const rawCount = rawAvailByClient[c.id] ?? 0;
+      if (comp.requiresAvailability && rawCount > 0 && !comp.hasUsableAvailability) {
+        unusableAvail++;
+        unusableAvailIds.push(c.id);
+        return;
+      }
+
+      if (comp.requiresAvailability && !comp.hasAvailability) {
+        noAvail++;
+        noAvailIds.push(c.id);
+        return;
+      }
+
+      if (comp.requiresAvailability && comp.hasUsableAvailability && !hasAvailabilityCoverage(availByClient[c.id])) {
+        staleCoverage++;
+        staleCoverageIds.push(c.id);
       }
     });
 
