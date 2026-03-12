@@ -273,7 +273,7 @@ export function getClientDataCompleteness(
   const allAvail = availByClient[client.id];
   const hasAvailability = !!allAvail && allAvail.length > 0;
   const hasUsableAvailability = hasAvailability; // already filtered by buildAvailabilityByClient
-  const hasArea = !!client.waitlist_area_id;
+  const hasArea = !!resolveAreaId(client);
   const prefs = prefsByClient[client.id];
   const hasReserveArea = !!prefs && Object.keys(prefs).length > 0;
   const hasNeighborhood = !!client.neighborhood_id;
@@ -309,7 +309,7 @@ export function filterClients(
       if (!name.includes(s) && !guardian.includes(s)) return false;
     }
     if (filters.area && filters.area !== "all") {
-      const clientAreaId = c.waitlist_area_id;
+      const clientAreaId = resolveAreaId(c);
       if (clientAreaId !== filters.area) return false;
     }
     if (filters.school && filters.school !== "all") {

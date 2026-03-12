@@ -8,6 +8,7 @@ import {
   buildPrefsByClientMap,
   getClientDataCompleteness,
   hasAvailabilityCoverage,
+  resolveAreaId,
   type ClientDataCompleteness,
 } from "@/lib/clientUtils";
 import { clientKeys, areaKeys } from "@/lib/queryKeys";
@@ -54,13 +55,12 @@ function AvailabilitySummaryPanel({ filterArea, filterAge, areaName }: { filterA
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, first_name, last_name, date_of_birth, waitlist_area_id, intake_status")
+        .select("id, first_name, last_name, date_of_birth, waitlist_area_id, intake_status, school_id, schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
         .eq("archived", false)
-        .in("intake_status", ["wachtlijst", "intake_afgerond"])
-        .eq("waitlist_area_id", filterArea);
+        .in("intake_status", ["wachtlijst", "intake_afgerond"]);
       if (error) throw error;
       return (data ?? []).filter((c: any) => {
-        return getAgeCategoryPlanning(c.date_of_birth) === filterAge;
+        return resolveAreaId(c) === filterArea && getAgeCategoryPlanning(c.date_of_birth) === filterAge;
       });
     },
   });
@@ -212,7 +212,7 @@ export default function PlanningPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, first_name, last_name, intake_status, intake_date, date_of_birth, schools(name), waitlist_area_id, areas:waitlist_area_id(name)")
+        .select("id, first_name, last_name, intake_status, intake_date, date_of_birth, waitlist_area_id, school_id, schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
         .eq("archived", false)
         .in("intake_status", ["intake_gepland", "intake", "intake_afgerond"])
         .gte("intake_date", format(dateRange.start, "yyyy-MM-dd"))
@@ -296,7 +296,7 @@ export default function PlanningPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, first_name, last_name, waitlist_area_id, neighborhood_id, date_of_birth, intake_status, school_id, areas:waitlist_area_id(name), schools(name)")
+        .select("id, first_name, last_name, waitlist_area_id, neighborhood_id, date_of_birth, intake_status, school_id, schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
         .eq("archived", false)
         .in("intake_status", ["nieuw", "intake_gepland", "intake", "intake_afgerond", "actief", "wachtlijst"])
         .order("first_name");
@@ -304,6 +304,17 @@ export default function PlanningPage() {
       return data ?? [];
     },
   });
+
+  // Helper to get resolved area name for a client
+  const getResolvedAreaName = (client: any): string => {
+    if (client.waitlist_area_id) {
+      // Try areas from waitlist_area_id join first
+      const areaName = areas.find((a: any) => a.id === client.waitlist_area_id)?.name;
+      if (areaName) return areaName;
+    }
+    // Fallback to school→neighborhood→area chain
+    return client.schools?.neighborhoods?.areas?.name ?? "—";
+  };
 
   const { data: clientAvailability = [], refetch: refetchClientAvail } = useQuery({
     queryKey: ["planning-client-availability", dateRange.start.toISOString(), dateRange.end.toISOString()],
@@ -458,7 +469,7 @@ export default function PlanningPage() {
     });
     intakes.forEach((intake: any) => {
       if (intake.intake_date && map[intake.intake_date]) {
-        if (filterArea !== "alle" && intake.waitlist_area_id !== filterArea) return;
+        if (filterArea !== "alle" && resolveAreaId(intake) !== filterArea) return;
         map[intake.intake_date].intakes.push(intake);
       }
     });
@@ -607,7 +618,7 @@ export default function PlanningPage() {
                       {c.first_name} {c.last_name}
                     </span>
                     <span className="text-xs text-muted-foreground ml-auto shrink-0">
-                      {(c as any).areas?.name ?? "Geen gebied"}
+                      {getResolvedAreaName(c) !== "—" ? getResolvedAreaName(c) : "Geen gebied"}
                     </span>
                     <Badge variant="outline" className="text-[10px] shrink-0">
                       {c.intake_status ?? "—"}
@@ -748,7 +759,7 @@ export default function PlanningPage() {
                             Intake: {intake.first_name} {intake.last_name}
                           </span>
                           <span className="text-[10px] text-amber-700 truncate ml-auto">
-                            {intake.schools?.name ?? ""} {(intake as any).areas?.name ? `· ${(intake as any).areas.name}` : ""}
+                            {intake.schools?.name ?? ""} {(() => { const aName = getResolvedAreaName(intake); return aName !== "—" ? `· ${aName}` : ""; })()}
                           </span>
                           {(intakeAssignmentMap[intake.id] ?? []).map((name: string, i: number) => (
                             <Badge key={i} variant="secondary" className="text-[9px] h-4 shrink-0">{name}</Badge>
@@ -1017,7 +1028,7 @@ export default function PlanningPage() {
                   </thead>
                   <tbody className="divide-y divide-border">
                     {allClients
-                      .filter((c: any) => filterArea === "alle" || c.waitlist_area_id === filterArea)
+                      .filter((c: any) => filterArea === "alle" || resolveAreaId(c) === filterArea)
                       .map((client: any) => {
                         const clientAvail = clientAvailability.filter((a: any) => a.client_id === client.id);
                         const hasOverride = overriddenClientIds.has(client.id);
@@ -1044,7 +1055,7 @@ export default function PlanningPage() {
                               </div>
                             </td>
                             <td className="px-3 py-2">
-                              <span className="text-sm text-card-foreground">{(client as any).areas?.name ?? "—"}</span>
+                              <span className="text-sm text-card-foreground">{getResolvedAreaName(client)}</span>
                             </td>
                             <td className="px-3 py-2">
                               <span className="text-xs text-muted-foreground">{client.intake_status ?? "—"}</span>
@@ -1080,7 +1091,7 @@ export default function PlanningPage() {
                           </tr>
                         );
                       })}
-                    {allClients.filter((c: any) => filterArea === "alle" || c.waitlist_area_id === filterArea).length === 0 && (
+                    {allClients.filter((c: any) => filterArea === "alle" || resolveAreaId(c) === filterArea).length === 0 && (
                       <tr><td colSpan={isAdmin ? 5 : 4} className="px-3 py-6 text-center text-sm text-muted-foreground">Geen deelnemers</td></tr>
                     )}
                   </tbody>
