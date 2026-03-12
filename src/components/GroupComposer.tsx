@@ -48,6 +48,7 @@ interface GroupedClients {
 export interface GroupComposerHandle {
   triggerSave: () => Promise<boolean>;
   hasActiveSimulation: boolean;
+  isDirty: boolean;
 }
 
 interface GroupComposerProps {
@@ -513,7 +514,8 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
       return false;
     },
     hasActiveSimulation: isSimulating,
-  }), [isSimulating, scenarioName]);
+    isDirty,
+  }), [isSimulating, scenarioName, isDirty]);
 
   // === SCENARIO CONVERT ===
   const handleConvert = async () => {

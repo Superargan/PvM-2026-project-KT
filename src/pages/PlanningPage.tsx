@@ -897,7 +897,16 @@ export default function PlanningPage() {
             </>
           ) : (
             <>
-              <Button variant="ghost" size="sm" onClick={() => { setShowGroupComposer(false); setActiveScenarioId(null); }}>
+              <Button variant="ghost" size="sm" onClick={() => {
+                const dirty = groupComposerRef.current?.isDirty;
+                if (dirty) {
+                  if (!window.confirm("Je hebt niet-opgeslagen wijzigingen. Weet je zeker dat je terug wilt?")) {
+                    return;
+                  }
+                }
+                setShowGroupComposer(false);
+                setActiveScenarioId(null);
+              }}>
                 ← Terug naar overzicht
               </Button>
               <GroupComposer
