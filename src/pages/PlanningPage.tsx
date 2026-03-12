@@ -855,6 +855,18 @@ export default function PlanningPage() {
         <TabsContent value="groepen" className="space-y-6">
           {!showGroupComposer ? (
             <>
+              <ScenarioOverview
+                onLoadScenario={(scenarioId) => {
+                  setActiveScenarioId(scenarioId);
+                  setShowGroupComposer(true);
+                }}
+                hasActiveSimulation={showGroupComposer}
+                onRequestSaveFirst={async () => {
+                  // This would need GroupComposer to expose save - for now return false
+                  return false;
+                }}
+              />
+
               <WaitlistOverview
                 onSelectGroup={(areaId, age) => {
                   setFilterArea(areaId);
@@ -867,7 +879,6 @@ export default function PlanningPage() {
                 }}
               />
 
-              {/* Compact availability summary when area+age filter is set */}
               {filterArea !== "alle" && filterAge !== "alle" && (
                 <AvailabilitySummaryPanel
                   filterArea={filterArea}
@@ -877,7 +888,7 @@ export default function PlanningPage() {
               )}
 
               <div className="flex justify-center">
-                <Button onClick={() => setShowGroupComposer(true)} size="lg">
+                <Button onClick={() => { setActiveScenarioId(null); setShowGroupComposer(true); }} size="lg">
                   <Users className="h-4 w-4 mr-2" />
                   Groepen samenstellen
                 </Button>
@@ -885,10 +896,14 @@ export default function PlanningPage() {
             </>
           ) : (
             <>
-              <Button variant="ghost" size="sm" onClick={() => setShowGroupComposer(false)}>
+              <Button variant="ghost" size="sm" onClick={() => { setShowGroupComposer(false); setActiveScenarioId(null); }}>
                 ← Terug naar overzicht
               </Button>
-              <GroupComposer />
+              <GroupComposer
+                activeScenarioId={activeScenarioId}
+                onSaveScenario={(id) => setActiveScenarioId(id)}
+                onClearScenario={() => setActiveScenarioId(null)}
+              />
             </>
           )}
         </TabsContent>
