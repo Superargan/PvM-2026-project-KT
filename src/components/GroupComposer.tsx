@@ -121,7 +121,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
 
   // Fetch all client availability — paginated to avoid 1000-row limit
   const { data: allAvailability = [] } = useQuery({
-    queryKey: ["clients", "group-composer-avail"],
+    queryKey: clientKeys.allAvailability,
     queryFn: async () => {
       const results: any[] = [];
       let from = 0;
