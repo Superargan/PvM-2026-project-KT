@@ -1,62 +1,41 @@
 
-# Plan: Definitieve implementatie — VOLLEDIG UITGEVOERD
 
-## Status: ✅ Alle stappen voltooid
+# Plan: Drie preciseringen toevoegen aan het scenarioplan
 
-### Stap 1: Database migraties ✅
-- `neighborhood_id` kolom op `clients` + backfill vanuit `schools`
-- `admin` enum-waarde toegevoegd aan `app_role`
-- `is_admin()` security definer functie
-- `availability_override_logs` tabel met unique partial index en RLS
+Het bestaande plan in `.lovable/plan.md` beschrijft de eerder voltooide implementatie. De drie preciseringen moeten worden toegevoegd als onderdeel van het nog te implementeren scenario-systeem. Ik voeg een nieuwe sectie toe aan `plan.md` die het volledige scenarioplan beschrijft inclusief de drie preciseringen.
 
-### Stap 2: Centrale helpers ✅
-6 pure functies in `src/lib/clientUtils.ts`:
-- `buildPrefsByClientMap()` — preference_order-aware
-- `buildAvailabilityByClient()` — alleen bruikbare records (start < end)
-- `getAvailabilityOverlap()` — beste dag/tijd overlap
-- `hasAvailabilityCoverage()` — rolling window check
-- `getClientDataCompleteness()` — volledige statusbepaling
-- `getPlannabilityStatus()` — 5 statussen
+---
 
-### Stap 3: WaitlistOverview refactoren ✅
-- Inline `Set<string>` prefsByClient vervangen door `buildPrefsByClientMap()`
-- Reserve-iteratie via `Object.entries(prefs)` i.p.v. `Set.forEach`
-- `neighborhood_id` toegevoegd aan query
+## Wat wordt toegevoegd
 
-### Stap 4: GroupComposer refactoren ✅
-- `availByClient` met fallback `"09:00"/"17:00"` → `buildAvailabilityByClient()`
-- `getSuggestion()` → `getAvailabilityOverlap()`
-- Dubbele `prefsByClient` → `buildPrefsByClientMap()`
-- Ongebruikte imports (`getDay`, `parseISO` uit date-fns) verwijderd
-- `neighborhood_id` toegevoegd aan query
+Een nieuw blok **"Simulatiescenario's"** onder het bestaande plan, met alle 8 stappen en de drie preciseringen expliciet verwerkt in de relevante stappen.
 
-### Stap 5: PlanningPage herontwerp ✅
-- Default tab: `"groepen"` (was `"agenda"`)
-- Tab volgorde: Groepen | Beschikbaarheid | Agenda
-- `allClients` query uitgebreid met `neighborhood_id`, `date_of_birth`, `intake_status`, `school_id`, `schools(name)`
-- **5 waarschuwingsknoppen** met mutueel exclusieve tellingen:
-  1. "Beschikbaarheid nog doorgeven" — requiresAvailability && !hasAvailability && !isOverridden
-  2. "Onbruikbare beschikbaarheid" — has raw records but none usable && !isOverridden
-  3. "Beschikbaarheid actualiseren" — onvoldoende 4-maanden dekking && !isOverridden
-  4. "Geen gebied" — requiresAvailability && !hasArea && !isOverridden
-  5. "Overruled (admin)" — clients met actieve override
-- **Admin override UI**: override-knop (alleen admins), verplicht reden-veld, badge met tooltip
-- Extra queries: all client_availability, client_area_preferences, availability_override_logs, user_roles admin check
+### Precisering 1: `save_scenario` en lege arrays
+Verwerkt in **Stap 2 (RPC `save_scenario`)**:
+- Input wordt genormaliseerd: `NULL` arrays worden behandeld als lege arrays
+- Expliciete `IF array_length IS NULL THEN delete-all ELSE delete-not-in-set END IF` logica
+- Geen `NOT IN` constructie; alleen `!= ALL()` of volledige delete
+- Scenario zonder slots en slots zonder members zijn valide states
 
-### Stap 6: neighborhood_id sync ✅
-- `AanmeldenPublicPage.tsx`: `neighborhood_id` meegestuurd bij registratie
-- `ClientDetailPage.tsx`: `neighborhood_id` gesync bij school-wijziging
-- `AanmeldingenPage.tsx`: `neighborhood_id` gesync in updateField en handleAssignSchool
-- `ClientImport.tsx`: `neighborhood_id` afgeleid bij insert en update
+### Precisering 2: Definitie "al ingepland"
+Verwerkt in **Stap 3 (RPC `convert_scenario_to_planning`)** en **Stap 4 (validatielogica)**:
+- Expliciet gedocumenteerd: `program_clients` gekoppeld aan `programs.archived IS NOT TRUE` is de enige bindende planningsbron
+- SQL-commentaar in de migratie bevestigt dit
+- Zelfde definitie in TypeScript validatie en in de RPC
 
-### Stap 7: Queries gelijktrekken ✅
-- `WaitlistOverview.tsx`: `neighborhood_id` in select
-- `GroupComposer.tsx`: `neighborhood_id` in select
-- `PlanningPage.tsx`: `neighborhood_id` in select
-- `WachtlijstPage.tsx`: `neighborhood_id` in select
-- `AanmeldingenPage.tsx`: gebruikt `*` (bevat automatisch `neighborhood_id`)
-- `ClientDetailPage.tsx`: gebruikt `*` (bevat automatisch `neighborhood_id`)
+### Precisering 3: `save_scenario` update-semantiek
+Verwerkt in **Stap 2 (RPC `save_scenario`)**:
+- Bij update: transactionele sync verwijdert slots die niet meer in de set zitten (cascade ruimt members op)
+- Per slot: members die niet meer in de set zitten worden verwijderd
+- `validation_status` wordt gereset naar `niet_gevalideerd` via de stale-on-change trigger
+- `validation_details` en `last_validated_at` worden genulld door diezelfde trigger
+- Geen verouderde data blijft achter na update
 
-### Stap 8: Opruimen ✅
-- Alle tests slagen
-- Ongebruikte imports verwijderd
+## Wijziging aan `plan.md`
+
+Toevoegen van het volledige scenarioblok met deze drie preciseringen als expliciete acceptatiecriteria, zodat ze traceerbaar zijn bij implementatie.
+
+| Bestand | Actie |
+|---|---|
+| `.lovable/plan.md` | Scenarioblok toevoegen met preciseringen |
+
