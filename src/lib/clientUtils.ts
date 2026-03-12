@@ -233,7 +233,7 @@ export function getTopAvailabilityOverlaps(
 /** Check if client has availability coverage for N months ahead */
 export function hasAvailabilityCoverage(
   clientAvail: { date: string }[] | undefined,
-  monthsAhead = 4
+  monthsAhead = 3
 ): boolean {
   if (!clientAvail || clientAvail.length === 0) return false;
   const now = new Date();
