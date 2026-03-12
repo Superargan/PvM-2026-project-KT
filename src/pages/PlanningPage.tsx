@@ -9,6 +9,7 @@ import {
   getClientDataCompleteness,
   hasAvailabilityCoverage,
   resolveAreaId,
+  getResolvedAreaName,
   type ClientDataCompleteness,
 } from "@/lib/clientUtils";
 import { clientKeys, areaKeys } from "@/lib/queryKeys";
