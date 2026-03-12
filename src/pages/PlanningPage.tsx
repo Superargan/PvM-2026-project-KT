@@ -308,11 +308,10 @@ export default function PlanningPage() {
   // Helper to get resolved area name for a client
   const getResolvedAreaName = (client: any): string => {
     if (client.waitlist_area_id) {
-      // Try areas from waitlist_area_id join first
       const areaName = areas.find((a: any) => a.id === client.waitlist_area_id)?.name;
       if (areaName) return areaName;
     }
-    // Fallback to school→neighborhood→area chain
+    if (client.neighborhoods?.areas?.name) return client.neighborhoods.areas.name;
     return client.schools?.neighborhoods?.areas?.name ?? "—";
   };
 
