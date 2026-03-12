@@ -48,6 +48,7 @@ interface GroupedClients {
 export interface GroupComposerHandle {
   triggerSave: () => Promise<boolean>;
   hasActiveSimulation: boolean;
+  isDirty: boolean;
 }
 
 interface GroupComposerProps {
