@@ -635,6 +635,7 @@ export default function GroupComposer() {
                 {(() => {
                   const suggestions = getSuggestions(selected);
                   const clientsWithAvail = Array.from(selected).filter(id => availByClient[id]?.length > 0).length;
+                  const simulated = simulatedGroups.get(key);
                   
                   if (clientsWithAvail === 0) {
                     return (
@@ -656,51 +657,55 @@ export default function GroupComposer() {
 
                   return (
                     <div className="space-y-2">
-                      {suggestions.map((suggestion, idx) => (
-                        <div key={idx} className={`rounded-lg border p-3 space-y-1 ${idx === 0 ? "border-emerald-200 bg-emerald-50/50" : "border-border bg-muted/20"}`}>
-                          <div className="flex items-center gap-2">
-                            <CalendarClock className={`h-4 w-4 shrink-0 ${idx === 0 ? "text-emerald-600" : "text-muted-foreground"}`} />
-                            <p className={`text-xs font-semibold ${idx === 0 ? "text-emerald-800" : "text-foreground"}`}>Voorstel {idx + 1}</p>
+                      {suggestions.map((suggestion, idx) => {
+                        const isThisSimulated = simulated?.proposalIdx === idx;
+                        return (
+                          <div key={idx} className={`rounded-lg border p-3 space-y-1 ${isThisSimulated ? "border-primary ring-1 ring-primary/30 bg-primary/5" : idx === 0 ? "border-emerald-200 bg-emerald-50/50" : "border-border bg-muted/20"}`}>
+                            <div className="flex items-center gap-2 justify-between">
+                              <div className="flex items-center gap-2">
+                                <CalendarClock className={`h-4 w-4 shrink-0 ${isThisSimulated ? "text-primary" : idx === 0 ? "text-emerald-600" : "text-muted-foreground"}`} />
+                                <p className={`text-xs font-semibold ${isThisSimulated ? "text-primary" : idx === 0 ? "text-emerald-800" : "text-foreground"}`}>Voorstel {idx + 1}</p>
+                              </div>
+                              <Button
+                                variant={isThisSimulated ? "secondary" : "ghost"}
+                                size="sm"
+                                className={`h-7 text-xs gap-1 ${isThisSimulated ? "border-primary/30" : ""}`}
+                                onClick={() => toggleSimulation(key, group, idx, suggestion)}
+                                disabled={selected.size === 0}
+                              >
+                                {isThisSimulated ? (
+                                  <><CheckCircle2 className="h-3 w-3" /> Gesimuleerd</>
+                                ) : (
+                                  <><FlaskConical className="h-3 w-3" /> Simuleer</>
+                                )}
+                              </Button>
+                            </div>
+                            <div className="flex items-center gap-3 pl-6">
+                              <Badge variant="outline" className={`text-xs capitalize ${isThisSimulated ? "border-primary/30 text-primary" : idx === 0 ? "border-emerald-300 text-emerald-700" : "border-border text-foreground"}`}>
+                                {suggestion.dayName}
+                              </Badge>
+                              <span className="text-sm font-medium text-foreground">
+                                {suggestion.startTime.slice(0, 5)} – {suggestion.endTime.slice(0, 5)}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                ({suggestion.overlap}/{suggestion.total} beschikbaar)
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-3 pl-6">
-                            <Badge variant="outline" className={`text-xs capitalize ${idx === 0 ? "border-emerald-300 text-emerald-700" : "border-border text-foreground"}`}>
-                              {suggestion.dayName}
-                            </Badge>
-                            <span className="text-sm font-medium text-foreground">
-                              {suggestion.startTime.slice(0, 5)} – {suggestion.endTime.slice(0, 5)}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              ({suggestion.overlap}/{suggestion.total} beschikbaar)
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   );
                 })()}
 
-                {/* Simulation + Create buttons */}
-                <div className="flex gap-2">
-                  <Button
-                    variant={isGroupSimulated ? "secondary" : "outline"}
-                    className={`flex-1 gap-1.5 ${isGroupSimulated ? "border-primary/30" : ""}`}
-                    onClick={() => toggleSimulation(key, group)}
-                    disabled={selected.size === 0}
-                  >
-                    {isGroupSimulated ? (
-                      <><CheckCircle2 className="h-4 w-4" /> Geaccepteerd</>
-                    ) : (
-                      <><FlaskConical className="h-4 w-4" /> Simuleer</>
-                    )}
-                  </Button>
-                  <Button
-                    className="flex-1"
-                    onClick={() => createGroup(group)}
-                    disabled={isCreating || selected.size === 0}
-                  >
-                    {isCreating ? "Aanmaken..." : `Aanmaken (${selected.size})`}
-                  </Button>
-                </div>
+                {/* Create button */}
+                <Button
+                  className="w-full"
+                  onClick={() => createGroup(group)}
+                  disabled={isCreating || selected.size === 0}
+                >
+                  {isCreating ? "Aanmaken..." : `Groep aanmaken (${selected.size})`}
+                </Button>
               </CardContent>
             </Card>
           );
