@@ -26,7 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import GroupComposer from "@/components/GroupComposer";
-import AvailabilityManager from "@/components/AvailabilityManager";
+import ScenarioOverview from "@/components/ScenarioOverview";
 import PlanningImport from "@/components/PlanningImport";
 import WaitlistOverview from "@/components/WaitlistOverview";
 import ClientFilters from "@/components/ClientFilters";
