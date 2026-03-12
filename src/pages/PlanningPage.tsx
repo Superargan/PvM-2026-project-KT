@@ -296,7 +296,7 @@ export default function PlanningPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, first_name, last_name, waitlist_area_id, neighborhood_id, date_of_birth, intake_status, school_id, areas:waitlist_area_id(name), schools(name)")
+        .select("id, first_name, last_name, waitlist_area_id, neighborhood_id, date_of_birth, intake_status, school_id, schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
         .eq("archived", false)
         .in("intake_status", ["nieuw", "intake_gepland", "intake", "intake_afgerond", "actief", "wachtlijst"])
         .order("first_name");
@@ -304,6 +304,17 @@ export default function PlanningPage() {
       return data ?? [];
     },
   });
+
+  // Helper to get resolved area name for a client
+  const getResolvedAreaName = (client: any): string => {
+    if (client.waitlist_area_id) {
+      // Try areas from waitlist_area_id join first
+      const areaName = areas.find((a: any) => a.id === client.waitlist_area_id)?.name;
+      if (areaName) return areaName;
+    }
+    // Fallback to school→neighborhood→area chain
+    return client.schools?.neighborhoods?.areas?.name ?? "—";
+  };
 
   const { data: clientAvailability = [], refetch: refetchClientAvail } = useQuery({
     queryKey: ["planning-client-availability", dateRange.start.toISOString(), dateRange.end.toISOString()],
