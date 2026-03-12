@@ -53,7 +53,8 @@ export default function GroupComposer() {
   const [expandedReserve, setExpandedReserve] = useState<Set<string>>(new Set());
   const [selectedStartDate, setSelectedStartDate] = useState<Record<string, string>>({});
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
-  const [simulatedGroups, setSimulatedGroups] = useState<Set<string>>(new Set());
+  // key = groupKey, value = { proposalIdx, suggestion }
+  const [simulatedGroups, setSimulatedGroups] = useState<Map<string, { proposalIdx: number; suggestion: any }>>(new Map());
 
   // Fetch waitlist clients
   const { data: waitlistClients = [] } = useQuery({
