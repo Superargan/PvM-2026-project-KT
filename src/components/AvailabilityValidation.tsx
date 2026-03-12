@@ -5,7 +5,8 @@ import { clientKeys, areaKeys } from "@/lib/queryKeys";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CheckCircle2, AlertTriangle, XCircle, Download, Loader2, CalendarDays } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { CheckCircle2, AlertTriangle, XCircle, Download, Loader2, CalendarDays, Info } from "lucide-react";
 import { downloadExport } from "@/lib/csvExport";
 import { addMonths, format, parseISO, isAfter } from "date-fns";
 
