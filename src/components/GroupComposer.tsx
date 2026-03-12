@@ -138,7 +138,7 @@ export default function GroupComposer() {
   // Compute which clients are "claimed" by simulated groups
   const simulatedClientIds = useMemo(() => {
     const ids = new Set<string>();
-    simulatedGroups.forEach(simKey => {
+    simulatedGroups.forEach((val, simKey) => {
       const sel = selectedClients[simKey];
       if (sel) sel.forEach(id => ids.add(id));
     });
