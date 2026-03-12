@@ -91,7 +91,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
     rawByClient[a.client_id].push(a);
   });
 
-  const threshold = addMonths(now, 4);
+  const threshold = addMonths(now, 3);
 
   const validations: ClientValidation[] = clients.map((c: any) => {
     const raw = rawByClient[c.id] ?? [];
@@ -109,7 +109,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
       reason = "Er zijn geen beschikbaarheidsrecords vastgelegd.";
     } else if (hasCoverage) {
       result = "voldoende";
-      reason = "Beschikbaarheid dekt minimaal 4 maanden vooruit.";
+      reason = "Beschikbaarheid dekt minimaal 3 maanden vooruit.";
     } else {
       result = "onvolledig";
       // Determine specific reason
@@ -319,7 +319,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
 
       {/* Legend */}
       <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-xs text-muted-foreground space-y-1">
-        <p><strong className="text-foreground">Voldoende:</strong> Er zijn bruikbare records met toekomstige data die minimaal 4 maanden vooruit lopen.</p>
+        <p><strong className="text-foreground">Voldoende:</strong> Er zijn bruikbare records met toekomstige data die minimaal 3 maanden vooruit lopen.</p>
         <p><strong className="text-foreground">Onvolledig:</strong> Er zijn records, maar de dekking loopt niet ver genoeg vooruit, of de records zijn onbruikbaar (start-/eindtijd ontbreekt).</p>
         <p><strong className="text-foreground">Geen:</strong> Er zijn helemaal geen beschikbaarheidsrecords vastgelegd voor deze deelnemer.</p>
       </div>

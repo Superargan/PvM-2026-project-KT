@@ -549,14 +549,14 @@ describe("hasAvailabilityCoverage", () => {
     ])).toBe(false);
   });
 
-  it("returns false when future but not 4 months ahead", () => {
+  it("returns false when future but not 3 months ahead", () => {
     const tomorrow = format(new Date(Date.now() + 86400000), "yyyy-MM-dd");
     expect(hasAvailabilityCoverage([
       { date: tomorrow },
     ])).toBe(false);
   });
 
-  it("returns true when has records beyond 4 months", () => {
+  it("returns true when has records beyond 3 months", () => {
     const tomorrow = format(new Date(Date.now() + 86400000), "yyyy-MM-dd");
     const fiveMonths = format(addMonths(new Date(), 5), "yyyy-MM-dd");
     expect(hasAvailabilityCoverage([
