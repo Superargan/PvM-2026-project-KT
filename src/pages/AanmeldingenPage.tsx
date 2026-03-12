@@ -402,6 +402,9 @@ export default function AanmeldingenPage() {
         <TabsContent value="duplicaten" className="space-y-4">
           <DuplicateScan clients={clients} isLoading={isLoading} onNavigate={(id) => navigate(`/clienten/${id}`)} onEdit={openEdit} />
         </TabsContent>
+        <TabsContent value="beschikbaarheid" className="space-y-4">
+          <AvailabilityValidation onNavigate={(id) => navigate(`/clienten/${id}`)} />
+        </TabsContent>
       </Tabs>
 
       {/* Edit dialog – full form */}
