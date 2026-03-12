@@ -77,6 +77,8 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
     rawByClient[a.client_id].push(a);
   });
 
+  const threshold = addMonths(now, 4);
+
   const validations: ClientValidation[] = clients.map((c: any) => {
     const raw = rawByClient[c.id] ?? [];
     const usable = availByClient[c.id] ?? [];
@@ -86,12 +88,33 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
     const hasCoverage = hasAvailabilityCoverage(usable);
 
     let result: ValidationResult = "geen";
+    let reason = "";
+
     if (raw.length === 0) {
       result = "geen";
+      reason = "Er zijn geen beschikbaarheidsrecords vastgelegd.";
     } else if (hasCoverage) {
       result = "voldoende";
+      reason = "Beschikbaarheid dekt minimaal 4 maanden vooruit.";
     } else {
       result = "onvolledig";
+      // Determine specific reason
+      const reasons: string[] = [];
+      if (usable.length === 0 && raw.length > 0) {
+        reasons.push("Alle records zijn onbruikbaar (start-/eindtijd ontbreekt of ongeldig).");
+      } else {
+        if (futureUsable.length === 0) {
+          reasons.push("Geen toekomstige beschikbaarheid — alle records liggen in het verleden.");
+        } else {
+          const hasLongTerm = usable.some((a) => isAfter(parseISO(a.date), threshold));
+          if (!hasLongTerm) {
+            const lastUsable = lastDate ? format(parseISO(lastDate), "dd-MM-yyyy") : "—";
+            const thresholdStr = format(threshold, "dd-MM-yyyy");
+            reasons.push(`Dekking loopt t/m ${lastUsable}, maar moet doorlopen tot minimaal ${thresholdStr}.`);
+          }
+        }
+      }
+      reason = reasons.join(" ");
     }
 
     return {
@@ -102,6 +125,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
       futureDays: futureUsable.length,
       lastDate,
       result,
+      reason,
     };
   });
 
