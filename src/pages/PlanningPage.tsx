@@ -1055,7 +1055,7 @@ export default function PlanningPage() {
                               </div>
                             </td>
                             <td className="px-3 py-2">
-                              <span className="text-sm text-card-foreground">{(client as any).areas?.name ?? "—"}</span>
+                              <span className="text-sm text-card-foreground">{getResolvedAreaName(client)}</span>
                             </td>
                             <td className="px-3 py-2">
                               <span className="text-xs text-muted-foreground">{client.intake_status ?? "—"}</span>
