@@ -1028,7 +1028,7 @@ export default function PlanningPage() {
                   </thead>
                   <tbody className="divide-y divide-border">
                     {allClients
-                      .filter((c: any) => filterArea === "alle" || c.waitlist_area_id === filterArea)
+                      .filter((c: any) => filterArea === "alle" || resolveAreaId(c) === filterArea)
                       .map((client: any) => {
                         const clientAvail = clientAvailability.filter((a: any) => a.client_id === client.id);
                         const hasOverride = overriddenClientIds.has(client.id);
