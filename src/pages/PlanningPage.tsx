@@ -183,6 +183,7 @@ export default function PlanningPage() {
   const [overrideReason, setOverrideReason] = useState("");
   const [warningFilter, setWarningFilter] = useState<string | null>(null);
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
+  const groupComposerRef = useRef<GroupComposerHandle>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
