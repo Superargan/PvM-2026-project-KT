@@ -165,6 +165,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
       toekomst: v.futureDays,
       laatsteDatum: v.lastDate ? format(parseISO(v.lastDate), "dd-MM-yyyy") : "",
       resultaat: resultLabels[v.result],
+      toelichting: v.reason,
     }));
     downloadExport("beschikbaarheid-validatie.xlsx", columns, rows, "xlsx");
   };
