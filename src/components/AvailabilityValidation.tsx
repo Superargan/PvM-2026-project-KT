@@ -36,7 +36,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, first_name, last_name, date_of_birth, intake_status, waitlist_area_id, school_id, schools(name), areas:waitlist_area_id(name)")
+        .select("id, first_name, last_name, date_of_birth, intake_status, waitlist_area_id, school_id, neighborhood_id, neighborhoods:neighborhood_id(id, area_id, areas(id, name)), schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
         .eq("archived", false)
         .in("intake_status", ["intake_afgerond", "wachtlijst"])
         .order("last_name");
