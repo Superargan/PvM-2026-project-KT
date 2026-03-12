@@ -151,6 +151,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
       { key: "laatsteDatum", label: "Laatste datum" },
       { key: "resultaat", label: "Resultaat" },
       { key: "toelichting", label: "Toelichting" },
+    ];
     const resultLabels: Record<ValidationResult, string> = {
       voldoende: "Voldoende (4 mnd)",
       onvolledig: "Onvolledig",
