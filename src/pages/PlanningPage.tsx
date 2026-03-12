@@ -469,7 +469,7 @@ export default function PlanningPage() {
     });
     intakes.forEach((intake: any) => {
       if (intake.intake_date && map[intake.intake_date]) {
-        if (filterArea !== "alle" && intake.waitlist_area_id !== filterArea) return;
+        if (filterArea !== "alle" && resolveAreaId(intake) !== filterArea) return;
         map[intake.intake_date].intakes.push(intake);
       }
     });
