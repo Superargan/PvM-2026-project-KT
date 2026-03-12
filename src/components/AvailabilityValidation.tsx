@@ -20,6 +20,7 @@ interface ClientValidation {
   futureDays: number;
   lastDate: string | null;
   result: ValidationResult;
+  reason: string;
 }
 
 export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id: string) => void }) {
