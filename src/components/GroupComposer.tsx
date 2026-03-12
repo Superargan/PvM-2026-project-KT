@@ -1277,4 +1277,6 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
       </Dialog>
     </div>
   );
-}
+});
+
+export default GroupComposer;
