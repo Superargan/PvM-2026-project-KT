@@ -21,7 +21,14 @@ export const clientKeys = {
   waitlistOverview: ["clients", "waitlist-overview"] as const,
   avail: ["clients", "avail"] as const,
   forProgram: ["clients", "for-program"] as const,
+  /** Per-client area preferences (edit view) */
   areaPreferences: (clientId?: string) => ["clients", "area-preferences", clientId] as const,
+  /** All area preferences system-wide — single source of truth, shared across components */
+  allAreaPreferences: ["clients", "all-area-preferences"] as const,
+  /** Override logs — single source of truth, shared across components */
+  overrideLogs: ["clients", "override-logs"] as const,
+  /** All client availability (unpaginated) — single source of truth */
+  allAvailability: ["clients", "all-availability"] as const,
 };
 
 /** Shared area query key — use everywhere */

@@ -568,7 +568,7 @@ export function validateScenarioSlot(
       // 4-month coverage check
       if (clientAvail && clientAvail.length > 0 && !hasAvailabilityCoverage(clientAvail)) {
         if (!(member.has_override && overriddenClientIds.has(member.client_id))) {
-          issues.push("Onvoldoende dekking: beschikbaarheid loopt niet 3 maanden vooruit");
+          issues.push("Beschikbaarheidsdekking onder 3 maanden — actualisatie nodig");
           memberStatus = memberStatus === "ongeldig" ? "ongeldig" : "aandacht_vereist";
         }
       }
