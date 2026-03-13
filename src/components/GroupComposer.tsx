@@ -481,7 +481,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     return t.name;
   };
 
-  const getGroupKey = (g: GroupedClients) => `${g.areaId}__${g.ageCategory}`;
+  const getGroupKey = (g: GroupedClients) => g.subGroupCount > 1 ? `${g.areaId}__${g.ageCategory}__${g.subGroupIndex}` : `${g.areaId}__${g.ageCategory}`;
 
   // Auto-link program when preLinkedProgramId is provided
   useEffect(() => {
