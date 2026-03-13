@@ -489,7 +489,22 @@ export default function ProgramDetailPage() {
           </div>
         </TabsContent>
 
-        {/* Trainers tab */}
+        {/* Groep samenstellen tab */}
+        <TabsContent value="groep" className="space-y-4">
+          {program.area_id ? (
+            <GroupComposer
+              filterArea={program.area_id}
+              filterAgeCategory={program.age_category === "4-7 jaar" || program.age_category === "8-12 jaar" ? program.age_category : undefined}
+              preLinkedProgramId={id!}
+            />
+          ) : (
+            <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground">
+              <AlertTriangle className="h-5 w-5 mx-auto mb-2 text-amber-500" />
+              <p className="text-sm font-medium">Koppel eerst een school of trainingslocatie aan dit programma om het gebied te bepalen.</p>
+            </div>
+          )}
+        </TabsContent>
+
         <TabsContent value="trainers" className="space-y-4">
           <div className="rounded-xl border border-border bg-card p-6">
             <ProgramTrainers programId={id!} />
