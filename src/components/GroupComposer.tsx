@@ -45,7 +45,12 @@ interface GroupedClients {
   areaName: string;
   ageCategory: AgeCategory;
   clients: ClientWithMatch[];
+  subGroupIndex: number;
+  subGroupCount: number;
 }
+
+const MAX_GROUP_SIZE = 10;
+const SUB_GROUP_LABELS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 export interface GroupComposerHandle {
   triggerSave: () => Promise<boolean>;
@@ -361,13 +366,14 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
 
   // Group clients by area + age category
   const groups: GroupedClients[] = useMemo(() => {
-    const map = new Map<string, GroupedClients>();
+    const result: GroupedClients[] = [];
 
     areas.forEach((area: any) => {
       const ageCategories: AgeCategory[] = ["4-7 jaar", "8-12 jaar"];
       ageCategories.forEach((ageCategory) => {
-        const key = `${area.id}__${ageCategory}`;
-        const isSimulated = simulatedGroups.has(key);
+        const baseKey = `${area.id}__${ageCategory}`;
+        // Check if any sub-group key is simulated
+        const isSimulated = Array.from(simulatedGroups.keys()).some(k => k.startsWith(baseKey));
         const matchedClients: ClientWithMatch[] = [];
 
         waitlistClients.forEach((client: any) => {
@@ -381,17 +387,43 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
 
         if (matchedClients.length > 0) {
           matchedClients.sort((a, b) => a.sortOrder - b.sortOrder);
-          map.set(key, {
-            areaId: area.id,
-            areaName: areaMap[area.id] ?? "Onbekend gebied",
-            ageCategory,
-            clients: matchedClients,
-          });
+
+          if (matchedClients.length > MAX_GROUP_SIZE) {
+            // Split into balanced sub-groups
+            const subGroupCount = Math.ceil(matchedClients.length / MAX_GROUP_SIZE);
+            const baseSize = Math.floor(matchedClients.length / subGroupCount);
+            const remainder = matchedClients.length % subGroupCount;
+            let offset = 0;
+
+            for (let i = 0; i < subGroupCount; i++) {
+              const size = baseSize + (i < remainder ? 1 : 0);
+              const subClients = matchedClients.slice(offset, offset + size);
+              offset += size;
+
+              result.push({
+                areaId: area.id,
+                areaName: areaMap[area.id] ?? "Onbekend gebied",
+                ageCategory,
+                clients: subClients,
+                subGroupIndex: i,
+                subGroupCount,
+              });
+            }
+          } else {
+            result.push({
+              areaId: area.id,
+              areaName: areaMap[area.id] ?? "Onbekend gebied",
+              ageCategory,
+              clients: matchedClients,
+              subGroupIndex: 0,
+              subGroupCount: 1,
+            });
+          }
         }
       });
     });
 
-    return Array.from(map.values()).sort((a, b) => b.clients.length - a.clients.length);
+    return result.sort((a, b) => b.clients.length - a.clients.length);
   }, [waitlistClients, areas, areaMap, prefsByClient, simulatedGroups, simulatedClientIds]);
 
   const unassigned = useMemo(() => {
@@ -449,7 +481,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     return t.name;
   };
 
-  const getGroupKey = (g: GroupedClients) => `${g.areaId}__${g.ageCategory}`;
+  const getGroupKey = (g: GroupedClients) => g.subGroupCount > 1 ? `${g.areaId}__${g.ageCategory}__${g.subGroupIndex}` : `${g.areaId}__${g.ageCategory}`;
 
   // Auto-link program when preLinkedProgramId is provided
   useEffect(() => {
@@ -1105,6 +1137,9 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                     <div className="flex items-center gap-2">
                       <CardTitle className="text-base font-bold text-foreground">
                         {group.areaName} · {group.ageCategory}
+                        {group.subGroupCount > 1 && (
+                          <span className="ml-1 text-primary"> — Groep {SUB_GROUP_LABELS[group.subGroupIndex] ?? group.subGroupIndex + 1}</span>
+                        )}
                       </CardTitle>
                       <Button
                         variant="ghost"
