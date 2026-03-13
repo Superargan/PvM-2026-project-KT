@@ -26,6 +26,7 @@ import {
   buildPrefsByClientMap,
   buildAvailabilityByClient,
   getTopAvailabilityOverlaps,
+  getAlternativeWindowsForDay,
   validateScenario,
   type AgeCategory,
   type MatchType,
