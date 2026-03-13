@@ -317,41 +317,124 @@ export default function AanmeldingenPage() {
     search, area: filterArea, school: filterSchool, age: filterAge, status: filterStatus,
   });
 
-  const handleExportAanmeldingen = async () => {
-    // Fetch availability for all clients
-    const clientIds = filteredClients.map((c: any) => c.id);
-    const { data: availData } = await supabase
-      .from("client_availability")
-      .select("client_id, available_date, start_time, end_time")
-      .in("client_id", clientIds.length > 0 ? clientIds : ["__none__"])
-      .order("available_date");
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState<"xlsx" | "csv">("xlsx");
+  const EXPORT_COLUMNS = [
+    { key: "naam", label: "Naam", group: "Kind" },
+    { key: "voornaam", label: "Voornaam", group: "Kind" },
+    { key: "achternaam", label: "Achternaam", group: "Kind" },
+    { key: "geboortedatum", label: "Geboortedatum", group: "Kind" },
+    { key: "leeftijd", label: "Leeftijd", group: "Kind" },
+    { key: "geslacht", label: "Geslacht", group: "Kind" },
+    { key: "klas", label: "Klas/groep", group: "Kind" },
+    { key: "school", label: "School", group: "School" },
+    { key: "postcode", label: "Postcode", group: "Adres" },
+    { key: "adres", label: "Adres", group: "Adres" },
+    { key: "woonplaats", label: "Woonplaats", group: "Adres" },
+    { key: "gebied", label: "Gebied", group: "Adres" },
+    { key: "wijk", label: "Wijk", group: "Adres" },
+    { key: "ouder_naam", label: "Ouder/verzorger", group: "Ouder" },
+    { key: "ouder_telefoon", label: "Telefoon ouder", group: "Ouder" },
+    { key: "ouder_telefoon_alt", label: "Telefoon 2 ouder", group: "Ouder" },
+    { key: "ouder_email", label: "E-mail ouder", group: "Ouder" },
+    { key: "status", label: "Status", group: "Intake" },
+    { key: "aanmelddatum", label: "Aanmelddatum", group: "Intake" },
+    { key: "intake_datum", label: "Intake datum", group: "Intake" },
+    { key: "reden_aanmelding", label: "Reden aanmelding", group: "Intake" },
+    { key: "doelen", label: "Doelen", group: "Intake" },
+    { key: "intake_notities", label: "Intake notities", group: "Intake" },
+    { key: "toestemming", label: "Toestemming gegevensverwerking", group: "Overig" },
+    { key: "whatsapp", label: "WhatsApp toestemming", group: "Overig" },
+    { key: "notities", label: "Notities", group: "Overig" },
+    { key: "beschikbaarheid", label: "Beschikbaarheid", group: "Planning" },
+    { key: "medewerker", label: "Toegewezen medewerker", group: "Planning" },
+  ] as const;
 
-    // Group availability by client
-    const availByClient: Record<string, string[]> = {};
-    for (const a of availData ?? []) {
-      if (!availByClient[a.client_id]) availByClient[a.client_id] = [];
-      const day = new Date(a.available_date).toLocaleDateString("nl-NL", { weekday: "short" });
-      const time = a.start_time && a.end_time ? ` ${a.start_time.slice(0, 5)}-${a.end_time.slice(0, 5)}` : "";
-      availByClient[a.client_id].push(`${day} ${a.available_date}${time}`);
+  const [exportSelected, setExportSelected] = useState<Set<string>>(
+    new Set(["naam", "school", "geboortedatum", "beschikbaarheid"])
+  );
+
+  const toggleExportCol = (key: string) => {
+    setExportSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const selectExportGroup = (group: string, checked: boolean) => {
+    setExportSelected((prev) => {
+      const next = new Set(prev);
+      for (const col of EXPORT_COLUMNS) {
+        if (col.group === group) {
+          if (checked) next.add(col.key); else next.delete(col.key);
+        }
+      }
+      return next;
+    });
+  };
+
+  const handleExportAanmeldingen = async () => {
+    const selected = EXPORT_COLUMNS.filter((c) => exportSelected.has(c.key));
+    if (selected.length === 0) return;
+
+    let availByClient: Record<string, string[]> = {};
+    if (exportSelected.has("beschikbaarheid")) {
+      const clientIds = filteredClients.map((c: any) => c.id);
+      const { data: availData } = await supabase
+        .from("client_availability")
+        .select("client_id, available_date, start_time, end_time")
+        .in("client_id", clientIds.length > 0 ? clientIds : ["__none__"])
+        .order("available_date");
+      for (const a of availData ?? []) {
+        if (!availByClient[a.client_id]) availByClient[a.client_id] = [];
+        const day = new Date(a.available_date).toLocaleDateString("nl-NL", { weekday: "short" });
+        const time = a.start_time && a.end_time ? ` ${a.start_time.slice(0, 5)}-${a.end_time.slice(0, 5)}` : "";
+        availByClient[a.client_id].push(`${day} ${a.available_date}${time}`);
+      }
     }
 
-    const columns = [
-      { key: "naam", label: "Naam" },
-      { key: "school", label: "School" },
-      { key: "geboortedatum", label: "Geboortedatum" },
-      { key: "beschikbaarheid", label: "Beschikbaarheid" },
-    ];
+    const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString("nl-NL") : "";
+    const columns = selected.map((c) => ({ key: c.key, label: c.label }));
+    const rows = filteredClients.map((c: any) => {
+      const row: Record<string, any> = {};
+      for (const col of selected) {
+        switch (col.key) {
+          case "naam": row[col.key] = `${c.first_name} ${c.last_name}`; break;
+          case "voornaam": row[col.key] = c.first_name ?? ""; break;
+          case "achternaam": row[col.key] = c.last_name ?? ""; break;
+          case "geboortedatum": row[col.key] = fmtDate(c.date_of_birth); break;
+          case "leeftijd": row[col.key] = c.date_of_birth ? calculateAge(c.date_of_birth) : ""; break;
+          case "geslacht": row[col.key] = c.gender ?? ""; break;
+          case "klas": row[col.key] = c.class_group ?? ""; break;
+          case "school": row[col.key] = c.schools?.name ?? ""; break;
+          case "postcode": row[col.key] = c.postal_code ?? ""; break;
+          case "adres": row[col.key] = c.address ?? ""; break;
+          case "woonplaats": row[col.key] = c.city ?? ""; break;
+          case "gebied": row[col.key] = c.neighborhoods?.areas?.name ?? c.schools?.neighborhoods?.areas?.name ?? ""; break;
+          case "wijk": row[col.key] = c.neighborhoods?.name ?? c.schools?.neighborhoods?.name ?? ""; break;
+          case "ouder_naam": row[col.key] = c.guardian_name ?? ""; break;
+          case "ouder_telefoon": row[col.key] = c.guardian_phone ?? ""; break;
+          case "ouder_telefoon_alt": row[col.key] = c.guardian_phone_alt ?? ""; break;
+          case "ouder_email": row[col.key] = c.guardian_email ?? ""; break;
+          case "status": row[col.key] = statusLabels[c.intake_status as keyof typeof statusLabels] ?? c.intake_status ?? ""; break;
+          case "aanmelddatum": row[col.key] = fmtDate(c.registration_date); break;
+          case "intake_datum": row[col.key] = fmtDate(c.intake_date); break;
+          case "reden_aanmelding": row[col.key] = c.referral_reason ?? ""; break;
+          case "doelen": row[col.key] = c.goals ?? ""; break;
+          case "intake_notities": row[col.key] = c.intake_notes ?? ""; break;
+          case "toestemming": row[col.key] = c.consent_data_processing ?? false; break;
+          case "whatsapp": row[col.key] = c.whatsapp_consent ?? false; break;
+          case "notities": row[col.key] = c.notes ?? ""; break;
+          case "beschikbaarheid": row[col.key] = (availByClient[c.id] ?? []).join("; "); break;
+          case "medewerker": row[col.key] = (assignmentsByClient[c.id] ?? []).join(", "); break;
+        }
+      }
+      return row;
+    });
 
-    const rows = filteredClients.map((c: any) => ({
-      naam: `${c.first_name} ${c.last_name}`,
-      school: c.schools?.name ?? "",
-      geboortedatum: c.date_of_birth
-        ? new Date(c.date_of_birth).toLocaleDateString("nl-NL")
-        : "",
-      beschikbaarheid: (availByClient[c.id] ?? []).join("; "),
-    }));
-
-    downloadExport("aanmeldingen-export.xlsx", columns, rows, "xlsx");
+    downloadExport(`aanmeldingen-export.${exportFormat}`, columns, rows, exportFormat);
+    setExportOpen(false);
   };
 
   return (
