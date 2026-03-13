@@ -14,9 +14,10 @@ import { clientKeys, areaKeys } from "@/lib/queryKeys";
 interface Props {
   onSelectGroup?: (areaId: string, ageCategory: string) => void;
   onViewAvailability?: (areaId: string) => void;
+  filterArea?: string;
 }
 
-export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: Props) {
+export default function WaitlistOverview({ onSelectGroup, onViewAvailability, filterArea }: Props) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -132,6 +133,8 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
 
   const activeAreas = useMemo(() => {
     return areas.filter((a: any) => {
+      // Apply global area filter
+      if (filterArea && filterArea !== "alle" && a.id !== filterArea) return false;
       const row = matrix.m[a.id];
       if (!row) return false;
       return ageCategories.some(age => {
@@ -139,7 +142,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
         return cell.intake.length + cell.wachtlijst.length + cell.reserveIntake.length + cell.reserveWachtlijst.length > 0;
       });
     });
-  }, [areas, matrix]);
+  }, [areas, matrix, filterArea]);
 
   const totals = useMemo(() => {
     const t: Record<string, { intake: number; wachtlijst: number; reserve: number }> = {
