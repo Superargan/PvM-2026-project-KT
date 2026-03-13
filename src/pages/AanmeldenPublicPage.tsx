@@ -8,6 +8,7 @@ import { DateInput } from "@/components/DateInput";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import SchoolCombobox from "@/components/SchoolCombobox";
 import { CheckCircle2, Loader2, ArrowLeft } from "lucide-react";
 import DuplicateWarning from "@/components/DuplicateWarning";
 
@@ -160,14 +161,11 @@ export default function AanmeldenPublicPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <FieldWrapper label="School *" error={errors.school_id}>
-              <Select value={form.school_id ?? ""} onValueChange={(v) => updateField("school_id", v)}>
-                <SelectTrigger><SelectValue placeholder="Selecteer school" /></SelectTrigger>
-                <SelectContent>
-                  {schools.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SchoolCombobox
+                schools={schools}
+                value={form.school_id ?? ""}
+                onValueChange={(v) => updateField("school_id", v)}
+              />
             </FieldWrapper>
             <FieldWrapper label="Gebied">
               <Select value={form.waitlist_area_id ?? ""} onValueChange={(v) => updateField("waitlist_area_id", v)}>

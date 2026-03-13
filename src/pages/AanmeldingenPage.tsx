@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import SchoolCombobox from "@/components/SchoolCombobox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -595,14 +596,11 @@ export default function AanmeldingenPage() {
 
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t border-border pt-4">School koppelen</p>
             <FieldWrapper label="School" error={errors.school_id}>
-              <Select value={form.school_id ?? ""} onValueChange={(v) => updateField("school_id", v)}>
-                <SelectTrigger><SelectValue placeholder="Selecteer school" /></SelectTrigger>
-                <SelectContent className="bg-popover">
-                  {schools.map((s: any) => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SchoolCombobox
+                schools={schools}
+                value={form.school_id ?? ""}
+                onValueChange={(v) => updateField("school_id", v)}
+              />
             </FieldWrapper>
 
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t border-border pt-4">Ouder/Verzorger</p>
@@ -1071,19 +1069,13 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
                 {client.class_group && (
                   <Badge variant="outline" className="text-[10px] shrink-0">groep {client.class_group}</Badge>
                 )}
-                <Select
+                <SchoolCombobox
+                  schools={schools}
                   value={schoolAssignments[client.id] ?? ""}
                   onValueChange={(v) => setSchoolAssignments((prev) => ({ ...prev, [client.id]: v }))}
-                >
-                  <SelectTrigger className="flex-1 min-w-[200px]">
-                    <SelectValue placeholder="Selecteer school..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover max-h-60">
-                    {schools.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Selecteer school..."
+                  triggerClassName="flex-1 min-w-[200px]"
+                />
                 <Button
                   size="sm"
                   disabled={!schoolAssignments[client.id] || savingSchool === client.id}

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import SchoolCombobox from "@/components/SchoolCombobox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -310,7 +311,8 @@ export default function ProgramDetailPage() {
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1"><School className="h-3.5 w-3.5" /> Locatie</div>
           <div className="space-y-2">
             {/* School selector */}
-            <Select
+            <SchoolCombobox
+              schools={schools}
               value={program.school_id ?? "geen"}
               onValueChange={async (v) => {
                 const schoolId = v === "geen" ? null : v;
@@ -329,17 +331,9 @@ export default function ProgramDetailPage() {
                   qc.invalidateQueries({ queryKey: ["programs"] });
                 }
               }}
-            >
-              <SelectTrigger className="h-8 text-sm">
-                <SelectValue placeholder="School..." />
-              </SelectTrigger>
-              <SelectContent className="bg-popover">
-                <SelectItem value="geen">Geen school</SelectItem>
-                {schools.map((s: any) => (
-                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              emptyOption={{ value: "geen", label: "Geen school" }}
+              triggerClassName="h-8 text-sm"
+            />
             {/* Training location selector */}
             <Select
               value={(program as any).training_location_id ?? "geen"}
