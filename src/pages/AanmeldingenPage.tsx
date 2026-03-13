@@ -186,6 +186,7 @@ export default function AanmeldingenPage() {
       neighborhood_id: client.neighborhood_id ?? null,
       waitlist_area_id: client.waitlist_area_id ?? null,
       all_areas_flexible: client.all_areas_flexible ?? false,
+      area_notes: client.area_notes ?? "",
     });
     setErrors({});
     setSelectedProgramId("");
