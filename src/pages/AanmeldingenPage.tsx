@@ -322,6 +322,11 @@ export default function AanmeldingenPage() {
     search, area: filterArea, school: filterSchool, age: filterAge, status: filterStatus,
   });
 
+  // Clients visible on the active tab – used for export & selection
+  const visibleClients = activeTab === "intake_afgerond"
+    ? clients.filter((c: any) => c.intake_status === "intake_afgerond")
+    : filteredClients;
+
   const [exportOpen, setExportOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<"xlsx" | "csv">("xlsx");
   const EXPORT_COLUMNS = [
@@ -385,8 +390,8 @@ export default function AanmeldingenPage() {
     if (selected.length === 0) return;
 
     const exportClients = selectedClients.size > 0
-      ? filteredClients.filter((c: any) => selectedClients.has(c.id))
-      : filteredClients;
+      ? visibleClients.filter((c: any) => selectedClients.has(c.id))
+      : visibleClients;
 
     let availByClient: Record<string, string> = {};
     if (exportSelected.has("beschikbaarheid")) {
@@ -486,7 +491,7 @@ export default function AanmeldingenPage() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setSelectedClients(new Set()); }} className="space-y-4">
         <TabsList>
           <TabsTrigger value="lijst">Aanmeldingen</TabsTrigger>
           <TabsTrigger value="intake_afgerond" className="gap-1.5">
@@ -538,9 +543,9 @@ export default function AanmeldingenPage() {
               }}
               onToggleAll={() => {
                 setSelectedClients((prev) =>
-                  prev.size === filteredClients.length
+                  prev.size === visibleClients.length
                     ? new Set()
-                    : new Set(filteredClients.map((c: any) => c.id))
+                    : new Set(visibleClients.map((c: any) => c.id))
                 );
               }}
             />
@@ -557,6 +562,23 @@ export default function AanmeldingenPage() {
               areas={areas}
               onNavigate={(id) => navigate(`/clienten/${id}`)}
               onEdit={openEdit}
+              showCheckbox
+              selected={selectedClients}
+              onToggleSelect={(id) => {
+                setSelectedClients((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(id)) next.delete(id); else next.add(id);
+                  return next;
+                });
+              }}
+              onToggleAll={() => {
+                const tabClients = clients.filter((c: any) => c.intake_status === "intake_afgerond");
+                setSelectedClients((prev) =>
+                  prev.size === tabClients.length
+                    ? new Set()
+                    : new Set(tabClients.map((c: any) => c.id))
+                );
+              }}
             />
           )}
         </TabsContent>
@@ -877,8 +899,8 @@ export default function AanmeldingenPage() {
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
             {selectedClients.size > 0
-              ? `${selectedClients.size} van ${filteredClients.length} aanmeldingen geselecteerd voor export.`
-              : `Alle ${filteredClients.length} gefilterde aanmeldingen worden geëxporteerd. Selecteer rijen in de tabel om specifieke deelnemers te kiezen.`}
+              ? `${selectedClients.size} van ${visibleClients.length} aanmeldingen geselecteerd voor export.`
+              : `Alle ${visibleClients.length} gefilterde aanmeldingen worden geëxporteerd. Selecteer rijen in de tabel om specifieke deelnemers te kiezen.`}
           </p>
 
           <div className="space-y-4">
