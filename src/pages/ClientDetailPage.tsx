@@ -251,6 +251,10 @@ export default function ClientDetailPage() {
   const updateField = (field: string, value: any) => {
     setForm((prev: any) => {
       const next = { ...prev, [field]: value };
+      // When user manually changes DOB, mark as no longer estimated
+      if (field === "date_of_birth") {
+        next.dob_estimated = false;
+      }
       // Auto-fill area and neighborhood from school
       if (field === "school_id") {
         const school = schools.find((s: any) => s.id === value);
