@@ -133,6 +133,8 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
 
   const activeAreas = useMemo(() => {
     return areas.filter((a: any) => {
+      // Apply global area filter
+      if (filterArea && filterArea !== "alle" && a.id !== filterArea) return false;
       const row = matrix.m[a.id];
       if (!row) return false;
       return ageCategories.some(age => {
@@ -140,7 +142,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
         return cell.intake.length + cell.wachtlijst.length + cell.reserveIntake.length + cell.reserveWachtlijst.length > 0;
       });
     });
-  }, [areas, matrix]);
+  }, [areas, matrix, filterArea]);
 
   const totals = useMemo(() => {
     const t: Record<string, { intake: number; wachtlijst: number; reserve: number }> = {

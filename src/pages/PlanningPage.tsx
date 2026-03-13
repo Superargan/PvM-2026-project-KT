@@ -908,6 +908,7 @@ export default function PlanningPage() {
           {!showGroupComposer ? (
             <>
               <WaitlistOverview
+                filterArea={filterArea}
                 onSelectGroup={(areaId, age) => {
                   setFilterArea(areaId);
                   setFilterAge(age);
