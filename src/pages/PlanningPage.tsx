@@ -662,6 +662,10 @@ export default function PlanningPage() {
             <SelectItem value="alle">Alle leeftijden</SelectItem>
             <SelectItem value="4-7 jaar">4-7 jaar</SelectItem>
             <SelectItem value="8-12 jaar">8-12 jaar</SelectItem>
+            <div className="px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Exacte leeftijd</div>
+            {Array.from({ length: 14 }, (_, i) => i + 2).map((age) => (
+              <SelectItem key={age} value={`exact-${age}`}>{age} jaar</SelectItem>
+            ))}
           </SelectContent>
         </Select>
         {(filterArea !== "alle" || filterAge !== "alle") && (
