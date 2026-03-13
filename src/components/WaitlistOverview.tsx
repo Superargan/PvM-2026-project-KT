@@ -86,7 +86,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
       } else if (!age) {
         outsideRange++;
       }
-      if (c.dob_estimated) estimatedDob++;
+      if (c.dob_estimated) { estimatedDob++; estimatedDobClients.push(c); }
 
       if (!c.waitlist_area_id && c.schools?.neighborhoods?.area_id) {
         fixableClients.push({ clientId: c.id, areaId: c.schools.neighborhoods.area_id });
