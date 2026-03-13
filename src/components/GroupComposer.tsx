@@ -45,7 +45,12 @@ interface GroupedClients {
   areaName: string;
   ageCategory: AgeCategory;
   clients: ClientWithMatch[];
+  subGroupIndex: number;
+  subGroupCount: number;
 }
+
+const MAX_GROUP_SIZE = 10;
+const SUB_GROUP_LABELS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 export interface GroupComposerHandle {
   triggerSave: () => Promise<boolean>;
