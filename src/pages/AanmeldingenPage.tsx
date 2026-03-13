@@ -543,9 +543,9 @@ export default function AanmeldingenPage() {
               }}
               onToggleAll={() => {
                 setSelectedClients((prev) =>
-                  prev.size === filteredClients.length
+                  prev.size === visibleClients.length
                     ? new Set()
-                    : new Set(filteredClients.map((c: any) => c.id))
+                    : new Set(visibleClients.map((c: any) => c.id))
                 );
               }}
             />
