@@ -32,6 +32,7 @@ import {
   type MatchType,
 } from "@/lib/clientUtils";
 import { clientKeys, areaKeys, scenarioKeys } from "@/lib/queryKeys";
+import { downloadExport } from "@/lib/csvExport";
 
 interface ClientWithMatch {
   client: any;
