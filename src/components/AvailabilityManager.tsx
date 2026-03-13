@@ -522,7 +522,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
                                       <Popover>
                                         <PopoverTrigger asChild>
                                           <button
-                                            className="text-[9px] underline opacity-70 hover:opacity-100 flex items-center gap-0.5"
+                                            className="text-[9px] underline text-foreground opacity-70 hover:opacity-100 flex items-center gap-0.5"
                                             onClick={(e) => e.stopPropagation()}
                                           >
                                             <Clock className="h-2.5 w-2.5" /> Wijzig
@@ -551,7 +551,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
                                       </Popover>
                                       {/* Remove button */}
                                       <button
-                                        className="text-[9px] opacity-50 hover:opacity-100 hover:text-destructive"
+                                        className="text-[9px] text-foreground opacity-50 hover:opacity-100 hover:text-destructive"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           toggleCell(w.dow, dagdeel.key);
