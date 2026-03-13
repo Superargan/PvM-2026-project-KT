@@ -184,6 +184,20 @@ export default function ClientDetailPage() {
     URL.revokeObjectURL(url);
   };
 
+  // Fetch area preferences for beschikbaarheid tab
+  const { data: areaPrefs = [] } = useQuery({
+    queryKey: clientKeys.areaPreferences(id!),
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("client_area_preferences")
+        .select("id, area_id, preference_order, areas:area_id(name)")
+        .eq("client_id", id!)
+        .order("preference_order");
+      return data ?? [];
+    },
+    enabled: !!id,
+  });
+
 
   useEffect(() => {
     if (id && session?.user?.id) {
