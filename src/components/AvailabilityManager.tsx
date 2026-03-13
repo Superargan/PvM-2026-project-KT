@@ -313,44 +313,60 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
         if (delError) throw delError;
       }
 
-      // Build inserts
-      const inserts: any[] = [];
+      // Build one row per date (merge ochtend+middag into a single daily window)
+      const dailyAvailability: Record<string, { available_date: string; start_time: string; end_time: string }> = {};
 
-      allDays.forEach(day => {
+      allDays.forEach((day) => {
         const dow = jsDayToDow(getDay(day));
         if (dow > 7) return;
         const dateStr = format(day, "yyyy-MM-dd");
 
-        DAGDELEN.forEach(dagdeel => {
+        let mergedStart: string | null = null;
+        let mergedEnd: string | null = null;
+
+        DAGDELEN.forEach((dagdeel) => {
           const key = `${dow}-${dagdeel.key}`;
           if (!selections[key]) return;
+
           const times = customTimes[key] ?? { start: dagdeel.start, end: dagdeel.end };
-          inserts.push({
-            available_date: dateStr,
-            start_time: times.start,
-            end_time: times.end,
-          });
+          const normalizedStart = times.start <= times.end ? times.start : times.end;
+          const normalizedEnd = times.start <= times.end ? times.end : times.start;
+
+          if (!mergedStart || normalizedStart < mergedStart) mergedStart = normalizedStart;
+          if (!mergedEnd || normalizedEnd > mergedEnd) mergedEnd = normalizedEnd;
         });
+
+        if (mergedStart && mergedEnd) {
+          dailyAvailability[dateStr] = {
+            available_date: dateStr,
+            start_time: mergedStart,
+            end_time: mergedEnd,
+          };
+        }
       });
 
-      // Batch insert in chunks of 500
-      if (inserts.length > 0) {
+      const rowsToSave = Object.values(dailyAvailability);
+
+      // Batch write in chunks of 500
+      if (rowsToSave.length > 0) {
         const chunkSize = 500;
-        for (let i = 0; i < inserts.length; i += chunkSize) {
-          const chunk = inserts.slice(i, i + chunkSize);
+        for (let i = 0; i < rowsToSave.length; i += chunkSize) {
+          const chunk = rowsToSave.slice(i, i + chunkSize);
           if (type === "trainer") {
-            const rows = chunk.map(r => ({ ...r, staff_id: selectedPersonId }));
+            const rows = chunk.map((r) => ({ ...r, staff_id: selectedPersonId }));
             const { error } = await supabase.from("staff_availability").insert(rows);
             if (error) throw error;
           } else {
-            const rows = chunk.map(r => ({ ...r, client_id: selectedPersonId }));
-            const { error } = await supabase.from("client_availability").insert(rows);
+            const rows = chunk.map((r) => ({ ...r, client_id: selectedPersonId }));
+            const { error } = await supabase
+              .from("client_availability")
+              .upsert(rows, { onConflict: "client_id,available_date" });
             if (error) throw error;
           }
         }
       }
 
-      toast({ title: "Beschikbaarheid opgeslagen", description: `${inserts.length} tijdslots opgeslagen` });
+      toast({ title: "Beschikbaarheid opgeslagen", description: `${rowsToSave.length} dagen opgeslagen` });
       setIsDirty(false);
       refetchAvail();
       // Centralized invalidation — SSOT: all client-related queries + planning queries
