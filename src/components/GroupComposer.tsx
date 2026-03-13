@@ -1386,6 +1386,72 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
         );
       })()}
 
+      {/* Export dialog */}
+      <Dialog open={exportOpen} onOpenChange={setExportOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Planning exporteren</DialogTitle>
+            <DialogDescription>
+              Selecteer de kolommen die je wilt opnemen in de export. Elke rij bevat één deelnemer per groep/tijdslot.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 max-h-[50vh] overflow-y-auto">
+            {Array.from(new Set(PLANNING_EXPORT_COLUMNS.map(c => c.group))).map(group => {
+              const groupCols = PLANNING_EXPORT_COLUMNS.filter(c => c.group === group);
+              const allChecked = groupCols.every(c => exportSelected.has(c.key));
+              const someChecked = groupCols.some(c => exportSelected.has(c.key));
+              return (
+                <div key={group} className="space-y-1.5">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={allChecked}
+                      className={someChecked && !allChecked ? "opacity-60" : ""}
+                      onCheckedChange={(checked) => selectExportGroup(group, !!checked)}
+                    />
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{group}</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-1 pl-6">
+                    {groupCols.map(col => (
+                      <label key={col.key} className="flex items-center gap-2 cursor-pointer py-0.5">
+                        <Checkbox
+                          checked={exportSelected.has(col.key)}
+                          onCheckedChange={() => toggleExportCol(col.key)}
+                        />
+                        <span className="text-sm text-foreground">{col.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Formaat:</span>
+              <Button
+                variant={exportFormat === "xlsx" ? "default" : "outline"}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setExportFormat("xlsx")}
+              >
+                Excel (.xlsx)
+              </Button>
+              <Button
+                variant={exportFormat === "csv" ? "default" : "outline"}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setExportFormat("csv")}
+              >
+                CSV
+              </Button>
+            </div>
+            <Button onClick={handleExportPlanning} disabled={exportSelected.size === 0}>
+              <Download className="h-4 w-4" /> Exporteren ({exportSelected.size})
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Save scenario dialog */}
       <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
         <DialogContent>
