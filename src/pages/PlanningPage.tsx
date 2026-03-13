@@ -242,7 +242,7 @@ export default function PlanningPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("program_sessions")
-        .select("id, session_number, session_date, location, program_id, programs(id, name, age_category, status, area_id, areas(name), schools(name))")
+        .select("id, session_number, session_date, location, program_id, programs(id, name, age_category, status, area_id, areas(name), schools(name), training_locations(name))")
         .gte("session_date", format(dateRange.start, "yyyy-MM-dd"))
         .lte("session_date", format(dateRange.end, "yyyy-MM-dd"))
         .order("session_date");

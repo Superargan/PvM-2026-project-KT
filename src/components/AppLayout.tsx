@@ -15,6 +15,7 @@ import {
   Menu,
   CalendarDays,
   Clock,
+  MapPin,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,7 @@ const navItems = [
   { label: "Planning", icon: CalendarDays, path: "/planning" },
   { label: "Programma's", icon: GraduationCap, path: "/programmas" },
   { label: "Scholen", icon: School, path: "/scholen" },
+  { label: "Trainingslocaties", icon: MapPin, path: "/trainingslocaties" },
   { label: "Medewerkers", icon: UserCog, path: "/medewerkers" },
   { label: "Rapportages", icon: BarChart3, path: "/rapportages" },
   { label: "Documenten", icon: FileText, path: "/documenten" },

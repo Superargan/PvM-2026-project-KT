@@ -76,7 +76,7 @@ export default function ProgrammasPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("programs")
-        .select("*, schools(name), program_clients(count), areas(name), neighborhoods(name)")
+        .select("*, schools(name), training_locations(name), program_clients(count), areas(name), neighborhoods(name)")
         .eq("archived", false)
         .order("training_number", { ascending: true });
       if (error) throw error;
@@ -324,7 +324,7 @@ export default function ProgrammasPage() {
                   {prog.age_category && <span className="ml-2 text-xs font-normal text-muted-foreground">({prog.age_category} jaar)</span>}
                 </h3>
                 {prog.description && <p className="text-xs text-muted-foreground">{prog.description}</p>}
-                {prog.schools?.name && <p className="text-xs text-muted-foreground">{prog.schools.name}</p>}
+                {(prog.schools?.name || prog.training_locations?.name) && <p className="text-xs text-muted-foreground">{prog.schools?.name ?? prog.training_locations?.name}</p>}
                 {prog.areas?.name && (
                   <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                     <MapPin className="h-3 w-3" /> {prog.areas.name}

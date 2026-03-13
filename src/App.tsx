@@ -21,6 +21,7 @@ import ProgramDetailPage from "./pages/ProgramDetailPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import PlanningPage from "./pages/PlanningPage";
 import WachtlijstPage from "./pages/WachtlijstPage";
+import TrainingslocatiesPage from "./pages/TrainingslocatiesPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -69,6 +70,7 @@ function AppRoutes() {
       <Route path="/planning" element={<ProtectedRoute><AppLayout><PlanningPage /></AppLayout></ProtectedRoute>} />
       <Route path="/programmas/:id" element={<ProtectedRoute><AppLayout><ProgramDetailPage /></AppLayout></ProtectedRoute>} />
       <Route path="/scholen" element={<ProtectedRoute><AppLayout><ScholenPage /></AppLayout></ProtectedRoute>} />
+      <Route path="/trainingslocaties" element={<ProtectedRoute><AppLayout><TrainingslocatiesPage /></AppLayout></ProtectedRoute>} />
       <Route path="/medewerkers" element={<ProtectedRoute><AppLayout><MedewerkersPage /></AppLayout></ProtectedRoute>} />
       <Route path="/rapportages" element={<ProtectedRoute><AppLayout><RapportagesPage /></AppLayout></ProtectedRoute>} />
       <Route path="/documenten" element={<ProtectedRoute><AppLayout><DocumentenPage /></AppLayout></ProtectedRoute>} />
