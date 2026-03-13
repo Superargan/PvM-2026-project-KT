@@ -377,8 +377,9 @@ export default function ProgramDetailPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="deelnemers" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="deelnemers" className="gap-1.5"><Users className="h-3.5 w-3.5" /> Deelnemers</TabsTrigger>
+          <TabsTrigger value="groep" className="gap-1.5"><UsersRound className="h-3.5 w-3.5" /> Groep samenstellen</TabsTrigger>
           <TabsTrigger value="trainers" className="gap-1.5"><GraduationCap className="h-3.5 w-3.5" /> Trainers</TabsTrigger>
           <TabsTrigger value="sessies" className="gap-1.5"><ClipboardList className="h-3.5 w-3.5" /> Sessies & Presentie</TabsTrigger>
         </TabsList>
