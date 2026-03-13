@@ -8,6 +8,7 @@ import { DateInput } from "@/components/DateInput";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import SchoolCombobox from "@/components/SchoolCombobox";
 import { CheckCircle2, Loader2, ArrowLeft } from "lucide-react";
 import DuplicateWarning from "@/components/DuplicateWarning";
 
