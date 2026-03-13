@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { resolveAreaId, getAgeCategoryPlanning, getMissingFields, buildPrefsByClientMap, getMatchType, type AgeCategory } from "@/lib/clientUtils";
 import { clientKeys, areaKeys } from "@/lib/queryKeys";
 
@@ -65,6 +66,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
     let noDob = 0;
     let outsideRange = 0;
     let estimatedDob = 0;
+    const estimatedDobClients: any[] = [];
 
     areas.forEach((a: any) => {
       m[a.id] = {
@@ -85,7 +87,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
       } else if (!age) {
         outsideRange++;
       }
-      if (c.dob_estimated) estimatedDob++;
+      if (c.dob_estimated) { estimatedDob++; estimatedDobClients.push(c); }
 
       if (!c.waitlist_area_id && c.schools?.neighborhoods?.area_id) {
         fixableClients.push({ clientId: c.id, areaId: c.schools.neighborhoods.area_id });
@@ -125,7 +127,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
       }
     });
 
-    return { m, noArea, noDob, outsideRange, estimatedDob, fixableClients };
+    return { m, noArea, noDob, outsideRange, estimatedDob, estimatedDobClients, fixableClients };
   }, [clients, areas, prefsByClient]);
 
   const activeAreas = useMemo(() => {
@@ -191,9 +193,27 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
             </Badge>
           )}
           {matrix.estimatedDob > 0 && (
-            <Badge variant="outline" className="text-sm px-3 py-1 border-amber-400 text-amber-700">
-              ⚠ {matrix.estimatedDob} geschatte geboortedatum
-            </Badge>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Badge variant="outline" className="text-sm px-3 py-1 border-amber-400 text-amber-700 cursor-pointer hover:bg-amber-50">
+                  ⚠ {matrix.estimatedDob} geschatte geboortedatum
+                </Badge>
+              </PopoverTrigger>
+              <PopoverContent className="w-72 max-h-64 overflow-y-auto p-2" align="start">
+                <p className="text-xs font-semibold text-muted-foreground mb-2">Geschatte geboortedatum (uit import)</p>
+                <div className="space-y-1">
+                  {matrix.estimatedDobClients.map((c: any) => (
+                    <button
+                      key={c.id}
+                      className="w-full text-left text-sm px-2 py-1.5 rounded hover:bg-muted/50 transition-colors text-primary hover:underline"
+                      onClick={() => navigate(`/clienten/${c.id}`)}
+                    >
+                      {c.first_name} {c.last_name}
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
           )}
         </div>
 
