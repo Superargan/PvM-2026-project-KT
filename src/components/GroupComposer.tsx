@@ -264,8 +264,9 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
       selectedClients: Object.fromEntries(
         Object.entries(selectedClients).map(([k, v]) => [k, Array.from(v)])
       ),
+      linkedPrograms,
     });
-  }, [simulatedGroups, selectedClients]);
+  }, [simulatedGroups, selectedClients, linkedPrograms]);
 
   const isDirty = useMemo(() => {
     if (!activeScenarioId) return simulatedGroups.size > 0;
