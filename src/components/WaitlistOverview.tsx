@@ -126,7 +126,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
       }
     });
 
-    return { m, noArea, noDob, outsideRange, estimatedDob, fixableClients };
+    return { m, noArea, noDob, outsideRange, estimatedDob, estimatedDobClients, fixableClients };
   }, [clients, areas, prefsByClient]);
 
   const activeAreas = useMemo(() => {
