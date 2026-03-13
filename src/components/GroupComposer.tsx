@@ -72,6 +72,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
   const [selectedStartDate, setSelectedStartDate] = useState<Record<string, string>>({});
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [simulatedGroups, setSimulatedGroups] = useState<Map<string, { proposalIdx: number; suggestion: any }>>(new Map());
+  const [expandedAlternatives, setExpandedAlternatives] = useState<Set<string>>(new Set());
 
   // Scenario state
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
