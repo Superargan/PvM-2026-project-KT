@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -246,9 +248,9 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     queryFn: async () => {
       const { data, error } = await supabase
         .from("programs")
-        .select("id, name, area_id, age_category, status, areas(name)")
+        .select("id, name, area_id, age_category, status, training_number, areas(name)")
         .eq("archived", false)
-        .order("name");
+        .order("training_number", { ascending: true, nullsFirst: false });
       if (error) throw error;
       return data ?? [];
     },
@@ -1225,49 +1227,76 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                     <Link2 className="h-3 w-3" /> Koppelen aan programma
                   </label>
                   <div className="flex items-center gap-1.5">
-                    <Select
-                      value={linkedPrograms[key] ?? ""}
-                      onValueChange={(v) => {
-                        if (v === "__none__") {
-                          setLinkedPrograms(prev => { const next = { ...prev }; delete next[key]; return next; });
-                        } else {
-                          setLinkedPrograms(prev => ({ ...prev, [key]: v }));
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="h-9 text-xs">
-                        <SelectValue placeholder="Nieuw programma (standaard)" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover max-h-48">
-                        <SelectItem value="__none__">
-                          <span className="text-muted-foreground">Nieuw programma aanmaken</span>
-                        </SelectItem>
-                        {linkablePrograms
-                          .filter((p: any) => p.area_id === group.areaId && (!p.age_category || p.age_category === group.ageCategory))
-                          .map((p: any) => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.name} <span className="text-muted-foreground ml-1">({p.status})</span>
-                            </SelectItem>
-                          ))
-                        }
-                        {linkablePrograms
-                          .filter((p: any) => p.area_id !== group.areaId || (p.age_category && p.age_category !== group.ageCategory))
-                          .length > 0 && (
-                          <>
-                            <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider border-t mt-1 pt-1">Overige programma's</div>
-                            {linkablePrograms
-                              .filter((p: any) => p.area_id !== group.areaId || (p.age_category && p.age_category !== group.ageCategory))
-                              .slice(0, 20)
-                              .map((p: any) => (
-                                <SelectItem key={p.id} value={p.id}>
-                                  {p.name} <span className="text-muted-foreground ml-1">({(p as any).areas?.name ?? "?"} · {p.age_category ?? "?"})</span>
-                                </SelectItem>
-                              ))
-                            }
-                          </>
-                        )}
-                      </SelectContent>
-                    </Select>
+                    {(() => {
+                      const selectedProg = linkedPrograms[key] ? linkablePrograms.find((p: any) => p.id === linkedPrograms[key]) : null;
+                      const matchingProgs = linkablePrograms.filter((p: any) => p.area_id === group.areaId && (!p.age_category || p.age_category === group.ageCategory));
+                      const otherProgs = linkablePrograms.filter((p: any) => p.area_id !== group.areaId || (p.age_category && p.age_category !== group.ageCategory));
+                      return (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" role="combobox" className="h-9 text-xs justify-between w-full font-normal">
+                              {selectedProg ? (
+                                <span className="truncate">{selectedProg.name} ({(selectedProg as any).training_number || selectedProg.status})</span>
+                              ) : (
+                                <span className="text-muted-foreground">Nieuw programma (standaard)</span>
+                              )}
+                              <Search className="ml-1 h-3 w-3 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[320px] p-0" align="start">
+                            <Command>
+                              <CommandInput placeholder="Zoek programma (bijv. 26)..." className="h-9 text-xs" />
+                              <CommandList className="max-h-[250px]">
+                                <CommandEmpty>Geen programma gevonden.</CommandEmpty>
+                                <CommandGroup>
+                                  <CommandItem
+                                    value="__nieuw_programma__"
+                                    onSelect={() => {
+                                      setLinkedPrograms(prev => { const next = { ...prev }; delete next[key]; return next; });
+                                    }}
+                                  >
+                                    <span className="text-muted-foreground">Nieuw programma aanmaken</span>
+                                  </CommandItem>
+                                </CommandGroup>
+                                {matchingProgs.length > 0 && (
+                                  <CommandGroup heading="Matching programma's">
+                                    {matchingProgs.map((p: any) => (
+                                      <CommandItem
+                                        key={p.id}
+                                        value={`${p.name} ${p.training_number ?? ''} ${p.status}`}
+                                        onSelect={() => setLinkedPrograms(prev => ({ ...prev, [key]: p.id }))}
+                                      >
+                                        <Check className={`mr-1 h-3 w-3 ${linkedPrograms[key] === p.id ? "opacity-100" : "opacity-0"}`} />
+                                        <span className="truncate">{p.name}</span>
+                                        <span className="ml-auto text-[10px] text-muted-foreground">{p.status}</span>
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                )}
+                                {otherProgs.length > 0 && (
+                                  <>
+                                    <CommandSeparator />
+                                    <CommandGroup heading="Overige programma's">
+                                      {otherProgs.map((p: any) => (
+                                        <CommandItem
+                                          key={p.id}
+                                          value={`${p.name} ${p.training_number ?? ''} ${(p as any).areas?.name ?? ''} ${p.age_category ?? ''} ${p.status}`}
+                                          onSelect={() => setLinkedPrograms(prev => ({ ...prev, [key]: p.id }))}
+                                        >
+                                          <Check className={`mr-1 h-3 w-3 ${linkedPrograms[key] === p.id ? "opacity-100" : "opacity-0"}`} />
+                                          <span className="truncate">{p.name}</span>
+                                          <span className="ml-auto text-[10px] text-muted-foreground">{(p as any).areas?.name ?? "?"}</span>
+                                        </CommandItem>
+                                      ))}
+                                    </CommandGroup>
+                                  </>
+                                )}
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+                      );
+                    })()}
                     {linkedPrograms[key] && (
                       <Button
                         variant="ghost"
