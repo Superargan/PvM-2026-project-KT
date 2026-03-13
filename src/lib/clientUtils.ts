@@ -230,7 +230,7 @@ function minutesToTime(value: number): string {
 export function getAvailabilityOverlap(
   clientIds: string[] | Set<string>,
   availByClient: Record<string, { dayOfWeek: number; dayName: string; startTime: string; endTime: string }[]>,
-  minDurationMinutes = 120
+  minDurationMinutes = 90
 ): AvailabilityProposal | null {
   const results = getTopAvailabilityOverlaps(clientIds, availByClient, 1, minDurationMinutes);
   return results[0] ?? null;
