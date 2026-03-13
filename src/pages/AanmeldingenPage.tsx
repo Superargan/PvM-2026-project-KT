@@ -523,6 +523,22 @@ export default function AanmeldingenPage() {
               onNavigate={(id) => navigate(`/clienten/${id}`)}
               onEdit={openEdit}
               showAssigned
+              showCheckbox
+              selected={selectedClients}
+              onToggleSelect={(id) => {
+                setSelectedClients((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(id)) next.delete(id); else next.add(id);
+                  return next;
+                });
+              }}
+              onToggleAll={() => {
+                setSelectedClients((prev) =>
+                  prev.size === filteredClients.length
+                    ? new Set()
+                    : new Set(filteredClients.map((c: any) => c.id))
+                );
+              }}
             />
           )}
         </TabsContent>
