@@ -74,6 +74,45 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
   const [simulatedGroups, setSimulatedGroups] = useState<Map<string, { proposalIdx: number; suggestion: any }>>(new Map());
   const [expandedAlternatives, setExpandedAlternatives] = useState<Set<string>>(new Set());
 
+  // Export state
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState<"xlsx" | "csv">("xlsx");
+  const PLANNING_EXPORT_COLUMNS = [
+    { key: "gebied", label: "Gebied", group: "Groep" },
+    { key: "leeftijd", label: "Leeftijdscategorie", group: "Groep" },
+    { key: "dag", label: "Dag", group: "Groep" },
+    { key: "tijdstip", label: "Tijdstip", group: "Groep" },
+    { key: "overlap", label: "Beschikbare deelnemers", group: "Groep" },
+    { key: "groepsgrootte", label: "Groepsgrootte", group: "Groep" },
+    { key: "status_groep", label: "Groepsstatus", group: "Groep" },
+    { key: "naam", label: "Naam deelnemer", group: "Deelnemer" },
+    { key: "geboortedatum", label: "Geboortedatum", group: "Deelnemer" },
+    { key: "leeftijd_jr", label: "Leeftijd", group: "Deelnemer" },
+    { key: "geslacht", label: "Geslacht", group: "Deelnemer" },
+    { key: "school", label: "School", group: "Deelnemer" },
+    { key: "intake_status", label: "Status deelnemer", group: "Deelnemer" },
+    { key: "match_type", label: "Match type", group: "Deelnemer" },
+    { key: "oudertrainer", label: "Oudertrainer", group: "Trainers" },
+    { key: "kindtrainer", label: "Kindtrainer", group: "Trainers" },
+    { key: "startdatum", label: "Vermoedelijke startdatum", group: "Overig" },
+    { key: "voorstel_nr", label: "Voorstel nummer", group: "Overig" },
+  ] as const;
+  const [exportSelected, setExportSelected] = useState<Set<string>>(
+    new Set(["gebied", "leeftijd", "dag", "tijdstip", "naam", "school", "intake_status", "match_type"])
+  );
+  const toggleExportCol = (key: string) => {
+    setExportSelected(prev => { const next = new Set(prev); if (next.has(key)) next.delete(key); else next.add(key); return next; });
+  };
+  const selectExportGroup = (group: string, checked: boolean) => {
+    setExportSelected(prev => {
+      const next = new Set(prev);
+      for (const col of PLANNING_EXPORT_COLUMNS) {
+        if (col.group === group) { if (checked) next.add(col.key); else next.delete(col.key); }
+      }
+      return next;
+    });
+  };
+
   // Scenario state
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [scenarioName, setScenarioName] = useState("");
