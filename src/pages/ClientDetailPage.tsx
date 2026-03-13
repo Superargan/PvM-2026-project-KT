@@ -599,6 +599,40 @@ export default function ClientDetailPage() {
 
         {/* Beschikbaarheid tab */}
         <TabsContent value="beschikbaarheid" className="space-y-4">
+          {/* Gebiedsinformatie blok */}
+          {client && (
+            <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gebiedsinformatie</p>
+              <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Primair gebied:</span>{" "}
+                  <span className="font-medium text-card-foreground">{getResolvedAreaName(client, areas)}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Flexibel:</span>{" "}
+                  <span className="font-medium text-card-foreground">{(client as any).all_areas_flexible ? "Ja (alle gebieden)" : "Nee"}</span>
+                </div>
+                {areaPrefs.length > 0 && (
+                  <div className="col-span-2">
+                    <span className="text-muted-foreground">Reserve-gebieden:</span>{" "}
+                    <span className="font-medium text-card-foreground">
+                      {areaPrefs.map((p: any, i: number) => (
+                        <Badge key={p.id} variant="outline" className="mr-1.5 text-xs">
+                          {i + 1}. {(p.areas as any)?.name ?? "Onbekend"}
+                        </Badge>
+                      ))}
+                    </span>
+                  </div>
+                )}
+                {(client as any).area_notes && (
+                  <div className="col-span-2">
+                    <span className="text-muted-foreground">Gebiedsnotities:</span>{" "}
+                    <span className="font-medium text-card-foreground whitespace-pre-line">{(client as any).area_notes}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           <AvailabilityManager type="deelnemer" fixedPersonId={id!} />
         </TabsContent>
 
