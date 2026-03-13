@@ -57,7 +57,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
 
   const prefsByClient = useMemo(() => buildPrefsByClientMap(allPreferences as any), [allPreferences]);
 
-  const ageCategories: AgeCategory[] = ["5-7 jaar", "8-12 jaar"];
+  const ageCategories: AgeCategory[] = ["4-7 jaar", "8-12 jaar"];
 
   // Build matrix: area × age → { intake: client[], wachtlijst: client[], reserveIntake: client[], reserveWachtlijst: client[] }
   const matrix = useMemo(() => {
