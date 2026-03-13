@@ -14,9 +14,10 @@ import { clientKeys, areaKeys } from "@/lib/queryKeys";
 interface Props {
   onSelectGroup?: (areaId: string, ageCategory: string) => void;
   onViewAvailability?: (areaId: string) => void;
+  filterArea?: string;
 }
 
-export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: Props) {
+export default function WaitlistOverview({ onSelectGroup, onViewAvailability, filterArea }: Props) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
