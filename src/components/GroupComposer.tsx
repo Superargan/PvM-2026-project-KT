@@ -77,6 +77,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [simulatedGroups, setSimulatedGroups] = useState<Map<string, { proposalIdx: number; suggestion: any }>>(new Map());
   const [expandedAlternatives, setExpandedAlternatives] = useState<Set<string>>(new Set());
+  const [linkedPrograms, setLinkedPrograms] = useState<Record<string, string>>({}); // groupKey -> programId
 
   // Export state
   const [exportOpen, setExportOpen] = useState(false);
