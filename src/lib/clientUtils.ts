@@ -484,7 +484,7 @@ export function filterClients(
       const age = calculateAge(c.date_of_birth);
       if (filters.age === "4-7" && (age === null || age < 4 || age > 7)) return false;
       if (filters.age === "8-12" && (age === null || age < 8 || age > 12)) return false;
-      if (filters.age === "other" && age !== null && age >= 5 && age <= 12) return false;
+      if (filters.age === "other" && age !== null && age >= 4 && age <= 12) return false;
     }
     if (filters.status && filters.status !== "all") {
       if ((c.intake_status ?? "nieuw") !== filters.status) return false;

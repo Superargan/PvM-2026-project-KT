@@ -1467,7 +1467,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
               <Input
                 value={scenarioName}
                 onChange={(e) => setScenarioName(e.target.value)}
-                placeholder="bijv. Kralingen 5-7 Q2"
+                placeholder="bijv. Kralingen 4-7 Q2"
               />
             </div>
             <div>

@@ -258,7 +258,7 @@ export default function ProgrammasPage() {
                 <Select value={selectedAgeCategory} onValueChange={setSelectedAgeCategory}>
                   <SelectTrigger><SelectValue placeholder="Selecteer categorie" /></SelectTrigger>
                   <SelectContent className="bg-popover">
-                    <SelectItem value="5-7">5–7 jaar</SelectItem>
+                    <SelectItem value="4-7">4–7 jaar</SelectItem>
                     <SelectItem value="8-12">8–12 jaar</SelectItem>
                   </SelectContent>
                 </Select>
