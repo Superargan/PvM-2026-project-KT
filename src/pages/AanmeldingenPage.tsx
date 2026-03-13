@@ -872,7 +872,9 @@ export default function AanmeldingenPage() {
             <DialogTitle>Export samenstellen</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Selecteer de kolommen die je wilt exporteren ({filteredClients.length} aanmeldingen).
+            {selectedClients.size > 0
+              ? `${selectedClients.size} van ${filteredClients.length} aanmeldingen geselecteerd voor export.`
+              : `Alle ${filteredClients.length} gefilterde aanmeldingen worden geëxporteerd. Selecteer rijen in de tabel om specifieke deelnemers te kiezen.`}
           </p>
 
           <div className="space-y-4">
