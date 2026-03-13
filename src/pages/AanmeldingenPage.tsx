@@ -57,6 +57,7 @@ const editSchema = z.object({
   neighborhood_id: z.string().nullable().optional(),
   waitlist_area_id: z.string().nullable().optional(),
   all_areas_flexible: z.boolean().optional(),
+  area_notes: z.string().max(5000).nullable().optional(),
 });
 
 type EditForm = z.infer<typeof editSchema>;
