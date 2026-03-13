@@ -384,9 +384,13 @@ export default function AanmeldingenPage() {
     const selected = EXPORT_COLUMNS.filter((c) => exportSelected.has(c.key));
     if (selected.length === 0) return;
 
+    const exportClients = selectedClients.size > 0
+      ? filteredClients.filter((c: any) => selectedClients.has(c.id))
+      : filteredClients;
+
     let availByClient: Record<string, string> = {};
     if (exportSelected.has("beschikbaarheid")) {
-      const clientIds = filteredClients.map((c: any) => c.id);
+      const clientIds = exportClients.map((c: any) => c.id);
       const { data: availData } = await supabase
         .from("client_availability")
         .select("client_id, available_date, start_time, end_time, notes")
