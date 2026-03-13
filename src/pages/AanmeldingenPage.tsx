@@ -562,6 +562,23 @@ export default function AanmeldingenPage() {
               areas={areas}
               onNavigate={(id) => navigate(`/clienten/${id}`)}
               onEdit={openEdit}
+              showCheckbox
+              selected={selectedClients}
+              onToggleSelect={(id) => {
+                setSelectedClients((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(id)) next.delete(id); else next.add(id);
+                  return next;
+                });
+              }}
+              onToggleAll={() => {
+                const tabClients = clients.filter((c: any) => c.intake_status === "intake_afgerond");
+                setSelectedClients((prev) =>
+                  prev.size === tabClients.length
+                    ? new Set()
+                    : new Set(tabClients.map((c: any) => c.id))
+                );
+              }}
             />
           )}
         </TabsContent>
