@@ -61,7 +61,12 @@ function AvailabilitySummaryPanel({ filterArea, filterAge, areaName }: { filterA
         .in("intake_status", ["wachtlijst", "intake_afgerond"]);
       if (error) throw error;
       return (data ?? []).filter((c: any) => {
-        return resolveAreaId(c) === filterArea && getAgeCategoryPlanning(c.date_of_birth) === filterAge;
+        if (resolveAreaId(c) !== filterArea) return false;
+        if (filterAge.startsWith("exact-")) {
+          const exactAge = parseInt(filterAge.replace("exact-", ""), 10);
+          return calculateAge(c.date_of_birth) === exactAge;
+        }
+        return getAgeCategoryPlanning(c.date_of_birth) === filterAge;
       });
     },
   });
