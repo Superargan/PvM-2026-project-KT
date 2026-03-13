@@ -349,6 +349,19 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
 
 
 
+  // Auto-link program when preLinkedProgramId is provided
+  useEffect(() => {
+    if (!preLinkedProgramId || filteredGroups.length === 0) return;
+    setLinkedPrograms(prev => {
+      const next = { ...prev };
+      let changed = false;
+      filteredGroups.forEach(g => {
+        const key = getGroupKey(g);
+        if (!next[key]) { next[key] = preLinkedProgramId; changed = true; }
+      });
+      return changed ? next : prev;
+    });
+  }, [preLinkedProgramId, filteredGroups]);
 
   const simulatedClientIds = useMemo(() => {
     const ids = new Set<string>();
