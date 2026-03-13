@@ -21,6 +21,7 @@ import ProgramDetailPage from "./pages/ProgramDetailPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import PlanningPage from "./pages/PlanningPage";
 import WachtlijstPage from "./pages/WachtlijstPage";
+import TrainingslocatiesPage from "./pages/TrainingslocatiesPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
