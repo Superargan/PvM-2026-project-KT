@@ -941,7 +941,7 @@ export default function AanmeldingenPage() {
               </Button>
             </div>
             <Button onClick={handleExportAanmeldingen} disabled={exportSelected.size === 0}>
-              <Download className="h-4 w-4" /> Exporteren ({exportSelected.size})
+              <Download className="h-4 w-4" /> Exporteren {selectedClients.size > 0 ? `(${selectedClients.size} deelnemers)` : `(${exportSelected.size} kolommen)`}
             </Button>
           </div>
         </DialogContent>
