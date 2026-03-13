@@ -31,7 +31,7 @@ export function calculateAge(dob: string | null): number | null {
   return differenceInYears(new Date(), parseISO(dob));
 }
 
-export type AgeCategory = "5-7 jaar" | "8-12 jaar";
+export type AgeCategory = "4-7 jaar" | "8-12 jaar";
 export type MatchType = "Primair" | "Reserve 1" | "Reserve 2" | "Reserve 3" | "Flexibel";
 
 export function getAgeCategoryPlanning(dob: string | null): AgeCategory | null {
