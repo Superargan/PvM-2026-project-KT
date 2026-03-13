@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { resolveAreaId, getAgeCategoryPlanning, getMissingFields, buildPrefsByClientMap, getMatchType, type AgeCategory } from "@/lib/clientUtils";
 import { clientKeys, areaKeys } from "@/lib/queryKeys";
 
