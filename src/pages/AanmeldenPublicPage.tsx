@@ -160,7 +160,7 @@ export default function AanmeldenPublicPage() {
           </FieldWrapper>
 
           <div className="grid grid-cols-2 gap-4">
-            <FieldWrapper label="School *" error={errors.school_id}>
+            <FieldWrapper label="School" error={errors.school_id}>
               <SchoolCombobox
                 schools={schools}
                 value={form.school_id ?? ""}
