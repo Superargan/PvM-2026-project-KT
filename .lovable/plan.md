@@ -337,3 +337,25 @@ Gerenderd in PlanningPage Groepen-tab, boven GroupComposer.
 | `src/components/ScenarioOverview.tsx` | Nieuw |
 | `src/components/GroupComposer.tsx` | Opslaan/laden/dirty/omzetten |
 | `src/pages/PlanningPage.tsx` | ScenarioOverview integratie |
+
+---
+
+# Plan: Minimale sessieduur (2 uur) afdwingen in voorstellen — ✅ UITGEVOERD
+
+## Wijzigingen
+
+### `src/lib/clientUtils.ts`
+- **`AvailabilityProposal`**: uitgebreid met verplicht veld `clientIds: string[]`
+- **Helpertypes toegevoegd**: `NormalizedInterval`, `timeToMinutes()`, `minutesToTime()`
+- **`getTopAvailabilityOverlaps`**: volledig herschreven — werkt nu met vaste vensters van `minDurationMinutes` (default 120). Geen `seenDays`-deduplicatie meer. Per dag wordt alleen het best scorende venster teruggegeven. Een client telt alleen mee als één individueel interval het volledige venster dekt (`start <= windowStart && end >= windowEnd`). Vensters met < 2 clients worden weggefilterd.
+- **`getAvailabilityOverlap`**: nieuwe parameter `minDurationMinutes = 120`, delegeert naar `getTopAvailabilityOverlaps(..., 1, minDurationMinutes)`
+
+### `src/components/GroupComposer.tsx`
+- `getSuggestions` roept nu expliciet `getTopAvailabilityOverlaps(clientIds, availByClient, 3, 120)` aan
+
+## Garanties
+- Elk voorstel duurt exact `minDurationMinutes` (120 min)
+- Voorstellen zoals `15:00–15:00` kunnen niet meer ontstaan
+- Per dag maximaal 1 voorstel
+- Losse intervallen worden niet samengevoegd
+- `clientIds` is verplicht in elke `AvailabilityProposal`
