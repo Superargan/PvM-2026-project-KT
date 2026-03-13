@@ -65,6 +65,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
     let noDob = 0;
     let outsideRange = 0;
     let estimatedDob = 0;
+    const estimatedDobClients: any[] = [];
 
     areas.forEach((a: any) => {
       m[a.id] = {
