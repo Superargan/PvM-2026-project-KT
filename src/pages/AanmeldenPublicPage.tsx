@@ -149,7 +149,7 @@ export default function AanmeldenPublicPage() {
             <FieldWrapper label="Voornaam kind *" error={errors.first_name}>
               <Input value={form.first_name ?? ""} onChange={(e) => updateField("first_name", e.target.value)} placeholder="Voornaam" />
             </FieldWrapper>
-            <FieldWrapper label="Achternaam kind *" error={errors.last_name}>
+            <FieldWrapper label="Achternaam kind" error={errors.last_name}>
               <Input value={form.last_name ?? ""} onChange={(e) => updateField("last_name", e.target.value)} placeholder="Achternaam" />
             </FieldWrapper>
           </div>
