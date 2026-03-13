@@ -194,6 +194,7 @@ export default function WachtlijstPage() {
       ) : (
         <ClientListTable
           clients={filteredClients}
+          areas={areas}
           onNavigate={(id) => navigate(`/clienten/${id}`)}
           showCheckbox
           selected={selected}

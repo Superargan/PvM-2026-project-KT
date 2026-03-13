@@ -1095,6 +1095,7 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
         clients={flagged.map(({ client }) => client)}
         onNavigate={onNavigate}
         onEdit={onEdit}
+        areas={areas}
         emptyMessage="✅ Alle gegevens zijn volledig ingevuld!"
       />
     </div>
