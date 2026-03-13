@@ -1137,6 +1137,9 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                     <div className="flex items-center gap-2">
                       <CardTitle className="text-base font-bold text-foreground">
                         {group.areaName} · {group.ageCategory}
+                        {group.subGroupCount > 1 && (
+                          <span className="ml-1 text-primary"> — Groep {SUB_GROUP_LABELS[group.subGroupIndex] ?? group.subGroupIndex + 1}</span>
+                        )}
                       </CardTitle>
                       <Button
                         variant="ghost"
