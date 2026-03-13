@@ -1,0 +1,2 @@
+ALTER TABLE public.simulation_scenario_slots DROP CONSTRAINT simulation_scenario_slots_age_category_check;
+ALTER TABLE public.simulation_scenario_slots ADD CONSTRAINT simulation_scenario_slots_age_category_check CHECK (age_category IS NULL OR age_category = ANY (ARRAY['4-7 jaar'::text, '8-12 jaar'::text]));
