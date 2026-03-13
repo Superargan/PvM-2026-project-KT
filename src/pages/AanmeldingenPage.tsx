@@ -445,7 +445,7 @@ export default function AanmeldingenPage() {
           <p className="text-sm text-muted-foreground">{clients.length} aanmeldingen in het systeem</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExportAanmeldingen}>
+          <Button variant="outline" onClick={() => setExportOpen(true)}>
             <Download className="h-4 w-4" /> Exporteren
           </Button>
           <Button variant="outline" onClick={() => setImportOpen(true)}>
