@@ -90,6 +90,20 @@ export default function ProgramDetailPage() {
     },
   });
 
+  // Fetch training locations for linking
+  const { data: trainingLocations = [] } = useQuery({
+    queryKey: ["all-training-locations-for-program"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("training_locations")
+        .select("id, name, neighborhood_id, area_id, neighborhoods(id, name, area_id, areas(id, name))")
+        .eq("active", true)
+        .order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const enrolledIds = enrolledClients.map((ec: any) => ec.client_id);
   const activeEnrolled = enrolledClients.filter((ec: any) => !ec.early_dropout);
   const availableClients = allClients.filter((c: any) => !enrolledIds.includes(c.id));
