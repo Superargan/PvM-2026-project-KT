@@ -66,7 +66,7 @@ export default function RapportagesPage() {
   const { data: programs = [], isLoading: prl } = useQuery({
     queryKey: ["rpt_programs"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("programs").select("id, name, area_id, school_id, start_date, end_date, status, age_category, max_participants, areas(name), schools(name, address)").eq("archived", false);
+      const { data, error } = await supabase.from("programs").select("id, name, area_id, school_id, training_location_id, start_date, end_date, status, age_category, max_participants, areas(name), schools(name, address), training_locations(name, address)").eq("archived", false);
       if (error) throw error;
       return data ?? [];
     },
