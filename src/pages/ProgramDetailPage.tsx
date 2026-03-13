@@ -264,8 +264,8 @@ export default function ProgramDetailPage() {
           <div className="flex items-center gap-3">
             <h1 className="font-display text-2xl font-extrabold text-foreground">{program.name}</h1>
             {(() => {
-              const label = program.schools?.name || (program as any).location || program.areas?.name;
-              return label ? (
+              const label = getResolvedLocationName(program);
+              return label && label !== "—" ? (
                 <Badge variant="outline" className="text-xs">{label}</Badge>
               ) : null;
             })()}
