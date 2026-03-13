@@ -94,6 +94,8 @@ export default function AreaPreferencesEditor({
 
     queryClient.invalidateQueries({ queryKey: clientKeys.areaPreferences(clientId) });
     queryClient.invalidateQueries({ queryKey: clientKeys.allAreaPreferences });
+    queryClient.invalidateQueries({ queryKey: clientKeys.waitlistOverview });
+    queryClient.invalidateQueries({ queryKey: clientKeys.groupComposer });
   };
 
   return (

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { areaKeys } from "@/lib/queryKeys";
+import { areaKeys, clientKeys } from "@/lib/queryKeys";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -797,6 +797,7 @@ export default function AanmeldingenPage() {
                   onAllAreasFlexibleChange={async (v) => {
                     await supabase.from("clients").update({ all_areas_flexible: v } as any).eq("id", editClient.id);
                     setEditClient((prev: any) => ({ ...prev, all_areas_flexible: v }));
+                    queryClient.invalidateQueries({ queryKey: clientKeys.all });
                   }}
                   areas={areas}
                    areaNotes={form.area_notes ?? ""}
