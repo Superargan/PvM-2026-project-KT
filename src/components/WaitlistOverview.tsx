@@ -70,7 +70,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
 
     areas.forEach((a: any) => {
       m[a.id] = {
-        "5-7 jaar": { intake: [], wachtlijst: [], reserveIntake: [], reserveWachtlijst: [] },
+        "4-7 jaar": { intake: [], wachtlijst: [], reserveIntake: [], reserveWachtlijst: [] },
         "8-12 jaar": { intake: [], wachtlijst: [], reserveIntake: [], reserveWachtlijst: [] },
       };
     });
