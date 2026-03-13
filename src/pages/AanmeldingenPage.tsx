@@ -420,7 +420,10 @@ export default function AanmeldingenPage() {
 
     const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString("nl-NL") : "";
     const columns = selected.map((c) => ({ key: c.key, label: c.label }));
-    const rows = filteredClients.map((c: any) => {
+    const exportClients = selectedClients.size > 0
+      ? filteredClients.filter((c: any) => selectedClients.has(c.id))
+      : filteredClients;
+    const rows = exportClients.map((c: any) => {
       const row: Record<string, any> = {};
       for (const col of selected) {
         switch (col.key) {
