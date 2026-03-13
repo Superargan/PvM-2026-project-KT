@@ -307,37 +307,76 @@ export default function ProgramDetailPage() {
           )}
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1"><School className="h-3.5 w-3.5" /> School</div>
-          <Select
-            value={program.school_id ?? "geen"}
-            onValueChange={async (v) => {
-              const schoolId = v === "geen" ? null : v;
-              const selectedSchool = schools.find((s: any) => s.id === schoolId);
-              const neighborhoodId = selectedSchool?.neighborhood_id ?? null;
-              const areaId = selectedSchool?.neighborhoods?.area_id ?? null;
-              const { error } = await supabase
-                .from("programs")
-                .update({ school_id: schoolId, neighborhood_id: neighborhoodId, area_id: areaId })
-                .eq("id", id!);
-              if (error) {
-                toast({ title: "Fout", description: error.message, variant: "destructive" });
-              } else {
-                toast({ title: "School gekoppeld" });
-                qc.invalidateQueries({ queryKey: ["program", id] });
-                qc.invalidateQueries({ queryKey: ["programs"] });
-              }
-            }}
-          >
-            <SelectTrigger className="h-8 text-sm mt-0.5">
-              <SelectValue placeholder="Selecteer school..." />
-            </SelectTrigger>
-            <SelectContent className="bg-popover">
-              <SelectItem value="geen">Geen school</SelectItem>
-              {schools.map((s: any) => (
-                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1"><School className="h-3.5 w-3.5" /> Locatie</div>
+          <div className="space-y-2">
+            {/* School selector */}
+            <Select
+              value={program.school_id ?? "geen"}
+              onValueChange={async (v) => {
+                const schoolId = v === "geen" ? null : v;
+                const selectedSchool = schools.find((s: any) => s.id === schoolId);
+                const neighborhoodId = selectedSchool?.neighborhood_id ?? null;
+                const areaId = selectedSchool?.neighborhoods?.area_id ?? null;
+                const { error } = await supabase
+                  .from("programs")
+                  .update({ school_id: schoolId, training_location_id: schoolId ? null : (program as any).training_location_id, neighborhood_id: neighborhoodId, area_id: areaId })
+                  .eq("id", id!);
+                if (error) {
+                  toast({ title: "Fout", description: error.message, variant: "destructive" });
+                } else {
+                  toast({ title: "School gekoppeld" });
+                  qc.invalidateQueries({ queryKey: ["program", id] });
+                  qc.invalidateQueries({ queryKey: ["programs"] });
+                }
+              }}
+            >
+              <SelectTrigger className="h-8 text-sm">
+                <SelectValue placeholder="School..." />
+              </SelectTrigger>
+              <SelectContent className="bg-popover">
+                <SelectItem value="geen">Geen school</SelectItem>
+                {schools.map((s: any) => (
+                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {/* Training location selector */}
+            <Select
+              value={(program as any).training_location_id ?? "geen"}
+              onValueChange={async (v) => {
+                const tlId = v === "geen" ? null : v;
+                const tl = trainingLocations.find((t: any) => t.id === tlId);
+                const neighborhoodId = tl?.neighborhood_id ?? null;
+                const areaId = tl?.area_id ?? tl?.neighborhoods?.area_id ?? null;
+                const { error } = await supabase
+                  .from("programs")
+                  .update({
+                    training_location_id: tlId,
+                    school_id: tlId ? null : program.school_id,
+                    neighborhood_id: neighborhoodId ?? program.neighborhood_id,
+                    area_id: areaId ?? program.area_id,
+                  })
+                  .eq("id", id!);
+                if (error) {
+                  toast({ title: "Fout", description: error.message, variant: "destructive" });
+                } else {
+                  toast({ title: "Trainingslocatie gekoppeld" });
+                  qc.invalidateQueries({ queryKey: ["program", id] });
+                  qc.invalidateQueries({ queryKey: ["programs"] });
+                }
+              }}
+            >
+              <SelectTrigger className="h-8 text-sm">
+                <SelectValue placeholder="Trainingslocatie..." />
+              </SelectTrigger>
+              <SelectContent className="bg-popover">
+                <SelectItem value="geen">Geen trainingslocatie</SelectItem>
+                {trainingLocations.map((t: any) => (
+                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
