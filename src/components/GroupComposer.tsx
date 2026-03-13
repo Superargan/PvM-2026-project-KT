@@ -1142,6 +1142,11 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                               <span className="text-xs text-muted-foreground">
                                 ({suggestion.overlap}/{suggestion.total} beschikbaar)
                               </span>
+                              {suggestion.alternativesOnDay > 0 && (
+                                <span className="text-xs text-blue-600 font-medium">
+                                  +{suggestion.alternativesOnDay} {suggestion.alternativesOnDay === 1 ? "ander moment" : "andere momenten"} op deze dag
+                                </span>
+                              )}
                             </div>
                           </div>
                         );
