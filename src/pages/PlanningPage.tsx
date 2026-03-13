@@ -491,7 +491,11 @@ export default function PlanningPage() {
       if (session.session_date && map[session.session_date]) {
         const prog = (session as any).programs;
         if (filterArea !== "alle" && prog?.area_id !== filterArea) return;
-        if (filterAge !== "alle" && prog?.age_category !== filterAge) return;
+        if (filterAge !== "alle") {
+          if (filterAge.startsWith("exact-")) {
+            // Exact age filter: skip session-level filtering (no exact age on programs)
+          } else if (prog?.age_category !== filterAge) return;
+        }
         map[session.session_date].sessions.push(session);
       }
     });
