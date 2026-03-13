@@ -203,58 +203,126 @@ export interface AvailabilityProposal {
   endTime: string;
   overlap: number;
   total: number;
+  clientIds: string[];
 }
 
-/** Get best day/time overlap for a set of clients */
+type NormalizedInterval = {
+  clientId: string;
+  dayName: string;
+  startMinutes: number;
+  endMinutes: number;
+};
+
+function timeToMinutes(value: string): number {
+  const [hours, minutes] = value.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+function minutesToTime(value: number): string {
+  const hours = Math.floor(value / 60);
+  const mins = value % 60;
+  return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
+}
+
+/** Get best day/time overlap for a set of clients (fixed window of minDurationMinutes) */
 export function getAvailabilityOverlap(
   clientIds: string[] | Set<string>,
-  availByClient: Record<string, { dayOfWeek: number; dayName: string; startTime: string; endTime: string }[]>
+  availByClient: Record<string, { dayOfWeek: number; dayName: string; startTime: string; endTime: string }[]>,
+  minDurationMinutes = 120
 ): AvailabilityProposal | null {
-  const results = getTopAvailabilityOverlaps(clientIds, availByClient, 1);
-  return results.length > 0 ? results[0] : null;
+  const results = getTopAvailabilityOverlaps(clientIds, availByClient, 1, minDurationMinutes);
+  return results[0] ?? null;
 }
 
-/** Get top-N day/time overlap proposals for a set of clients, sorted by overlap score */
+/** Get top-N day/time overlap proposals for a set of clients using fixed-duration windows */
 export function getTopAvailabilityOverlaps(
   clientIds: string[] | Set<string>,
   availByClient: Record<string, { dayOfWeek: number; dayName: string; startTime: string; endTime: string }[]>,
-  maxResults = 3
+  maxResults = 3,
+  minDurationMinutes = 120
 ): AvailabilityProposal[] {
-  const ids = clientIds instanceof Set ? clientIds : new Set(clientIds);
-  if (ids.size === 0) return [];
-  const dayStats: Record<number, { count: number; dayName: string; starts: string[]; ends: string[] }> = {};
+  const clientIdList = Array.from(clientIds instanceof Set ? clientIds : new Set(clientIds));
 
-  ids.forEach((cid) => {
-    const avail = availByClient[cid];
-    if (!avail) return;
-    const seenDays = new Set<number>();
-    avail.forEach((a) => {
-      if (seenDays.has(a.dayOfWeek)) return;
-      seenDays.add(a.dayOfWeek);
-      if (!dayStats[a.dayOfWeek]) {
-        dayStats[a.dayOfWeek] = { count: 0, dayName: a.dayName, starts: [], ends: [] };
+  if (clientIdList.length === 0 || maxResults <= 0 || minDurationMinutes <= 0) {
+    return [];
+  }
+
+  const intervalsByDay = new Map<string, NormalizedInterval[]>();
+
+  for (const clientId of clientIdList) {
+    const records = availByClient[clientId] ?? [];
+
+    for (const record of records) {
+      const resolvedDayName = record.dayName ?? (record as any).dayOfWeek;
+      if (!resolvedDayName || typeof resolvedDayName !== "string") continue;
+
+      const startMinutes = timeToMinutes(record.startTime);
+      const endMinutes = timeToMinutes(record.endTime);
+
+      if (endMinutes <= startMinutes) continue;
+
+      const dayIntervals = intervalsByDay.get(resolvedDayName) ?? [];
+      dayIntervals.push({ clientId, dayName: resolvedDayName, startMinutes, endMinutes });
+      intervalsByDay.set(resolvedDayName, dayIntervals);
+    }
+  }
+
+  const bestProposalPerDay: AvailabilityProposal[] = [];
+
+  for (const [dayName, dayIntervals] of intervalsByDay.entries()) {
+    if (dayIntervals.length === 0) continue;
+
+    const candidateStarts = Array.from(
+      new Set(dayIntervals.map((i) => i.startMinutes))
+    ).sort((a, b) => a - b);
+
+    let bestForDay: AvailabilityProposal | null = null;
+
+    for (const windowStartMinutes of candidateStarts) {
+      const windowEndMinutes = windowStartMinutes + minDurationMinutes;
+
+      const coveringClientIds: string[] = [];
+
+      for (const clientId of clientIdList) {
+        const coversWindow = dayIntervals.some(
+          (interval) =>
+            interval.clientId === clientId &&
+            interval.startMinutes <= windowStartMinutes &&
+            interval.endMinutes >= windowEndMinutes
+        );
+        if (coversWindow) coveringClientIds.push(clientId);
       }
-      dayStats[a.dayOfWeek].count++;
-      dayStats[a.dayOfWeek].starts.push(a.startTime);
-      dayStats[a.dayOfWeek].ends.push(a.endTime);
-    });
+
+      if (coveringClientIds.length < 2) continue;
+
+      const proposal: AvailabilityProposal = {
+        dayName,
+        startTime: minutesToTime(windowStartMinutes),
+        endTime: minutesToTime(windowEndMinutes),
+        overlap: coveringClientIds.length,
+        total: clientIdList.length,
+        clientIds: coveringClientIds,
+      };
+
+      if (
+        bestForDay === null ||
+        proposal.overlap > bestForDay.overlap ||
+        (proposal.overlap === bestForDay.overlap &&
+          timeToMinutes(proposal.startTime) < timeToMinutes(bestForDay.startTime))
+      ) {
+        bestForDay = proposal;
+      }
+    }
+
+    if (bestForDay !== null) bestProposalPerDay.push(bestForDay);
+  }
+
+  bestProposalPerDay.sort((a, b) => {
+    if (b.overlap !== a.overlap) return b.overlap - a.overlap;
+    return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
   });
 
-  const entries = Object.values(dayStats).filter((d) => d.count >= 2);
-  if (entries.length === 0) return [];
-  entries.sort((a, b) => b.count - a.count);
-
-  return entries.slice(0, maxResults).map((entry) => {
-    const latestStart = entry.starts.sort().reverse()[0];
-    const earliestEnd = entry.ends.sort()[0];
-    return {
-      dayName: entry.dayName,
-      startTime: latestStart <= earliestEnd ? latestStart : entry.starts.sort()[0],
-      endTime: latestStart <= earliestEnd ? earliestEnd : entry.ends.sort().reverse()[0],
-      overlap: entry.count,
-      total: ids.size,
-    };
-  });
+  return bestProposalPerDay.slice(0, maxResults);
 }
 
 /** Check if client has availability coverage for N months ahead */
