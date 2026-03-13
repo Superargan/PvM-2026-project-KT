@@ -37,7 +37,7 @@ export type MatchType = "Primair" | "Reserve 1" | "Reserve 2" | "Reserve 3" | "F
 export function getAgeCategoryPlanning(dob: string | null): AgeCategory | null {
   const age = calculateAge(dob);
   if (age === null) return null;
-  if (age >= 5 && age <= 7) return "5-7 jaar";
+  if (age >= 4 && age <= 7) return "4-7 jaar";
   if (age >= 8 && age <= 12) return "8-12 jaar";
   return null;
 }
