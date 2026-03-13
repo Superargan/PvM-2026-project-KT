@@ -891,15 +891,20 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
         <p className="text-sm text-muted-foreground">
           Stel automatisch groepen samen op basis van leeftijd en gebied. Inclusief reserve-voorkeuren en flexibele aanmelders.
         </p>
-        <Select value={filterArea} onValueChange={setFilterArea}>
-          <SelectTrigger className="w-48"><SelectValue placeholder="Filter op gebied" /></SelectTrigger>
-          <SelectContent className="bg-popover">
-            <SelectItem value="alle">Alle gebieden</SelectItem>
-            {areas.map((a: any) => (
-              <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setExportOpen(true)} className="gap-1.5">
+            <Download className="h-3.5 w-3.5" /> Exporteren
+          </Button>
+          <Select value={filterArea} onValueChange={setFilterArea}>
+            <SelectTrigger className="w-48"><SelectValue placeholder="Filter op gebied" /></SelectTrigger>
+            <SelectContent className="bg-popover">
+              <SelectItem value="alle">Alle gebieden</SelectItem>
+              {areas.map((a: any) => (
+                <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Summary badges */}
