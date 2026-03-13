@@ -78,6 +78,7 @@ export default function AanmeldingenPage() {
   const [saving, setSaving] = useState(false);
   const [selectedProgramId, setSelectedProgramId] = useState<string>("");
   const [importOpen, setImportOpen] = useState(false);
+  const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
