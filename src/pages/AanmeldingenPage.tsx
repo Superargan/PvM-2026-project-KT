@@ -756,11 +756,8 @@ export default function AanmeldingenPage() {
                     setEditClient((prev: any) => ({ ...prev, all_areas_flexible: v }));
                   }}
                   areas={areas}
-                  areaNotes={(editClient as any)?.area_notes ?? ""}
-                  onAreaNotesChange={async (v) => {
-                    await supabase.from("clients").update({ area_notes: v } as any).eq("id", editClient.id);
-                    setEditClient((prev: any) => ({ ...prev, area_notes: v }));
-                  }}
+                   areaNotes={form.area_notes ?? ""}
+                   onAreaNotesChange={(v) => updateField("area_notes" as any, v)}
                 />
               )}
               </div>
