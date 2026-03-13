@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, UserCog, Check, AlertTriangle, CalendarClock, Search, Calendar, Maximize2, FlaskConical, RotateCcw, CheckCircle2, Save, Upload, ShieldAlert } from "lucide-react";
+import { Users, UserCog, Check, AlertTriangle, CalendarClock, Search, Calendar, Maximize2, FlaskConical, RotateCcw, CheckCircle2, Save, Upload, ShieldAlert, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,6 +32,7 @@ import {
   type MatchType,
 } from "@/lib/clientUtils";
 import { clientKeys, areaKeys, scenarioKeys } from "@/lib/queryKeys";
+import { downloadExport } from "@/lib/csvExport";
 
 interface ClientWithMatch {
   client: any;
@@ -73,6 +74,45 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [simulatedGroups, setSimulatedGroups] = useState<Map<string, { proposalIdx: number; suggestion: any }>>(new Map());
   const [expandedAlternatives, setExpandedAlternatives] = useState<Set<string>>(new Set());
+
+  // Export state
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState<"xlsx" | "csv">("xlsx");
+  const PLANNING_EXPORT_COLUMNS = [
+    { key: "gebied", label: "Gebied", group: "Groep" },
+    { key: "leeftijd", label: "Leeftijdscategorie", group: "Groep" },
+    { key: "dag", label: "Dag", group: "Groep" },
+    { key: "tijdstip", label: "Tijdstip", group: "Groep" },
+    { key: "overlap", label: "Beschikbare deelnemers", group: "Groep" },
+    { key: "groepsgrootte", label: "Groepsgrootte", group: "Groep" },
+    { key: "status_groep", label: "Groepsstatus", group: "Groep" },
+    { key: "naam", label: "Naam deelnemer", group: "Deelnemer" },
+    { key: "geboortedatum", label: "Geboortedatum", group: "Deelnemer" },
+    { key: "leeftijd_jr", label: "Leeftijd", group: "Deelnemer" },
+    { key: "geslacht", label: "Geslacht", group: "Deelnemer" },
+    { key: "school", label: "School", group: "Deelnemer" },
+    { key: "intake_status", label: "Status deelnemer", group: "Deelnemer" },
+    { key: "match_type", label: "Match type", group: "Deelnemer" },
+    { key: "oudertrainer", label: "Oudertrainer", group: "Trainers" },
+    { key: "kindtrainer", label: "Kindtrainer", group: "Trainers" },
+    { key: "startdatum", label: "Vermoedelijke startdatum", group: "Overig" },
+    { key: "voorstel_nr", label: "Voorstel nummer", group: "Overig" },
+  ] as const;
+  const [exportSelected, setExportSelected] = useState<Set<string>>(
+    new Set(["gebied", "leeftijd", "dag", "tijdstip", "naam", "school", "intake_status", "match_type"])
+  );
+  const toggleExportCol = (key: string) => {
+    setExportSelected(prev => { const next = new Set(prev); if (next.has(key)) next.delete(key); else next.add(key); return next; });
+  };
+  const selectExportGroup = (group: string, checked: boolean) => {
+    setExportSelected(prev => {
+      const next = new Set(prev);
+      for (const col of PLANNING_EXPORT_COLUMNS) {
+        if (col.group === group) { if (checked) next.add(col.key); else next.delete(col.key); }
+      }
+      return next;
+    });
+  };
 
   // Scenario state
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
@@ -405,6 +445,68 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     } else {
       setSelectedClients(prev => ({ ...prev, [key]: new Set(g.clients.map((cm) => cm.client.id)) }));
     }
+  };
+
+  const statusLabelsMap: Record<string, string> = {
+    intake_afgerond: "Intake afgerond",
+    wachtlijst: "Wachtlijst",
+  };
+
+  const handleExportPlanning = () => {
+    const selected = PLANNING_EXPORT_COLUMNS.filter(c => exportSelected.has(c.key));
+    if (selected.length === 0) return;
+
+    const columns = selected.map(c => ({ key: c.key, label: c.label }));
+    const rows: Record<string, any>[] = [];
+
+    const groupsToExport = filteredGroups;
+
+    for (const group of groupsToExport) {
+      const key = getGroupKey(group);
+      const groupSelected = getSelectedForGroup(group);
+      const suggestions = getSuggestions(groupSelected);
+      const simulated = simulatedGroups.get(key);
+      const activeSuggestion = simulated?.suggestion ?? suggestions[0] ?? null;
+      const statusInfo = getStatusInfo(groupSelected.size);
+
+      const groupClients = group.clients.filter(cm => groupSelected.has(cm.client.id));
+
+      if (groupClients.length === 0) continue;
+
+      const oudertrainer = allTrainers.find((t: any) => t.id === selectedOudertrainer[key]);
+      const kindtrainer = allTrainers.find((t: any) => t.id === selectedKindtrainer[key]);
+
+      for (const cm of groupClients) {
+        const { client, matchType } = cm;
+        const row: Record<string, any> = {};
+        for (const col of selected) {
+          switch (col.key) {
+            case "gebied": row[col.key] = group.areaName; break;
+            case "leeftijd": row[col.key] = group.ageCategory; break;
+            case "dag": row[col.key] = activeSuggestion?.dayName ?? "—"; break;
+            case "tijdstip": row[col.key] = activeSuggestion ? `${activeSuggestion.startTime?.slice(0,5)} – ${activeSuggestion.endTime?.slice(0,5)}` : "—"; break;
+            case "overlap": row[col.key] = activeSuggestion?.overlap ?? "—"; break;
+            case "groepsgrootte": row[col.key] = groupSelected.size; break;
+            case "status_groep": row[col.key] = groupSelected.size >= 7 ? "Gereed" : groupSelected.size >= 5 ? "Bijna gereed" : "Te weinig"; break;
+            case "naam": row[col.key] = `${client.first_name} ${client.last_name}`; break;
+            case "geboortedatum": row[col.key] = client.date_of_birth ? new Date(client.date_of_birth).toLocaleDateString("nl-NL") : ""; break;
+            case "leeftijd_jr": row[col.key] = calculateAge(client.date_of_birth) ?? ""; break;
+            case "geslacht": row[col.key] = client.gender ?? ""; break;
+            case "school": row[col.key] = client.schools?.name ?? ""; break;
+            case "intake_status": row[col.key] = statusLabelsMap[client.intake_status] ?? client.intake_status ?? ""; break;
+            case "match_type": row[col.key] = matchType; break;
+            case "oudertrainer": row[col.key] = oudertrainer?.name ?? ""; break;
+            case "kindtrainer": row[col.key] = kindtrainer?.name ?? ""; break;
+            case "startdatum": row[col.key] = selectedStartDate[key] ? new Date(selectedStartDate[key]).toLocaleDateString("nl-NL") : ""; break;
+            case "voorstel_nr": row[col.key] = simulated ? simulated.proposalIdx + 1 : (suggestions.length > 0 ? 1 : ""); break;
+          }
+        }
+        rows.push(row);
+      }
+    }
+
+    downloadExport(`planning-groepen.${exportFormat}`, columns, rows, exportFormat);
+    setExportOpen(false);
   };
 
   const getStatusInfo = (count: number) => {
@@ -789,15 +891,20 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
         <p className="text-sm text-muted-foreground">
           Stel automatisch groepen samen op basis van leeftijd en gebied. Inclusief reserve-voorkeuren en flexibele aanmelders.
         </p>
-        <Select value={filterArea} onValueChange={setFilterArea}>
-          <SelectTrigger className="w-48"><SelectValue placeholder="Filter op gebied" /></SelectTrigger>
-          <SelectContent className="bg-popover">
-            <SelectItem value="alle">Alle gebieden</SelectItem>
-            {areas.map((a: any) => (
-              <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setExportOpen(true)} className="gap-1.5">
+            <Download className="h-3.5 w-3.5" /> Exporteren
+          </Button>
+          <Select value={filterArea} onValueChange={setFilterArea}>
+            <SelectTrigger className="w-48"><SelectValue placeholder="Filter op gebied" /></SelectTrigger>
+            <SelectContent className="bg-popover">
+              <SelectItem value="alle">Alle gebieden</SelectItem>
+              {areas.map((a: any) => (
+                <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Summary badges */}
@@ -1278,6 +1385,72 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
           </>
         );
       })()}
+
+      {/* Export dialog */}
+      <Dialog open={exportOpen} onOpenChange={setExportOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Planning exporteren</DialogTitle>
+            <DialogDescription>
+              Selecteer de kolommen die je wilt opnemen in de export. Elke rij bevat één deelnemer per groep/tijdslot.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 max-h-[50vh] overflow-y-auto">
+            {Array.from(new Set(PLANNING_EXPORT_COLUMNS.map(c => c.group))).map(group => {
+              const groupCols = PLANNING_EXPORT_COLUMNS.filter(c => c.group === group);
+              const allChecked = groupCols.every(c => exportSelected.has(c.key));
+              const someChecked = groupCols.some(c => exportSelected.has(c.key));
+              return (
+                <div key={group} className="space-y-1.5">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={allChecked}
+                      className={someChecked && !allChecked ? "opacity-60" : ""}
+                      onCheckedChange={(checked) => selectExportGroup(group, !!checked)}
+                    />
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{group}</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-1 pl-6">
+                    {groupCols.map(col => (
+                      <label key={col.key} className="flex items-center gap-2 cursor-pointer py-0.5">
+                        <Checkbox
+                          checked={exportSelected.has(col.key)}
+                          onCheckedChange={() => toggleExportCol(col.key)}
+                        />
+                        <span className="text-sm text-foreground">{col.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Formaat:</span>
+              <Button
+                variant={exportFormat === "xlsx" ? "default" : "outline"}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setExportFormat("xlsx")}
+              >
+                Excel (.xlsx)
+              </Button>
+              <Button
+                variant={exportFormat === "csv" ? "default" : "outline"}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setExportFormat("csv")}
+              >
+                CSV
+              </Button>
+            </div>
+            <Button onClick={handleExportPlanning} disabled={exportSelected.size === 0}>
+              <Download className="h-4 w-4" /> Exporteren ({exportSelected.size})
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Save scenario dialog */}
       <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
