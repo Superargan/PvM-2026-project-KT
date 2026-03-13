@@ -514,7 +514,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
                               >
                                 {isSelected ? (
                                   <>
-                                    <span className={`text-[10px] font-semibold ${!isDefaultTime ? "text-accent-foreground" : ""}`}>
+                                    <span className={`text-[10px] font-semibold ${!isDefaultTime ? "text-foreground" : ""}`}>
                                       {times.start}–{times.end}
                                     </span>
                                     <div className="flex items-center gap-1">
