@@ -1027,9 +1027,27 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
             </Badge>
           ))}
           {estimatedDobClients.length > 0 && (
-            <Badge variant="outline" className="text-xs gap-1 border-amber-400 text-amber-700">
-              ⚠ <span className="font-semibold">{estimatedDobClients.length}</span> geschatte geboortedatum (uit import)
-            </Badge>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Badge variant="outline" className="text-xs gap-1 border-amber-400 text-amber-700 cursor-pointer hover:bg-amber-50">
+                  ⚠ <span className="font-semibold">{estimatedDobClients.length}</span> geschatte geboortedatum (uit import)
+                </Badge>
+              </PopoverTrigger>
+              <PopoverContent className="w-72 max-h-64 overflow-y-auto p-2" align="start">
+                <p className="text-xs font-semibold text-muted-foreground mb-2">Geschatte geboortedatum (uit import)</p>
+                <div className="space-y-1">
+                  {estimatedDobClients.map((c: any) => (
+                    <button
+                      key={c.id}
+                      className="w-full text-left text-sm px-2 py-1.5 rounded hover:bg-muted/50 transition-colors text-primary hover:underline"
+                      onClick={() => navigate(`/clienten/${c.id}`)}
+                    >
+                      {c.first_name} {c.last_name}
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
           )}
         </div>
       )}
