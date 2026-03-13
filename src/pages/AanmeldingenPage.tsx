@@ -595,14 +595,11 @@ export default function AanmeldingenPage() {
 
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t border-border pt-4">School koppelen</p>
             <FieldWrapper label="School" error={errors.school_id}>
-              <Select value={form.school_id ?? ""} onValueChange={(v) => updateField("school_id", v)}>
-                <SelectTrigger><SelectValue placeholder="Selecteer school" /></SelectTrigger>
-                <SelectContent className="bg-popover">
-                  {schools.map((s: any) => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SchoolCombobox
+                schools={schools}
+                value={form.school_id ?? ""}
+                onValueChange={(v) => updateField("school_id", v)}
+              />
             </FieldWrapper>
 
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t border-border pt-4">Ouder/Verzorger</p>
