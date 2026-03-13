@@ -78,6 +78,7 @@ export default function AanmeldingenPage() {
   const [saving, setSaving] = useState(false);
   const [selectedProgramId, setSelectedProgramId] = useState<string>("");
   const [importOpen, setImportOpen] = useState(false);
+  const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -383,9 +384,13 @@ export default function AanmeldingenPage() {
     const selected = EXPORT_COLUMNS.filter((c) => exportSelected.has(c.key));
     if (selected.length === 0) return;
 
+    const exportClients = selectedClients.size > 0
+      ? filteredClients.filter((c: any) => selectedClients.has(c.id))
+      : filteredClients;
+
     let availByClient: Record<string, string> = {};
     if (exportSelected.has("beschikbaarheid")) {
-      const clientIds = filteredClients.map((c: any) => c.id);
+      const clientIds = exportClients.map((c: any) => c.id);
       const { data: availData } = await supabase
         .from("client_availability")
         .select("client_id, available_date, start_time, end_time, notes")
@@ -419,7 +424,7 @@ export default function AanmeldingenPage() {
 
     const fmtDate = (d: string | null) => d ? new Date(d).toLocaleDateString("nl-NL") : "";
     const columns = selected.map((c) => ({ key: c.key, label: c.label }));
-    const rows = filteredClients.map((c: any) => {
+    const rows = exportClients.map((c: any) => {
       const row: Record<string, any> = {};
       for (const col of selected) {
         switch (col.key) {
@@ -522,6 +527,22 @@ export default function AanmeldingenPage() {
               onNavigate={(id) => navigate(`/clienten/${id}`)}
               onEdit={openEdit}
               showAssigned
+              showCheckbox
+              selected={selectedClients}
+              onToggleSelect={(id) => {
+                setSelectedClients((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(id)) next.delete(id); else next.add(id);
+                  return next;
+                });
+              }}
+              onToggleAll={() => {
+                setSelectedClients((prev) =>
+                  prev.size === filteredClients.length
+                    ? new Set()
+                    : new Set(filteredClients.map((c: any) => c.id))
+                );
+              }}
             />
           )}
         </TabsContent>
@@ -855,7 +876,9 @@ export default function AanmeldingenPage() {
             <DialogTitle>Export samenstellen</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Selecteer de kolommen die je wilt exporteren ({filteredClients.length} aanmeldingen).
+            {selectedClients.size > 0
+              ? `${selectedClients.size} van ${filteredClients.length} aanmeldingen geselecteerd voor export.`
+              : `Alle ${filteredClients.length} gefilterde aanmeldingen worden geëxporteerd. Selecteer rijen in de tabel om specifieke deelnemers te kiezen.`}
           </p>
 
           <div className="space-y-4">
@@ -918,7 +941,7 @@ export default function AanmeldingenPage() {
               </Button>
             </div>
             <Button onClick={handleExportAanmeldingen} disabled={exportSelected.size === 0}>
-              <Download className="h-4 w-4" /> Exporteren ({exportSelected.size})
+              <Download className="h-4 w-4" /> Exporteren {selectedClients.size > 0 ? `(${selectedClients.size} deelnemers)` : `(${exportSelected.size} kolommen)`}
             </Button>
           </div>
         </DialogContent>
