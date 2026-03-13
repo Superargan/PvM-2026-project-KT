@@ -531,6 +531,7 @@ export default function AanmeldingenPage() {
             <ClientListTable
               clients={clients.filter((c: any) => c.intake_status === "intake_afgerond")}
               assignmentsByClient={assignmentsByClient}
+              areas={areas}
               onNavigate={(id) => navigate(`/clienten/${id}`)}
               onEdit={openEdit}
             />
