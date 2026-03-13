@@ -60,6 +60,8 @@ interface GroupComposerProps {
   onLoadScenario?: (scenarioId: string) => void;
   filterArea?: string;
   onFilterAreaChange?: (area: string) => void;
+  filterAgeCategory?: AgeCategory;
+  preLinkedProgramId?: string;
 }
 
 const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(function GroupComposer({ activeScenarioId, onSaveScenario, onClearScenario, onLoadScenario, filterArea: externalFilterArea, onFilterAreaChange }, ref) {
