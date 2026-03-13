@@ -742,6 +742,19 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
       const clientsMap: Record<string, any> = {};
       waitlistClients.forEach((c: any) => { clientsMap[c.id] = c; });
 
+      // Fetch any scenario member clients not in waitlistClients
+      const allMemberClientIds = slots.flatMap((s: any) =>
+        (s.simulation_scenario_members ?? []).map((m: any) => m.client_id)
+      );
+      const missingIds = allMemberClientIds.filter((id: string) => !clientsMap[id]);
+      if (missingIds.length > 0) {
+        const { data: extraClients } = await supabase
+          .from("clients")
+          .select("id, first_name, last_name, date_of_birth, waitlist_area_id, all_areas_flexible, intake_status, school_id, neighborhood_id")
+          .in("id", missingIds);
+        (extraClients ?? []).forEach((c: any) => { clientsMap[c.id] = c; });
+      }
+
       const membersBySlot: Record<string, { client_id: string; has_override: boolean }[]> = {};
       slots.forEach((s: any) => {
         membersBySlot[s.id] = (s.simulation_scenario_members ?? []).map((m: any) => ({
@@ -829,6 +842,19 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     const slots = scenario.simulation_scenario_slots ?? [];
     const clientsMap: Record<string, any> = {};
     waitlistClients.forEach((c: any) => { clientsMap[c.id] = c; });
+
+    // Fetch any scenario member clients not in waitlistClients
+    const allMemberClientIds = slots.flatMap((s: any) =>
+      (s.simulation_scenario_members ?? []).map((m: any) => m.client_id)
+    );
+    const missingIds = allMemberClientIds.filter((id: string) => !clientsMap[id]);
+    if (missingIds.length > 0) {
+      const { data: extraClients } = await supabase
+        .from("clients")
+        .select("id, first_name, last_name, date_of_birth, waitlist_area_id, all_areas_flexible, intake_status, school_id, neighborhood_id")
+        .in("id", missingIds);
+      (extraClients ?? []).forEach((c: any) => { clientsMap[c.id] = c; });
+    }
 
     const membersBySlot: Record<string, { client_id: string; has_override: boolean }[]> = {};
     slots.forEach((s: any) => {
