@@ -360,3 +360,229 @@ Gerenderd in PlanningPage Groepen-tab, boven GroupComposer.
 - Per dag maximaal 1 voorstel in de top-3, met indicator hoeveel alternatieven er zijn
 - Losse intervallen worden niet samengevoegd
 - `clientIds` en `alternativesOnDay` zijn verplicht in elke `AvailabilityProposal`
+
+---
+
+# Plan: Trainingslocaties als tweede locatiebron — NOG TE IMPLEMENTEREN
+
+## Doel
+
+Scholen blijven intact als bestaande bron. Daarnaast komt een aparte `training_locations` tabel. Beide bronnen worden via één centrale abstractielaag gelijkwaardig behandeld in planning, scenario's, validatie en rapportage.
+
+## Fase 1: Database
+
+### 1.1 Nieuwe tabel `training_locations`
+
+```sql
+CREATE TABLE public.training_locations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  address text,
+  postal_code text,
+  city text,
+  neighborhood_id uuid REFERENCES public.neighborhoods(id),
+  area_id uuid REFERENCES public.areas(id),
+  active boolean NOT NULL DEFAULT true,
+  notes text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- Trigger voor updated_at
+CREATE TRIGGER update_training_locations_updated_at
+  BEFORE UPDATE ON public.training_locations
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- RLS
+ALTER TABLE public.training_locations ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Backoffice manages training_locations" ON public.training_locations
+  FOR ALL TO authenticated
+  USING (is_backoffice()) WITH CHECK (is_backoffice());
+
+CREATE POLICY "Trainers read training_locations" ON public.training_locations
+  FOR SELECT TO authenticated
+  USING (is_trainer());
+```
+
+### 1.2 Kolom toevoegen aan `programs`
+
+```sql
+ALTER TABLE public.programs
+  ADD COLUMN training_location_id uuid REFERENCES public.training_locations(id);
+```
+
+`programs` heeft dan:
+- `school_id` (bestaand) — locatie is een school
+- `training_location_id` (nieuw) — locatie is een trainingslocatie
+- `location` (bestaand, text) — vrije tekst, blijft als fallback
+
+Regels:
+- Maximaal één van `school_id` of `training_location_id` mag gevuld zijn
+- Beide `NULL` = geen gestructureerde locatie (vrije tekst `location` veld)
+
+### 1.3 Kolom toevoegen aan `simulation_scenario_slots`
+
+```sql
+ALTER TABLE public.simulation_scenario_slots
+  ADD COLUMN school_id uuid REFERENCES public.schools(id),
+  ADD COLUMN training_location_id uuid REFERENCES public.training_locations(id);
+```
+
+Scenario-slots krijgen hiermee een optionele locatiereferentie, zodat bij omzetting naar planning de locatie meegenomen kan worden.
+
+### 1.4 RPC `convert_scenario_to_planning` aanpassen
+
+Bij het aanmaken van een programma uit een slot:
+- `school_id` en `training_location_id` uit de slot overnemen naar het nieuwe `programs` record
+
+## Fase 2: Centrale locatie-abstractielaag (`src/lib/locationUtils.ts`)
+
+Nieuw bestand met de uniforme locatie-interface:
+
+```typescript
+export type LocationSource = "school" | "training_location";
+
+export interface ResolvedLocation {
+  source: LocationSource;
+  id: string;
+  name: string;
+  neighborhoodId: string | null;
+  areaId: string | null;
+  areaName: string | null;
+  neighborhoodName: string | null;
+  address: string | null;
+}
+
+// Resolve locatie voor een programma
+export function resolveLocationForProgram(
+  program: any,
+  schools: any[],
+  trainingLocations: any[]
+): ResolvedLocation | null
+
+// Resolve locatie voor een scenario-slot
+export function resolveLocationForSlot(
+  slot: any,
+  schools: any[],
+  trainingLocations: any[]
+): ResolvedLocation | null
+
+// Gecombineerde locatielijst voor dropdowns
+export function buildLocationOptions(
+  schools: any[],
+  trainingLocations: any[]
+): { source: LocationSource; id: string; name: string; areaName: string | null }[]
+
+// Resolve area_id vanuit locatie (voor geo-keten)
+export function resolveAreaFromLocation(
+  source: LocationSource,
+  locationId: string,
+  schools: any[],
+  trainingLocations: any[]
+): { areaId: string | null; neighborhoodId: string | null }
+```
+
+## Fase 3: Query keys
+
+```typescript
+export const trainingLocationKeys = {
+  all: ["training-locations"] as const,
+};
+```
+
+## Fase 4: UI — Trainingslocaties beheren
+
+### 4.1 Navigatie
+
+Nieuwe navlink "Trainingslocaties" in `AppLayout.tsx` (onder "Scholen").
+
+### 4.2 Pagina `TrainingslocatiesPage.tsx`
+
+- CRUD voor trainingslocaties
+- Velden: naam, adres, postcode, plaats, wijk (dropdown), gebied (auto-resolve of handmatig), actief, notitie
+- Postcode-autodetectie voor gebied/wijk (bestaande `postcodeMapping` logica)
+- Filter op gebied, wijk, actief
+
+### 4.3 Route toevoegen in `App.tsx`
+
+## Fase 5: UI — Locatiekeuze in programma's
+
+### 5.1 `ProgrammasPage.tsx` — Nieuw programma aanmaken
+
+Locatiekeuze vervangen:
+1. Keuze "School" of "Trainingslocatie" (radio/tabs)
+2. Dropdown met de gekozen bron
+3. Bij selectie: auto-fill `area_id` en `neighborhood_id` vanuit de gekozen locatie
+
+### 5.2 `ProgramDetailPage.tsx` — Programma bewerken
+
+Zelfde locatiekeuze als bij aanmaken. Toont huidige bron + locatie.
+
+### 5.3 Weergave in lijsten
+
+Locatienaam tonen met type-indicator (bijv. 🏫 of 📍).
+
+## Fase 6: GroupComposer en scenario's
+
+### 6.1 `GroupComposer.tsx`
+
+Bij het aanmaken van een groep:
+- Locatiekeuze (school of trainingslocatie) toevoegen naast de bestaande trainer- en datumvelden
+- Geselecteerde locatie meesturen bij `createGroup`
+
+### 6.2 Scenario-opslag
+
+`save_scenario` RPC uitbreiden:
+- `school_id` en `training_location_id` in slot-data accepteren en opslaan
+
+### 6.3 Scenario-validatie
+
+`validateScenarioSlot` in `clientUtils.ts`:
+- Locatie-validatie: als slot een locatie heeft, controleer dat area_id klopt
+
+### 6.4 Omzetting naar planning
+
+`convert_scenario_to_planning` RPC:
+- `school_id` en `training_location_id` uit slot overnemen naar het aangemaakte programma
+
+## Fase 7: Rapportages
+
+`RapportagesPage.tsx`:
+- Bij breakdown "school" ook trainingslocaties tonen
+- Of een nieuwe breakdown "locatie" die beide bronnen combineert
+
+## Fase 8: Tests bijwerken
+
+- `singleSourceOfTruth.test.ts`: exports van `locationUtils.ts` valideren
+- Locatie-resolutie testen voor beide bronnen
+
+## Bestanden
+
+| Bestand | Actie |
+|---|---|
+| SQL migratie | `training_locations` tabel, kolommen op `programs` + `simulation_scenario_slots` |
+| `src/lib/locationUtils.ts` | Nieuw — centrale locatie-abstractie |
+| `src/lib/queryKeys.ts` | `trainingLocationKeys` toevoegen |
+| `src/pages/TrainingslocatiesPage.tsx` | Nieuw — CRUD |
+| `src/components/AppLayout.tsx` | Navlink toevoegen |
+| `src/App.tsx` | Route toevoegen |
+| `src/pages/ProgrammasPage.tsx` | Locatiekeuze school/trainingslocatie |
+| `src/pages/ProgramDetailPage.tsx` | Locatiekeuze school/trainingslocatie |
+| `src/components/GroupComposer.tsx` | Locatiekeuze bij groep aanmaken |
+| `src/lib/clientUtils.ts` | `validateScenarioSlot` uitbreiden |
+| SQL migratie (RPC) | `save_scenario` + `convert_scenario_to_planning` aanpassen |
+| `src/pages/RapportagesPage.tsx` | Locatie-breakdown |
+| `src/test/singleSourceOfTruth.test.ts` | locationUtils exports valideren |
+
+## Implementatievolgorde
+
+1. Database migratie (tabel + kolommen)
+2. `locationUtils.ts` + query keys
+3. `TrainingslocatiesPage.tsx` + navigatie + route
+4. Programma-pagina's (locatiekeuze)
+5. GroupComposer (locatiekeuze bij groep)
+6. RPC's aanpassen (save_scenario + convert)
+7. Scenario-validatie
+8. Rapportages
+9. Tests
