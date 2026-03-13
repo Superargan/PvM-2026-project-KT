@@ -76,7 +76,7 @@ export default function ProgrammasPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("programs")
-        .select("*, schools(name), program_clients(count), areas(name), neighborhoods(name)")
+        .select("*, schools(name), training_locations(name), program_clients(count), areas(name), neighborhoods(name)")
         .eq("archived", false)
         .order("training_number", { ascending: true });
       if (error) throw error;
