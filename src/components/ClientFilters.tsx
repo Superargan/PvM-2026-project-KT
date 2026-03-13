@@ -88,7 +88,7 @@ export default function ClientFilters({
           </SelectTrigger>
           <SelectContent className="bg-popover">
             <SelectItem value="all">Alle leeftijden</SelectItem>
-            <SelectItem value="5-7">5-7 jaar</SelectItem>
+            <SelectItem value="4-7">4-7 jaar</SelectItem>
             <SelectItem value="8-12">8-12 jaar</SelectItem>
             <SelectItem value="other">Overig</SelectItem>
           </SelectContent>

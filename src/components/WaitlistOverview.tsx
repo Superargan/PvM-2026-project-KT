@@ -57,7 +57,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
 
   const prefsByClient = useMemo(() => buildPrefsByClientMap(allPreferences as any), [allPreferences]);
 
-  const ageCategories: AgeCategory[] = ["5-7 jaar", "8-12 jaar"];
+  const ageCategories: AgeCategory[] = ["4-7 jaar", "8-12 jaar"];
 
   // Build matrix: area × age → { intake: client[], wachtlijst: client[], reserveIntake: client[], reserveWachtlijst: client[] }
   const matrix = useMemo(() => {
@@ -70,7 +70,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
 
     areas.forEach((a: any) => {
       m[a.id] = {
-        "5-7 jaar": { intake: [], wachtlijst: [], reserveIntake: [], reserveWachtlijst: [] },
+        "4-7 jaar": { intake: [], wachtlijst: [], reserveIntake: [], reserveWachtlijst: [] },
         "8-12 jaar": { intake: [], wachtlijst: [], reserveIntake: [], reserveWachtlijst: [] },
       };
     });
@@ -143,7 +143,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
 
   const totals = useMemo(() => {
     const t: Record<string, { intake: number; wachtlijst: number; reserve: number }> = {
-      "5-7 jaar": { intake: 0, wachtlijst: 0, reserve: 0 },
+      "4-7 jaar": { intake: 0, wachtlijst: 0, reserve: 0 },
       "8-12 jaar": { intake: 0, wachtlijst: 0, reserve: 0 },
     };
     Object.values(matrix.m).forEach(row => {

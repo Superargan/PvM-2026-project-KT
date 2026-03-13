@@ -31,13 +31,13 @@ export function calculateAge(dob: string | null): number | null {
   return differenceInYears(new Date(), parseISO(dob));
 }
 
-export type AgeCategory = "5-7 jaar" | "8-12 jaar";
+export type AgeCategory = "4-7 jaar" | "8-12 jaar";
 export type MatchType = "Primair" | "Reserve 1" | "Reserve 2" | "Reserve 3" | "Flexibel";
 
 export function getAgeCategoryPlanning(dob: string | null): AgeCategory | null {
   const age = calculateAge(dob);
   if (age === null) return null;
-  if (age >= 5 && age <= 7) return "5-7 jaar";
+  if (age >= 4 && age <= 7) return "4-7 jaar";
   if (age >= 8 && age <= 12) return "8-12 jaar";
   return null;
 }
@@ -92,7 +92,7 @@ export const statusBadgeStyles: Record<string, { label: string; className: strin
 export function getAgeGroup(dob: string | null): string {
   const age = calculateAge(dob);
   if (age === null) return "—";
-  if (age >= 5 && age <= 7) return "5-7 jaar";
+  if (age >= 4 && age <= 7) return "4-7 jaar";
   if (age >= 8 && age <= 12) return "8-12 jaar";
   return `${age} jaar`;
 }
@@ -482,9 +482,9 @@ export function filterClients(
     }
     if (filters.age && filters.age !== "all") {
       const age = calculateAge(c.date_of_birth);
-      if (filters.age === "5-7" && (age === null || age < 5 || age > 7)) return false;
+      if (filters.age === "4-7" && (age === null || age < 4 || age > 7)) return false;
       if (filters.age === "8-12" && (age === null || age < 8 || age > 12)) return false;
-      if (filters.age === "other" && age !== null && age >= 5 && age <= 12) return false;
+      if (filters.age === "other" && age !== null && age >= 4 && age <= 12) return false;
     }
     if (filters.status && filters.status !== "all") {
       if ((c.intake_status ?? "nieuw") !== filters.status) return false;

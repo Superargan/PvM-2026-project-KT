@@ -45,10 +45,11 @@ describe("getAgeCategoryPlanning — planning leeftijdscategorieën", () => {
     expect(getAgeCategoryPlanning(null)).toBeNull();
   });
 
-  it("returns '5-7 jaar' for ages 5, 6, 7", () => {
-    expect(getAgeCategoryPlanning(dobForAge(5))).toBe("5-7 jaar");
-    expect(getAgeCategoryPlanning(dobForAge(6))).toBe("5-7 jaar");
-    expect(getAgeCategoryPlanning(dobForAge(7))).toBe("5-7 jaar");
+  it("returns '4-7 jaar' for ages 4, 5, 6, 7", () => {
+    expect(getAgeCategoryPlanning(dobForAge(4))).toBe("4-7 jaar");
+    expect(getAgeCategoryPlanning(dobForAge(5))).toBe("4-7 jaar");
+    expect(getAgeCategoryPlanning(dobForAge(6))).toBe("4-7 jaar");
+    expect(getAgeCategoryPlanning(dobForAge(7))).toBe("4-7 jaar");
   });
 
   it("returns '8-12 jaar' for ages 8, 10, 12", () => {
@@ -57,8 +58,8 @@ describe("getAgeCategoryPlanning — planning leeftijdscategorieën", () => {
     expect(getAgeCategoryPlanning(dobForAge(12))).toBe("8-12 jaar");
   });
 
-  it("returns null for ages outside 5-12", () => {
-    expect(getAgeCategoryPlanning(dobForAge(4))).toBeNull();
+  it("returns null for ages outside 4-12", () => {
+    expect(getAgeCategoryPlanning(dobForAge(3))).toBeNull();
     expect(getAgeCategoryPlanning(dobForAge(13))).toBeNull();
   });
 });
@@ -69,7 +70,7 @@ describe("getAgeGroup — display label", () => {
   });
 
   it("returns category label for 5-12", () => {
-    expect(getAgeGroup(dobForAge(6))).toBe("5-7 jaar");
+    expect(getAgeGroup(dobForAge(6))).toBe("4-7 jaar");
     expect(getAgeGroup(dobForAge(9))).toBe("8-12 jaar");
   });
 
