@@ -14,7 +14,7 @@ import DuplicateWarning from "@/components/DuplicateWarning";
 
 const aanmeldSchema = z.object({
   first_name: z.string().trim().min(1, "Voornaam is verplicht").max(100),
-  last_name: z.string().trim().min(1, "Achternaam is verplicht").max(100),
+  last_name: z.string().trim().max(100).optional().or(z.literal("")),
   date_of_birth: z.string().optional(),
   school_id: z.string().optional(),
   waitlist_area_id: z.string().optional(),
@@ -92,7 +92,7 @@ export default function AanmeldenPublicPage() {
     const neighborhoodId = (school as any)?.neighborhood_id ?? null;
     const insertData: any = {
       first_name: result.data.first_name,
-      last_name: result.data.last_name,
+      last_name: result.data.last_name || "",
       date_of_birth: result.data.date_of_birth,
       school_id: result.data.school_id,
       neighborhood_id: neighborhoodId,
@@ -149,7 +149,7 @@ export default function AanmeldenPublicPage() {
             <FieldWrapper label="Voornaam kind *" error={errors.first_name}>
               <Input value={form.first_name ?? ""} onChange={(e) => updateField("first_name", e.target.value)} placeholder="Voornaam" />
             </FieldWrapper>
-            <FieldWrapper label="Achternaam kind *" error={errors.last_name}>
+            <FieldWrapper label="Achternaam kind" error={errors.last_name}>
               <Input value={form.last_name ?? ""} onChange={(e) => updateField("last_name", e.target.value)} placeholder="Achternaam" />
             </FieldWrapper>
           </div>
