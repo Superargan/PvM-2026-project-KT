@@ -464,7 +464,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     // Fetch existing clients to deduplicate
     const { data: existingClients } = await supabase
       .from("clients")
-      .select("id, first_name, last_name, date_of_birth, school_id, gender, class_group, guardian_phone, guardian_phone_alt, guardian_email, guardian_name, postal_code, intake_status, waitlist_area_id, all_areas_flexible, neighborhood_id, referrer_id, referral_reason, intake_date, registration_date, dob_estimated");
+      .select("id, first_name, last_name, date_of_birth, school_id, gender, class_group, guardian_phone, guardian_phone_alt, guardian_email, guardian_name, postal_code, intake_status, waitlist_area_id, all_areas_flexible, neighborhood_id, referrer_id, referral_reason, intake_date, registration_date, dob_estimated, area_notes");
 
     // Build lookup maps: name-only key and name+dob key
     const existingByName = new Map<string, any>();
@@ -710,6 +710,10 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       }
       if (intakeFormulier && intakeFormulier.toLowerCase() === "ja") intake_status = "intake";
 
+      // Availability remarks → area_notes
+      const availRemarkRaw = findCol(row, "Opmerking bij beschikbaarheid", "Opmerkingen beschikbaarheid", "Bijzonderheden beschikbaarheid", "Bijzonderheden");
+      const area_notes = availRemarkRaw || null;
+
       const recordData: any = {
         first_name,
         last_name,
@@ -732,6 +736,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         registration_date: enrollDate || null,
         dob_estimated: dobEstimated,
         all_areas_flexible,
+        area_notes,
       };
 
       // Parse availability from day columns (Maandag-Zondag)
@@ -790,6 +795,18 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         if (date_of_birth && !dobEstimated) {
           updateData.date_of_birth = date_of_birth;
           updateData.dob_estimated = false;
+        }
+
+        // Append area_notes (don't overwrite existing)
+        if (area_notes) {
+          const existingNotes = existingRecord.area_notes;
+          if (existingNotes && existingNotes.trim()) {
+            if (!existingNotes.includes(area_notes)) {
+              updateData.area_notes = `${existingNotes}\n${area_notes}`;
+            }
+          } else {
+            updateData.area_notes = area_notes;
+          }
         }
 
         // Remove internal fields from updateData

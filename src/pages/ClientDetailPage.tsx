@@ -2,7 +2,8 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { areaKeys } from "@/lib/queryKeys";
+import { areaKeys, clientKeys } from "@/lib/queryKeys";
+import { getResolvedAreaName } from "@/lib/clientUtils";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, Save, User, ClipboardList, BookOpen, Shield, FileText, Download, CalendarDays, Trash2 } from "lucide-react";
 import AvailabilityManager from "@/components/AvailabilityManager";
@@ -59,7 +60,7 @@ export default function ClientDetailPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("*, schools(name), referrers(name, function_title, email, phone)")
+        .select("*, schools(name, neighborhood_id, neighborhoods(id, area_id, areas:area_id(id, name))), referrers(name, function_title, email, phone), neighborhoods:neighborhood_id(id, area_id, areas:area_id(id, name))")
         .eq("id", id!)
         .single();
       if (error) throw error;
@@ -182,6 +183,20 @@ export default function ClientDetailPage() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  // Fetch area preferences for beschikbaarheid tab
+  const { data: areaPrefs = [] } = useQuery({
+    queryKey: clientKeys.areaPreferences(id!),
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("client_area_preferences")
+        .select("id, area_id, preference_order, areas:area_id(name)")
+        .eq("client_id", id!)
+        .order("preference_order");
+      return data ?? [];
+    },
+    enabled: !!id,
+  });
 
 
   useEffect(() => {
@@ -584,6 +599,40 @@ export default function ClientDetailPage() {
 
         {/* Beschikbaarheid tab */}
         <TabsContent value="beschikbaarheid" className="space-y-4">
+          {/* Gebiedsinformatie blok */}
+          {client && (
+            <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gebiedsinformatie</p>
+              <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Primair gebied:</span>{" "}
+                  <span className="font-medium text-card-foreground">{getResolvedAreaName(client, areas)}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Flexibel:</span>{" "}
+                  <span className="font-medium text-card-foreground">{(client as any).all_areas_flexible ? "Ja (alle gebieden)" : "Nee"}</span>
+                </div>
+                {areaPrefs.length > 0 && (
+                  <div className="col-span-2">
+                    <span className="text-muted-foreground">Reserve-gebieden:</span>{" "}
+                    <span className="font-medium text-card-foreground">
+                      {areaPrefs.map((p: any, i: number) => (
+                        <Badge key={p.id} variant="outline" className="mr-1.5 text-xs">
+                          {i + 1}. {(p.areas as any)?.name ?? "Onbekend"}
+                        </Badge>
+                      ))}
+                    </span>
+                  </div>
+                )}
+                {(client as any).area_notes && (
+                  <div className="col-span-2">
+                    <span className="text-muted-foreground">Gebiedsnotities:</span>{" "}
+                    <span className="font-medium text-card-foreground whitespace-pre-line">{(client as any).area_notes}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           <AvailabilityManager type="deelnemer" fixedPersonId={id!} />
         </TabsContent>
 
