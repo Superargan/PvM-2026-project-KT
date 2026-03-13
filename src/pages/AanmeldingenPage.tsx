@@ -516,6 +516,7 @@ export default function AanmeldingenPage() {
             <ClientListTable
               clients={filteredClients}
               assignmentsByClient={assignmentsByClient}
+              areas={areas}
               onNavigate={(id) => navigate(`/clienten/${id}`)}
               onEdit={openEdit}
               showAssigned
@@ -530,6 +531,7 @@ export default function AanmeldingenPage() {
             <ClientListTable
               clients={clients.filter((c: any) => c.intake_status === "intake_afgerond")}
               assignmentsByClient={assignmentsByClient}
+              areas={areas}
               onNavigate={(id) => navigate(`/clienten/${id}`)}
               onEdit={openEdit}
             />
@@ -542,7 +544,7 @@ export default function AanmeldingenPage() {
           </div>
         </TabsContent>
         <TabsContent value="controle" className="space-y-4">
-          <MissingDataCheck clients={clients.filter((c: any) => !["actief", "training_afgerond", "tussentijds_gestopt", "niet_deelnemen"].includes(c.intake_status ?? "nieuw"))} isLoading={isLoading} onNavigate={(id) => navigate(`/clienten/${id}`)} onEdit={openEdit} schools={schools} refetch={refetch} />
+          <MissingDataCheck clients={clients.filter((c: any) => !["actief", "training_afgerond", "tussentijds_gestopt", "niet_deelnemen"].includes(c.intake_status ?? "nieuw"))} isLoading={isLoading} onNavigate={(id) => navigate(`/clienten/${id}`)} onEdit={openEdit} schools={schools} areas={areas} refetch={refetch} />
         </TabsContent>
         <TabsContent value="duplicaten" className="space-y-4">
           <DuplicateScan clients={clients} isLoading={isLoading} onNavigate={(id) => navigate(`/clienten/${id}`)} onEdit={openEdit} />
@@ -938,12 +940,13 @@ function FieldWrapper({ label, error, children }: { label: string; error?: strin
 
 const REQUIRED_CHECKS = REQUIRED_CLIENT_CHECKS;
 
-function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, refetch }: {
+function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, areas, refetch }: {
   clients: any[];
   isLoading: boolean;
   onNavigate: (id: string) => void;
   onEdit: (client: any) => void;
   schools: { id: string; name: string }[];
+  areas: { id: string; name: string }[];
   refetch: () => void;
 }) {
   const [schoolAssignments, setSchoolAssignments] = useState<Record<string, string>>({});
@@ -1093,6 +1096,7 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
         clients={flagged.map(({ client }) => client)}
         onNavigate={onNavigate}
         onEdit={onEdit}
+        areas={areas}
         emptyMessage="✅ Alle gegevens zijn volledig ingevuld!"
       />
     </div>

@@ -176,6 +176,7 @@ export default function ClientenPage() {
       ) : (
         <ClientListTable
           clients={filteredClients}
+          areas={areas}
           onNavigate={(id) => navigate(`/clienten/${id}`)}
           emptyMessage="Geen deelnemers gevonden"
         />

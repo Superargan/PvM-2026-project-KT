@@ -4,7 +4,7 @@ import { nl } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { calculateAge, getAgeGroup, statusLabels, statusStyles } from "@/lib/clientUtils";
+import { calculateAge, getAgeGroup, getResolvedAreaName, statusLabels, statusStyles } from "@/lib/clientUtils";
 
 interface ClientListTableProps {
   clients: any[];
@@ -12,6 +12,8 @@ interface ClientListTableProps {
   onEdit?: (client: any) => void;
   /** Map of client_id → assigned staff names */
   assignmentsByClient?: Record<string, string[]>;
+  /** Areas list for resolving area names */
+  areas?: { id: string; name: string }[];
   showAssigned?: boolean;
   showCheckbox?: boolean;
   selected?: Set<string>;
@@ -27,6 +29,7 @@ export default function ClientListTable({
   onNavigate,
   onEdit,
   assignmentsByClient,
+  areas,
   showAssigned,
   showCheckbox,
   selected,
@@ -109,7 +112,7 @@ export default function ClientListTable({
                     <span className="text-sm text-card-foreground">{client.schools?.name ?? "—"}</span>
                   </td>
                   <td className="hidden px-4 py-3 md:table-cell">
-                    <span className="text-sm text-card-foreground">{client.areas?.name ?? "—"}</span>
+                    <span className="text-sm text-card-foreground">{getResolvedAreaName(client, areas) || "—"}</span>
                   </td>
                   <td className="hidden px-4 py-3 lg:table-cell">
                     <span className="text-sm text-card-foreground">{client.guardian_phone ?? client.guardian_name ?? "—"}</span>
