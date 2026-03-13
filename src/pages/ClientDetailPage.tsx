@@ -218,6 +218,7 @@ export default function ClientDetailPage() {
         first_name: client.first_name ?? "",
         last_name: client.last_name ?? "",
         date_of_birth: client.date_of_birth ?? "",
+        dob_estimated: client.dob_estimated ?? false,
         gender: client.gender ?? "",
         school_id: client.school_id ?? "",
         class_group: client.class_group ?? "",
