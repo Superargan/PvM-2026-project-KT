@@ -340,22 +340,23 @@ Gerenderd in PlanningPage Groepen-tab, boven GroupComposer.
 
 ---
 
-# Plan: Minimale sessieduur (2 uur) afdwingen in voorstellen — ✅ UITGEVOERD
+# Plan: Sessievensters in voorstellen — ✅ UITGEVOERD (bijgewerkt)
 
 ## Wijzigingen
 
 ### `src/lib/clientUtils.ts`
-- **`AvailabilityProposal`**: uitgebreid met verplicht veld `clientIds: string[]`
+- **`AvailabilityProposal`**: uitgebreid met `clientIds: string[]` en `alternativesOnDay: number`
 - **Helpertypes toegevoegd**: `NormalizedInterval`, `timeToMinutes()`, `minutesToTime()`
-- **`getTopAvailabilityOverlaps`**: volledig herschreven — werkt nu met vaste vensters van `minDurationMinutes` (default 120). Geen `seenDays`-deduplicatie meer. Per dag wordt alleen het best scorende venster teruggegeven. Een client telt alleen mee als één individueel interval het volledige venster dekt (`start <= windowStart && end >= windowEnd`). Vensters met < 2 clients worden weggefilterd.
-- **`getAvailabilityOverlap`**: nieuwe parameter `minDurationMinutes = 120`, delegeert naar `getTopAvailabilityOverlaps(..., 1, minDurationMinutes)`
+- **`getTopAvailabilityOverlaps`**: werkt met vaste vensters van `minDurationMinutes` (default 90). Per dag wordt het best scorende venster teruggegeven + `alternativesOnDay` telt hoeveel andere geldige vensters er op die dag bestaan.
+- **`getAvailabilityOverlap`**: default `minDurationMinutes = 90`
 
 ### `src/components/GroupComposer.tsx`
-- `getSuggestions` roept nu expliciet `getTopAvailabilityOverlaps(clientIds, availByClient, 3, 120)` aan
+- `getSuggestions` roept `getTopAvailabilityOverlaps(clientIds, availByClient, 3, 90)` aan
+- UI toont per voorstel "+N andere momenten op deze dag" wanneer er alternatieven zijn
 
 ## Garanties
-- Elk voorstel duurt exact `minDurationMinutes` (120 min)
+- Elk voorstel duurt exact `minDurationMinutes` (90 min)
 - Voorstellen zoals `15:00–15:00` kunnen niet meer ontstaan
-- Per dag maximaal 1 voorstel
+- Per dag maximaal 1 voorstel in de top-3, met indicator hoeveel alternatieven er zijn
 - Losse intervallen worden niet samengevoegd
-- `clientIds` is verplicht in elke `AvailabilityProposal`
+- `clientIds` en `alternativesOnDay` zijn verplicht in elke `AvailabilityProposal`
