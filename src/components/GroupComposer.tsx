@@ -422,6 +422,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
 
   const resetSimulation = () => {
     setSimulatedGroups(new Map());
+    setLinkedPrograms({});
     setLastSavedSnapshot(null);
     setLoadedScenarioName(null);
     onClearScenario?.();
