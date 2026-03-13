@@ -204,6 +204,8 @@ export interface AvailabilityProposal {
   overlap: number;
   total: number;
   clientIds: string[];
+  /** Number of other valid windows on the same day (excluding this one) */
+  alternativesOnDay: number;
 }
 
 type NormalizedInterval = {
