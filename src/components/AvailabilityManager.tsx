@@ -353,6 +353,8 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
       toast({ title: "Beschikbaarheid opgeslagen", description: `${inserts.length} tijdslots opgeslagen` });
       setIsDirty(false);
       refetchAvail();
+      // Centralized invalidation — SSOT: all client-related queries + planning queries
+      invalidateAllClientQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: ["planning-availability"] });
       queryClient.invalidateQueries({ queryKey: ["planning-client-availability"] });
     } catch (err: any) {
