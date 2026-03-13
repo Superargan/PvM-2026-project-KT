@@ -143,7 +143,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
 
   const totals = useMemo(() => {
     const t: Record<string, { intake: number; wachtlijst: number; reserve: number }> = {
-      "5-7 jaar": { intake: 0, wachtlijst: 0, reserve: 0 },
+      "4-7 jaar": { intake: 0, wachtlijst: 0, reserve: 0 },
       "8-12 jaar": { intake: 0, wachtlijst: 0, reserve: 0 },
     };
     Object.values(matrix.m).forEach(row => {

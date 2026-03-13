@@ -70,7 +70,7 @@ describe("getAgeGroup — display label", () => {
   });
 
   it("returns category label for 5-12", () => {
-    expect(getAgeGroup(dobForAge(6))).toBe("5-7 jaar");
+    expect(getAgeGroup(dobForAge(6))).toBe("4-7 jaar");
     expect(getAgeGroup(dobForAge(9))).toBe("8-12 jaar");
   });
 
