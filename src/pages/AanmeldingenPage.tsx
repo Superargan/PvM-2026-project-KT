@@ -317,6 +317,43 @@ export default function AanmeldingenPage() {
     search, area: filterArea, school: filterSchool, age: filterAge, status: filterStatus,
   });
 
+  const handleExportAanmeldingen = async () => {
+    // Fetch availability for all clients
+    const clientIds = filteredClients.map((c: any) => c.id);
+    const { data: availData } = await supabase
+      .from("client_availability")
+      .select("client_id, available_date, start_time, end_time")
+      .in("client_id", clientIds.length > 0 ? clientIds : ["__none__"])
+      .order("available_date");
+
+    // Group availability by client
+    const availByClient: Record<string, string[]> = {};
+    for (const a of availData ?? []) {
+      if (!availByClient[a.client_id]) availByClient[a.client_id] = [];
+      const day = new Date(a.available_date).toLocaleDateString("nl-NL", { weekday: "short" });
+      const time = a.start_time && a.end_time ? ` ${a.start_time.slice(0, 5)}-${a.end_time.slice(0, 5)}` : "";
+      availByClient[a.client_id].push(`${day} ${a.available_date}${time}`);
+    }
+
+    const columns = [
+      { key: "naam", label: "Naam" },
+      { key: "school", label: "School" },
+      { key: "geboortedatum", label: "Geboortedatum" },
+      { key: "beschikbaarheid", label: "Beschikbaarheid" },
+    ];
+
+    const rows = filteredClients.map((c: any) => ({
+      naam: `${c.first_name} ${c.last_name}`,
+      school: c.schools?.name ?? "",
+      geboortedatum: c.date_of_birth
+        ? new Date(c.date_of_birth).toLocaleDateString("nl-NL")
+        : "",
+      beschikbaarheid: (availByClient[c.id] ?? []).join("; "),
+    }));
+
+    downloadExport("aanmeldingen-export.xlsx", columns, rows, "xlsx");
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
