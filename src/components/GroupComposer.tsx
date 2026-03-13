@@ -60,9 +60,11 @@ interface GroupComposerProps {
   onLoadScenario?: (scenarioId: string) => void;
   filterArea?: string;
   onFilterAreaChange?: (area: string) => void;
+  filterAgeCategory?: AgeCategory;
+  preLinkedProgramId?: string;
 }
 
-const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(function GroupComposer({ activeScenarioId, onSaveScenario, onClearScenario, onLoadScenario, filterArea: externalFilterArea, onFilterAreaChange }, ref) {
+const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(function GroupComposer({ activeScenarioId, onSaveScenario, onClearScenario, onLoadScenario, filterArea: externalFilterArea, onFilterAreaChange, filterAgeCategory, preLinkedProgramId }, ref) {
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -345,7 +347,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     loadScenario();
   }, [activeScenarioId]);
 
-  // Compute which clients are "claimed" by simulated groups
+
   const simulatedClientIds = useMemo(() => {
     const ids = new Set<string>();
     simulatedGroups.forEach((val, simKey) => {
@@ -400,9 +402,11 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
   }, [waitlistClients, simulatedClientIds]);
 
   const filteredGroups = useMemo(() => {
-    if (filterArea === "alle") return groups;
-    return groups.filter(g => g.areaId === filterArea);
-  }, [groups, filterArea]);
+    let result = groups;
+    if (filterArea !== "alle") result = result.filter(g => g.areaId === filterArea);
+    if (filterAgeCategory) result = result.filter(g => g.ageCategory === filterAgeCategory);
+    return result;
+  }, [groups, filterArea, filterAgeCategory]);
 
   const toggleSimulation = (key: string, group: GroupedClients, proposalIdx: number, suggestion: any) => {
     setSimulatedGroups(prev => {
@@ -446,6 +450,20 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
   };
 
   const getGroupKey = (g: GroupedClients) => `${g.areaId}__${g.ageCategory}`;
+
+  // Auto-link program when preLinkedProgramId is provided
+  useEffect(() => {
+    if (!preLinkedProgramId || filteredGroups.length === 0) return;
+    setLinkedPrograms(prev => {
+      const next = { ...prev };
+      let changed = false;
+      filteredGroups.forEach(g => {
+        const key = getGroupKey(g);
+        if (!next[key]) { next[key] = preLinkedProgramId; changed = true; }
+      });
+      return changed ? next : prev;
+    });
+  }, [preLinkedProgramId, filteredGroups]);
 
   const getSelectedForGroup = (g: GroupedClients): Set<string> => {
     const key = getGroupKey(g);

@@ -13,11 +13,12 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, Loader2, Users, UserPlus, X, GraduationCap, Calendar, MapPin, Settings, ClipboardList, FileText, School, AlertTriangle,
+  ArrowLeft, Loader2, Users, UserPlus, X, GraduationCap, Calendar, MapPin, Settings, ClipboardList, FileText, School, AlertTriangle, UsersRound,
 } from "lucide-react";
 import { getResolvedLocationName } from "@/lib/locationUtils";
 import ProgramTrainers from "@/components/ProgramTrainers";
 import ProgramAttendance from "@/components/ProgramAttendance";
+import GroupComposer from "@/components/GroupComposer";
 
 const statusMap: Record<string, { css: string; label: string }> = {
   te_plannen: { css: "status-rood", label: "Te plannen" },
@@ -376,8 +377,9 @@ export default function ProgramDetailPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="deelnemers" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="deelnemers" className="gap-1.5"><Users className="h-3.5 w-3.5" /> Deelnemers</TabsTrigger>
+          <TabsTrigger value="groep" className="gap-1.5"><UsersRound className="h-3.5 w-3.5" /> Groep samenstellen</TabsTrigger>
           <TabsTrigger value="trainers" className="gap-1.5"><GraduationCap className="h-3.5 w-3.5" /> Trainers</TabsTrigger>
           <TabsTrigger value="sessies" className="gap-1.5"><ClipboardList className="h-3.5 w-3.5" /> Sessies & Presentie</TabsTrigger>
         </TabsList>
@@ -487,7 +489,22 @@ export default function ProgramDetailPage() {
           </div>
         </TabsContent>
 
-        {/* Trainers tab */}
+        {/* Groep samenstellen tab */}
+        <TabsContent value="groep" className="space-y-4">
+          {program.area_id ? (
+            <GroupComposer
+              filterArea={program.area_id}
+              filterAgeCategory={program.age_category === "4-7 jaar" || program.age_category === "8-12 jaar" ? program.age_category : undefined}
+              preLinkedProgramId={id!}
+            />
+          ) : (
+            <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground">
+              <AlertTriangle className="h-5 w-5 mx-auto mb-2 text-amber-500" />
+              <p className="text-sm font-medium">Koppel eerst een school of trainingslocatie aan dit programma om het gebied te bepalen.</p>
+            </div>
+          )}
+        </TabsContent>
+
         <TabsContent value="trainers" className="space-y-4">
           <div className="rounded-xl border border-border bg-card p-6">
             <ProgramTrainers programId={id!} />
