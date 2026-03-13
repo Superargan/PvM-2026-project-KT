@@ -171,7 +171,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
   const overriddenClientIds = useMemo(() => new Set(overrideLogs.map((o: any) => o.client_id as string)), [overrideLogs]);
 
   const availByClient = useMemo(() => buildAvailabilityByClient(allAvailability as any), [allAvailability]);
-  const getSuggestions = (clientIds: Set<string>) => getTopAvailabilityOverlaps(clientIds, availByClient, 3, 120);
+  const getSuggestions = (clientIds: Set<string>) => getTopAvailabilityOverlaps(clientIds, availByClient, 3, 90);
 
   const { data: allTrainers = [] } = useQuery({
     queryKey: ["group-composer-trainers"],
@@ -1142,6 +1142,11 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                               <span className="text-xs text-muted-foreground">
                                 ({suggestion.overlap}/{suggestion.total} beschikbaar)
                               </span>
+                              {suggestion.alternativesOnDay > 0 && (
+                                <span className="text-xs text-blue-600 font-medium">
+                                  +{suggestion.alternativesOnDay} {suggestion.alternativesOnDay === 1 ? "ander moment" : "andere momenten"} op deze dag
+                                </span>
+                              )}
                             </div>
                           </div>
                         );
