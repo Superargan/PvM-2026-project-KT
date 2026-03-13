@@ -185,15 +185,16 @@ export default function ClientDetailPage() {
     URL.revokeObjectURL(url);
   };
 
-  // Fetch area preferences for beschikbaarheid tab
+  // Fetch area preferences for beschikbaarheid tab (zelfde shape als editor/query-cache)
   const { data: areaPrefs = [] } = useQuery({
     queryKey: clientKeys.areaPreferences(id!),
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("client_area_preferences")
-        .select("id, area_id, preference_order, areas:area_id(name)")
+        .select("id, area_id, preference_order")
         .eq("client_id", id!)
         .order("preference_order");
+      if (error) throw error;
       return data ?? [];
     },
     enabled: !!id,
