@@ -1068,19 +1068,13 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
                 {client.class_group && (
                   <Badge variant="outline" className="text-[10px] shrink-0">groep {client.class_group}</Badge>
                 )}
-                <Select
+                <SchoolCombobox
+                  schools={schools}
                   value={schoolAssignments[client.id] ?? ""}
                   onValueChange={(v) => setSchoolAssignments((prev) => ({ ...prev, [client.id]: v }))}
-                >
-                  <SelectTrigger className="flex-1 min-w-[200px]">
-                    <SelectValue placeholder="Selecteer school..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover max-h-60">
-                    {schools.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Selecteer school..."
+                  triggerClassName="flex-1 min-w-[200px]"
+                />
                 <Button
                   size="sm"
                   disabled={!schoolAssignments[client.id] || savingSchool === client.id}

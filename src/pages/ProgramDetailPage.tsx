@@ -330,16 +330,29 @@ export default function ProgramDetailPage() {
                 }
               }}
             >
-              <SelectTrigger className="h-8 text-sm">
-                <SelectValue placeholder="School..." />
-              </SelectTrigger>
-              <SelectContent className="bg-popover">
-                <SelectItem value="geen">Geen school</SelectItem>
-                {schools.map((s: any) => (
-                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <SchoolCombobox
+                schools={schools}
+                value={program.school_id ?? "geen"}
+                onValueChange={async (v) => {
+                  const schoolId = v === "geen" ? null : v;
+                  const selectedSchool = schools.find((s: any) => s.id === schoolId);
+                  const neighborhoodId = selectedSchool?.neighborhood_id ?? null;
+                  const areaId = selectedSchool?.neighborhoods?.area_id ?? null;
+                  const { error } = await supabase
+                    .from("programs")
+                    .update({ school_id: schoolId, training_location_id: schoolId ? null : (program as any).training_location_id, neighborhood_id: neighborhoodId, area_id: areaId })
+                    .eq("id", id!);
+                  if (error) {
+                    toast({ title: "Fout", description: error.message, variant: "destructive" });
+                  } else {
+                    toast({ title: "School gekoppeld" });
+                    qc.invalidateQueries({ queryKey: ["program", id] });
+                    qc.invalidateQueries({ queryKey: ["programs"] });
+                  }
+                }}
+                emptyOption={{ value: "geen", label: "Geen school" }}
+                triggerClassName="h-8 text-sm"
+              />
             {/* Training location selector */}
             <Select
               value={(program as any).training_location_id ?? "geen"}

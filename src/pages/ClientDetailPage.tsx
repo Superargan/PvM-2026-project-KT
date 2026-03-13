@@ -439,14 +439,11 @@ export default function ClientDetailPage() {
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t border-border pt-4">School & Verwijzer</p>
             <div className="grid grid-cols-3 gap-4">
               <Field label="School">
-                <Select value={form.school_id ?? ""} onValueChange={(v) => updateField("school_id", v)}>
-                  <SelectTrigger><SelectValue placeholder="Selecteer school" /></SelectTrigger>
-                  <SelectContent className="bg-popover">
-                    {schools.map((s: any) => (
-                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SchoolCombobox
+                  schools={schools}
+                  value={form.school_id ?? ""}
+                  onValueChange={(v) => updateField("school_id", v)}
+                />
               </Field>
               <Field label="Gebied">
                 <Select value={form.waitlist_area_id ?? ""} onValueChange={(v) => updateField("waitlist_area_id", v)}>
