@@ -14,7 +14,7 @@ import DuplicateWarning from "@/components/DuplicateWarning";
 
 const aanmeldSchema = z.object({
   first_name: z.string().trim().min(1, "Voornaam is verplicht").max(100),
-  last_name: z.string().trim().min(1, "Achternaam is verplicht").max(100),
+  last_name: z.string().trim().max(100).optional().or(z.literal("")),
   date_of_birth: z.string().optional(),
   school_id: z.string().optional(),
   waitlist_area_id: z.string().optional(),
