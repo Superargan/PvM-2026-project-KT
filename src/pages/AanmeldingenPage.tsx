@@ -346,6 +346,7 @@ export default function AanmeldingenPage() {
     { key: "toestemming", label: "Toestemming gegevensverwerking", group: "Overig" },
     { key: "whatsapp", label: "WhatsApp toestemming", group: "Overig" },
     { key: "notities", label: "Notities", group: "Overig" },
+    { key: "gebiedsnotities", label: "Gebiedsnotities", group: "Overig" },
     { key: "beschikbaarheid", label: "Beschikbaarheid", group: "Planning" },
     { key: "medewerker", label: "Toegewezen medewerker", group: "Planning" },
   ] as const;
