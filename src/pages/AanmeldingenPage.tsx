@@ -797,6 +797,7 @@ export default function AanmeldingenPage() {
                   onAllAreasFlexibleChange={async (v) => {
                     await supabase.from("clients").update({ all_areas_flexible: v } as any).eq("id", editClient.id);
                     setEditClient((prev: any) => ({ ...prev, all_areas_flexible: v }));
+                    queryClient.invalidateQueries({ queryKey: clientKeys.all });
                   }}
                   areas={areas}
                    areaNotes={form.area_notes ?? ""}
