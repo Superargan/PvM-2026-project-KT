@@ -1029,10 +1029,8 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
           ))}
           {estimatedDobClients.length > 0 && (
             <Popover>
-              <PopoverTrigger asChild>
-                <Badge variant="outline" className="text-xs gap-1 border-amber-400 text-amber-700 cursor-pointer hover:bg-amber-50">
+              <PopoverTrigger className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold border-amber-400 text-amber-700 cursor-pointer hover:bg-amber-50 gap-1">
                   ⚠ <span className="font-semibold">{estimatedDobClients.length}</span> geschatte geboortedatum (uit import)
-                </Badge>
               </PopoverTrigger>
               <PopoverContent className="w-72 max-h-64 overflow-y-auto p-2" align="start">
                 <p className="text-xs font-semibold text-muted-foreground mb-2">Geschatte geboortedatum (uit import)</p>
