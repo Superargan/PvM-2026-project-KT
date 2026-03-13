@@ -336,7 +336,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     const map = new Map<string, GroupedClients>();
 
     areas.forEach((area: any) => {
-      const ageCategories: AgeCategory[] = ["5-7 jaar", "8-12 jaar"];
+      const ageCategories: AgeCategory[] = ["4-7 jaar", "8-12 jaar"];
       ageCategories.forEach((ageCategory) => {
         const key = `${area.id}__${ageCategory}`;
         const isSimulated = simulatedGroups.has(key);
