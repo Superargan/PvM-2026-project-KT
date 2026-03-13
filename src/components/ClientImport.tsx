@@ -464,7 +464,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     // Fetch existing clients to deduplicate
     const { data: existingClients } = await supabase
       .from("clients")
-      .select("id, first_name, last_name, date_of_birth, school_id, gender, class_group, guardian_phone, guardian_phone_alt, guardian_email, guardian_name, postal_code, intake_status, waitlist_area_id, all_areas_flexible, neighborhood_id, referrer_id, referral_reason, intake_date, registration_date, dob_estimated");
+      .select("id, first_name, last_name, date_of_birth, school_id, gender, class_group, guardian_phone, guardian_phone_alt, guardian_email, guardian_name, postal_code, intake_status, waitlist_area_id, all_areas_flexible, neighborhood_id, referrer_id, referral_reason, intake_date, registration_date, dob_estimated, area_notes");
 
     // Build lookup maps: name-only key and name+dob key
     const existingByName = new Map<string, any>();
