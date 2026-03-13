@@ -940,12 +940,13 @@ function FieldWrapper({ label, error, children }: { label: string; error?: strin
 
 const REQUIRED_CHECKS = REQUIRED_CLIENT_CHECKS;
 
-function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, refetch }: {
+function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, areas, refetch }: {
   clients: any[];
   isLoading: boolean;
   onNavigate: (id: string) => void;
   onEdit: (client: any) => void;
   schools: { id: string; name: string }[];
+  areas: { id: string; name: string }[];
   refetch: () => void;
 }) {
   const [schoolAssignments, setSchoolAssignments] = useState<Record<string, string>>({});
