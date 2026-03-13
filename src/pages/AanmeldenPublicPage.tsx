@@ -15,13 +15,13 @@ import DuplicateWarning from "@/components/DuplicateWarning";
 const aanmeldSchema = z.object({
   first_name: z.string().trim().min(1, "Voornaam is verplicht").max(100),
   last_name: z.string().trim().min(1, "Achternaam is verplicht").max(100),
-  date_of_birth: z.string().min(1, "Geboortedatum is verplicht"),
-  school_id: z.string().min(1, "School is verplicht"),
+  date_of_birth: z.string().optional(),
+  school_id: z.string().optional(),
   waitlist_area_id: z.string().optional(),
-  guardian_name: z.string().trim().min(1, "Naam ouder/verzorger is verplicht").max(200),
-  guardian_phone: z.string().trim().min(1, "Telefoonnummer is verplicht").max(20),
-  guardian_email: z.string().trim().email("Ongeldig e-mailadres").max(255),
-  referral_reason: z.string().trim().min(1, "Reden van aanmelding is verplicht").max(2000),
+  guardian_name: z.string().trim().max(200).optional(),
+  guardian_phone: z.string().trim().max(20).optional(),
+  guardian_email: z.string().trim().email("Ongeldig e-mailadres").max(255).optional().or(z.literal("")),
+  referral_reason: z.string().trim().max(2000).optional(),
 });
 
 type AanmeldForm = z.infer<typeof aanmeldSchema>;
@@ -155,12 +155,12 @@ export default function AanmeldenPublicPage() {
           </div>
           <DuplicateWarning firstName={form.first_name ?? ""} lastName={form.last_name ?? ""} />
 
-          <FieldWrapper label="Geboortedatum kind *" error={errors.date_of_birth}>
+          <FieldWrapper label="Geboortedatum kind" error={errors.date_of_birth}>
             <DateInput value={form.date_of_birth ?? ""} onChange={(v) => updateField("date_of_birth", v)} max={new Date().toISOString().split("T")[0]} />
           </FieldWrapper>
 
           <div className="grid grid-cols-2 gap-4">
-            <FieldWrapper label="School *" error={errors.school_id}>
+            <FieldWrapper label="School" error={errors.school_id}>
               <SchoolCombobox
                 schools={schools}
                 value={form.school_id ?? ""}
@@ -183,20 +183,20 @@ export default function AanmeldenPublicPage() {
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Gegevens ouder/verzorger</p>
           </div>
 
-          <FieldWrapper label="Naam ouder/verzorger *" error={errors.guardian_name}>
+          <FieldWrapper label="Naam ouder/verzorger" error={errors.guardian_name}>
             <Input value={form.guardian_name ?? ""} onChange={(e) => updateField("guardian_name", e.target.value)} placeholder="Volledige naam" />
           </FieldWrapper>
 
           <div className="grid grid-cols-2 gap-4">
-            <FieldWrapper label="Telefoonnummer *" error={errors.guardian_phone}>
+            <FieldWrapper label="Telefoonnummer" error={errors.guardian_phone}>
               <Input type="tel" value={form.guardian_phone ?? ""} onChange={(e) => updateField("guardian_phone", e.target.value)} placeholder="06-12345678" />
             </FieldWrapper>
-            <FieldWrapper label="E-mailadres *" error={errors.guardian_email}>
+            <FieldWrapper label="E-mailadres" error={errors.guardian_email}>
               <Input type="email" value={form.guardian_email ?? ""} onChange={(e) => updateField("guardian_email", e.target.value)} placeholder="email@voorbeeld.nl" />
             </FieldWrapper>
           </div>
 
-          <FieldWrapper label="Reden van aanmelding *" error={errors.referral_reason}>
+          <FieldWrapper label="Reden van aanmelding" error={errors.referral_reason}>
             <Textarea
               value={form.referral_reason ?? ""}
               onChange={(e) => updateField("referral_reason", e.target.value)}
