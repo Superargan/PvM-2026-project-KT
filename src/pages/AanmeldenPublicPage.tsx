@@ -196,7 +196,7 @@ export default function AanmeldenPublicPage() {
             </FieldWrapper>
           </div>
 
-          <FieldWrapper label="Reden van aanmelding *" error={errors.referral_reason}>
+          <FieldWrapper label="Reden van aanmelding" error={errors.referral_reason}>
             <Textarea
               value={form.referral_reason ?? ""}
               onChange={(e) => updateField("referral_reason", e.target.value)}
