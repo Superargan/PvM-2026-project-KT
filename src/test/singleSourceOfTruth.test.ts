@@ -45,10 +45,11 @@ describe("getAgeCategoryPlanning — planning leeftijdscategorieën", () => {
     expect(getAgeCategoryPlanning(null)).toBeNull();
   });
 
-  it("returns '5-7 jaar' for ages 5, 6, 7", () => {
-    expect(getAgeCategoryPlanning(dobForAge(5))).toBe("5-7 jaar");
-    expect(getAgeCategoryPlanning(dobForAge(6))).toBe("5-7 jaar");
-    expect(getAgeCategoryPlanning(dobForAge(7))).toBe("5-7 jaar");
+  it("returns '4-7 jaar' for ages 4, 5, 6, 7", () => {
+    expect(getAgeCategoryPlanning(dobForAge(4))).toBe("4-7 jaar");
+    expect(getAgeCategoryPlanning(dobForAge(5))).toBe("4-7 jaar");
+    expect(getAgeCategoryPlanning(dobForAge(6))).toBe("4-7 jaar");
+    expect(getAgeCategoryPlanning(dobForAge(7))).toBe("4-7 jaar");
   });
 
   it("returns '8-12 jaar' for ages 8, 10, 12", () => {
