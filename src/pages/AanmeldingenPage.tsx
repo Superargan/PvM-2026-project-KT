@@ -516,6 +516,7 @@ export default function AanmeldingenPage() {
             <ClientListTable
               clients={filteredClients}
               assignmentsByClient={assignmentsByClient}
+              areas={areas}
               onNavigate={(id) => navigate(`/clienten/${id}`)}
               onEdit={openEdit}
               showAssigned
