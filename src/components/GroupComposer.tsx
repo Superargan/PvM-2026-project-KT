@@ -233,6 +233,20 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     },
   });
 
+  // Fetch non-archived programs for linking
+  const { data: linkablePrograms = [] } = useQuery({
+    queryKey: ["linkable-programs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("programs")
+        .select("id, name, area_id, age_category, status, areas(name)")
+        .eq("archived", false)
+        .order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const prefsByClient = useMemo(() => buildPrefsByClientMap(allPreferences as any), [allPreferences]);
 
   const areaMap = useMemo(() => {
