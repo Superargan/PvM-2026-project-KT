@@ -402,9 +402,11 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
   }, [waitlistClients, simulatedClientIds]);
 
   const filteredGroups = useMemo(() => {
-    if (filterArea === "alle") return groups;
-    return groups.filter(g => g.areaId === filterArea);
-  }, [groups, filterArea]);
+    let result = groups;
+    if (filterArea !== "alle") result = result.filter(g => g.areaId === filterArea);
+    if (filterAgeCategory) result = result.filter(g => g.ageCategory === filterAgeCategory);
+    return result;
+  }, [groups, filterArea, filterAgeCategory]);
 
   const toggleSimulation = (key: string, group: GroupedClients, proposalIdx: number, suggestion: any) => {
     setSimulatedGroups(prev => {
