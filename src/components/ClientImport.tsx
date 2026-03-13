@@ -710,6 +710,10 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       }
       if (intakeFormulier && intakeFormulier.toLowerCase() === "ja") intake_status = "intake";
 
+      // Availability remarks → area_notes
+      const availRemarkRaw = findCol(row, "Opmerking bij beschikbaarheid", "Opmerkingen beschikbaarheid", "Bijzonderheden beschikbaarheid", "Bijzonderheden");
+      const area_notes = availRemarkRaw || null;
+
       const recordData: any = {
         first_name,
         last_name,
@@ -732,6 +736,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         registration_date: enrollDate || null,
         dob_estimated: dobEstimated,
         all_areas_flexible,
+        area_notes,
       };
 
       // Parse availability from day columns (Maandag-Zondag)
