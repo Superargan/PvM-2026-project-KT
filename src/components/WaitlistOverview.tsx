@@ -194,10 +194,8 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability }: 
           )}
           {matrix.estimatedDob > 0 && (
             <Popover>
-              <PopoverTrigger asChild>
-                <Badge variant="outline" className="text-sm px-3 py-1 border-amber-400 text-amber-700 cursor-pointer hover:bg-amber-50">
+              <PopoverTrigger className="inline-flex items-center rounded-full border px-3 py-1 text-sm font-semibold border-amber-400 text-amber-700 cursor-pointer hover:bg-amber-50">
                   ⚠ {matrix.estimatedDob} geschatte geboortedatum
-                </Badge>
               </PopoverTrigger>
               <PopoverContent className="w-72 max-h-64 overflow-y-auto p-2" align="start">
                 <p className="text-xs font-semibold text-muted-foreground mb-2">Geschatte geboortedatum (uit import)</p>
