@@ -29,6 +29,7 @@ export default function ClientListTable({
   onNavigate,
   onEdit,
   assignmentsByClient,
+  areas,
   showAssigned,
   showCheckbox,
   selected,
