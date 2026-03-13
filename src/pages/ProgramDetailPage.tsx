@@ -274,6 +274,7 @@ export default function ProgramDetailPage() {
           <p className="text-sm text-muted-foreground">
             {(program as any).training_number && <>{(program as any).training_number} • </>}
             {(program as any).location && <>{(program as any).location} • </>}
+            {program.training_locations?.name && <>{program.training_locations.name} • </>}
             {program.schools?.name && <>{program.schools.name} • </>}
             {program.areas?.name && <>Gebied: {program.areas.name}</>}
             {program.neighborhoods?.name && <> • Wijk: {program.neighborhoods.name}</>}
