@@ -954,6 +954,8 @@ export default function PlanningPage() {
                 activeScenarioId={activeScenarioId}
                 onSaveScenario={(id) => setActiveScenarioId(id)}
                 onClearScenario={() => setActiveScenarioId(null)}
+                filterArea={filterArea}
+                onFilterAreaChange={setFilterArea}
               />
             </>
           )}
