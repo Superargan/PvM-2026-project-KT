@@ -950,6 +950,7 @@ export default function PlanningPage() {
           <Tabs defaultValue="trainers" className="space-y-4">
             <TabsList className="h-9">
               <TabsTrigger value="trainers" className="text-xs">Trainers</TabsTrigger>
+              <TabsTrigger value="aanmeldingen" className="text-xs">Aanmeldingen</TabsTrigger>
               <TabsTrigger value="deelnemers" className="text-xs">Deelnemers</TabsTrigger>
               <TabsTrigger value="invoer-trainer" className="text-xs">Invoer trainers</TabsTrigger>
               <TabsTrigger value="invoer-deelnemer" className="text-xs">Invoer deelnemers</TabsTrigger>
