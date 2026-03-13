@@ -855,6 +855,7 @@ export type Database = {
           school_id: string | null
           start_date: string | null
           status: string | null
+          training_location_id: string | null
           training_number: string | null
           updated_at: string
         }
@@ -874,6 +875,7 @@ export type Database = {
           school_id?: string | null
           start_date?: string | null
           status?: string | null
+          training_location_id?: string | null
           training_number?: string | null
           updated_at?: string
         }
@@ -893,6 +895,7 @@ export type Database = {
           school_id?: string | null
           start_date?: string | null
           status?: string | null
+          training_location_id?: string | null
           training_number?: string | null
           updated_at?: string
         }
@@ -916,6 +919,13 @@ export type Database = {
             columns: ["school_id"]
             isOneToOne: false
             referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programs_training_location_id_fkey"
+            columns: ["training_location_id"]
+            isOneToOne: false
+            referencedRelation: "training_locations"
             referencedColumns: ["id"]
           },
         ]
@@ -1181,7 +1191,9 @@ export type Database = {
           notes: string | null
           proposal_idx: number | null
           scenario_id: string
+          school_id: string | null
           start_time: string | null
+          training_location_id: string | null
         }
         Insert: {
           age_category?: string | null
@@ -1199,7 +1211,9 @@ export type Database = {
           notes?: string | null
           proposal_idx?: number | null
           scenario_id: string
+          school_id?: string | null
           start_time?: string | null
+          training_location_id?: string | null
         }
         Update: {
           age_category?: string | null
@@ -1217,7 +1231,9 @@ export type Database = {
           notes?: string | null
           proposal_idx?: number | null
           scenario_id?: string
+          school_id?: string | null
           start_time?: string | null
+          training_location_id?: string | null
         }
         Relationships: [
           {
@@ -1239,6 +1255,20 @@ export type Database = {
             columns: ["scenario_id"]
             isOneToOne: false
             referencedRelation: "simulation_scenarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulation_scenario_slots_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulation_scenario_slots_training_location_id_fkey"
+            columns: ["training_location_id"]
+            isOneToOne: false
+            referencedRelation: "training_locations"
             referencedColumns: ["id"]
           },
         ]
@@ -1396,6 +1426,63 @@ export type Database = {
             columns: ["staff_id"]
             isOneToOne: false
             referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_locations: {
+        Row: {
+          active: boolean
+          address: string | null
+          area_id: string | null
+          city: string | null
+          created_at: string
+          id: string
+          name: string
+          neighborhood_id: string | null
+          notes: string | null
+          postal_code: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          address?: string | null
+          area_id?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          neighborhood_id?: string | null
+          notes?: string | null
+          postal_code?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          address?: string | null
+          area_id?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          neighborhood_id?: string | null
+          notes?: string | null
+          postal_code?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_locations_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_locations_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "neighborhoods"
             referencedColumns: ["id"]
           },
         ]
