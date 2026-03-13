@@ -92,7 +92,7 @@ export default function AanmeldenPublicPage() {
     const neighborhoodId = (school as any)?.neighborhood_id ?? null;
     const insertData: any = {
       first_name: result.data.first_name,
-      last_name: result.data.last_name,
+      last_name: result.data.last_name || "",
       date_of_birth: result.data.date_of_birth,
       school_id: result.data.school_id,
       neighborhood_id: neighborhoodId,
