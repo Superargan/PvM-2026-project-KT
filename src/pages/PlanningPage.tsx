@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval, parseISO, startOfMonth, endOfMonth, addMonths, subMonths, getDay } from "date-fns";
 import {
+  calculateAge,
   getAgeCategoryPlanning,
   buildAvailabilityByClient,
   buildPrefsByClientMap,
@@ -61,7 +62,12 @@ function AvailabilitySummaryPanel({ filterArea, filterAge, areaName }: { filterA
         .in("intake_status", ["wachtlijst", "intake_afgerond"]);
       if (error) throw error;
       return (data ?? []).filter((c: any) => {
-        return resolveAreaId(c) === filterArea && getAgeCategoryPlanning(c.date_of_birth) === filterAge;
+        if (resolveAreaId(c) !== filterArea) return false;
+        if (filterAge.startsWith("exact-")) {
+          const exactAge = parseInt(filterAge.replace("exact-", ""), 10);
+          return calculateAge(c.date_of_birth) === exactAge;
+        }
+        return getAgeCategoryPlanning(c.date_of_birth) === filterAge;
       });
     },
   });
@@ -491,7 +497,11 @@ export default function PlanningPage() {
       if (session.session_date && map[session.session_date]) {
         const prog = (session as any).programs;
         if (filterArea !== "alle" && prog?.area_id !== filterArea) return;
-        if (filterAge !== "alle" && prog?.age_category !== filterAge) return;
+        if (filterAge !== "alle") {
+          if (filterAge.startsWith("exact-")) {
+            // Exact age filter: skip session-level filtering (no exact age on programs)
+          } else if (prog?.age_category !== filterAge) return;
+        }
         map[session.session_date].sessions.push(session);
       }
     });
@@ -662,6 +672,10 @@ export default function PlanningPage() {
             <SelectItem value="alle">Alle leeftijden</SelectItem>
             <SelectItem value="4-7 jaar">4-7 jaar</SelectItem>
             <SelectItem value="8-12 jaar">8-12 jaar</SelectItem>
+            <div className="px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Exacte leeftijd</div>
+            {Array.from({ length: 14 }, (_, i) => i + 2).map((age) => (
+              <SelectItem key={age} value={`exact-${age}`}>{age} jaar</SelectItem>
+            ))}
           </SelectContent>
         </Select>
         {(filterArea !== "alle" || filterAge !== "alle") && (
