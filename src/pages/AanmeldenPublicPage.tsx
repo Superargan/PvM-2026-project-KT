@@ -183,7 +183,7 @@ export default function AanmeldenPublicPage() {
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Gegevens ouder/verzorger</p>
           </div>
 
-          <FieldWrapper label="Naam ouder/verzorger *" error={errors.guardian_name}>
+          <FieldWrapper label="Naam ouder/verzorger" error={errors.guardian_name}>
             <Input value={form.guardian_name ?? ""} onChange={(e) => updateField("guardian_name", e.target.value)} placeholder="Volledige naam" />
           </FieldWrapper>
 
