@@ -18,6 +18,7 @@ import {
 import { getResolvedLocationName } from "@/lib/locationUtils";
 import ProgramTrainers from "@/components/ProgramTrainers";
 import ProgramAttendance from "@/components/ProgramAttendance";
+import GroupComposer from "@/components/GroupComposer";
 
 const statusMap: Record<string, { css: string; label: string }> = {
   te_plannen: { css: "status-rood", label: "Te plannen" },
