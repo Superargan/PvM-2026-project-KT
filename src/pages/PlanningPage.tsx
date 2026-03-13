@@ -950,6 +950,7 @@ export default function PlanningPage() {
           <Tabs defaultValue="trainers" className="space-y-4">
             <TabsList className="h-9">
               <TabsTrigger value="trainers" className="text-xs">Trainers</TabsTrigger>
+              <TabsTrigger value="aanmeldingen" className="text-xs">Aanmeldingen</TabsTrigger>
               <TabsTrigger value="deelnemers" className="text-xs">Deelnemers</TabsTrigger>
               <TabsTrigger value="invoer-trainer" className="text-xs">Invoer trainers</TabsTrigger>
               <TabsTrigger value="invoer-deelnemer" className="text-xs">Invoer deelnemers</TabsTrigger>
@@ -1028,7 +1029,7 @@ export default function PlanningPage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="deelnemers" className="space-y-4">
+            <TabsContent value="aanmeldingen" className="space-y-4">
               <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
                 <table className="w-full">
                   <thead>
@@ -1042,6 +1043,7 @@ export default function PlanningPage() {
                   </thead>
                   <tbody className="divide-y divide-border">
                     {allClients
+                      .filter((c: any) => ["nieuw", "intake_gepland", "intake", "intake_afgerond", "wachtlijst"].includes(c.intake_status ?? "nieuw"))
                       .filter((c: any) => filterArea === "alle" || resolveAreaId(c) === filterArea)
                       .map((client: any) => {
                         const clientAvail = clientAvailability.filter((a: any) => a.client_id === client.id);
@@ -1105,8 +1107,62 @@ export default function PlanningPage() {
                           </tr>
                         );
                       })}
-                    {allClients.filter((c: any) => filterArea === "alle" || resolveAreaId(c) === filterArea).length === 0 && (
-                      <tr><td colSpan={isAdmin ? 5 : 4} className="px-3 py-6 text-center text-sm text-muted-foreground">Geen deelnemers</td></tr>
+                    {allClients
+                      .filter((c: any) => ["nieuw", "intake_gepland", "intake", "intake_afgerond", "wachtlijst"].includes(c.intake_status ?? "nieuw"))
+                      .filter((c: any) => filterArea === "alle" || resolveAreaId(c) === filterArea).length === 0 && (
+                      <tr><td colSpan={isAdmin ? 5 : 4} className="px-3 py-6 text-center text-sm text-muted-foreground">Geen aanmeldingen</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="deelnemers" className="space-y-4">
+              <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/50">
+                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Deelnemer</th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gebied</th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Beschikbaar</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {allClients
+                      .filter((c: any) => c.intake_status === "actief")
+                      .filter((c: any) => filterArea === "alle" || resolveAreaId(c) === filterArea)
+                      .map((client: any) => {
+                        const clientAvail = clientAvailability.filter((a: any) => a.client_id === client.id);
+                        return (
+                          <tr key={client.id} className="hover:bg-muted/30 transition-colors">
+                            <td className="px-3 py-2">
+                              <p className="text-sm font-semibold text-foreground">{client.first_name} {client.last_name}</p>
+                            </td>
+                            <td className="px-3 py-2">
+                              <span className="text-sm text-card-foreground">{getResolvedAreaName(client)}</span>
+                            </td>
+                            <td className="px-3 py-2">
+                              <span className="text-xs text-muted-foreground">actief</span>
+                            </td>
+                            <td className="px-3 py-2">
+                              <div className="flex flex-wrap gap-1">
+                                {clientAvail.length > 0 ? clientAvail.map((a: any) => (
+                                  <Badge key={a.id} variant="outline" className="text-[9px] border-emerald-300 text-emerald-700">
+                                    {format(parseISO(a.available_date), "d MMM", { locale: nl })}
+                                  </Badge>
+                                )) : (
+                                  <span className="text-[11px] text-muted-foreground">—</span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    {allClients
+                      .filter((c: any) => c.intake_status === "actief")
+                      .filter((c: any) => filterArea === "alle" || resolveAreaId(c) === filterArea).length === 0 && (
+                      <tr><td colSpan={4} className="px-3 py-6 text-center text-sm text-muted-foreground">Geen actieve deelnemers</td></tr>
                     )}
                   </tbody>
                 </table>
