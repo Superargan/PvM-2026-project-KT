@@ -185,15 +185,16 @@ export default function ClientDetailPage() {
     URL.revokeObjectURL(url);
   };
 
-  // Fetch area preferences for beschikbaarheid tab
+  // Fetch area preferences for beschikbaarheid tab (zelfde shape als editor/query-cache)
   const { data: areaPrefs = [] } = useQuery({
     queryKey: clientKeys.areaPreferences(id!),
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("client_area_preferences")
-        .select("id, area_id, preference_order, areas:area_id(name)")
+        .select("id, area_id, preference_order")
         .eq("client_id", id!)
         .order("preference_order");
+      if (error) throw error;
       return data ?? [];
     },
     enabled: !!id,
@@ -620,11 +621,15 @@ export default function ClientDetailPage() {
                   <div className="col-span-2">
                     <span className="text-muted-foreground">Reserve-gebieden:</span>{" "}
                     <span className="font-medium text-card-foreground">
-                      {areaPrefs.map((p: any, i: number) => (
-                        <Badge key={p.id} variant="outline" className="mr-1.5 text-xs">
-                          {i + 1}. {(p.areas as any)?.name ?? "Onbekend"}
-                        </Badge>
-                      ))}
+                      {areaPrefs.map((p: any) => {
+                        const areaName = areas.find((a: any) => a.id === p.area_id)?.name ?? "Onbekend";
+                        const order = p.preference_order ?? "?";
+                        return (
+                          <Badge key={p.id} variant="outline" className="mr-1.5 text-xs">
+                            {order}. {areaName}
+                          </Badge>
+                        );
+                      })}
                     </span>
                   </div>
                 )}

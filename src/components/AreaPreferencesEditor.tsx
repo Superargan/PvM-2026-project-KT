@@ -93,6 +93,7 @@ export default function AreaPreferencesEditor({
     }
 
     queryClient.invalidateQueries({ queryKey: clientKeys.areaPreferences(clientId) });
+    queryClient.invalidateQueries({ queryKey: clientKeys.allAreaPreferences });
   };
 
   return (
