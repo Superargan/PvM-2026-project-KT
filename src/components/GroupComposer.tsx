@@ -58,9 +58,11 @@ interface GroupComposerProps {
   onSaveScenario?: (scenarioId: string) => void;
   onClearScenario?: () => void;
   onLoadScenario?: (scenarioId: string) => void;
+  filterArea?: string;
+  onFilterAreaChange?: (area: string) => void;
 }
 
-const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(function GroupComposer({ activeScenarioId, onSaveScenario, onClearScenario, onLoadScenario }, ref) {
+const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(function GroupComposer({ activeScenarioId, onSaveScenario, onClearScenario, onLoadScenario, filterArea: externalFilterArea, onFilterAreaChange }, ref) {
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -68,7 +70,8 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
   const [selectedOudertrainer, setSelectedOudertrainer] = useState<Record<string, string>>({});
   const [selectedKindtrainer, setSelectedKindtrainer] = useState<Record<string, string>>({});
   const [creating, setCreating] = useState<string | null>(null);
-  const [filterArea, setFilterArea] = useState<string>("alle");
+  const filterArea = externalFilterArea ?? "alle";
+  const setFilterArea = onFilterAreaChange ?? (() => {});
   const [expandedReserve, setExpandedReserve] = useState<Set<string>>(new Set());
   const [selectedStartDate, setSelectedStartDate] = useState<Record<string, string>>({});
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
