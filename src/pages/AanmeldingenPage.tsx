@@ -827,6 +827,82 @@ export default function AanmeldingenPage() {
       </Dialog>
 
       <ClientImport open={importOpen} onOpenChange={setImportOpen} onComplete={() => refetch()} mode="choose" />
+
+      {/* Export configuratie dialog */}
+      <Dialog open={exportOpen} onOpenChange={setExportOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Export samenstellen</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Selecteer de kolommen die je wilt exporteren ({filteredClients.length} aanmeldingen).
+          </p>
+
+          <div className="space-y-4">
+            {Array.from(new Set(EXPORT_COLUMNS.map((c) => c.group))).map((group) => {
+              const groupCols = EXPORT_COLUMNS.filter((c) => c.group === group);
+              const allChecked = groupCols.every((c) => exportSelected.has(c.key));
+              const someChecked = groupCols.some((c) => exportSelected.has(c.key));
+              return (
+                <div key={group} className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={allChecked ? true : someChecked ? "indeterminate" : false}
+                      onCheckedChange={(checked) => selectExportGroup(group, !!checked)}
+                    />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{group}</span>
+                  </div>
+                  <div className="ml-6 grid grid-cols-2 gap-x-4 gap-y-1">
+                    {groupCols.map((col) => (
+                      <label key={col.key} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <Checkbox
+                          checked={exportSelected.has(col.key)}
+                          onCheckedChange={() => toggleExportCol(col.key)}
+                        />
+                        {col.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-4 pt-2">
+            <Label className="text-sm">Formaat:</Label>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant={exportFormat === "xlsx" ? "default" : "outline"}
+                onClick={() => setExportFormat("xlsx")}
+              >
+                Excel (.xlsx)
+              </Button>
+              <Button
+                size="sm"
+                variant={exportFormat === "csv" ? "default" : "outline"}
+                onClick={() => setExportFormat("csv")}
+              >
+                CSV
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex justify-between pt-2">
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setExportSelected(new Set(EXPORT_COLUMNS.map((c) => c.key)))}>
+                Alles selecteren
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setExportSelected(new Set())}>
+                Niets selecteren
+              </Button>
+            </div>
+            <Button onClick={handleExportAanmeldingen} disabled={exportSelected.size === 0}>
+              <Download className="h-4 w-4" /> Exporteren ({exportSelected.size})
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
