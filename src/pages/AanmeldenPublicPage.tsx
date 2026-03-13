@@ -15,13 +15,13 @@ import DuplicateWarning from "@/components/DuplicateWarning";
 const aanmeldSchema = z.object({
   first_name: z.string().trim().min(1, "Voornaam is verplicht").max(100),
   last_name: z.string().trim().min(1, "Achternaam is verplicht").max(100),
-  date_of_birth: z.string().min(1, "Geboortedatum is verplicht"),
-  school_id: z.string().min(1, "School is verplicht"),
+  date_of_birth: z.string().optional(),
+  school_id: z.string().optional(),
   waitlist_area_id: z.string().optional(),
-  guardian_name: z.string().trim().min(1, "Naam ouder/verzorger is verplicht").max(200),
-  guardian_phone: z.string().trim().min(1, "Telefoonnummer is verplicht").max(20),
-  guardian_email: z.string().trim().email("Ongeldig e-mailadres").max(255),
-  referral_reason: z.string().trim().min(1, "Reden van aanmelding is verplicht").max(2000),
+  guardian_name: z.string().trim().max(200).optional(),
+  guardian_phone: z.string().trim().max(20).optional(),
+  guardian_email: z.string().trim().email("Ongeldig e-mailadres").max(255).optional().or(z.literal("")),
+  referral_reason: z.string().trim().max(2000).optional(),
 });
 
 type AanmeldForm = z.infer<typeof aanmeldSchema>;
