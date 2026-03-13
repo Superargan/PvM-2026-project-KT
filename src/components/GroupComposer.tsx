@@ -305,6 +305,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
       // Deserialize into simulatedGroups + selectedClients
       const newSimulated = new Map<string, { proposalIdx: number; suggestion: any }>();
       const newSelected: Record<string, Set<string>> = {};
+      const newLinked: Record<string, string> = {};
 
       (scenario.simulation_scenario_slots ?? []).forEach((slot: any) => {
         const groupKey = `${slot.area_id}__${slot.age_category ?? ""}`;
@@ -319,10 +320,15 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
 
         const memberIds = (slot.simulation_scenario_members ?? []).map((m: any) => m.client_id);
         newSelected[groupKey] = new Set(memberIds);
+
+        if (slot.linked_program_id) {
+          newLinked[groupKey] = slot.linked_program_id;
+        }
       });
 
       setSimulatedGroups(newSimulated);
       setSelectedClients(newSelected);
+      setLinkedPrograms(newLinked);
 
       // Set snapshot after loading
       setTimeout(() => {
@@ -331,6 +337,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
           selectedClients: Object.fromEntries(
             Object.entries(newSelected).map(([k, v]) => [k, Array.from(v)])
           ),
+          linkedPrograms: newLinked,
         }));
       }, 0);
     };
