@@ -188,10 +188,10 @@ export default function AanmeldenPublicPage() {
           </FieldWrapper>
 
           <div className="grid grid-cols-2 gap-4">
-            <FieldWrapper label="Telefoonnummer *" error={errors.guardian_phone}>
+            <FieldWrapper label="Telefoonnummer" error={errors.guardian_phone}>
               <Input type="tel" value={form.guardian_phone ?? ""} onChange={(e) => updateField("guardian_phone", e.target.value)} placeholder="06-12345678" />
             </FieldWrapper>
-            <FieldWrapper label="E-mailadres *" error={errors.guardian_email}>
+            <FieldWrapper label="E-mailadres" error={errors.guardian_email}>
               <Input type="email" value={form.guardian_email ?? ""} onChange={(e) => updateField("guardian_email", e.target.value)} placeholder="email@voorbeeld.nl" />
             </FieldWrapper>
           </div>
