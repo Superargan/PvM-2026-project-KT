@@ -491,7 +491,7 @@ export default function AanmeldingenPage() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setSelectedClients(new Set()); }} className="space-y-4">
         <TabsList>
           <TabsTrigger value="lijst">Aanmeldingen</TabsTrigger>
           <TabsTrigger value="intake_afgerond" className="gap-1.5">
