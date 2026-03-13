@@ -111,8 +111,9 @@ export default function ClientListTable({
                   <td className="hidden px-4 py-3 md:table-cell">
                     <span className="text-sm text-card-foreground">{client.schools?.name ?? "—"}</span>
                   </td>
-                  <td className="hidden px-4 py-3 md:table-cell">
-                    <span className="text-sm text-card-foreground">{client.areas?.name ?? "—"}</span>
+                   <td className="hidden px-4 py-3 md:table-cell">
+                    <span className="text-sm text-card-foreground">{getResolvedAreaName(client, areas) || "—"}</span>
+                  </td>
                   </td>
                   <td className="hidden px-4 py-3 lg:table-cell">
                     <span className="text-sm text-card-foreground">{client.guardian_phone ?? client.guardian_name ?? "—"}</span>
