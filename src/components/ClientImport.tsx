@@ -797,6 +797,18 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
           updateData.dob_estimated = false;
         }
 
+        // Append area_notes (don't overwrite existing)
+        if (area_notes) {
+          const existingNotes = existingRecord.area_notes;
+          if (existingNotes && existingNotes.trim()) {
+            if (!existingNotes.includes(area_notes)) {
+              updateData.area_notes = `${existingNotes}\n${area_notes}`;
+            }
+          } else {
+            updateData.area_notes = area_notes;
+          }
+        }
+
         // Remove internal fields from updateData
         delete updateData.__reserveAreas;
         delete updateData.__availability;
