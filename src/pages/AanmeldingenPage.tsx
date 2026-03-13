@@ -390,8 +390,8 @@ export default function AanmeldingenPage() {
     if (selected.length === 0) return;
 
     const exportClients = selectedClients.size > 0
-      ? filteredClients.filter((c: any) => selectedClients.has(c.id))
-      : filteredClients;
+      ? visibleClients.filter((c: any) => selectedClients.has(c.id))
+      : visibleClients;
 
     let availByClient: Record<string, string> = {};
     if (exportSelected.has("beschikbaarheid")) {
