@@ -155,7 +155,7 @@ export default function AanmeldenPublicPage() {
           </div>
           <DuplicateWarning firstName={form.first_name ?? ""} lastName={form.last_name ?? ""} />
 
-          <FieldWrapper label="Geboortedatum kind *" error={errors.date_of_birth}>
+          <FieldWrapper label="Geboortedatum kind" error={errors.date_of_birth}>
             <DateInput value={form.date_of_birth ?? ""} onChange={(v) => updateField("date_of_birth", v)} max={new Date().toISOString().split("T")[0]} />
           </FieldWrapper>
 
