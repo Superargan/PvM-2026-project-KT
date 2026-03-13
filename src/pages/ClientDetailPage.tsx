@@ -621,11 +621,15 @@ export default function ClientDetailPage() {
                   <div className="col-span-2">
                     <span className="text-muted-foreground">Reserve-gebieden:</span>{" "}
                     <span className="font-medium text-card-foreground">
-                      {areaPrefs.map((p: any, i: number) => (
-                        <Badge key={p.id} variant="outline" className="mr-1.5 text-xs">
-                          {i + 1}. {(p.areas as any)?.name ?? "Onbekend"}
-                        </Badge>
-                      ))}
+                      {areaPrefs.map((p: any) => {
+                        const areaName = areas.find((a: any) => a.id === p.area_id)?.name ?? "Onbekend";
+                        const order = p.preference_order ?? "?";
+                        return (
+                          <Badge key={p.id} variant="outline" className="mr-1.5 text-xs">
+                            {order}. {areaName}
+                          </Badge>
+                        );
+                      })}
                     </span>
                   </div>
                 )}
