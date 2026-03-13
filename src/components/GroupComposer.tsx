@@ -246,9 +246,9 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     queryFn: async () => {
       const { data, error } = await supabase
         .from("programs")
-        .select("id, name, area_id, age_category, status, areas(name)")
+        .select("id, name, area_id, age_category, status, training_number, areas(name)")
         .eq("archived", false)
-        .order("name");
+        .order("training_number", { ascending: true, nullsFirst: false });
       if (error) throw error;
       return data ?? [];
     },
