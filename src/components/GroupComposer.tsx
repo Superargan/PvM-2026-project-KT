@@ -285,7 +285,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
           id, name, description, status,
           simulation_scenario_slots (
             id, area_id, age_category, label, mode, proposal_idx,
-            day_name, start_time, end_time, confirmed, notes,
+            day_name, start_time, end_time, confirmed, notes, linked_program_id,
             simulation_scenario_members (client_id, has_override)
           )
         `)
