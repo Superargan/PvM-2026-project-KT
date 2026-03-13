@@ -57,6 +57,7 @@ const editSchema = z.object({
   neighborhood_id: z.string().nullable().optional(),
   waitlist_area_id: z.string().nullable().optional(),
   all_areas_flexible: z.boolean().optional(),
+  area_notes: z.string().max(5000).nullable().optional(),
 });
 
 type EditForm = z.infer<typeof editSchema>;
@@ -185,6 +186,7 @@ export default function AanmeldingenPage() {
       neighborhood_id: client.neighborhood_id ?? null,
       waitlist_area_id: client.waitlist_area_id ?? null,
       all_areas_flexible: client.all_areas_flexible ?? false,
+      area_notes: client.area_notes ?? "",
     });
     setErrors({});
     setSelectedProgramId("");
@@ -754,11 +756,8 @@ export default function AanmeldingenPage() {
                     setEditClient((prev: any) => ({ ...prev, all_areas_flexible: v }));
                   }}
                   areas={areas}
-                  areaNotes={(editClient as any)?.area_notes ?? ""}
-                  onAreaNotesChange={async (v) => {
-                    await supabase.from("clients").update({ area_notes: v } as any).eq("id", editClient.id);
-                    setEditClient((prev: any) => ({ ...prev, area_notes: v }));
-                  }}
+                   areaNotes={form.area_notes ?? ""}
+                   onAreaNotesChange={(v) => updateField("area_notes" as any, v)}
                 />
               )}
               </div>
