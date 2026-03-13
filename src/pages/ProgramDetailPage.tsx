@@ -310,7 +310,8 @@ export default function ProgramDetailPage() {
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1"><School className="h-3.5 w-3.5" /> Locatie</div>
           <div className="space-y-2">
             {/* School selector */}
-            <Select
+            <SchoolCombobox
+              schools={schools}
               value={program.school_id ?? "geen"}
               onValueChange={async (v) => {
                 const schoolId = v === "geen" ? null : v;
@@ -329,30 +330,9 @@ export default function ProgramDetailPage() {
                   qc.invalidateQueries({ queryKey: ["programs"] });
                 }
               }}
-            >
-              <SchoolCombobox
-                schools={schools}
-                value={program.school_id ?? "geen"}
-                onValueChange={async (v) => {
-                  const schoolId = v === "geen" ? null : v;
-                  const selectedSchool = schools.find((s: any) => s.id === schoolId);
-                  const neighborhoodId = selectedSchool?.neighborhood_id ?? null;
-                  const areaId = selectedSchool?.neighborhoods?.area_id ?? null;
-                  const { error } = await supabase
-                    .from("programs")
-                    .update({ school_id: schoolId, training_location_id: schoolId ? null : (program as any).training_location_id, neighborhood_id: neighborhoodId, area_id: areaId })
-                    .eq("id", id!);
-                  if (error) {
-                    toast({ title: "Fout", description: error.message, variant: "destructive" });
-                  } else {
-                    toast({ title: "School gekoppeld" });
-                    qc.invalidateQueries({ queryKey: ["program", id] });
-                    qc.invalidateQueries({ queryKey: ["programs"] });
-                  }
-                }}
-                emptyOption={{ value: "geen", label: "Geen school" }}
-                triggerClassName="h-8 text-sm"
-              />
+              emptyOption={{ value: "geen", label: "Geen school" }}
+              triggerClassName="h-8 text-sm"
+            />
             {/* Training location selector */}
             <Select
               value={(program as any).training_location_id ?? "geen"}
