@@ -41,7 +41,7 @@ export default function ProgramDetailPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("programs")
-        .select("*, schools(name), areas(name), neighborhoods(name)")
+        .select("*, schools(name), training_locations(name), areas(name), neighborhoods(name)")
         .eq("id", id!)
         .single();
       if (error) throw error;
