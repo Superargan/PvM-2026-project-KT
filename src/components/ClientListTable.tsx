@@ -12,6 +12,8 @@ interface ClientListTableProps {
   onEdit?: (client: any) => void;
   /** Map of client_id → assigned staff names */
   assignmentsByClient?: Record<string, string[]>;
+  /** Areas list for resolving area names */
+  areas?: { id: string; name: string }[];
   showAssigned?: boolean;
   showCheckbox?: boolean;
   selected?: Set<string>;
