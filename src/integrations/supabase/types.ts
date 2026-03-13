@@ -1187,6 +1187,7 @@ export type Database = {
           end_time: string | null
           id: string
           label: string | null
+          linked_program_id: string | null
           mode: string | null
           notes: string | null
           proposal_idx: number | null
@@ -1207,6 +1208,7 @@ export type Database = {
           end_time?: string | null
           id?: string
           label?: string | null
+          linked_program_id?: string | null
           mode?: string | null
           notes?: string | null
           proposal_idx?: number | null
@@ -1227,6 +1229,7 @@ export type Database = {
           end_time?: string | null
           id?: string
           label?: string | null
+          linked_program_id?: string | null
           mode?: string | null
           notes?: string | null
           proposal_idx?: number | null
@@ -1246,6 +1249,13 @@ export type Database = {
           {
             foreignKeyName: "simulation_scenario_slots_converted_program_id_fkey"
             columns: ["converted_program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulation_scenario_slots_linked_program_id_fkey"
+            columns: ["linked_program_id"]
             isOneToOne: false
             referencedRelation: "programs"
             referencedColumns: ["id"]

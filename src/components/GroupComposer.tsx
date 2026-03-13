@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, UserCog, Check, AlertTriangle, CalendarClock, Search, Calendar, Maximize2, FlaskConical, RotateCcw, CheckCircle2, Save, Upload, ShieldAlert, Download } from "lucide-react";
+import { Users, UserCog, Check, AlertTriangle, CalendarClock, Search, Calendar, Maximize2, FlaskConical, RotateCcw, CheckCircle2, Save, Upload, ShieldAlert, Download, Link2, Unlink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -77,6 +77,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [simulatedGroups, setSimulatedGroups] = useState<Map<string, { proposalIdx: number; suggestion: any }>>(new Map());
   const [expandedAlternatives, setExpandedAlternatives] = useState<Set<string>>(new Set());
+  const [linkedPrograms, setLinkedPrograms] = useState<Record<string, string>>({}); // groupKey -> programId
 
   // Export state
   const [exportOpen, setExportOpen] = useState(false);
@@ -232,6 +233,20 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     },
   });
 
+  // Fetch non-archived programs for linking
+  const { data: linkablePrograms = [] } = useQuery({
+    queryKey: ["linkable-programs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("programs")
+        .select("id, name, area_id, age_category, status, areas(name)")
+        .eq("archived", false)
+        .order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const prefsByClient = useMemo(() => buildPrefsByClientMap(allPreferences as any), [allPreferences]);
 
   const areaMap = useMemo(() => {
@@ -249,8 +264,9 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
       selectedClients: Object.fromEntries(
         Object.entries(selectedClients).map(([k, v]) => [k, Array.from(v)])
       ),
+      linkedPrograms,
     });
-  }, [simulatedGroups, selectedClients]);
+  }, [simulatedGroups, selectedClients, linkedPrograms]);
 
   const isDirty = useMemo(() => {
     if (!activeScenarioId) return simulatedGroups.size > 0;
@@ -269,7 +285,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
           id, name, description, status,
           simulation_scenario_slots (
             id, area_id, age_category, label, mode, proposal_idx,
-            day_name, start_time, end_time, confirmed, notes,
+            day_name, start_time, end_time, confirmed, notes, linked_program_id,
             simulation_scenario_members (client_id, has_override)
           )
         `)
@@ -289,6 +305,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
       // Deserialize into simulatedGroups + selectedClients
       const newSimulated = new Map<string, { proposalIdx: number; suggestion: any }>();
       const newSelected: Record<string, Set<string>> = {};
+      const newLinked: Record<string, string> = {};
 
       (scenario.simulation_scenario_slots ?? []).forEach((slot: any) => {
         const groupKey = `${slot.area_id}__${slot.age_category ?? ""}`;
@@ -303,10 +320,15 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
 
         const memberIds = (slot.simulation_scenario_members ?? []).map((m: any) => m.client_id);
         newSelected[groupKey] = new Set(memberIds);
+
+        if (slot.linked_program_id) {
+          newLinked[groupKey] = slot.linked_program_id;
+        }
       });
 
       setSimulatedGroups(newSimulated);
       setSelectedClients(newSelected);
+      setLinkedPrograms(newLinked);
 
       // Set snapshot after loading
       setTimeout(() => {
@@ -315,6 +337,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
           selectedClients: Object.fromEntries(
             Object.entries(newSelected).map(([k, v]) => [k, Array.from(v)])
           ),
+          linkedPrograms: newLinked,
         }));
       }, 0);
     };
@@ -399,6 +422,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
 
   const resetSimulation = () => {
     setSimulatedGroups(new Map());
+    setLinkedPrograms({});
     setLastSavedSnapshot(null);
     setLoadedScenarioName(null);
     onClearScenario?.();
@@ -586,9 +610,10 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
           ) : null,
           start_time: val.suggestion?.startTime ?? null,
           end_time: val.suggestion?.endTime ?? null,
-          confirmed: false,
-          notes: null,
-          members,
+           confirmed: false,
+           notes: null,
+           linked_program_id: linkedPrograms[groupKey] ?? null,
+           members,
         });
       });
 
@@ -1141,6 +1166,74 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                   </div>
                 )}
 
+                {/* Link to existing program */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                    <Link2 className="h-3 w-3" /> Koppelen aan programma
+                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <Select
+                      value={linkedPrograms[key] ?? ""}
+                      onValueChange={(v) => {
+                        if (v === "__none__") {
+                          setLinkedPrograms(prev => { const next = { ...prev }; delete next[key]; return next; });
+                        } else {
+                          setLinkedPrograms(prev => ({ ...prev, [key]: v }));
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-9 text-xs">
+                        <SelectValue placeholder="Nieuw programma (standaard)" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover max-h-48">
+                        <SelectItem value="__none__">
+                          <span className="text-muted-foreground">Nieuw programma aanmaken</span>
+                        </SelectItem>
+                        {linkablePrograms
+                          .filter((p: any) => p.area_id === group.areaId && (!p.age_category || p.age_category === group.ageCategory))
+                          .map((p: any) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.name} <span className="text-muted-foreground ml-1">({p.status})</span>
+                            </SelectItem>
+                          ))
+                        }
+                        {linkablePrograms
+                          .filter((p: any) => p.area_id !== group.areaId || (p.age_category && p.age_category !== group.ageCategory))
+                          .length > 0 && (
+                          <>
+                            <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider border-t mt-1 pt-1">Overige programma's</div>
+                            {linkablePrograms
+                              .filter((p: any) => p.area_id !== group.areaId || (p.age_category && p.age_category !== group.ageCategory))
+                              .slice(0, 20)
+                              .map((p: any) => (
+                                <SelectItem key={p.id} value={p.id}>
+                                  {p.name} <span className="text-muted-foreground ml-1">({(p as any).areas?.name ?? "?"} · {p.age_category ?? "?"})</span>
+                                </SelectItem>
+                              ))
+                            }
+                          </>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    {linkedPrograms[key] && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 shrink-0"
+                        onClick={() => setLinkedPrograms(prev => { const next = { ...prev }; delete next[key]; return next; })}
+                      >
+                        <Unlink className="h-3.5 w-3.5 text-muted-foreground" />
+                      </Button>
+                    )}
+                  </div>
+                  {linkedPrograms[key] && (
+                    <p className="text-[10px] text-blue-700 flex items-center gap-1">
+                      <Link2 className="h-3 w-3" />
+                      Deelnemers worden bij omzetting <strong>toegevoegd</strong> aan dit programma
+                    </p>
+                  )}
+                </div>
+
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                     <Calendar className="h-3 w-3" /> Vermoedelijke startdatum
@@ -1518,7 +1611,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                     Slot {result.label ?? idx + 1}
                   </span>
                   <Badge variant="outline" className={result.status === "gelukt" ? "border-emerald-300 text-emerald-700" : "border-red-300 text-red-700"}>
-                    {result.status === "gelukt" ? "✓ Omgezet" : "✗ Mislukt"}
+                    {result.status === "gelukt" ? (result.linked ? "✓ Gekoppeld" : "✓ Omgezet") : "✗ Mislukt"}
                   </Badge>
                 </div>
                 {result.program_id && (
