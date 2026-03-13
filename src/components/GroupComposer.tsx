@@ -447,6 +447,68 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     }
   };
 
+  const statusLabelsMap: Record<string, string> = {
+    intake_afgerond: "Intake afgerond",
+    wachtlijst: "Wachtlijst",
+  };
+
+  const handleExportPlanning = () => {
+    const selected = PLANNING_EXPORT_COLUMNS.filter(c => exportSelected.has(c.key));
+    if (selected.length === 0) return;
+
+    const columns = selected.map(c => ({ key: c.key, label: c.label }));
+    const rows: Record<string, any>[] = [];
+
+    const groupsToExport = filteredGroups;
+
+    for (const group of groupsToExport) {
+      const key = getGroupKey(group);
+      const groupSelected = getSelectedForGroup(group);
+      const suggestions = getSuggestions(groupSelected);
+      const simulated = simulatedGroups.get(key);
+      const activeSuggestion = simulated?.suggestion ?? suggestions[0] ?? null;
+      const statusInfo = getStatusInfo(groupSelected.size);
+
+      const groupClients = group.clients.filter(cm => groupSelected.has(cm.client.id));
+
+      if (groupClients.length === 0) continue;
+
+      const oudertrainer = allTrainers.find((t: any) => t.id === selectedOudertrainer[key]);
+      const kindtrainer = allTrainers.find((t: any) => t.id === selectedKindtrainer[key]);
+
+      for (const cm of groupClients) {
+        const { client, matchType } = cm;
+        const row: Record<string, any> = {};
+        for (const col of selected) {
+          switch (col.key) {
+            case "gebied": row[col.key] = group.areaName; break;
+            case "leeftijd": row[col.key] = group.ageCategory; break;
+            case "dag": row[col.key] = activeSuggestion?.dayName ?? "—"; break;
+            case "tijdstip": row[col.key] = activeSuggestion ? `${activeSuggestion.startTime?.slice(0,5)} – ${activeSuggestion.endTime?.slice(0,5)}` : "—"; break;
+            case "overlap": row[col.key] = activeSuggestion?.overlap ?? "—"; break;
+            case "groepsgrootte": row[col.key] = groupSelected.size; break;
+            case "status_groep": row[col.key] = groupSelected.size >= 7 ? "Gereed" : groupSelected.size >= 5 ? "Bijna gereed" : "Te weinig"; break;
+            case "naam": row[col.key] = `${client.first_name} ${client.last_name}`; break;
+            case "geboortedatum": row[col.key] = client.date_of_birth ? new Date(client.date_of_birth).toLocaleDateString("nl-NL") : ""; break;
+            case "leeftijd_jr": row[col.key] = calculateAge(client.date_of_birth) ?? ""; break;
+            case "geslacht": row[col.key] = client.gender ?? ""; break;
+            case "school": row[col.key] = client.schools?.name ?? ""; break;
+            case "intake_status": row[col.key] = statusLabelsMap[client.intake_status] ?? client.intake_status ?? ""; break;
+            case "match_type": row[col.key] = matchType; break;
+            case "oudertrainer": row[col.key] = oudertrainer?.name ?? ""; break;
+            case "kindtrainer": row[col.key] = kindtrainer?.name ?? ""; break;
+            case "startdatum": row[col.key] = selectedStartDate[key] ? new Date(selectedStartDate[key]).toLocaleDateString("nl-NL") : ""; break;
+            case "voorstel_nr": row[col.key] = simulated ? simulated.proposalIdx + 1 : (suggestions.length > 0 ? 1 : ""); break;
+          }
+        }
+        rows.push(row);
+      }
+    }
+
+    downloadExport(`planning-groepen.${exportFormat}`, columns, rows, exportFormat);
+    setExportOpen(false);
+  };
+
   const getStatusInfo = (count: number) => {
     if (count >= 7) return { color: "text-emerald-700 bg-emerald-50 border-emerald-200", label: "Gereed om te starten", icon: <Check className="h-4 w-4" /> };
     if (count >= 5) return { color: "text-amber-700 bg-amber-50 border-amber-200", label: `Nog ${7 - count} nodig`, icon: <AlertTriangle className="h-4 w-4" /> };
