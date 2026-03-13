@@ -4,7 +4,7 @@ import { nl } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { calculateAge, getAgeGroup, statusLabels, statusStyles } from "@/lib/clientUtils";
+import { calculateAge, getAgeGroup, getResolvedAreaName, statusLabels, statusStyles } from "@/lib/clientUtils";
 
 interface ClientListTableProps {
   clients: any[];
