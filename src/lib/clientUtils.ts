@@ -92,7 +92,7 @@ export const statusBadgeStyles: Record<string, { label: string; className: strin
 export function getAgeGroup(dob: string | null): string {
   const age = calculateAge(dob);
   if (age === null) return "—";
-  if (age >= 5 && age <= 7) return "5-7 jaar";
+  if (age >= 4 && age <= 7) return "4-7 jaar";
   if (age >= 8 && age <= 12) return "8-12 jaar";
   return `${age} jaar`;
 }
