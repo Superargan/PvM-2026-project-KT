@@ -1174,7 +1174,13 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                   <div className="flex items-center gap-1.5">
                     <Select
                       value={linkedPrograms[key] ?? ""}
-                      onValueChange={(v) => setLinkedPrograms(prev => ({ ...prev, [key]: v === "__none__" ? "" : v }))}
+                      onValueChange={(v) => {
+                        if (v === "__none__") {
+                          setLinkedPrograms(prev => { const next = { ...prev }; delete next[key]; return next; });
+                        } else {
+                          setLinkedPrograms(prev => ({ ...prev, [key]: v }));
+                        }
+                      }}
                     >
                       <SelectTrigger className="h-9 text-xs">
                         <SelectValue placeholder="Nieuw programma (standaard)" />
