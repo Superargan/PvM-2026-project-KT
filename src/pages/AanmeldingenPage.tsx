@@ -322,6 +322,11 @@ export default function AanmeldingenPage() {
     search, area: filterArea, school: filterSchool, age: filterAge, status: filterStatus,
   });
 
+  // Clients visible on the active tab – used for export & selection
+  const visibleClients = activeTab === "intake_afgerond"
+    ? clients.filter((c: any) => c.intake_status === "intake_afgerond")
+    : filteredClients;
+
   const [exportOpen, setExportOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<"xlsx" | "csv">("xlsx");
   const EXPORT_COLUMNS = [
