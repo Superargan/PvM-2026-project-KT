@@ -58,6 +58,8 @@ interface GroupComposerProps {
   onSaveScenario?: (scenarioId: string) => void;
   onClearScenario?: () => void;
   onLoadScenario?: (scenarioId: string) => void;
+  filterArea?: string;
+  onFilterAreaChange?: (area: string) => void;
 }
 
 const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(function GroupComposer({ activeScenarioId, onSaveScenario, onClearScenario, onLoadScenario }, ref) {
