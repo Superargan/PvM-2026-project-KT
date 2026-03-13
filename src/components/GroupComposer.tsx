@@ -609,9 +609,10 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
           ) : null,
           start_time: val.suggestion?.startTime ?? null,
           end_time: val.suggestion?.endTime ?? null,
-          confirmed: false,
-          notes: null,
-          members,
+           confirmed: false,
+           notes: null,
+           linked_program_id: linkedPrograms[groupKey] ?? null,
+           members,
         });
       });
 
