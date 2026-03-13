@@ -241,7 +241,7 @@ export function getTopAvailabilityOverlaps(
   clientIds: string[] | Set<string>,
   availByClient: Record<string, { dayOfWeek: number; dayName: string; startTime: string; endTime: string }[]>,
   maxResults = 3,
-  minDurationMinutes = 120
+  minDurationMinutes = 90
 ): AvailabilityProposal[] {
   const clientIdList = Array.from(clientIds instanceof Set ? clientIds : new Set(clientIds));
 
@@ -278,7 +278,8 @@ export function getTopAvailabilityOverlaps(
       new Set(dayIntervals.map((i) => i.startMinutes))
     ).sort((a, b) => a - b);
 
-    let bestForDay: AvailabilityProposal | null = null;
+    // Collect ALL valid windows for this day
+    const validWindows: { startMinutes: number; overlap: number; clientIds: string[] }[] = [];
 
     for (const windowStartMinutes of candidateStarts) {
       const windowEndMinutes = windowStartMinutes + minDurationMinutes;
@@ -297,26 +298,27 @@ export function getTopAvailabilityOverlaps(
 
       if (coveringClientIds.length < 2) continue;
 
-      const proposal: AvailabilityProposal = {
-        dayName,
-        startTime: minutesToTime(windowStartMinutes),
-        endTime: minutesToTime(windowEndMinutes),
-        overlap: coveringClientIds.length,
-        total: clientIdList.length,
-        clientIds: coveringClientIds,
-      };
-
-      if (
-        bestForDay === null ||
-        proposal.overlap > bestForDay.overlap ||
-        (proposal.overlap === bestForDay.overlap &&
-          timeToMinutes(proposal.startTime) < timeToMinutes(bestForDay.startTime))
-      ) {
-        bestForDay = proposal;
-      }
+      validWindows.push({ startMinutes: windowStartMinutes, overlap: coveringClientIds.length, clientIds: coveringClientIds });
     }
 
-    if (bestForDay !== null) bestProposalPerDay.push(bestForDay);
+    if (validWindows.length === 0) continue;
+
+    // Pick the best window for this day
+    validWindows.sort((a, b) => {
+      if (b.overlap !== a.overlap) return b.overlap - a.overlap;
+      return a.startMinutes - b.startMinutes;
+    });
+
+    const best = validWindows[0];
+    bestProposalPerDay.push({
+      dayName,
+      startTime: minutesToTime(best.startMinutes),
+      endTime: minutesToTime(best.startMinutes + minDurationMinutes),
+      overlap: best.overlap,
+      total: clientIdList.length,
+      clientIds: best.clientIds,
+      alternativesOnDay: validWindows.length - 1,
+    });
   }
 
   bestProposalPerDay.sort((a, b) => {

@@ -171,7 +171,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
   const overriddenClientIds = useMemo(() => new Set(overrideLogs.map((o: any) => o.client_id as string)), [overrideLogs]);
 
   const availByClient = useMemo(() => buildAvailabilityByClient(allAvailability as any), [allAvailability]);
-  const getSuggestions = (clientIds: Set<string>) => getTopAvailabilityOverlaps(clientIds, availByClient, 3, 120);
+  const getSuggestions = (clientIds: Set<string>) => getTopAvailabilityOverlaps(clientIds, availByClient, 3, 90);
 
   const { data: allTrainers = [] } = useQuery({
     queryKey: ["group-composer-trainers"],
