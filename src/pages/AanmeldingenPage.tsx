@@ -1041,7 +1041,7 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, ref
                     <button
                       key={c.id}
                       className="w-full text-left text-sm px-2 py-1.5 rounded hover:bg-muted/50 transition-colors text-primary hover:underline"
-                      onClick={() => navigate(`/clienten/${c.id}`)}
+                      onClick={() => onNavigate(c.id)}
                     >
                       {c.first_name} {c.last_name}
                     </button>
