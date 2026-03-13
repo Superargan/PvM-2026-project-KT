@@ -346,6 +346,7 @@ export default function AanmeldingenPage() {
     { key: "toestemming", label: "Toestemming gegevensverwerking", group: "Overig" },
     { key: "whatsapp", label: "WhatsApp toestemming", group: "Overig" },
     { key: "notities", label: "Notities", group: "Overig" },
+    { key: "gebiedsnotities", label: "Gebiedsnotities", group: "Overig" },
     { key: "beschikbaarheid", label: "Beschikbaarheid", group: "Planning" },
     { key: "medewerker", label: "Toegewezen medewerker", group: "Planning" },
   ] as const;
@@ -378,19 +379,37 @@ export default function AanmeldingenPage() {
     const selected = EXPORT_COLUMNS.filter((c) => exportSelected.has(c.key));
     if (selected.length === 0) return;
 
-    let availByClient: Record<string, string[]> = {};
+    let availByClient: Record<string, string> = {};
     if (exportSelected.has("beschikbaarheid")) {
       const clientIds = filteredClients.map((c: any) => c.id);
       const { data: availData } = await supabase
         .from("client_availability")
-        .select("client_id, available_date, start_time, end_time")
+        .select("client_id, available_date, start_time, end_time, notes")
         .in("client_id", clientIds.length > 0 ? clientIds : ["__none__"])
         .order("available_date");
+
+      // Aggregate by weekday + time pattern per client
+      const dayNames = ["zo", "ma", "di", "wo", "do", "vr", "za"];
+      const clientDayMap: Record<string, Map<string, { count: number; notes: Set<string> }>> = {};
       for (const a of availData ?? []) {
-        if (!availByClient[a.client_id]) availByClient[a.client_id] = [];
-        const day = new Date(a.available_date).toLocaleDateString("nl-NL", { weekday: "short" });
-        const time = a.start_time && a.end_time ? ` ${a.start_time.slice(0, 5)}-${a.end_time.slice(0, 5)}` : "";
-        availByClient[a.client_id].push(`${day} ${a.available_date}${time}`);
+        if (!clientDayMap[a.client_id]) clientDayMap[a.client_id] = new Map();
+        const dayIdx = new Date(a.available_date).getDay();
+        const dayLabel = dayNames[dayIdx];
+        const time = a.start_time && a.end_time ? `${a.start_time.slice(0, 5)}-${a.end_time.slice(0, 5)}` : "hele dag";
+        const key = `${dayLabel} ${time}`;
+        const entry = clientDayMap[a.client_id].get(key) ?? { count: 0, notes: new Set<string>() };
+        entry.count++;
+        if (a.notes) entry.notes.add(a.notes);
+        clientDayMap[a.client_id].set(key, entry);
+      }
+      for (const [clientId, dayMap] of Object.entries(clientDayMap)) {
+        const parts: string[] = [];
+        for (const [pattern, info] of dayMap) {
+          let s = pattern;
+          if (info.notes.size > 0) s += ` (${[...info.notes].join(", ")})`;
+          parts.push(s);
+        }
+        availByClient[clientId] = parts.join("; ");
       }
     }
 
@@ -426,7 +445,8 @@ export default function AanmeldingenPage() {
           case "toestemming": row[col.key] = c.consent_data_processing ?? false; break;
           case "whatsapp": row[col.key] = c.whatsapp_consent ?? false; break;
           case "notities": row[col.key] = c.notes ?? ""; break;
-          case "beschikbaarheid": row[col.key] = (availByClient[c.id] ?? []).join("; "); break;
+          case "gebiedsnotities": row[col.key] = c.area_notes ?? ""; break;
+          case "beschikbaarheid": row[col.key] = availByClient[c.id] ?? ""; break;
           case "medewerker": row[col.key] = (assignmentsByClient[c.id] ?? []).join(", "); break;
         }
       }
