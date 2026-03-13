@@ -329,6 +329,70 @@ export function getTopAvailabilityOverlaps(
   return bestProposalPerDay.slice(0, maxResults);
 }
 
+/** Get ALL valid windows for a specific day (excluding the best/shown one) */
+export function getAlternativeWindowsForDay(
+  dayName: string,
+  excludeStartTime: string,
+  clientIds: string[] | Set<string>,
+  availByClient: Record<string, { dayOfWeek: number; dayName: string; startTime: string; endTime: string }[]>,
+  minDurationMinutes = 90
+): AvailabilityProposal[] {
+  const clientIdList = Array.from(clientIds instanceof Set ? clientIds : new Set(clientIds));
+  if (clientIdList.length === 0) return [];
+
+  const dayIntervals: NormalizedInterval[] = [];
+  for (const clientId of clientIdList) {
+    const records = availByClient[clientId] ?? [];
+    for (const record of records) {
+      const resolvedDayName = record.dayName ?? (record as any).dayOfWeek;
+      if (resolvedDayName !== dayName) continue;
+      const startMinutes = timeToMinutes(record.startTime);
+      const endMinutes = timeToMinutes(record.endTime);
+      if (endMinutes <= startMinutes) continue;
+      dayIntervals.push({ clientId, dayName: resolvedDayName, startMinutes, endMinutes });
+    }
+  }
+
+  const candidateStarts = Array.from(
+    new Set(dayIntervals.map((i) => i.startMinutes))
+  ).sort((a, b) => a - b);
+
+  const excludeMinutes = timeToMinutes(excludeStartTime);
+  const results: AvailabilityProposal[] = [];
+
+  for (const windowStartMinutes of candidateStarts) {
+    if (windowStartMinutes === excludeMinutes) continue;
+    const windowEndMinutes = windowStartMinutes + minDurationMinutes;
+    const coveringClientIds: string[] = [];
+    for (const clientId of clientIdList) {
+      const coversWindow = dayIntervals.some(
+        (interval) =>
+          interval.clientId === clientId &&
+          interval.startMinutes <= windowStartMinutes &&
+          interval.endMinutes >= windowEndMinutes
+      );
+      if (coversWindow) coveringClientIds.push(clientId);
+    }
+    if (coveringClientIds.length < 2) continue;
+    results.push({
+      dayName,
+      startTime: minutesToTime(windowStartMinutes),
+      endTime: minutesToTime(windowStartMinutes + minDurationMinutes),
+      overlap: coveringClientIds.length,
+      total: clientIdList.length,
+      clientIds: coveringClientIds,
+      alternativesOnDay: 0,
+    });
+  }
+
+  results.sort((a, b) => {
+    if (b.overlap !== a.overlap) return b.overlap - a.overlap;
+    return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
+  });
+
+  return results;
+}
+
 /** Check if client has availability coverage for N months ahead */
 export function hasAvailabilityCoverage(
   clientAvail: { date: string }[] | undefined,

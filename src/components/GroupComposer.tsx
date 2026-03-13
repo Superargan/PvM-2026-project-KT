@@ -26,6 +26,7 @@ import {
   buildPrefsByClientMap,
   buildAvailabilityByClient,
   getTopAvailabilityOverlaps,
+  getAlternativeWindowsForDay,
   validateScenario,
   type AgeCategory,
   type MatchType,
@@ -71,6 +72,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
   const [selectedStartDate, setSelectedStartDate] = useState<Record<string, string>>({});
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [simulatedGroups, setSimulatedGroups] = useState<Map<string, { proposalIdx: number; suggestion: any }>>(new Map());
+  const [expandedAlternatives, setExpandedAlternatives] = useState<Set<string>>(new Set());
 
   // Scenario state
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
@@ -1111,43 +1113,104 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                     <div className="space-y-2">
                       {suggestions.map((suggestion, idx) => {
                         const isThisSimulated = simulated?.proposalIdx === idx;
+                        const altKey = `${key}__${idx}`;
+                        const showAlts = expandedAlternatives.has(altKey);
                         return (
-                          <div key={idx} className={`rounded-lg border p-3 space-y-1 ${isThisSimulated ? "border-primary ring-1 ring-primary/30 bg-primary/5" : idx === 0 ? "border-emerald-200 bg-emerald-50/50" : "border-border bg-muted/20"}`}>
-                            <div className="flex items-center gap-2 justify-between">
-                              <div className="flex items-center gap-2">
-                                <CalendarClock className={`h-4 w-4 shrink-0 ${isThisSimulated ? "text-primary" : idx === 0 ? "text-emerald-600" : "text-muted-foreground"}`} />
-                                <p className={`text-xs font-semibold ${isThisSimulated ? "text-primary" : idx === 0 ? "text-emerald-800" : "text-foreground"}`}>Voorstel {idx + 1}</p>
+                          <div key={idx} className="space-y-1">
+                            <div className={`rounded-lg border p-3 space-y-1 ${isThisSimulated ? "border-primary ring-1 ring-primary/30 bg-primary/5" : idx === 0 ? "border-emerald-200 bg-emerald-50/50" : "border-border bg-muted/20"}`}>
+                              <div className="flex items-center gap-2 justify-between">
+                                <div className="flex items-center gap-2">
+                                  <CalendarClock className={`h-4 w-4 shrink-0 ${isThisSimulated ? "text-primary" : idx === 0 ? "text-emerald-600" : "text-muted-foreground"}`} />
+                                  <p className={`text-xs font-semibold ${isThisSimulated ? "text-primary" : idx === 0 ? "text-emerald-800" : "text-foreground"}`}>Voorstel {idx + 1}</p>
+                                </div>
+                                <Button
+                                  variant={isThisSimulated ? "secondary" : "ghost"}
+                                  size="sm"
+                                  className={`h-7 text-xs gap-1 ${isThisSimulated ? "border-primary/30" : ""}`}
+                                  onClick={() => toggleSimulation(key, group, idx, suggestion)}
+                                  disabled={selected.size === 0}
+                                >
+                                  {isThisSimulated ? (
+                                    <><CheckCircle2 className="h-3 w-3" /> Gesimuleerd</>
+                                  ) : (
+                                    <><FlaskConical className="h-3 w-3" /> Simuleer</>
+                                  )}
+                                </Button>
                               </div>
-                              <Button
-                                variant={isThisSimulated ? "secondary" : "ghost"}
-                                size="sm"
-                                className={`h-7 text-xs gap-1 ${isThisSimulated ? "border-primary/30" : ""}`}
-                                onClick={() => toggleSimulation(key, group, idx, suggestion)}
-                                disabled={selected.size === 0}
-                              >
-                                {isThisSimulated ? (
-                                  <><CheckCircle2 className="h-3 w-3" /> Gesimuleerd</>
-                                ) : (
-                                  <><FlaskConical className="h-3 w-3" /> Simuleer</>
-                                )}
-                              </Button>
-                            </div>
-                            <div className="flex items-center gap-3 pl-6">
-                              <Badge variant="outline" className={`text-xs capitalize ${isThisSimulated ? "border-primary/30 text-primary" : idx === 0 ? "border-emerald-300 text-emerald-700" : "border-border text-foreground"}`}>
-                                {suggestion.dayName}
-                              </Badge>
-                              <span className="text-sm font-medium text-foreground">
-                                {suggestion.startTime.slice(0, 5)} – {suggestion.endTime.slice(0, 5)}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                ({suggestion.overlap}/{suggestion.total} beschikbaar)
-                              </span>
-                              {suggestion.alternativesOnDay > 0 && (
-                                <span className="text-xs text-blue-600 font-medium">
-                                  +{suggestion.alternativesOnDay} {suggestion.alternativesOnDay === 1 ? "ander moment" : "andere momenten"} op deze dag
+                              <div className="flex items-center gap-3 pl-6">
+                                <Badge variant="outline" className={`text-xs capitalize ${isThisSimulated ? "border-primary/30 text-primary" : idx === 0 ? "border-emerald-300 text-emerald-700" : "border-border text-foreground"}`}>
+                                  {suggestion.dayName}
+                                </Badge>
+                                <span className="text-sm font-medium text-foreground">
+                                  {suggestion.startTime.slice(0, 5)} – {suggestion.endTime.slice(0, 5)}
                                 </span>
-                              )}
+                                <span className="text-xs text-muted-foreground">
+                                  ({suggestion.overlap}/{suggestion.total} beschikbaar)
+                                </span>
+                                {suggestion.alternativesOnDay > 0 && (
+                                  <button
+                                    className="text-xs text-blue-600 font-medium hover:underline cursor-pointer"
+                                    onClick={() => setExpandedAlternatives(prev => {
+                                      const next = new Set(prev);
+                                      if (next.has(altKey)) next.delete(altKey); else next.add(altKey);
+                                      return next;
+                                    })}
+                                  >
+                                    {showAlts ? "Verberg" : `+${suggestion.alternativesOnDay}`} {suggestion.alternativesOnDay === 1 ? "ander moment" : "andere momenten"} op {suggestion.dayName}
+                                  </button>
+                                )}
+                              </div>
                             </div>
+                            {/* Alternative windows for same day */}
+                            {showAlts && (() => {
+                              const alts = getAlternativeWindowsForDay(
+                                suggestion.dayName,
+                                suggestion.startTime,
+                                selected,
+                                availByClient,
+                                90
+                              );
+                              return (
+                                <div className="ml-6 space-y-1">
+                                  {alts.map((alt, altIdx) => {
+                                    const isAltSimulated = simulated?.suggestion?.dayName === alt.dayName
+                                      && simulated?.suggestion?.startTime === alt.startTime;
+                                    return (
+                                      <div key={altIdx} className={`rounded-lg border p-2.5 flex items-center justify-between ${isAltSimulated ? "border-primary ring-1 ring-primary/30 bg-primary/5" : "border-border bg-muted/10"}`}>
+                                        <div className="flex items-center gap-3">
+                                          <CalendarClock className={`h-3.5 w-3.5 shrink-0 ${isAltSimulated ? "text-primary" : "text-muted-foreground"}`} />
+                                          <Badge variant="outline" className="text-xs capitalize border-border text-foreground">
+                                            {alt.dayName}
+                                          </Badge>
+                                          <span className="text-sm font-medium text-foreground">
+                                            {alt.startTime.slice(0, 5)} – {alt.endTime.slice(0, 5)}
+                                          </span>
+                                          <span className="text-xs text-muted-foreground">
+                                            ({alt.overlap}/{alt.total} beschikbaar)
+                                          </span>
+                                        </div>
+                                        <Button
+                                          variant={isAltSimulated ? "secondary" : "ghost"}
+                                          size="sm"
+                                          className={`h-7 text-xs gap-1 ${isAltSimulated ? "border-primary/30" : ""}`}
+                                          onClick={() => toggleSimulation(key, group, idx, alt)}
+                                          disabled={selected.size === 0}
+                                        >
+                                          {isAltSimulated ? (
+                                            <><CheckCircle2 className="h-3 w-3" /> Gesimuleerd</>
+                                          ) : (
+                                            <><FlaskConical className="h-3 w-3" /> Simuleer</>
+                                          )}
+                                        </Button>
+                                      </div>
+                                    );
+                                  })}
+                                  {alts.length === 0 && (
+                                    <p className="text-xs text-muted-foreground px-2 py-1">Geen alternatieve momenten gevonden.</p>
+                                  )}
+                                </div>
+                              );
+                            })()}
                           </div>
                         );
                       })}
