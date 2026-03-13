@@ -551,7 +551,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
                                       </Popover>
                                       {/* Remove button */}
                                       <button
-                                        className="text-[9px] opacity-50 hover:opacity-100 hover:text-destructive"
+                                        className="text-[9px] text-foreground opacity-50 hover:opacity-100 hover:text-destructive"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           toggleCell(w.dow, dagdeel.key);
