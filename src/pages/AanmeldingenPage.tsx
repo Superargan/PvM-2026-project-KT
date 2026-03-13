@@ -445,7 +445,8 @@ export default function AanmeldingenPage() {
           case "toestemming": row[col.key] = c.consent_data_processing ?? false; break;
           case "whatsapp": row[col.key] = c.whatsapp_consent ?? false; break;
           case "notities": row[col.key] = c.notes ?? ""; break;
-          case "beschikbaarheid": row[col.key] = (availByClient[c.id] ?? []).join("; "); break;
+          case "gebiedsnotities": row[col.key] = c.area_notes ?? ""; break;
+          case "beschikbaarheid": row[col.key] = availByClient[c.id] ?? ""; break;
           case "medewerker": row[col.key] = (assignmentsByClient[c.id] ?? []).join(", "); break;
         }
       }
