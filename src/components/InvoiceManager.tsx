@@ -111,7 +111,7 @@ export default function InvoiceManager({ staffId, staffName }: { staffId?: strin
     mutationFn: async ({ invoiceId, status }: { invoiceId: string; status: string }) => {
       const { error } = await supabase
         .from("invoices")
-        .update({ status, reviewed_at: new Date().toISOString() } as any)
+        .update({ status, reviewed_at: new Date().toISOString() })
         .eq("id", invoiceId);
       if (error) throw error;
     },
