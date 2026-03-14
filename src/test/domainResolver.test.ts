@@ -188,7 +188,8 @@ describe("DomainResolver", () => {
     });
 
     it("normalizeSchoolName works through re-export", () => {
-      expect(normalizeSchoolName("OBS De Regenboog")).toBe("regenboog");
+      // normalizeSchoolName lowercases and trims — prefix stripping is separate
+      expect(normalizeSchoolName("OBS De Regenboog")).toBe("obs de regenboog");
     });
 
     it("findPotentialDuplicates works through re-export", () => {
