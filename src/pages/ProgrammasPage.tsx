@@ -72,7 +72,7 @@ export default function ProgrammasPage() {
     : neighborhoods;
 
   const { data: programs = [], isLoading, refetch } = useQuery({
-    queryKey: ["programs"],
+    queryKey: programKeys.all,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("programs")
