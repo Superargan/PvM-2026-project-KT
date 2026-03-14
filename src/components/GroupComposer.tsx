@@ -1329,12 +1329,12 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                       </Button>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      <span className="text-blue-700">{intakeClients.length} intake afgerond</span>
+                      <span className="text-info-foreground">{intakeClients.length} intake afgerond</span>
                       {wachtlijstClients_.length > 0 && (
-                        <span className="text-orange-700 ml-1">· {wachtlijstClients_.length} wachtlijst</span>
+                        <span className="text-warning-foreground ml-1">· {wachtlijstClients_.length} wachtlijst</span>
                       )}
                       {selectedReserves.length > 0 && (
-                        <span className="text-purple-700 ml-1">· {selectedReserves.length} uit reserve</span>
+                        <span className="text-role-foreground ml-1">· {selectedReserves.length} uit reserve</span>
                       )}
                     </p>
                   </div>
