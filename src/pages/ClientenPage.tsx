@@ -36,7 +36,7 @@ export default function ClientenPage() {
     queryFn: async () => {
       let query = supabase
         .from("clients")
-        .select("*, neighborhoods:neighborhood_id(id, area_id, areas(id, name)), schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
+        .select("*, neighborhoods:neighborhood_id(id, area_id, areas(id, name)), schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name))), program_clients(program_id, programs(id, name, training_number, status, archived))")
         .eq("archived", false)
         .in("intake_status", ["actief", "training_afgerond", "tussentijds_gestopt"])
         .order("created_at", { ascending: false });
