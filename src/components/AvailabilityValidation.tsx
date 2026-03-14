@@ -303,7 +303,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
 
       {/* Stats badges */}
       <div className="flex flex-wrap gap-3">
-        <Badge variant="outline" className="gap-1.5 text-sm px-3 py-1 border-emerald-400 text-emerald-700">
+        <Badge variant="outline" className="gap-1.5 text-sm px-3 py-1 border-success-border text-success-foreground">
           <CheckCircle2 className="h-3.5 w-3.5" />
           <span className="font-bold">{counts.voldoende}</span> voldoende dekking
         </Badge>
