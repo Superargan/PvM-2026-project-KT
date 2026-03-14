@@ -369,9 +369,9 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
                   <td className="px-4 py-2 text-xs font-semibold uppercase text-muted-foreground">Totaal</td>
                   {ageCategories.map(age => (
                     <td key={age} className="px-4 py-2 text-center text-sm font-bold text-foreground">
-                      <span className="text-blue-700">{totals[age].intake}i</span>
+                      <span className="text-info-foreground">{totals[age].intake}i</span>
                       <span className="text-muted-foreground mx-0.5">+</span>
-                      <span className="text-orange-700">{totals[age].wachtlijst}w</span>
+                      <span className="text-warning-foreground">{totals[age].wachtlijst}w</span>
                       {totals[age].reserve > 0 && (
                         <span className="text-xs font-normal text-muted-foreground ml-1">+{totals[age].reserve}</span>
                       )}

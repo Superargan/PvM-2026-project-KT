@@ -138,7 +138,7 @@ export default function ClientListTable({
                               <Badge
                                 key={p.id}
                                 variant="outline"
-                                className={`text-[10px] ${isActive ? "border-emerald-300 text-emerald-700" : "border-border text-muted-foreground"}`}
+                                className={`text-[10px] ${isActive ? "border-success-border text-success-foreground" : "border-border text-muted-foreground"}`}
                               >
                                 {p.training_number ? `${p.training_number}` : p.name}
                               </Badge>

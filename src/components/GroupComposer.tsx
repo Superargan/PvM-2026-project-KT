@@ -1940,7 +1940,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                   </Button>
                 )}
                 {result.error && (
-                  <p className="text-xs text-red-700 mt-1">{result.error}</p>
+                  <p className="text-xs text-destructive mt-1">{result.error}</p>
                 )}
               </div>
             ))}
