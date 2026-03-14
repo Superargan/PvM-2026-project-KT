@@ -251,7 +251,7 @@ export default function MedewerkersPage() {
   });
 
   // Download generated document
-  const handleDownloadDoc = async (doc: any) => {
+  const handleDownloadDoc = async (doc: { file_path: string; file_name: string }) => {
     const { data, error } = await supabase.storage.from("generated-documents").download(doc.file_path);
     if (error || !data) {
       toast.error("Download mislukt");
