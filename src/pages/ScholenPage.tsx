@@ -1222,6 +1222,9 @@ export default function ScholenPage() {
                     </div>
                   </td>
                   <td className="hidden px-5 py-4 lg:table-cell text-center">
+                    <span className="text-xs text-card-foreground">{(school as any).schedule_type ? ((school as any).schedule_type === "continu" ? "Continu" : "Traditioneel") : "—"}</span>
+                  </td>
+                  <td className="hidden px-5 py-4 lg:table-cell text-center">
                     <span className="text-xs text-card-foreground">{formatSchoolTimeRange((school as any).school_start_time, (school as any).school_end_time)}</span>
                   </td>
                   <td className="px-5 py-4 text-right">
