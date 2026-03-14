@@ -426,6 +426,15 @@ export default function ScholenPage() {
         });
       }
 
+      // Detect time columns in import headers
+      const headers = Object.keys(rows[0] ?? {});
+      const startTimeCol = findMatchingColumn(headers, SCHOOL_START_TIME_COLUMNS);
+      const endTimeCol = findMatchingColumn(headers, SCHOOL_END_TIME_COLUMNS);
+
+      let invalidTimeCount = 0;
+      let timesSetCount = 0;
+      let updatedCount = 0;
+
       const mapped = rows.map((r) => {
         // Build address from DUO columns if available
         const duoStraat = r["STRAATNAAM"];
@@ -442,10 +451,31 @@ export default function ScholenPage() {
           if (areaName) {
             const entry = areaLookup.get(areaName.toLowerCase());
             if (entry && entry.neighborhoods.length > 0) {
-              // Pick first neighborhood in that area as default
               neighborhoodId = entry.neighborhoods[0].id;
             }
           }
+        }
+
+        // Parse school times from import row
+        const rawStart = startTimeCol ? r[startTimeCol] : null;
+        const rawEnd = endTimeCol ? r[endTimeCol] : null;
+        const parsedStart = parseImportedSchoolTime(rawStart);
+        const parsedEnd = parseImportedSchoolTime(rawEnd);
+
+        // Validate: count invalid values (non-empty but unparseable)
+        if (rawStart && !parsedStart) invalidTimeCount++;
+        if (rawEnd && !parsedEnd) invalidTimeCount++;
+
+        // Only accept a valid complete pair
+        let school_start_time: string | null = null;
+        let school_end_time: string | null = null;
+        const pairValidation = validateSchoolTimePair(parsedStart, parsedEnd);
+        if (pairValidation.valid && parsedStart && parsedEnd) {
+          school_start_time = parsedStart;
+          school_end_time = parsedEnd;
+        } else if (parsedStart || parsedEnd) {
+          // Partial or invalid pair — count as invalid
+          invalidTimeCount++;
         }
 
         return {
@@ -456,35 +486,76 @@ export default function ScholenPage() {
           website_url: r["website"] || r["Website"] || r["website_url"] || r["URL"] || r["url"] || r["Website URL"] || r["website url"] || r["INTERNETADRES"] || null,
           student_count: Number(r["leerlingen"] || r["Leerlingen"] || r["student_count"] || r["Aantal leerlingen"] || 0) || 0,
           neighborhood_id: neighborhoodId,
+          school_start_time,
+          school_end_time,
         };
       }).filter((s) => s.name);
 
       if (mapped.length === 0) throw new Error("Geen geldige scholen gevonden. Zorg dat er een kolom 'Naam' is.");
 
-      // Fetch existing school names for deduplication
-      const { data: existingSchools } = await supabase.from("schools").select("name");
-      const existingNames = new Set((existingSchools ?? []).map((s) => s.name.toLowerCase().trim()));
-      const newSchools = mapped.filter((s) => !existingNames.has(s.name.toLowerCase().trim()));
-
-      if (newSchools.length === 0) {
-        return { imported: 0, skipped: mapped.length };
+      // Fetch existing schools for deduplication (include times for enrichment policy)
+      const { data: existingSchools } = await supabase.from("schools").select("id, name, school_start_time, school_end_time");
+      const existingMap = new Map<string, { id: string; school_start_time: string | null; school_end_time: string | null }>();
+      for (const s of existingSchools ?? []) {
+        existingMap.set(normalizeSchoolName(s.name), s);
       }
 
+      const newSchools: any[] = [];
+      const updatePromises: Promise<any>[] = [];
+
+      for (const s of mapped) {
+        const normalized = normalizeSchoolName(s.name);
+        const existing = existingMap.get(normalized);
+
+        if (!existing) {
+          // New school — insert with times
+          newSchools.push(s);
+          if (s.school_start_time) timesSetCount++;
+        } else if (s.school_start_time && s.school_end_time) {
+          // Existing school — enrich with times only when valid pair provided
+          // Follow overwrite policy: only update when import has valid non-empty values
+          updatePromises.push(
+            supabase.from("schools").update({
+              school_start_time: s.school_start_time as any,
+              school_end_time: s.school_end_time as any,
+            }).eq("id", existing.id).then(({ error }) => {
+              if (!error) {
+                updatedCount++;
+                timesSetCount++;
+              }
+            })
+          );
+        }
+      }
+
+      // Batch insert new schools
       for (let i = 0; i < newSchools.length; i += 50) {
         const chunk = newSchools.slice(i, i + 50);
         const { error } = await supabase.from("schools").insert(chunk);
         if (error) throw error;
       }
 
-      return { imported: newSchools.length, skipped: mapped.length - newSchools.length };
+      // Wait for all time updates
+      await Promise.all(updatePromises);
+
+      return {
+        imported: newSchools.length,
+        skipped: mapped.length - newSchools.length,
+        updated: updatedCount,
+        timesSet: timesSetCount,
+        invalidTimes: invalidTimeCount,
+      };
     },
     onSuccess: (result) => {
-      const msg = result.skipped > 0
-        ? `${result.imported} scholen geïmporteerd, ${result.skipped} duplicaten overgeslagen`
-        : `${result.imported} scholen geïmporteerd`;
-      toast({ title: msg });
+      const parts: string[] = [];
+      if (result.imported > 0) parts.push(`${result.imported} scholen geïmporteerd`);
+      if (result.skipped > 0) parts.push(`${result.skipped} duplicaten overgeslagen`);
+      if (result.updated > 0) parts.push(`${result.updated} scholen bijgewerkt`);
+      if (result.timesSet > 0) parts.push(`${result.timesSet} schooltijden ingesteld`);
+      if (result.invalidTimes > 0) parts.push(`${result.invalidTimes} ongeldige tijdwaarden`);
+      toast({ title: parts.join(", ") || "Import voltooid" });
       setUploadOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["schools"] });
+      invalidateAllSchoolQueries(queryClient);
     },
     onError: (err: any) => {
       toast({ title: "Import mislukt", description: err.message, variant: "destructive" });
