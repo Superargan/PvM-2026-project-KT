@@ -90,8 +90,8 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
   });
 
   // Get member counts per scenario via separate query
-  const scenarioIds = scenarios.map((s: any) => s.id);
-  const { data: memberCounts = {} } = useQuery({
+  const scenarioIds = scenarios.map((s) => s.id);
+  const { data: memberCounts = {} as Record<string, number> } = useQuery({
     queryKey: [...scenarioKeys.all, "member-counts", scenarioIds],
     enabled: scenarioIds.length > 0,
     queryFn: async () => {
@@ -100,8 +100,8 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
         .select("scenario_slot_id, simulation_scenario_slots!inner(scenario_id)");
       if (error) throw error;
       const counts: Record<string, number> = {};
-      (data ?? []).forEach((m: any) => {
-        const sid = m.simulation_scenario_slots?.scenario_id;
+      (data ?? []).forEach((m) => {
+        const sid = (m as unknown as ScenarioMemberCountRow).simulation_scenario_slots?.scenario_id;
         if (sid) counts[sid] = (counts[sid] ?? 0) + 1;
       });
       return counts;
