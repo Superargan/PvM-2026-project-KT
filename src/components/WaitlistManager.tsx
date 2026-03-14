@@ -80,7 +80,7 @@ export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => 
       // Remove from waitlist
       const { error: updateError } = await supabase
         .from("clients")
-        .update({ waitlist_status: null, waitlist_area_id: null, intake_status: "actief" } as any)
+        .update({ waitlist_status: null, waitlist_area_id: null, intake_status: "actief" })
         .eq("id", clientId);
       if (updateError) throw updateError;
     },
