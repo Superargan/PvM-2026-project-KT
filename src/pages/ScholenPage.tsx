@@ -849,6 +849,8 @@ export default function ScholenPage() {
                 gebied: s.neighborhoods?.areas?.name ?? "",
                 wijk: s.neighborhoods?.name ?? "",
                 leerlingen: s.student_count ?? 0,
+                roostertype: s.schedule_type ?? "",
+                bron: s.source ?? "",
                 schooltijden: formatSchoolTimeRange(s.school_start_time, s.school_end_time),
                 email: s.contact_email ?? "",
                 telefoon: s.contact_phone ?? "",
