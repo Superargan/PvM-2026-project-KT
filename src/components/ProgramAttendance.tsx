@@ -41,7 +41,7 @@ export default function ProgramAttendance({
   const [statusFilter, setStatusFilter] = useState("alle");
 
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
-    queryKey: ["program_sessions", programId],
+    queryKey: programKeys.sessions(programId),
     enabled: open,
     queryFn: async () => {
       const { data, error } = await supabase
