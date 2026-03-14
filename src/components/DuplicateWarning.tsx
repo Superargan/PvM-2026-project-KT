@@ -70,7 +70,7 @@ export default function DuplicateWarning({ firstName, lastName, excludeId, clien
             {m.matchType === "exact" ? (
               <Badge className="text-[9px] bg-destructive/10 text-destructive border-destructive/30">Exact</Badge>
             ) : (
-              <Badge className="text-[9px] bg-amber-100 text-amber-700 border-amber-300">Lijkt op</Badge>
+              <Badge className="text-[9px] bg-warning-muted text-warning-foreground border-warning-border">Lijkt op</Badge>
             )}
           </div>
         ))}

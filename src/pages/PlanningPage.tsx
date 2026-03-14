@@ -148,15 +148,15 @@ function WarningButton({ count, label, icon: Icon, color, onClick }: {
   count: number;
   label: string;
   icon: any;
-  color: "amber" | "red" | "blue" | "purple";
+  color: "warning" | "destructive" | "info" | "role";
   onClick?: () => void;
 }) {
   if (count === 0) return null;
   const colorMap = {
-    amber: "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100",
-    red: "bg-red-50 text-red-800 border-red-200 hover:bg-red-100",
-    blue: "bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100",
-    purple: "bg-purple-50 text-purple-800 border-purple-200 hover:bg-purple-100",
+    warning: "bg-warning-muted text-warning-foreground border-warning-border hover:bg-warning-muted/80",
+    destructive: "bg-destructive/10 text-destructive border-destructive/30 hover:bg-destructive/15",
+    info: "bg-info-muted text-info-foreground border-info-border hover:bg-info-muted/80",
+    role: "bg-role-muted text-role-foreground border-role-border hover:bg-role-muted/80",
   };
   return (
     <button

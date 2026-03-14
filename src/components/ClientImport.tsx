@@ -879,12 +879,12 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
 
               {/* School resolution step */}
               {showResolution && unmatchedSchools.length > 0 && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2">
-                  <p className="text-sm font-medium text-amber-900 flex items-center gap-1.5">
+                <div className="rounded-lg border border-warning-border bg-warning-muted p-3 space-y-2">
+                  <p className="text-sm font-medium text-warning-foreground flex items-center gap-1.5">
                     <AlertCircle className="h-4 w-4" />
                     {unmatchedSchools.length} schoolna{unmatchedSchools.length === 1 ? "am" : "men"} niet automatisch herkend
                   </p>
-                  <p className="text-xs text-amber-700">Koppel hieronder de juiste school, of laat leeg om zonder school te importeren.</p>
+                  <p className="text-xs text-warning-foreground/80">Koppel hieronder de juiste school, of laat leeg om zonder school te importeren.</p>
                   {unmatchedSchools.map((name) => (
                     <div key={name} className="flex items-center gap-2">
                       <span className="text-xs font-medium text-amber-900 min-w-[120px] truncate" title={name}>"{name}"</span>
