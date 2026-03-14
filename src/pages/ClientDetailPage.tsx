@@ -345,7 +345,7 @@ export default function ClientDetailPage() {
   const age = calculateAge(client.date_of_birth);
   const status = client.intake_status ?? "nieuw";
   const filteredReferrers = form.school_id
-    ? referrers.filter((r: any) => r.school_id === form.school_id)
+    ? referrers.filter((r) => r.school_id === form.school_id)
     : referrers;
 
   return (
