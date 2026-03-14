@@ -1187,7 +1187,7 @@ function DuplicateScan({ clients, isLoading, onNavigate, onEdit }: {
   if (groups.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-card p-6 text-center">
-        <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
+        <CheckCircle2 className="h-8 w-8 text-success mx-auto mb-2" />
         <p className="text-sm font-semibold text-foreground">Geen duplicaten gevonden</p>
         <p className="text-xs text-muted-foreground mt-1">Alle {clients.length} deelnemers hebben unieke namen.</p>
       </div>
