@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { programKeys, staffKeys } from "@/lib/queryKeys";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,7 +22,7 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
   const [showAdd, setShowAdd] = useState(false);
 
   const { data: assignments = [] } = useQuery({
-    queryKey: ["program_staff", programId],
+    queryKey: programKeys.staff(programId),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("program_staff")
@@ -34,7 +35,7 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
 
   // Fetch sessions for invaller selection
   const { data: sessions = [] } = useQuery({
-    queryKey: ["program_sessions", programId],
+    queryKey: programKeys.sessions(programId),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("program_sessions")
@@ -47,7 +48,7 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
   });
 
   const { data: allStaff = [] } = useQuery({
-    queryKey: ["staff-list"],
+    queryKey: staffKeys.all,
     queryFn: async () => {
       const { data, error } = await supabase.from("staff").select("id, name, email").order("name");
       if (error) throw error;
@@ -81,7 +82,7 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["program_staff", programId] });
+      queryClient.invalidateQueries({ queryKey: programKeys.staff(programId) });
       setSelectedStaffId("");
       setSelectedSessionId("");
       setReplacesStaffId("");
@@ -103,7 +104,7 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["program_staff", programId] });
+      queryClient.invalidateQueries({ queryKey: programKeys.staff(programId) });
       toast({ title: "Rol gewijzigd" });
     },
     onError: (err: any) => {
@@ -117,7 +118,7 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["program_staff", programId] });
+      queryClient.invalidateQueries({ queryKey: programKeys.staff(programId) });
       toast({ title: "Trainer ontkoppeld" });
     },
     onError: (err: any) => {

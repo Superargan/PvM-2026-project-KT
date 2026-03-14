@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { programKeys } from "@/lib/queryKeys";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -97,7 +98,7 @@ export default function SessionDetails({ session, programId, isBackoffice = true
     setSessionDate(pendingDate);
     setOverrideOpen(false);
     setOverrideReason("");
-    qc.invalidateQueries({ queryKey: ["program_sessions", programId] });
+    qc.invalidateQueries({ queryKey: programKeys.sessions(programId) });
     toast({ title: "Sessie vrijgegeven met override" });
   };
 
@@ -114,7 +115,7 @@ export default function SessionDetails({ session, programId, isBackoffice = true
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["program_sessions", programId] });
+      qc.invalidateQueries({ queryKey: programKeys.sessions(programId) });
       toast({ title: "Sessie opgeslagen" });
     },
     onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
@@ -129,7 +130,7 @@ export default function SessionDetails({ session, programId, isBackoffice = true
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["program_sessions", programId] });
+      qc.invalidateQueries({ queryKey: programKeys.sessions(programId) });
       toast({ title: "Locatie opgeslagen" });
     },
     onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
@@ -137,7 +138,7 @@ export default function SessionDetails({ session, programId, isBackoffice = true
 
   // Fetch documents for this session
   const { data: docs = [], isLoading: docsLoading } = useQuery({
-    queryKey: ["session_documents", session.id],
+    queryKey: programKeys.sessionDocs(session.id),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("session_documents")
@@ -169,7 +170,7 @@ export default function SessionDetails({ session, programId, isBackoffice = true
       } as any);
       if (insertErr) throw insertErr;
 
-      qc.invalidateQueries({ queryKey: ["session_documents", session.id] });
+      qc.invalidateQueries({ queryKey: programKeys.sessionDocs(session.id) });
       toast({ title: "Document geüpload" });
     } catch (err: any) {
       toast({ title: "Fout", description: err.message, variant: "destructive" });
@@ -186,7 +187,7 @@ export default function SessionDetails({ session, programId, isBackoffice = true
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["session_documents", session.id] });
+      qc.invalidateQueries({ queryKey: programKeys.sessionDocs(session.id) });
       toast({ title: "Document verwijderd" });
     },
     onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),

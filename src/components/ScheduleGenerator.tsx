@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { programKeys, clientKeys } from "@/lib/queryKeys";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -162,7 +163,7 @@ export default function ScheduleGenerator({ programId, programName, programStart
 
   // Fetch enrolled clients for availability check
   const { data: enrolledClients = [] } = useQuery({
-    queryKey: ["program_clients_detail", programId],
+    queryKey: programKeys.clients(programId),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("program_clients")
@@ -176,7 +177,7 @@ export default function ScheduleGenerator({ programId, programName, programStart
   // Fetch client availability
   const clientIds = enrolledClients.map((c: any) => c.id);
   const { data: availability = [] } = useQuery({
-    queryKey: ["client_availability_for_schedule", clientIds],
+    queryKey: clientKeys.allAvailability,
     enabled: clientIds.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -376,8 +377,7 @@ export default function ScheduleGenerator({ programId, programName, programStart
     },
     onSuccess: () => {
       toast({ title: "Planning opgeslagen", description: `${generated?.length} sessies aangemaakt` });
-      qc.invalidateQueries({ queryKey: ["program_sessions", programId] });
-      qc.invalidateQueries({ queryKey: ["program", programId] });
+      qc.invalidateQueries({ queryKey: programKeys.all });
       setGenerated(null);
       onGenerated();
     },

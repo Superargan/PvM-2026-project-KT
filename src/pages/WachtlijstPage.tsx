@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Trash2, Clock, UserPlus, Upload } from "lucide-react";
 import ClientImport from "@/components/ClientImport";
 import { filterClients, statusLabels, statusStyles } from "@/lib/clientUtils";
-import { areaKeys, schoolKeys } from "@/lib/queryKeys";
+import { areaKeys, schoolKeys, clientKeys } from "@/lib/queryKeys";
 import ClientFilters from "@/components/ClientFilters";
 import ClientListTable from "@/components/ClientListTable";
 
@@ -92,7 +92,7 @@ export default function WachtlijstPage() {
     },
     onSuccess: () => {
       toast.success("Deelnemer toegewezen aan programma");
-      qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: clientKeys.all });
     },
     onError: (err: any) => toast.error(err.message),
   });
@@ -109,7 +109,7 @@ export default function WachtlijstPage() {
     onSuccess: (_, ids) => {
       toast.success(`${ids.length} deelnemer(s) verwijderd van de wachtlijst`);
       setSelected(new Set());
-      qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: clientKeys.all });
     },
     onError: (err: any) => toast.error(err.message),
   });

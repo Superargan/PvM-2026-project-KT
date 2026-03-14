@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { programKeys, clientKeys } from "@/lib/queryKeys";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,7 +40,7 @@ export default function ProgramDetailPage() {
   const [dropoutAction, setDropoutAction] = useState("");
   // Fetch program
   const { data: program, isLoading } = useQuery({
-    queryKey: ["program", id],
+    queryKey: programKeys.detail(id!),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("programs")
@@ -54,7 +55,7 @@ export default function ProgramDetailPage() {
 
   // Fetch enrolled clients
   const { data: enrolledClients = [], refetch: refetchEnrolled } = useQuery({
-    queryKey: ["program_clients_full", id],
+    queryKey: programKeys.clients(id!),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("program_clients")
@@ -112,7 +113,7 @@ export default function ProgramDetailPage() {
 
   // Fetch sessions for overlap check
   const { data: programSessions = [] } = useQuery({
-    queryKey: ["program_sessions", id],
+    queryKey: programKeys.sessions(id!),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("program_sessions")
@@ -177,7 +178,7 @@ export default function ProgramDetailPage() {
     onSuccess: () => {
       setSelectedClientId("");
       refetchEnrolled();
-      qc.invalidateQueries({ queryKey: ["programs"] });
+      qc.invalidateQueries({ queryKey: programKeys.all });
       toast({ title: "Deelnemer toegevoegd" });
     },
     onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
@@ -191,7 +192,7 @@ export default function ProgramDetailPage() {
     },
     onSuccess: () => {
       refetchEnrolled();
-      qc.invalidateQueries({ queryKey: ["programs"] });
+      qc.invalidateQueries({ queryKey: programKeys.all });
       toast({ title: "Deelnemer verwijderd" });
     },
     onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
@@ -328,8 +329,7 @@ export default function ProgramDetailPage() {
                   toast({ title: "Fout", description: error.message, variant: "destructive" });
                 } else {
                   toast({ title: "School gekoppeld" });
-                  qc.invalidateQueries({ queryKey: ["program", id] });
-                  qc.invalidateQueries({ queryKey: ["programs"] });
+                  qc.invalidateQueries({ queryKey: programKeys.all });
                 }
               }}
               emptyOption={{ value: "geen", label: "Geen school" }}
@@ -356,8 +356,7 @@ export default function ProgramDetailPage() {
                   toast({ title: "Fout", description: error.message, variant: "destructive" });
                 } else {
                   toast({ title: "Trainingslocatie gekoppeld" });
-                  qc.invalidateQueries({ queryKey: ["program", id] });
-                  qc.invalidateQueries({ queryKey: ["programs"] });
+                  qc.invalidateQueries({ queryKey: programKeys.all });
                 }
               }}
             >

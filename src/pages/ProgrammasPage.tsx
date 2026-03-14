@@ -5,7 +5,7 @@ import ProgramAttendance from "@/components/ProgramAttendance";
 import { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { areaKeys } from "@/lib/queryKeys";
+import { areaKeys, programKeys } from "@/lib/queryKeys";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -72,7 +72,7 @@ export default function ProgrammasPage() {
     : neighborhoods;
 
   const { data: programs = [], isLoading, refetch } = useQuery({
-    queryKey: ["programs"],
+    queryKey: programKeys.all,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("programs")

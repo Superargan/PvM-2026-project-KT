@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { programKeys } from "@/lib/queryKeys";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -40,7 +41,7 @@ export default function ProgramAttendance({
   const [statusFilter, setStatusFilter] = useState("alle");
 
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
-    queryKey: ["program_sessions", programId],
+    queryKey: programKeys.sessions(programId),
     enabled: open,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -62,7 +63,7 @@ export default function ProgramAttendance({
       const { error } = await supabase.from("program_sessions").insert(rows as any);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["program_sessions", programId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: programKeys.sessions(programId) }),
   });
 
   useEffect(() => {
@@ -72,7 +73,7 @@ export default function ProgramAttendance({
   }, [open, sessionsLoading, sessions.length]);
 
   const { data: enrolledClients = [] } = useQuery({
-    queryKey: ["program_clients_detail", programId],
+    queryKey: programKeys.clients(programId),
     enabled: open,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -209,7 +210,7 @@ export default function ProgramAttendance({
           programStartDate={programStartDate}
           programEndDate={programEndDate}
           existingSessions={sessions}
-          onGenerated={() => qc.invalidateQueries({ queryKey: ["program_sessions", programId] })}
+          onGenerated={() => qc.invalidateQueries({ queryKey: programKeys.sessions(programId) })}
         />
 
         {/* Status filter */}
