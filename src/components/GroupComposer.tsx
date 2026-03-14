@@ -1366,7 +1366,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                     )}
                     {wachtlijstClients_.length > 0 && (
                       <>
-                        <div className="text-[10px] font-semibold text-orange-700 uppercase tracking-wider px-2 pt-2 pb-0.5">
+                        <div className="text-[10px] font-semibold text-warning-foreground uppercase tracking-wider px-2 pt-2 pb-0.5">
                           Wachtlijst ({wachtlijstClients_.length})
                         </div>
                         {wachtlijstClients_.map(cm => renderClientRow(cm, group, selected))}
