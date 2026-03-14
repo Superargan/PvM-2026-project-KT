@@ -1557,6 +1557,7 @@ export default function ScholenPage() {
                       onChange={() => toggleSchoolSelection(school.id)}
                     />
                   </td>
+                  <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent/20">
                         <School className="h-4 w-4 text-accent" />
