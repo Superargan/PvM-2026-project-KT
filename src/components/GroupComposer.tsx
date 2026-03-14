@@ -1213,7 +1213,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                   </Badge>
                 )}
                 {isDirty && (
-                  <Badge variant="outline" className="text-[10px] border-amber-300 text-amber-700 gap-0.5">
+                  <Badge variant="outline" className="text-[10px] border-warning-border text-warning-foreground gap-0.5">
                     <AlertTriangle className="h-2.5 w-2.5" />
                     Wijzigingen niet opgeslagen
                   </Badge>
