@@ -16,6 +16,7 @@ interface ScenarioOverviewProps {
   onLoadScenario: (scenarioId: string) => void;
   hasActiveSimulation: boolean;
   onRequestSaveFirst: () => Promise<boolean>;
+  onScenarioDeleted?: (scenarioId: string) => void;
 }
 
 const statusColors: Record<string, string> = {
