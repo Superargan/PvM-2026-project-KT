@@ -121,7 +121,7 @@ export default function AanmeldingenPage() {
   });
 
   const { data: staffList = [] } = useQuery({
-    queryKey: ["staff-list-for-assignment"],
+    queryKey: staffKeys.all,
     queryFn: async () => {
       const { data, error } = await supabase.from("staff").select("id, name, user_id").eq("archived", false).not("name", "is", null).order("name");
       if (error) throw error;
