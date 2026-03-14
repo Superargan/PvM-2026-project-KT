@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import type { GeneratedDocumentRow } from "@/lib/queryShapes";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { schoolKeys, documentKeys, clientKeys, staffKeys, programKeys } from "@/lib/queryKeys";

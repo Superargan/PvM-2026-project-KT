@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ProgramStaffInsert } from "@/lib/queryShapes";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { programKeys, staffKeys } from "@/lib/queryKeys";
 import { supabase } from "@/integrations/supabase/client";
