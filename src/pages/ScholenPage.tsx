@@ -1157,7 +1157,7 @@ export default function ScholenPage() {
         <div className="flex flex-wrap gap-2">
           {(["csv", "xlsx"] as const).map((fmt) => (
             <Button key={fmt} variant="outline" size="sm" onClick={() => {
-              const rows = schools.map((s: any) => ({
+              const rows = schools.map((s) => ({
                 naam: s.name,
                 adres: s.address ?? "",
                 gebied: s.neighborhoods?.areas?.name ?? "",
