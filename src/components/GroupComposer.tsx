@@ -313,7 +313,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
       const { data: scenario, error } = await supabase
         .from("simulation_scenarios")
         .select(`
-          id, name, description, status,
+          id, name, description, status, proforma_number,
           simulation_scenario_slots (
             id, area_id, age_category, label, mode, proposal_idx,
             day_name, start_time, end_time, confirmed, notes, linked_program_id,
