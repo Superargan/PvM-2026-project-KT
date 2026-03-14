@@ -73,7 +73,7 @@ export default function ProgramAttendance({
   }, [open, sessionsLoading, sessions.length]);
 
   const { data: enrolledClients = [] } = useQuery({
-    queryKey: ["program_clients_detail", programId],
+    queryKey: programKeys.clients(programId),
     enabled: open,
     queryFn: async () => {
       const { data, error } = await supabase
