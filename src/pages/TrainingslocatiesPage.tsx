@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { MapPin, Plus, Search, Pencil, Trash2, Loader2 } from "lucide-react";
 import { getAreaFromAddress, getAreaFromPostcode, extractPostcode } from "@/lib/postcodeMapping";
+import { DEFAULT_CITY } from "@/lib/DomainResolver";
 import { areaKeys, locationKeys } from "@/lib/queryKeys";
 
 export default function TrainingslocatiesPage() {
