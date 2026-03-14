@@ -236,15 +236,15 @@ export default function ClientDetailPage() {
         intake_notes: client.intake_notes ?? "",
         intake_status: client.intake_status ?? "nieuw",
         intake_date: client.intake_date ?? "",
-        registration_date: (client as any).registration_date ?? "",
+        registration_date: client.registration_date ?? "",
         consent_data_processing: client.consent_data_processing ?? false,
         whatsapp_consent: client.whatsapp_consent ?? false,
         notes: client.notes ?? "",
         dropout_reason: client.dropout_reason ?? "",
         dropout_action: client.dropout_action ?? "",
         waitlist_area_id: client.waitlist_area_id ?? "",
-        all_areas_flexible: (client as any).all_areas_flexible ?? false,
-        area_notes: (client as any).area_notes ?? "",
+        all_areas_flexible: client.all_areas_flexible ?? false,
+        area_notes: client.area_notes ?? "",
       });
       setDirty(false);
     }
