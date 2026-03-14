@@ -118,7 +118,7 @@ export default function RapportagesPage() {
   });
 
   const { data: generatedDocs = [] } = useQuery({
-    queryKey: ["rpt_generated_docs"],
+    queryKey: rapportageKeys.generatedDocs,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("generated_documents")
