@@ -194,15 +194,15 @@ export default function AanmeldingenPage() {
     setEditOpen(true);
   };
 
-  const updateField = (field: keyof EditForm, value: any) => {
+  const updateField = (field: keyof EditForm, value: string | boolean | null) => {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
       // Auto-fill area and neighborhood from school (consistent met ClientDetailPage)
       if (field === "school_id") {
-        const school = schools.find((s: any) => s.id === value);
-        const areaId = (school as any)?.neighborhoods?.area_id;
+        const school = schools.find((s) => s.id === value);
+        const areaId = school?.neighborhoods?.area_id;
         if (areaId) next.waitlist_area_id = areaId;
-        next.neighborhood_id = (school as any)?.neighborhood_id ?? null;
+        next.neighborhood_id = school?.neighborhood_id ?? null;
       }
       return next;
     });
