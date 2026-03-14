@@ -135,7 +135,7 @@ export default function MedewerkersPage() {
 
   // Fetch programs for trainer document generation
   const { data: trainerPrograms = [] } = useQuery({
-    queryKey: ["trainer-programs", docTrainerId],
+    queryKey: staffKeys.trainerPrograms(docTrainerId),
     queryFn: async () => {
       if (!docTrainerId) return [];
       const { data } = await supabase
