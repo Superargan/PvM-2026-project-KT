@@ -1,4 +1,4 @@
-import { School, Search, Plus, MapPin, Loader2, Upload, Users, Trash2, Pencil, UserPlus, Wand2, FileText, Globe, Download, X } from "lucide-react";
+import { School, Search, Plus, MapPin, Loader2, Upload, Users, Trash2, Pencil, UserPlus, Wand2, FileText, Globe, Download, X, Clock } from "lucide-react";
 import SchoolDuplicateWarning from "@/components/SchoolDuplicateWarning";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -157,8 +157,9 @@ export default function ScholenPage() {
   const [addScheduleType, setAddScheduleType] = useState<string>("");
   const [addSchoolName, setAddSchoolName] = useState<string>("");
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [timesUploadOpen, setTimesUploadOpen] = useState(false);
   const [importResultOpen, setImportResultOpen] = useState(false);
-  const [importResult, setImportResult] = useState<{ added: string[]; updated: string[]; timesSet: number; invalidTimes: number; municipalitySet: number } | null>(null);
+  const [importResult, setImportResult] = useState<{ added: string[]; updated: string[]; unmatched: string[]; timesSet: number; invalidTimes: number; municipalitySet: number } | null>(null);
   const [editSaving, setEditSaving] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -612,6 +613,7 @@ export default function ScholenPage() {
       setImportResult({
         added: result.addedNames,
         updated: result.updatedNames,
+        unmatched: [],
         timesSet: result.timesSet,
         invalidTimes: result.invalidTimes,
         municipalitySet: result.municipalitySet,
@@ -627,6 +629,126 @@ export default function ScholenPage() {
   const handleSchoolFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) uploadMutation.mutate(file);
+  };
+
+  // ── School TIMES ONLY upload (never creates new schools) ──
+
+  const timesUploadMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const rows = await readFileAsRows(file);
+      if (rows.length === 0) throw new Error("Bestand is leeg");
+
+      const headers = Object.keys(rows[0] ?? {});
+      const startTimeCol = findMatchingColumn(headers, SCHOOL_START_TIME_COLUMNS);
+      const endTimeCol = findMatchingColumn(headers, SCHOOL_END_TIME_COLUMNS);
+      const scheduleTypeCol = findMatchingColumn(headers, SCHEDULE_TYPE_COLUMNS);
+      const sourceCol = findMatchingColumn(headers, SOURCE_COLUMNS);
+      const municipalityCol = findMatchingColumn(headers, MUNICIPALITY_COLUMNS);
+
+      // Fetch all existing schools for matching
+      const { data: existingSchools } = await supabase.from("schools").select("id, name, school_start_time, school_end_time, schedule_type, source, municipality");
+      const existingMap = new Map<string, { id: string; school_start_time: string | null; school_end_time: string | null; schedule_type: string | null; source: string | null; municipality: string | null }>();
+      for (const s of existingSchools ?? []) {
+        existingMap.set(normalizeSchoolName(s.name), s);
+      }
+
+      let invalidTimeCount = 0;
+      let timesSetCount = 0;
+      let municipalitySetCount = 0;
+      const updatedNames: string[] = [];
+      const unmatchedNames: string[] = [];
+
+      for (const r of rows) {
+        const name = r["naam"] || r["Naam"] || r["name"] || r["School"] || r["school"] || r["VESTIGINGSNAAM"] || "";
+        if (!name) continue;
+
+        const normalized = normalizeSchoolName(name);
+        const existing = existingMap.get(normalized);
+
+        if (!existing) {
+          unmatchedNames.push(name);
+          continue;
+        }
+
+        // Parse times
+        const rawStart = startTimeCol ? r[startTimeCol] : null;
+        const rawEnd = endTimeCol ? r[endTimeCol] : null;
+        const parsedStart = parseImportedSchoolTime(rawStart);
+        const parsedEnd = parseImportedSchoolTime(rawEnd);
+
+        if (rawStart && !parsedStart) invalidTimeCount++;
+        if (rawEnd && !parsedEnd) invalidTimeCount++;
+
+        let school_start_time: string | null = null;
+        let school_end_time: string | null = null;
+        const pairValidation = validateSchoolTimePair(parsedStart, parsedEnd);
+        if (pairValidation.valid && parsedStart && parsedEnd) {
+          school_start_time = parsedStart;
+          school_end_time = parsedEnd;
+        } else if (parsedStart || parsedEnd) {
+          invalidTimeCount++;
+        }
+
+        const rawScheduleType = scheduleTypeCol ? String(r[scheduleTypeCol] ?? "").trim().toLowerCase() : "";
+        const schedule_type = rawScheduleType === "traditioneel" || rawScheduleType === "continu" ? rawScheduleType : null;
+        const source = sourceCol ? String(r[sourceCol] ?? "").trim() || null : null;
+        const rawMunicipality = municipalityCol ? String(r[municipalityCol] ?? "").trim() : "";
+        const municipality = rawMunicipality || null;
+
+        const hasTimeUpdate = school_start_time && school_end_time;
+        const hasScheduleTypeUpdate = schedule_type && !existing.schedule_type;
+        const hasSourceUpdate = source && !existing.source;
+        const hasMunicipalityUpdate = municipality && !existing.municipality;
+
+        if (hasTimeUpdate || hasScheduleTypeUpdate || hasSourceUpdate || hasMunicipalityUpdate) {
+          const updatePayload: Record<string, any> = {};
+          if (hasTimeUpdate) {
+            updatePayload.school_start_time = school_start_time;
+            updatePayload.school_end_time = school_end_time;
+          }
+          if (hasScheduleTypeUpdate) updatePayload.schedule_type = schedule_type;
+          if (hasSourceUpdate) updatePayload.source = source;
+          if (hasMunicipalityUpdate) updatePayload.municipality = municipality;
+
+          const { error } = await supabase.from("schools").update(updatePayload).eq("id", existing.id);
+          if (!error) {
+            updatedNames.push(name);
+            if (hasTimeUpdate) timesSetCount++;
+            if (hasMunicipalityUpdate) municipalitySetCount++;
+          }
+        }
+      }
+
+      return { updatedNames, unmatchedNames, timesSet: timesSetCount, invalidTimes: invalidTimeCount, municipalitySet: municipalitySetCount };
+    },
+    onSuccess: (result) => {
+      const parts: string[] = [];
+      if (result.updatedNames.length > 0) parts.push(`${result.updatedNames.length} scholen bijgewerkt`);
+      if (result.timesSet > 0) parts.push(`${result.timesSet} schooltijden ingesteld`);
+      if (result.municipalitySet > 0) parts.push(`${result.municipalitySet} gemeenten ingesteld`);
+      if (result.unmatchedNames.length > 0) parts.push(`${result.unmatchedNames.length} niet gevonden`);
+      if (result.invalidTimes > 0) parts.push(`${result.invalidTimes} ongeldige tijdwaarden`);
+      toast({ title: parts.join(", ") || "Import voltooid — geen wijzigingen" });
+      setTimesUploadOpen(false);
+      setImportResult({
+        added: [],
+        updated: result.updatedNames,
+        unmatched: result.unmatchedNames,
+        timesSet: result.timesSet,
+        invalidTimes: result.invalidTimes,
+        municipalitySet: result.municipalitySet,
+      });
+      setImportResultOpen(true);
+      invalidateAllSchoolQueries(queryClient);
+    },
+    onError: (err: any) => {
+      toast({ title: "Import mislukt", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const handleTimesFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) timesUploadMutation.mutate(file);
   };
 
   // ── Contact person file upload (Excel + CSV + Outlook) ──
@@ -998,7 +1120,41 @@ export default function ScholenPage() {
             </DialogContent>
           </Dialog>
 
-          {/* Add school dialog */}
+          {/* School times only upload dialog */}
+          <Dialog open={timesUploadOpen} onOpenChange={setTimesUploadOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline"><Clock className="h-4 w-4" /> Schooltijden Importeren</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Schooltijden Importeren</DialogTitle>
+                <DialogDescription>Update alleen bestaande scholen — er worden geen nieuwe scholen aangemaakt.</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Upload een Excel of CSV-bestand met een kolom <strong>Naam</strong> en tijdkolommen zoals <strong>Schooltijd begin</strong> en <strong>Schooltijd eind</strong>.
+                  Optioneel: Rooster, Bron, Gemeente. Scholen die niet in het systeem staan worden gerapporteerd maar <em>niet</em> aangemaakt.
+                </p>
+                <div className="flex items-center justify-center rounded-lg border-2 border-dashed border-border p-8">
+                  <label className="flex cursor-pointer flex-col items-center gap-2 text-center">
+                    <Clock className="h-8 w-8 text-muted-foreground" />
+                    <span className="text-sm font-medium text-foreground">
+                      {timesUploadMutation.isPending ? "Bezig met importeren..." : "Klik om bestand te kiezen"}
+                    </span>
+                    <span className="text-xs text-muted-foreground">.xlsx, .xls of .csv</span>
+                    <input
+                      type="file"
+                      accept=".xlsx,.xls,.csv"
+                      className="hidden"
+                      onChange={handleTimesFileUpload}
+                      disabled={timesUploadMutation.isPending}
+                    />
+                  </label>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           <Dialog open={addOpen} onOpenChange={(open) => { setAddOpen(open); if (!open) { setAddSchoolName(""); setAddScheduleType(""); } }}>
             <DialogTrigger asChild>
               <Button><Plus className="h-4 w-4" /> School Toevoegen</Button>
@@ -1725,7 +1881,7 @@ export default function ScholenPage() {
             <div className="space-y-4">
               {/* Summary stats */}
               <div className="flex flex-wrap gap-3">
-                <Badge variant="default" className="text-sm">{importResult.added.length} toegevoegd</Badge>
+                {importResult.added.length > 0 && <Badge variant="default" className="text-sm">{importResult.added.length} toegevoegd</Badge>}
                 <Badge variant="secondary" className="text-sm">{importResult.updated.length} bijgewerkt</Badge>
                 {importResult.timesSet > 0 && <Badge variant="outline" className="text-sm">{importResult.timesSet} tijden ingesteld</Badge>}
                 {importResult.municipalitySet > 0 && <Badge variant="outline" className="text-sm">{importResult.municipalitySet} gemeenten ingesteld</Badge>}
@@ -1766,7 +1922,24 @@ export default function ScholenPage() {
                 </div>
               )}
 
-              {importResult.added.length === 0 && importResult.updated.length === 0 && (
+              {/* Unmatched schools */}
+              {importResult.unmatched.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-card-foreground flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                    Niet gevonden in systeem ({importResult.unmatched.length})
+                  </p>
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 max-h-48 overflow-y-auto">
+                    <ul className="space-y-1">
+                      {importResult.unmatched.map((name, i) => (
+                        <li key={i} className="text-sm text-card-foreground">{name}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {importResult.added.length === 0 && importResult.updated.length === 0 && importResult.unmatched.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">Geen wijzigingen — alle scholen bestonden al.</p>
               )}
             </div>
