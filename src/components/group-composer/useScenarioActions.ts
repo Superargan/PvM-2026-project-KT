@@ -247,7 +247,7 @@ export function useScenarioActions(deps: ScenarioActionsDeps) {
         .from("simulation_scenarios")
         .update({
           validation_status: validation.status,
-          validation_details: validation as unknown as Record<string, unknown>,
+          validation_details: validation as unknown as Json,
           last_validated_at: new Date().toISOString(),
         })
         .eq("id", deps.activeScenarioId);
