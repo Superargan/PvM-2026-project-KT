@@ -49,7 +49,7 @@ export default function Dashboard() {
   });
 
   const { data: trainerCount = 0 } = useQuery({
-    queryKey: ["dashboard-trainers"],
+    queryKey: staffKeys.all,
     queryFn: async () => {
       const { count } = await supabase.from("staff").select("*", { count: "exact", head: true }).eq("archived", false).not("name", "is", null);
       return count ?? 0;
