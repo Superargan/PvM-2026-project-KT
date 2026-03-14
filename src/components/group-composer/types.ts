@@ -7,13 +7,14 @@ import type { ClientAreaFields } from "@/lib/queryShapes";
 
 // ─── Client shape used inside GroupComposer ─────────────────────────
 
-/** The client row shape returned by the GroupComposer waitlist query */
-export interface GroupComposerClient extends ClientAreaFields {
+/** The client row shape returned by the GroupComposer waitlist query.
+ *  Intersected with Record<string, unknown> to satisfy ClientLike constraint. */
+export type GroupComposerClient = ClientAreaFields & Record<string, unknown> & {
   gender?: string | null;
   class_group?: string | null;
   guardian_phone?: string | null;
   guardian_name?: string | null;
-}
+};
 
 /** Client + computed match info */
 export interface ClientWithMatch {
