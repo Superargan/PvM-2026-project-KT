@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { normalizeKey, findCol, parseExcelDate, parseTime } from "@/lib/importUtils";
+import { staffKeys, clientKeys, programKeys, planningKeys } from "@/lib/queryKeys";
 
 type ImportType = "trainer_beschikbaarheid" | "deelnemer_beschikbaarheid" | "sessies";
 
@@ -45,94 +47,7 @@ const IMPORT_TYPES: { value: ImportType; label: string; description: string; col
   },
 ];
 
-function normalizeKey(key: string): string {
-  return key.toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]/g, "");
-}
-
-function findCol(row: ParsedRow, ...candidates: string[]): string | undefined {
-  const keys = Object.keys(row);
-  const norms = candidates.map(c => normalizeKey(c));
-
-  // Priority 1: exact match
-  for (const norm of norms) {
-    const found = keys.find((k) => normalizeKey(k) === norm);
-    if (found && row[found] !== undefined && row[found] !== "") return String(row[found]).trim();
-  }
-  // Priority 2: key contains candidate
-  for (const norm of norms) {
-    const found = keys.find((k) => normalizeKey(k).includes(norm));
-    if (found && row[found] !== undefined && row[found] !== "") return String(row[found]).trim();
-  }
-  // Priority 3: candidate contains key
-  for (const norm of norms) {
-    const found = keys.find((k) => norm.includes(normalizeKey(k)) && normalizeKey(k).length >= 3);
-    if (found && row[found] !== undefined && row[found] !== "") return String(row[found]).trim();
-  }
-  return undefined;
-}
-
-function parseExcelDate(val: any): string | null {
-  if (!val) return null;
-
-  // Excel serial number (as number)
-  if (typeof val === "number" && val > 1 && val < 100000) {
-    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
-    const date = new Date(excelEpoch.getTime() + val * 86400000);
-    if (!isNaN(date.getTime())) return date.toISOString().split("T")[0];
-  }
-
-  const s = String(val).trim();
-
-  // Excel serial as string (e.g. "45678")
-  if (/^\d{4,5}$/.test(s)) {
-    const num = parseInt(s);
-    if (num > 1 && num < 100000) {
-      const excelEpoch = new Date(Date.UTC(1899, 11, 30));
-      const date = new Date(excelEpoch.getTime() + num * 86400000);
-      if (!isNaN(date.getTime())) return date.toISOString().split("T")[0];
-    }
-  }
-
-  // DD-MM-YYYY or DD/MM/YYYY (Dutch primary format)
-  const dmy = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
-  if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, "0")}-${dmy[1].padStart(2, "0")}`;
-
-  // DD-MM-YY or DD/MM/YY (Dutch 2-digit year)
-  const dmyy = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2})$/);
-  if (dmyy) {
-    const yr = parseInt(dmyy[3]);
-    const fullYear = yr + (yr < 50 ? 2000 : 1900);
-    return `${fullYear}-${dmyy[2].padStart(2, "0")}-${dmyy[1].padStart(2, "0")}`;
-  }
-
-  // YYYY-MM-DD (ISO)
-  const ymd = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
-  if (ymd) return `${ymd[1]}-${ymd[2].padStart(2, "0")}-${ymd[3].padStart(2, "0")}`;
-
-  return null;
-}
-
-function parseTime(val: any): string | null {
-  if (!val) return null;
-  if (typeof val === "number") {
-    const totalMinutes = Math.round(val * 24 * 60);
-    const h = Math.floor(totalMinutes / 60);
-    const m = totalMinutes % 60;
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-  }
-  const s = String(val).trim();
-  const match = s.match(/^(\d{1,2})[:\.](\d{2})/);
-  if (match) return `${match[1].padStart(2, "0")}:${match[2]}`;
-  // Just an hour number like "14" or "9"
-  const hourOnly = s.match(/^(\d{1,2})$/);
-  if (hourOnly) {
-    const h = parseInt(hourOnly[1]);
-    if (h >= 0 && h <= 23) return `${String(h).padStart(2, "0")}:00`;
-  }
-  return null;
-}
+// normalizeKey, findCol, parseExcelDate, parseTime imported from @/lib/importUtils
 
 const DUTCH_MONTHS: Record<string, string> = {
   jan: "01", januari: "01", feb: "02", februari: "02", mrt: "03", maart: "03",
@@ -810,7 +725,10 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
     setResult({ success, errors });
     setImporting(false);
     if (success > 0) {
-      queryClient.invalidateQueries();
+      queryClient.invalidateQueries({ queryKey: staffKeys.all });
+      queryClient.invalidateQueries({ queryKey: clientKeys.all });
+      queryClient.invalidateQueries({ queryKey: programKeys.all });
+      queryClient.invalidateQueries({ queryKey: planningKeys.availability });
       toast({ title: `${success} rij(en) geïmporteerd`, description: errors.length > 0 ? `${errors.length} fout(en)` : undefined });
     }
   };

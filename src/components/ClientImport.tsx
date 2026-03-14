@@ -8,45 +8,22 @@ import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { areaKeys } from "@/lib/queryKeys";
+import { areaKeys, schoolKeys, referrerKeys, clientKeys } from "@/lib/queryKeys";
+import {
+  normalizeKey,
+  findCol,
+  parseExcelDate,
+  findSchoolMatch,
+  findAreaMatch,
+  findReferrerMatch,
+  type EntityRef,
+} from "@/lib/importUtils";
 
 interface ParsedRow {
   [key: string]: any;
 }
 
-function normalizeKey(key: string): string {
-  return key
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]/g, "");
-}
-
-function findCol(row: ParsedRow, ...candidates: string[]): string | undefined {
-  const keys = Object.keys(row);
-  const normalizedCandidates = candidates.map(normalizeKey);
-
-  // Priority 1: exact normalized match
-  for (const c of normalizedCandidates) {
-    const found = keys.find((k) => normalizeKey(k) === c);
-    if (found && row[found] !== undefined && row[found] !== "") return String(row[found]).trim();
-  }
-
-  // Priority 2: starts-with match
-  for (const c of normalizedCandidates) {
-    const found = keys.find((k) => normalizeKey(k).startsWith(c));
-    if (found && row[found] !== undefined && row[found] !== "") return String(row[found]).trim();
-  }
-
-  // Priority 3: contains match
-  for (const c of normalizedCandidates) {
-    if (c.length < 3) continue; // avoid too short matches
-    const found = keys.find((k) => normalizeKey(k).includes(c));
-    if (found && row[found] !== undefined && row[found] !== "") return String(row[found]).trim();
-  }
-
-  return undefined;
-}
+// normalizeKey, findCol, parseExcelDate imported from @/lib/importUtils
 
 /**
  * Detect whether dates in the dataset are in MM/DD (US) or DD/MM (EU) format.
@@ -77,60 +54,7 @@ function detectDateFormat(rows: ParsedRow[]): "mdy" | "dmy" {
   return "dmy"; // Default Dutch
 }
 
-function parseExcelDate(val: any, format: "mdy" | "dmy" = "dmy"): string | null {
-  if (!val) return null;
-
-  // Excel serial number (as number)
-  if (typeof val === "number" && val > 1 && val < 100000) {
-    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
-    const date = new Date(excelEpoch.getTime() + val * 86400000);
-    if (!isNaN(date.getTime())) {
-      return date.toISOString().split("T")[0];
-    }
-  }
-
-  const s = String(val).trim();
-
-  // Excel serial as string (e.g. "45678")
-  if (/^\d{4,5}$/.test(s)) {
-    const num = parseInt(s);
-    if (num > 1 && num < 100000) {
-      const excelEpoch = new Date(Date.UTC(1899, 11, 30));
-      const date = new Date(excelEpoch.getTime() + num * 86400000);
-      if (!isNaN(date.getTime())) return date.toISOString().split("T")[0];
-    }
-  }
-
-  // X/X/XXXX (4-digit year)
-  const full = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
-  if (full) {
-    const [, p1, p2, yr] = full;
-    if (format === "mdy") {
-      return `${yr}-${p1.padStart(2, "0")}-${p2.padStart(2, "0")}`;
-    } else {
-      return `${yr}-${p2.padStart(2, "0")}-${p1.padStart(2, "0")}`;
-    }
-  }
-
-  // X/X/XX (2-digit year)
-  const short = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2})$/);
-  if (short) {
-    const [, p1, p2, yrShort] = short;
-    const yr = parseInt(yrShort);
-    const fullYear = yr + (yr < 50 ? 2000 : 1900);
-    if (format === "mdy") {
-      return `${fullYear}-${p1.padStart(2, "0")}-${p2.padStart(2, "0")}`;
-    } else {
-      return `${fullYear}-${p2.padStart(2, "0")}-${p1.padStart(2, "0")}`;
-    }
-  }
-
-  // YYYY-MM-DD (ISO)
-  const ymd = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
-  if (ymd) return `${ymd[1]}-${ymd[2].padStart(2, "0")}-${ymd[3].padStart(2, "0")}`;
-
-  return null;
-}
+// parseExcelDate imported from @/lib/importUtils
 
 function splitName(fullName: string): { first_name: string; last_name: string } {
   const parts = fullName.trim().split(/\s+/);
@@ -300,7 +224,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
   const queryClient = useQueryClient();
 
   const { data: schools = [] } = useQuery({
-    queryKey: ["schools-import"],
+    queryKey: schoolKeys.all,
     queryFn: async () => {
       const { data } = await supabase.from("schools").select("id, name, neighborhood_id, neighborhoods(area_id)").order("name");
       return data ?? [];
@@ -318,7 +242,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
   });
 
   const { data: referrers = [] } = useQuery({
-    queryKey: ["referrers-import"],
+    queryKey: referrerKeys.all,
     queryFn: async () => {
       const { data } = await supabase.from("referrers").select("id, name, school_id").order("name");
       return data ?? [];
@@ -343,33 +267,11 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     reader.readAsBinaryString(file);
   };
 
-  /** Fuzzy school name matching: exact → contains → best partial → user resolutions */
+  /** Find school ID using shared matching logic */
   const findSchoolId = (name: string | undefined, resolutions?: Record<string, string>): string | null => {
     if (!name) return null;
-    const norm = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-
-    // Check user resolutions first
-    if (resolutions && resolutions[norm]) return resolutions[norm];
-
-    // Exact match
-    const exact = schools.find((s) => s.name.toLowerCase().trim() === norm);
-    if (exact) return exact.id;
-
-    // Contains: school name contains search or search contains school name
-    const contains = schools.find((s) => {
-      const sNorm = s.name.toLowerCase().trim();
-      return sNorm.includes(norm) || norm.includes(sNorm);
-    });
-    if (contains) return contains.id;
-
-    // Starts-with match (first significant word)
-    const firstWord = norm.split(/\s+/)[0];
-    if (firstWord.length >= 3) {
-      const startsWith = schools.find((s) => s.name.toLowerCase().trim().startsWith(firstWord));
-      if (startsWith) return startsWith.id;
-    }
-
-    return null;
+    const match = findSchoolMatch(name, schools as EntityRef[], resolutions);
+    return match?.id ?? null;
   };
 
   /** Scan rows for school names that don't match any known school */
@@ -400,58 +302,18 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     }
   };
 
-  /** Common area abbreviations / aliases */
-  const AREA_ALIASES: Record<string, string[]> = {
-    "hillegersberg-schiebroek": ["his", "hillegersberg", "schiebroek"],
-    "kralingen-crooswijk": ["kralingen", "crooswijk"],
-    "prins alexander": ["prins alexander", "prinsalexander"],
-    "ijsselmonde": ["ijsselmonde"],
-    "hoek van holland": ["hvh", "hoek van holland"],
-  };
-
+  /** Find area ID using shared matching logic */
   const findAreaId = (name: string | undefined): string | null => {
     if (!name) return null;
-    const norm = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-    if (!norm) return null;
-    
-    // Exact match
-    const exact = areas.find((a) => a.name.toLowerCase().trim() === norm);
-    if (exact) return exact.id;
-    
-    // Contains match
-    const contains = areas.find((a) => {
-      const aNorm = a.name.toLowerCase().trim();
-      return aNorm.includes(norm) || norm.includes(aNorm);
-    });
-    if (contains) return contains.id;
-    
-    // Alias match
-    for (const area of areas) {
-      const areaKey = area.name.toLowerCase().trim();
-      const aliases = AREA_ALIASES[areaKey];
-      if (aliases && aliases.some(alias => norm === alias || norm.includes(alias) || alias.includes(norm))) {
-        return area.id;
-      }
-    }
-    
-    return null;
+    const match = findAreaMatch(name, areas as EntityRef[]);
+    return match?.id ?? null;
   };
 
+  /** Find referrer ID using shared matching logic */
   const findReferrerId = (name: string | undefined, schoolId: string | null): string | null => {
     if (!name) return null;
-    const norm = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-    // Try match with same school first
-    if (schoolId) {
-      const sameSchool = referrers.find((r) => r.school_id === schoolId && r.name.toLowerCase().trim() === norm);
-      if (sameSchool) return sameSchool.id;
-    }
-    const exact = referrers.find((r) => r.name.toLowerCase().trim() === norm);
-    if (exact) return exact.id;
-    const contains = referrers.find((r) => {
-      const rNorm = r.name.toLowerCase().trim();
-      return rNorm.includes(norm) || norm.includes(rNorm);
-    });
-    return contains?.id ?? null;
+    const match = findReferrerMatch(name, referrers as any[], schoolId);
+    return match?.id ?? null;
   };
 
   const handleImport = async () => {
@@ -917,7 +779,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     setImporting(false);
 
     if (added > 0 || updated > 0) {
-      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: clientKeys.all });
       const parts = [];
       if (added > 0) parts.push(`${added} toegevoegd`);
       if (updated > 0) parts.push(`${updated} bijgewerkt`);
