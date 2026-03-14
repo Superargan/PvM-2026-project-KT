@@ -282,7 +282,7 @@ export default function PlanningPage() {
 
   const programIds = [...new Set(sessions.map((s: any) => s.program_id))];
   const { data: programStaff = [] } = useQuery({
-    queryKey: ["planning-program-staff", programIds],
+    queryKey: planningKeys.programStaff(programIds),
     enabled: programIds.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase
