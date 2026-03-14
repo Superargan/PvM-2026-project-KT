@@ -1,4 +1,5 @@
 import { differenceInYears, parseISO, addMonths, isAfter } from "date-fns";
+import type { ClientAreaFields, AreaRef, AreaPreferenceRow, ClientAvailabilityRow } from "@/lib/queryShapes";
 
 /**
  * Standaard select-fragment voor alle client-queries die gebiedsresolutie nodig hebben.
@@ -13,13 +14,26 @@ export const CLIENT_AREA_SELECT = `id, first_name, last_name, date_of_birth, wai
  *
  * Keten: waitlist_area_id → lookup in areas array → client.neighborhoods.areas.name → client.schools.neighborhoods.areas.name
  */
-export function getResolvedAreaName(client: any, areas?: { id: string; name: string }[]): string {
+/**
+ * Client-like object with optional area resolution fields.
+ * Record<string, unknown> base allows partial objects from tests and varied select() shapes.
+ */
+export type ClientLike = Record<string, unknown> & {
+  id?: string;
+  waitlist_area_id?: string | null;
+  all_areas_flexible?: boolean;
+  neighborhoods?: { area_id?: string; areas?: { id?: string; name?: string } } | null;
+  schools?: { neighborhoods?: { area_id?: string; areas?: { id?: string; name?: string } } | null } | null;
+};
+
+export function getResolvedAreaName(client: ClientLike, areas?: AreaRef[]): string {
   if (client.waitlist_area_id && areas) {
     const found = areas.find((a) => a.id === client.waitlist_area_id);
     if (found) return found.name;
   }
   // Fallback: direct join op areas via waitlist_area_id (als die in de query zit als `areas:waitlist_area_id(name)`)
-  if ((client as any).areas?.name) return (client as any).areas.name;
+  const clientWithAreas = client as ClientLike & { areas?: { name?: string } };
+  if (clientWithAreas.areas?.name) return clientWithAreas.areas.name;
   // Fallback: neighborhood → area
   if (client.neighborhoods?.areas?.name) return client.neighborhoods.areas.name;
   // Fallback: school → neighborhood → area
@@ -42,14 +56,14 @@ export function getAgeCategoryPlanning(dob: string | null): AgeCategory | null {
   return null;
 }
 
-export function resolveAreaId(client: any): string | null {
+export function resolveAreaId(client: ClientLike): string | null {
   if (client.waitlist_area_id) return client.waitlist_area_id;
   if (client.neighborhoods?.area_id) return client.neighborhoods.area_id;
   return client.schools?.neighborhoods?.area_id ?? null;
 }
 
 export function getMatchType(
-  client: any,
+  client: ClientLike & { id: string },
   targetAreaId: string,
   prefsByClient: Record<string, Record<string, number>>
 ): MatchType | null {

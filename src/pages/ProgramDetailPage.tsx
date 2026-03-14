@@ -277,8 +277,8 @@ export default function ProgramDetailPage() {
             <span className={`status-indicator ${statusInfo.css}`}>{statusInfo.label}</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            {(program as any).training_number && <>{(program as any).training_number} • </>}
-            {(program as any).location && <>{(program as any).location} • </>}
+            {program.training_number && <>{program.training_number} • </>}
+            {program.location && <>{program.location} • </>}
             {program.training_locations?.name && <>{program.training_locations.name} • </>}
             {program.schools?.name && <>{program.schools.name} • </>}
             {program.areas?.name && <>Gebied: {program.areas.name}</>}
@@ -325,7 +325,7 @@ export default function ProgramDetailPage() {
                 const areaId = selectedSchool?.neighborhoods?.area_id ?? null;
                 const { error } = await supabase
                   .from("programs")
-                  .update({ school_id: schoolId, training_location_id: schoolId ? null : (program as any).training_location_id, neighborhood_id: neighborhoodId, area_id: areaId })
+                  .update({ school_id: schoolId, training_location_id: schoolId ? null : program.training_location_id, neighborhood_id: neighborhoodId, area_id: areaId })
                   .eq("id", id!);
                 if (error) {
                   toast({ title: "Fout", description: error.message, variant: "destructive" });
@@ -339,7 +339,7 @@ export default function ProgramDetailPage() {
             />
             {/* Training location selector */}
             <Select
-              value={(program as any).training_location_id ?? "geen"}
+              value={program.training_location_id ?? "geen"}
               onValueChange={async (v) => {
                 const tlId = v === "geen" ? null : v;
                 const tl = trainingLocations.find((t: any) => t.id === tlId);

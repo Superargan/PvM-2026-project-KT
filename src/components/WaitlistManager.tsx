@@ -150,10 +150,10 @@ export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => 
                     <Badge variant="outline" className="text-xs">{ageGroup}</Badge>
                   </TableCell>
                   <TableCell className="text-sm text-card-foreground">
-                    {(client as any).schools?.name ?? "—"}
+                    {client.schools?.name ?? "—"}
                   </TableCell>
                   <TableCell className="text-sm text-card-foreground">
-                    {(client as any).areas?.name ?? "—"}
+                    {(client as { areas?: { name: string } }).areas?.name ?? "—"}
                   </TableCell>
                   <TableCell className="text-sm text-card-foreground">
                     {client.guardian_phone ?? "—"}
