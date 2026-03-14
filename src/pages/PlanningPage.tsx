@@ -829,26 +829,27 @@ export default function PlanningPage() {
                       ))}
 
                       {/* Sessions — compact row */}
-                      {items?.sessions.map((session: any) => {
-                        const prog = (session as any).programs;
-                        const { vaste, invallers } = getStaffForSession(session.program_id, session.id);
+                      {items?.sessions.map((session) => {
+                        const typedSession = session as SessionWithProgram;
+                        const prog = typedSession.programs;
+                        const { vaste, invallers } = getStaffForSession(typedSession.program_id, typedSession.id);
                         return (
                           <div
-                            key={session.id}
+                            key={typedSession.id}
                             className="flex items-center gap-2 rounded-md bg-info-muted border border-info-border px-2.5 py-1.5 cursor-pointer hover:bg-info-muted/80 transition-colors"
-                            onClick={() => navigate(`/programmas/${session.program_id}`)}
+                            onClick={() => navigate(`/programmas/${typedSession.program_id}`)}
                           >
                             <CalendarDays className="h-3.5 w-3.5 text-info-foreground shrink-0" />
                             <span className="text-xs font-semibold text-info-foreground truncate">
-                              {prog?.name ?? "Training"} — S{session.session_number}
+                              {prog?.name ?? "Training"} — S{typedSession.session_number}
                             </span>
                             <span className="text-[10px] text-info-foreground/70 truncate">
                               {prog?.age_category ?? ""} {prog?.areas?.name ? `· ${prog.areas.name}` : ""}
                             </span>
                             <div className="flex gap-0.5 ml-auto shrink-0">
-                              {vaste.slice(0, 2).map((ps: any) => (
-                                <Badge key={ps.staff_id} className={`text-[9px] h-4 ${trainerTypeColors[(ps as any).staff?.trainer_type] ?? "bg-muted text-muted-foreground"}`}>
-                                  {(ps as any).staff?.name?.split(" ")[0] ?? "?"}
+                              {vaste.slice(0, 2).map((ps) => (
+                                <Badge key={ps.staff_id} className={`text-[9px] h-4 ${trainerTypeColors[ps.staff?.trainer_type ?? ""] ?? "bg-muted text-muted-foreground"}`}>
+                                  {ps.staff?.name?.split(" ")[0] ?? "?"}
                                 </Badge>
                               ))}
                               {invallers.length > 0 && (
