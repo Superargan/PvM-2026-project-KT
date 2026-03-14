@@ -254,7 +254,7 @@ export default function PlanningPage() {
 
   const intakeClientIds = intakes.map((i: any) => i.id);
   const { data: intakeAssignments = [] } = useQuery({
-    queryKey: ["planning-intake-assignments", intakeClientIds],
+    queryKey: planningKeys.intakeAssignments(intakeClientIds),
     enabled: intakeClientIds.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase
