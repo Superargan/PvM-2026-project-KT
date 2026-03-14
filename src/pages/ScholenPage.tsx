@@ -16,9 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
-import { getAreaFromAddress } from "@/lib/DomainResolver";
+import { getAreaFromAddress, statusLabels, statusStyles } from "@/lib/DomainResolver";
 import { downloadExport, ExportColumn } from "@/lib/csvExport";
-import { statusLabels, statusStyles } from "@/lib/DomainResolver";
 
 // ── CSV / Outlook helpers ──────────────────────────────────────────────
 

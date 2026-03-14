@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
-import { calculateAge, statusLabels, statusStyles } from "@/lib/clientUtils";
+
 
 function IntakeProgress({ client }: { client: any }) {
   const fields = [
