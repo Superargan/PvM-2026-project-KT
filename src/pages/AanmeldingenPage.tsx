@@ -715,7 +715,7 @@ export default function AanmeldingenPage() {
                         {medewerkers.length > 0 && (
                           <>
                             <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Medewerkers</p>
-                            {medewerkers.map((s: any) => (
+                            {medewerkers.map((s) => (
                               <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                             ))}
                           </>
