@@ -910,7 +910,7 @@ export default function PlanningPage() {
                         </div>
                       )}
                       {sessionCount > 0 && (
-                        <div className="rounded bg-sky-100 px-1 py-0.5 text-[9px] font-medium text-sky-800">
+                        <div className="rounded bg-info-muted px-1 py-0.5 text-[9px] font-medium text-info-foreground">
                           {sessionCount}× sessie
                         </div>
                       )}
