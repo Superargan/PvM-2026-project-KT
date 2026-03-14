@@ -514,17 +514,17 @@ export default function ScholenPage() {
         } else if (s.school_start_time && s.school_end_time) {
           // Existing school — enrich with times only when valid pair provided
           // Follow overwrite policy: only update when import has valid non-empty values
-          updatePromises.push(
-            supabase.from("schools").update({
+          const updateFn = async () => {
+            const { error } = await supabase.from("schools").update({
               school_start_time: s.school_start_time as any,
               school_end_time: s.school_end_time as any,
-            }).eq("id", existing.id).then(({ error }) => {
-              if (!error) {
-                updatedCount++;
-                timesSetCount++;
-              }
-            })
-          );
+            }).eq("id", existing.id);
+            if (!error) {
+              updatedCount++;
+              timesSetCount++;
+            }
+          };
+          updatePromises.push(updateFn());
         }
       }
 
