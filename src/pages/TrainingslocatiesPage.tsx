@@ -19,10 +19,10 @@ export default function TrainingslocatiesPage() {
   const [filterAreaId, setFilterAreaId] = useState<string>("all");
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState<any>(null);
+  const [selectedLocation, setSelectedLocation] = useState<Record<string, unknown> | null>(null);
   const [selectedArea, setSelectedArea] = useState<string>("");
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
-  const [form, setForm] = useState<any>({});
+  const [form, setForm] = useState<{ name: string; address: string; postal_code: string; city: string; notes: string; active: boolean }>({ name: "", address: "", postal_code: "", city: "", notes: "", active: true });
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
