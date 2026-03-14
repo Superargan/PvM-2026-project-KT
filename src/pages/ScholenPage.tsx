@@ -80,7 +80,7 @@ async function readFileAsRows(file: File): Promise<Record<string, any>[]> {
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(buf, { type: "array" });
   const ws = wb.Sheets[wb.SheetNames[0]];
-  return XLSX.utils.sheet_to_json(ws);
+  return XLSX.utils.sheet_to_json(ws, { raw: true, defval: null });
 }
 
 /** Outlook column name mapping → our field keys */

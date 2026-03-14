@@ -59,6 +59,14 @@ export function formatSchoolTimeRange(
 export function parseImportedSchoolTime(value: any): string | null {
   if (value === null || value === undefined) return null;
 
+  // Handle Date objects (XLSX can return these for time cells)
+  if (value instanceof Date) {
+    const h = value.getHours();
+    const m = value.getMinutes();
+    if (h === 0 && m === 0 && value.getSeconds() === 0) return null; // midnight = likely empty
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
+  }
+
   // Excel numeric time (0–1 range)
   if (typeof value === "number") {
     if (value < 0 || value >= 1) return null;
