@@ -197,7 +197,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
           )}
           {matrix.estimatedDob > 0 && (
             <Popover>
-              <PopoverTrigger className="inline-flex items-center rounded-full border px-3 py-1 text-sm font-semibold border-amber-400 text-amber-700 cursor-pointer hover:bg-amber-50">
+              <PopoverTrigger className="inline-flex items-center rounded-full border px-3 py-1 text-sm font-semibold border-warning-border text-warning-foreground cursor-pointer hover:bg-warning-muted">
                   ⚠ {matrix.estimatedDob} geschatte geboortedatum
               </PopoverTrigger>
               <PopoverContent className="w-72 max-h-64 overflow-y-auto p-2" align="start">
