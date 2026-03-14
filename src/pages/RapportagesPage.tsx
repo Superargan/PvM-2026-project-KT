@@ -91,7 +91,7 @@ export default function RapportagesPage() {
   });
 
   const { data: schools = [] } = useQuery({
-    queryKey: ["rpt_schools"],
+    queryKey: schoolKeys.rapportages,
     queryFn: async () => {
       const { data, error } = await supabase.from("schools").select("id, name, address");
       if (error) throw error;

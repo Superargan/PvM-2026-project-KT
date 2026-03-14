@@ -103,7 +103,7 @@ export default function AanmeldingenPage() {
   });
 
   const { data: schools = [] } = useQuery({
-    queryKey: ["schools-list"],
+    queryKey: schoolKeys.dropdown,
     queryFn: async () => {
       const { data, error } = await supabase.from("schools").select("id, name, neighborhood_id, neighborhoods(area_id)").order("name");
       if (error) throw error;

@@ -848,7 +848,7 @@ function GenerateTab() {
   });
 
   const { data: schools = [] } = useQuery({
-    queryKey: ["schools-list"],
+    queryKey: schoolKeys.dropdown,
     queryFn: async () => {
       const { data, error } = await supabase.from("schools").select("id, name").order("name");
       if (error) throw error;

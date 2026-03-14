@@ -27,7 +27,7 @@ export default function Dashboard() {
   });
 
   const { data: schoolCount = 0 } = useQuery({
-    queryKey: ["dashboard-schools"],
+    queryKey: schoolKeys.dashboard,
     queryFn: async () => {
       const { count } = await supabase.from("schools").select("*", { count: "exact", head: true });
       return count ?? 0;
