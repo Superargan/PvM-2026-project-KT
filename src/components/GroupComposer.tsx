@@ -567,10 +567,15 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
   const toggleAll = (g: GroupedClients) => {
     const key = getGroupKey(g);
     const current = getSelectedForGroup(g);
-    if (current.size === g.clients.length) {
+    // Filter out clients already assigned to other groups
+    const availableClients = g.clients.filter(cm => {
+      const assigned = clientGroupAssignment.get(cm.client.id);
+      return !assigned || assigned === key;
+    });
+    if (current.size === availableClients.length) {
       setSelectedClients(prev => ({ ...prev, [key]: new Set() }));
     } else {
-      setSelectedClients(prev => ({ ...prev, [key]: new Set(g.clients.map((cm) => cm.client.id)) }));
+      setSelectedClients(prev => ({ ...prev, [key]: new Set(availableClients.map((cm) => cm.client.id)) }));
     }
   };
 
