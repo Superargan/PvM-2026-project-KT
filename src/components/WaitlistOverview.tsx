@@ -162,8 +162,8 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
   }, [matrix]);
 
   // Count totals for summary
-  const totalIntake = clients.filter((c: any) => c.intake_status === "intake_afgerond").length;
-  const totalWachtlijst = clients.filter((c: any) => c.intake_status === "wachtlijst").length;
+  const totalIntake = clients.filter((c) => c.intake_status === "intake_afgerond").length;
+  const totalWachtlijst = clients.filter((c) => c.intake_status === "wachtlijst").length;
 
   return (
     <TooltipProvider>
