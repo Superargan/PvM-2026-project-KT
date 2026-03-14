@@ -1331,7 +1331,7 @@ export default function ScholenPage() {
                           onChange={(e) => setTimesResolutions((prev) => ({ ...prev, [name]: e.target.value }))}
                         >
                           <option value="">— Overslaan —</option>
-                          {(schools as any[]).map((s) => (
+                          {schools.map((s) => (
                             <option key={s.id} value={s.id}>{s.name}</option>
                           ))}
                         </select>
