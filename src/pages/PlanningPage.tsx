@@ -295,7 +295,7 @@ export default function PlanningPage() {
   });
 
   const { data: allTrainers = [] } = useQuery({
-    queryKey: ["planning-trainers"],
+    queryKey: planningKeys.trainers,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("staff")
