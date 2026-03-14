@@ -1033,13 +1033,13 @@ export default function ScholenPage() {
       if (uploadError) throw uploadError;
 
       const { data: { user } } = await supabase.auth.getUser();
-      const { error: dbError } = await supabase.from("school_documents" as any).insert({
+      const { error: dbError } = await supabase.from("school_documents").insert({
         school_id: selectedSchool.id,
         category,
         file_name: file.name,
         file_path: filePath,
-        uploaded_by: user?.id,
-      } as any);
+        uploaded_by: user?.id ?? "",
+      });
       if (dbError) throw dbError;
 
       toast({ title: "Document geüpload" });
