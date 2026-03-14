@@ -1575,9 +1575,9 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                   
                   if (suggestions.length === 0) {
                     return (
-                      <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 flex items-center gap-2">
-                        <CalendarClock className="h-4 w-4 text-amber-600 shrink-0" />
-                        <p className="text-xs text-amber-800">Geen overlappend moment gevonden. {clientsWithAvail}/{selected.size} aanmelders hebben beschikbaarheid.</p>
+                      <div className="rounded-lg border border-warning-border bg-warning-muted/50 p-3 flex items-center gap-2">
+                        <CalendarClock className="h-4 w-4 text-warning shrink-0" />
+                        <p className="text-xs text-warning-foreground">Geen overlappend moment gevonden. {clientsWithAvail}/{selected.size} aanmelders hebben beschikbaarheid.</p>
                       </div>
                     );
                   }
