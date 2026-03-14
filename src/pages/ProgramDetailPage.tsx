@@ -146,7 +146,7 @@ export default function ProgramDetailPage() {
           .neq("program_id", id!);
 
         if (otherEnrollments && otherEnrollments.length > 0) {
-          const otherProgramIds = otherEnrollments.map((e: any) => e.program_id);
+          const otherProgramIds = otherEnrollments.map((e) => e.program_id);
           const { data: otherSessions } = await supabase
             .from("program_sessions")
             .select("session_date, start_time, end_time, program_id")
