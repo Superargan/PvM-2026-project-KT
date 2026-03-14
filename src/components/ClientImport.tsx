@@ -539,7 +539,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       const availMap = chunk.map((r: any) => {
         const avail = r.__availability ?? [];
         delete r.__availability;
-        return avail as ParsedAvailability[];
+        return avail as ParsedAvailabilityLocal[];
       });
       const { data: insertedRows, error } = await supabase.from("clients").insert(chunk).select("id");
       if (error) {
