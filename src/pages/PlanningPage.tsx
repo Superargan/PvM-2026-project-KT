@@ -850,7 +850,7 @@ export default function PlanningPage() {
                                 </Badge>
                               ))}
                               {invallers.length > 0 && (
-                                <Badge variant="outline" className="text-[9px] h-4 border-orange-300 text-orange-700">
+                                <Badge variant="outline" className="text-[9px] h-4 border-warning-border text-warning-foreground">
                                   +{invallers.length} inval
                                 </Badge>
                               )}
