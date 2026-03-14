@@ -249,7 +249,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                     <div className="flex items-center gap-1">
                       <span className="text-sm text-foreground">{slots.length}</span>
                       {slots.some((s: any) => s.conversion_status === "gelukt") && (
-                        <Badge variant="outline" className="text-[9px] border-emerald-300 text-emerald-700">
+                        <Badge variant="outline" className="text-[9px] border-success-border text-success-foreground">
                           {slots.filter((s: any) => s.conversion_status === "gelukt").length}✓
                         </Badge>
                       )}
