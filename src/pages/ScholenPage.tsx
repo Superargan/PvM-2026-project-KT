@@ -1,4 +1,5 @@
 import { School, Search, Plus, MapPin, Loader2, Upload, Users, Trash2, Pencil, UserPlus, Wand2, FileText, Globe, Download, X } from "lucide-react";
+import SchoolDuplicateWarning from "@/components/SchoolDuplicateWarning";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -153,6 +154,7 @@ export default function ScholenPage() {
   const [docUploading, setDocUploading] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
   const [addScheduleType, setAddScheduleType] = useState<string>("");
+  const [addSchoolName, setAddSchoolName] = useState<string>("");
   const [editSaving, setEditSaving] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -974,7 +976,7 @@ export default function ScholenPage() {
           </Dialog>
 
           {/* Add school dialog */}
-          <Dialog open={addOpen} onOpenChange={setAddOpen}>
+          <Dialog open={addOpen} onOpenChange={(open) => { setAddOpen(open); if (!open) { setAddSchoolName(""); setAddScheduleType(""); } }}>
             <DialogTrigger asChild>
               <Button><Plus className="h-4 w-4" /> School Toevoegen</Button>
             </DialogTrigger>
@@ -983,7 +985,8 @@ export default function ScholenPage() {
                 <DialogTitle>Nieuwe School</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleAddSchool} className="space-y-4">
-                <div><Label>Naam *</Label><Input name="name" required /></div>
+                <div><Label>Naam *</Label><Input name="name" required value={addSchoolName} onChange={(e) => setAddSchoolName(e.target.value)} /></div>
+                <SchoolDuplicateWarning name={addSchoolName} schools={schools} />
                 <div><Label>Adres</Label><Input name="address" onBlur={(e) => autoDetectNeighborhood(e.target.value)} /></div>
                 <div>
                   <Label>Gebied</Label>
@@ -1453,6 +1456,7 @@ export default function ScholenPage() {
               <Label>Naam *</Label>
               <Input value={editForm.name ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, name: e.target.value }))} required />
             </div>
+            <SchoolDuplicateWarning name={editForm.name ?? ""} excludeId={selectedSchool?.id} schools={schools} />
             <div>
               <Label>Adres</Label>
               <Input value={editForm.address ?? ""} onChange={(e) => { setEditForm((f: any) => ({ ...f, address: e.target.value })); }} onBlur={(e) => autoDetectNeighborhood(e.target.value)} />
