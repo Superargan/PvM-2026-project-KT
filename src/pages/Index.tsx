@@ -9,9 +9,10 @@ export default function Dashboard() {
     queryKey: ["clients", "dashboard", "participants"],
     queryFn: async () => {
       const { count } = await supabase
-        .from("program_clients")
-        .select("*, clients!inner(archived)", { count: "exact", head: true })
-        .eq("clients.archived", false);
+        .from("clients")
+        .select("*", { count: "exact", head: true })
+        .eq("archived", false)
+        .in("intake_status", ["actief", "training_afgerond", "tussentijds_gestopt"]);
       return count ?? 0;
     },
   });
@@ -68,6 +69,7 @@ export default function Dashboard() {
       const { count } = await supabase
         .from("clients")
         .select("*", { count: "exact", head: true })
+        .eq("archived", false)
         .not("waitlist_status", "is", null);
       return count ?? 0;
     },
