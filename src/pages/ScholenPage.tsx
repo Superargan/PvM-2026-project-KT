@@ -1706,6 +1706,73 @@ export default function ScholenPage() {
         );
       })()}
 
+      {/* Bulk delete bar */}
+      {selectedSchoolIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-xl border border-border bg-card px-5 py-3 shadow-lg">
+          <span className="text-sm font-medium text-card-foreground">{selectedSchoolIds.size} school{selectedSchoolIds.size === 1 ? "" : "en"} geselecteerd</span>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => {
+              const toDelete = (schools as any[]).filter((s) => selectedSchoolIds.has(s.id));
+              initiateDelete(toDelete);
+            }}
+          >
+            <Trash2 className="h-4 w-4" /> Verwijderen
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setSelectedSchoolIds(new Set())}>
+            Deselecteren
+          </Button>
+        </div>
+      )}
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Scholen verwijderen</DialogTitle>
+            <DialogDescription>Bevestig de verwijdering van de onderstaande scholen.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {schoolsToDelete.map((school) => {
+              const b = deleteBlockers[school.id];
+              const blocked = b && (b.clients > 0 || b.programs > 0);
+              return (
+                <div key={school.id} className={`flex items-start justify-between rounded-lg border p-3 ${blocked ? "border-destructive/30 bg-destructive/5" : "border-border"}`}>
+                  <div>
+                    <p className="text-sm font-medium text-card-foreground">{school.name}</p>
+                    {school.address && <p className="text-xs text-muted-foreground">{school.address}</p>}
+                  </div>
+                  {blocked && (
+                    <div className="flex items-center gap-1.5 text-xs text-destructive shrink-0">
+                      <AlertTriangleIcon className="h-3.5 w-3.5" />
+                      {b.clients > 0 && <span>{b.clients} deelnemer{b.clients > 1 ? "s" : ""}</span>}
+                      {b.programs > 0 && <span>{b.programs} training{b.programs > 1 ? "en" : ""}</span>}
+                    </div>
+                  )}
+                  {!blocked && <span className="text-xs text-muted-foreground">Kan verwijderd worden</span>}
+                </div>
+              );
+            })}
+            {schoolsToDelete.some((s) => { const b = deleteBlockers[s.id]; return b && (b.clients > 0 || b.programs > 0); }) && (
+              <p className="text-xs text-muted-foreground">
+                Scholen met gekoppelde deelnemers of trainingen worden <strong>niet</strong> verwijderd.
+              </p>
+            )}
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>Annuleren</Button>
+            <Button
+              variant="destructive"
+              onClick={executeDelete}
+              disabled={deleting || schoolsToDelete.every((s) => { const b = deleteBlockers[s.id]; return b && (b.clients > 0 || b.programs > 0); })}
+            >
+              {deleting ? <><Loader2 className="h-4 w-4 animate-spin" /> Verwijderen...</> : <><Trash2 className="h-4 w-4" /> Verwijderen</>}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Contact person management dialog */}
       <Dialog open={contactDialogOpen} onOpenChange={(open) => {
         setContactDialogOpen(open);
