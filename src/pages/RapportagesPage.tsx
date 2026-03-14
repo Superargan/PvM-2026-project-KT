@@ -238,16 +238,16 @@ export default function RapportagesPage() {
     const program = programMap.get(programId);
     if (!program) return;
 
-    const pClients = programClients.filter((pc: any) => pc.program_id === programId);
-    const pSessions = sessions.filter((s: any) => s.program_id === programId);
+    const pClients = programClients.filter((pc) => pc.program_id === programId);
+    const pSessions = sessions.filter((s) => s.program_id === programId);
     const trainers = programStaff
-      .filter((ps: any) => ps.program_id === programId && ps.role !== "invaller")
-      .map((ps: any) => (ps.staff as any)?.name ?? "")
+      .filter((ps) => ps.program_id === programId && ps.role !== "invaller")
+      .map((ps) => (ps.staff as { name: string | null; trade_name: string | null } | null)?.name ?? "")
       .filter(Boolean);
 
     // Build attendance per client
     const clientAttendance = new Map<string, { total: number; present: number }>();
-    attendance.forEach((a: any) => {
+    attendance.forEach((a) => {
       const progId = sessionProgramMap.get(a.session_id);
       if (progId !== programId) return;
       if (!clientAttendance.has(a.client_id)) clientAttendance.set(a.client_id, { total: 0, present: 0 });
