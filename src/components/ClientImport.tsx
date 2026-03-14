@@ -54,60 +54,7 @@ function detectDateFormat(rows: ParsedRow[]): "mdy" | "dmy" {
   return "dmy"; // Default Dutch
 }
 
-function parseExcelDate(val: any, format: "mdy" | "dmy" = "dmy"): string | null {
-  if (!val) return null;
-
-  // Excel serial number (as number)
-  if (typeof val === "number" && val > 1 && val < 100000) {
-    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
-    const date = new Date(excelEpoch.getTime() + val * 86400000);
-    if (!isNaN(date.getTime())) {
-      return date.toISOString().split("T")[0];
-    }
-  }
-
-  const s = String(val).trim();
-
-  // Excel serial as string (e.g. "45678")
-  if (/^\d{4,5}$/.test(s)) {
-    const num = parseInt(s);
-    if (num > 1 && num < 100000) {
-      const excelEpoch = new Date(Date.UTC(1899, 11, 30));
-      const date = new Date(excelEpoch.getTime() + num * 86400000);
-      if (!isNaN(date.getTime())) return date.toISOString().split("T")[0];
-    }
-  }
-
-  // X/X/XXXX (4-digit year)
-  const full = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
-  if (full) {
-    const [, p1, p2, yr] = full;
-    if (format === "mdy") {
-      return `${yr}-${p1.padStart(2, "0")}-${p2.padStart(2, "0")}`;
-    } else {
-      return `${yr}-${p2.padStart(2, "0")}-${p1.padStart(2, "0")}`;
-    }
-  }
-
-  // X/X/XX (2-digit year)
-  const short = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2})$/);
-  if (short) {
-    const [, p1, p2, yrShort] = short;
-    const yr = parseInt(yrShort);
-    const fullYear = yr + (yr < 50 ? 2000 : 1900);
-    if (format === "mdy") {
-      return `${fullYear}-${p1.padStart(2, "0")}-${p2.padStart(2, "0")}`;
-    } else {
-      return `${fullYear}-${p2.padStart(2, "0")}-${p1.padStart(2, "0")}`;
-    }
-  }
-
-  // YYYY-MM-DD (ISO)
-  const ymd = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
-  if (ymd) return `${ymd[1]}-${ymd[2].padStart(2, "0")}-${ymd[3].padStart(2, "0")}`;
-
-  return null;
-}
+// parseExcelDate imported from @/lib/importUtils
 
 function splitName(fullName: string): { first_name: string; last_name: string } {
   const parts = fullName.trim().split(/\s+/);
