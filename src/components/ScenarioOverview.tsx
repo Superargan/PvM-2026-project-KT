@@ -143,6 +143,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
     } else {
       toast({ title: "Scenario verwijderd" });
       queryClient.invalidateQueries({ queryKey: scenarioKeys.all });
+      onScenarioDeleted?.(deleteId);
     }
     setDeleteId(null);
   };
