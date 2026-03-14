@@ -1951,7 +1951,7 @@ export default function ScholenPage() {
               <Select value={selectedNeighborhood} onValueChange={setSelectedNeighborhood} disabled={!selectedArea}>
                 <SelectTrigger><SelectValue placeholder={selectedArea ? "Selecteer een wijk..." : "Kies eerst een gebied"} /></SelectTrigger>
                 <SelectContent className="bg-popover">
-                  {filteredNeighborhoods.map((n: any) => (
+                  {filteredNeighborhoods.map((n) => (
                     <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>
                   ))}
                 </SelectContent>
