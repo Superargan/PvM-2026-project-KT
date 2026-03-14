@@ -1189,7 +1189,7 @@ function GeneratedDocsTab() {
   const signedFileRef = useRef<HTMLInputElement>(null);
 
   const { data: documents = [], isLoading } = useQuery({
-    queryKey: ["generated-documents"],
+    queryKey: documentKeys.generated,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("generated_documents")
