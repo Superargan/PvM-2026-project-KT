@@ -77,7 +77,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
       const { data, error } = await supabase
         .from("simulation_scenarios")
         .select(`
-          id, name, description, status, validation_status, validation_details, last_validated_at, created_at, updated_at,
+          id, name, description, status, proforma_number, validation_status, validation_details, last_validated_at, created_at, updated_at,
           simulation_scenario_slots (
             id, conversion_status, converted_program_id, conversion_error, label, confirmed
           )
