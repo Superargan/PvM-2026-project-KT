@@ -43,9 +43,9 @@ const trainerTypeLabels: Record<string, string> = {
 };
 
 const trainerTypeColors: Record<string, string> = {
-  oudertrainer: "bg-purple-100 text-purple-800",
-  kindtrainer: "bg-sky-100 text-sky-800",
-  beide: "bg-indigo-100 text-indigo-800",
+  oudertrainer: "bg-role-muted text-role-foreground",
+  kindtrainer: "bg-info-muted text-info-foreground",
+  beide: "bg-role-muted text-role-foreground",
 };
 
 type ViewMode = "week" | "maand";

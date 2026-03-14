@@ -15,7 +15,7 @@ const colorMap = {
   geel: "bg-kanjer-geel/10 text-kanjer-geel",
   blauw: "bg-kanjer-blauw/10 text-kanjer-blauw",
   groen: "bg-kanjer-groen/10 text-kanjer-groen",
-  oranje: "bg-amber-100 text-amber-700",
+  oranje: "bg-warning-muted text-warning-foreground",
 };
 
 export default function StatCard({ title, value, subtitle, icon, color, to }: StatCardProps) {

@@ -19,8 +19,8 @@ const statusLabels: Record<string, string> = {
   dropped_out: "Uitgevallen",
 };
 const statusColors: Record<string, string> = {
-  waiting: "bg-amber-100 text-amber-800",
-  dropped_out: "bg-red-100 text-red-800",
+  waiting: "bg-warning-muted text-warning-foreground",
+  dropped_out: "bg-destructive/10 text-destructive",
 };
 
 export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => void }) {
