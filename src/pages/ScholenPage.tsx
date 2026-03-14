@@ -1082,7 +1082,7 @@ export default function ScholenPage() {
     return blockers;
   };
 
-  const initiateDelete = async (schoolList: any[]) => {
+  const initiateDelete = async (schoolList: SchoolListRow[]) => {
     const blockers = await checkDeleteBlockers(schoolList.map((s) => s.id));
     setDeleteBlockers(blockers);
     setSchoolsToDelete(schoolList);
