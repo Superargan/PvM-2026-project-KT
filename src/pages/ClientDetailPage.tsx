@@ -100,7 +100,7 @@ export default function ClientDetailPage() {
 
   // Fetch programs for this client
   const { data: programs = [] } = useQuery({
-    queryKey: ["client-programs", id],
+    queryKey: clientKeys.programs(id!),
     queryFn: async () => {
       const { data } = await supabase
         .from("program_clients")
