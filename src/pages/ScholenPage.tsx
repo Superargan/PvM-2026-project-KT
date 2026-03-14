@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { schoolKeys, invalidateAllSchoolQueries } from "@/lib/queryKeys";
 import { formatSchoolTimeRange, validateSchoolTimePair, parseImportedSchoolTime, findMatchingColumn, normalizeSchoolName, dbTimeToInput, inputTimeToDb, SCHOOL_START_TIME_COLUMNS, SCHOOL_END_TIME_COLUMNS, SCHEDULE_TYPE_COLUMNS, SOURCE_COLUMNS, MUNICIPALITY_COLUMNS, getEffectiveMunicipality } from "@/lib/schoolTimes";
+import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -155,6 +156,7 @@ export default function ScholenPage() {
   const [editForm, setEditForm] = useState<any>({});
   const [addScheduleType, setAddScheduleType] = useState<string>("");
   const [addSchoolName, setAddSchoolName] = useState<string>("");
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -941,6 +943,10 @@ export default function ScholenPage() {
             </DialogContent>
           </Dialog>
 
+          <Button variant="outline" onClick={() => setDuplicateDialogOpen(true)}>
+            <AlertTriangle className="h-4 w-4" /> Check Duplicaten
+          </Button>
+
           {/* School upload dialog */}
           <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
             <DialogTrigger asChild>
@@ -1613,6 +1619,63 @@ export default function ScholenPage() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Duplicate check dialog */}
+      <Dialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Duplicaten Check</DialogTitle>
+            <DialogDescription>Scholen met vergelijkbare namen</DialogDescription>
+          </DialogHeader>
+          {(() => {
+            const groups: { key: string; items: any[] }[] = [];
+            const seen = new Map<string, any[]>();
+            for (const s of schools) {
+              const norm = normalizeSchoolName(s.name ?? "");
+              if (!norm) continue;
+              if (!seen.has(norm)) seen.set(norm, []);
+              seen.get(norm)!.push(s);
+            }
+            for (const [key, items] of seen) {
+              if (items.length > 1) groups.push({ key, items });
+            }
+            if (groups.length === 0) {
+              return (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="text-sm">Geen duplicaten gevonden ✓</p>
+                </div>
+              );
+            }
+            return (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">{groups.length} groep{groups.length !== 1 ? "en" : ""} met mogelijke duplicaten gevonden.</p>
+                {groups.map((g) => (
+                  <div key={g.key} className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-700 p-3 space-y-2">
+                    <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
+                      <AlertTriangle className="h-4 w-4 shrink-0" />
+                      <span className="text-sm font-semibold">{g.items.length} scholen met naam "{g.items[0].name}"</span>
+                    </div>
+                    <div className="space-y-1">
+                      {g.items.map((s: any) => (
+                        <div key={s.id} className="flex items-center gap-2 text-sm">
+                          <span className="font-medium">{s.name}</span>
+                          {s.address && <span className="text-muted-foreground text-xs">{s.address}</span>}
+                          {s.neighborhoods?.areas?.name && (
+                            <Badge variant="outline" className="text-[10px]">{s.neighborhoods.areas.name}</Badge>
+                          )}
+                          <Button variant="ghost" size="sm" className="h-6 text-xs ml-auto" onClick={() => { setDuplicateDialogOpen(false); openEditSchool(s); }}>
+                            <Pencil className="h-3 w-3 mr-1" /> Bewerken
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
