@@ -658,7 +658,7 @@ function ProgramDocumentGenerator({ programId }: { programId: string }) {
       }
       toast({ title: `${eligibleTrainers.length} overeenkomst(en) gegenereerd en gedownload` });
     } catch (err: unknown) {
-      toast({ title: "Fout bij genereren", description: err.message, variant: "destructive" });
+      toast({ title: "Fout bij genereren", description: err instanceof Error ? err.message : "Onbekende fout", variant: "destructive" });
     } finally {
       setGenerating(false);
     }
