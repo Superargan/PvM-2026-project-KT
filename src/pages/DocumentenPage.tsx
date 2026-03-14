@@ -156,7 +156,7 @@ function TemplatesTab() {
       setBuilderName("");
       setBuilderCategory("overig");
       setBuilderContent("");
-      queryClient.invalidateQueries({ queryKey: ["document-templates"] });
+      queryClient.invalidateQueries({ queryKey: documentKeys.templates });
     },
     onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
