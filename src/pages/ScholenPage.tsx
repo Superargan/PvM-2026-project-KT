@@ -413,7 +413,7 @@ export default function ScholenPage() {
         if (!school.address) continue;
         const areaName = getAreaFromAddress(school.address);
         if (!areaName) continue;
-        const area = areas.find((a: any) => a.name === areaName);
+        const area = areas.find((a) => a.name === areaName);
         if (!area || !area.neighborhoods?.length) continue;
         const neighborhoodId = area.neighborhoods[0].id;
         const { error } = await supabase
