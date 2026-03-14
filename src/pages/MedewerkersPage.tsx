@@ -238,7 +238,7 @@ export default function MedewerkersPage() {
 
   // Delete generated document
   const deleteDocMutation = useMutation({
-    mutationFn: async (doc: any) => {
+    mutationFn: async (doc: { id: string; file_path: string }) => {
       await supabase.storage.from("generated-documents").remove([doc.file_path]);
       const { error } = await supabase.from("generated_documents").delete().eq("id", doc.id);
       if (error) throw error;
