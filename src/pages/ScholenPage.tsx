@@ -1001,7 +1001,7 @@ export default function ScholenPage() {
       setSelectedSchoolTemplateId("");
       refetchSchoolGenDocs();
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast({ title: "Fout", description: err.message, variant: "destructive" });
     },
   });
