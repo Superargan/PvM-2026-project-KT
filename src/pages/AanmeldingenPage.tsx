@@ -143,7 +143,7 @@ export default function AanmeldingenPage() {
   });
 
   const { data: availablePrograms = [] } = useQuery({
-    queryKey: ["available-programs"],
+    queryKey: programKeys.available,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("programs")
