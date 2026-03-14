@@ -91,7 +91,7 @@ export default function InvoiceManager({ staffId, staffName }: { staffId?: strin
         file_path: path,
         amount: amount ? parseFloat(amount) : null,
         notes: notes || null,
-      } as any);
+      });
       if (dbError) throw dbError;
 
       toast.success("Factuur geüpload");
