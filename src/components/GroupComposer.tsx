@@ -234,7 +234,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
   const getSuggestions = (clientIds: Set<string>) => getTopAvailabilityOverlaps(clientIds, availByClient, 3, 90);
 
   const { data: allTrainers = [] } = useQuery({
-    queryKey: ["group-composer-trainers"],
+    queryKey: staffKeys.trainers,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("staff")
