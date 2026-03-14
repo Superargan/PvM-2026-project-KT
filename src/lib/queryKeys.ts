@@ -65,6 +65,10 @@ export const staffKeys = {
   trainers: ["staff", "trainers"] as const,
   trainerPrograms: (trainerId?: string) => ["staff", "trainer-programs", trainerId] as const,
   trainerDocs: (trainerId?: string) => ["staff", "trainer-docs", trainerId] as const,
+  /** Trainings (programs) linked to a specific trainer */
+  trainerTrainings: (staffId: string) => ["staff", "trainer-trainings", staffId] as const,
+  /** Programs for invoice dropdown */
+  trainerProgramsForInvoice: (staffId?: string) => ["staff", "trainer-programs-invoice", staffId] as const,
 };
 
 /** Document query keys */
