@@ -22,6 +22,8 @@ interface ClientListTableProps {
   /** Extra column rendered after status */
   renderActions?: (client: any) => React.ReactNode;
   emptyMessage?: string;
+  /** Show training column with program_clients data (definitieve programma's only) */
+  showTraining?: boolean;
 }
 
 export default function ClientListTable({
