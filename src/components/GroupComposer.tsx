@@ -1040,6 +1040,9 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     const currentKey = getGroupKey(group);
     const assignedTo = clientGroupAssignment.get(client.id);
     const isAssignedElsewhere = !!assignedTo && assignedTo !== currentKey;
+    const isCheckedHere = selected.has(client.id);
+    // Only disable if assigned elsewhere AND not checked here (allow unchecking)
+    const isDisabled = isAssignedElsewhere && !isCheckedHere;
     const isInProgram = programClientIds.has(client.id);
 
     // Build label for the other group
@@ -1057,15 +1060,15 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
           <TooltipTrigger asChild>
             <label
               className={`flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors ${
-                isAssignedElsewhere
+                isDisabled
                   ? "opacity-50 cursor-not-allowed"
                   : "hover:bg-muted/50 cursor-pointer"
               }`}
             >
               <Checkbox
-                checked={selected.has(client.id)}
+                checked={isCheckedHere}
                 onCheckedChange={() => toggleClient(group, client.id)}
-                disabled={isAssignedElsewhere}
+                disabled={isDisabled}
               />
               <span className="text-sm text-foreground truncate">
                 {client.first_name} {client.last_name}
