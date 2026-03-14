@@ -721,7 +721,7 @@ export default function ScholenPage() {
         runTimesImport(rows, {});
       }
     } catch (err: unknown) {
-      toast({ title: "Fout bij lezen", description: err.message, variant: "destructive" });
+      toast({ title: "Fout bij lezen", description: err instanceof Error ? err.message : "Onbekende fout", variant: "destructive" });
     }
   };
 
