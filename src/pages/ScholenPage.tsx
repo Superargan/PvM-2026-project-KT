@@ -613,6 +613,7 @@ export default function ScholenPage() {
       setImportResult({
         added: result.addedNames,
         updated: result.updatedNames,
+        unmatched: [],
         timesSet: result.timesSet,
         invalidTimes: result.invalidTimes,
         municipalitySet: result.municipalitySet,
