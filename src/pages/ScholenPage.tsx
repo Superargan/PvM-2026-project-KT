@@ -1388,7 +1388,7 @@ export default function ScholenPage() {
                       <SelectValue placeholder={selectedArea ? "Selecteer een wijk..." : "Kies eerst een gebied"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {filteredNeighborhoods.map((n: any) => (
+                      {filteredNeighborhoods.map((n) => (
                         <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>
                       ))}
                     </SelectContent>
