@@ -83,7 +83,7 @@ export function useScenarioActions(deps: ScenarioActionsDeps) {
         p_name: deps.scenarioName,
         p_description: deps.scenarioDescription || null,
         p_status: deps.scenarioStatus,
-        p_slots: slots as unknown as Parameters<typeof supabase.rpc<"save_scenario">>[1] extends { p_slots?: infer T } ? T : never,
+        p_slots: slots as unknown as Json,
       });
 
       if (error) throw error;
