@@ -880,7 +880,7 @@ export default function ScholenPage() {
         : undefined;
       toast({ title: `${imported} contactpersonen geïmporteerd`, description: desc });
       setContactUploadOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["schools"] });
+      queryClient.invalidateQueries({ queryKey: schoolKeys.all });
     },
     onError: (err: any) => {
       toast({ title: "Import mislukt", description: err.message, variant: "destructive" });
