@@ -1856,7 +1856,7 @@ export default function ScholenPage() {
             {/* Schoolgids upload */}
             <div className="space-y-2">
               <p className="text-sm font-medium text-card-foreground">Schoolgids</p>
-              {(schoolDocs as any[]).filter((d: any) => d.category === "schoolgids").map((doc: any) => (
+              {schoolDocs.filter((d) => d.category === "schoolgids").map((doc) => (
                 <div key={doc.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-2">
                   <button
                     type="button"
