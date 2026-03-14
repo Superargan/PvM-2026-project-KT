@@ -122,7 +122,7 @@ export default function InvoiceManager({ staffId, staffName }: { staffId?: strin
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const handleDownload = async (inv: any) => {
+  const handleDownload = async (inv: InvoiceRow) => {
     const { data, error } = await supabase.storage.from("invoices").download(inv.file_path);
     if (error || !data) { toast.error("Download mislukt"); return; }
     const url = URL.createObjectURL(data);
