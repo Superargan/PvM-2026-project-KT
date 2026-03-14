@@ -466,7 +466,7 @@ export default function ClientDetailPage() {
                         <p className="text-sm text-card-foreground py-2">{range}</p>
                       </Field>
                     )}
-                    {municipality && municipality !== "Rotterdam" && (
+                    {municipality && municipality !== DEFAULT_MUNICIPALITY && (
                       <Field label="Gemeente">
                         <p className="text-sm text-card-foreground py-2">{municipality}</p>
                       </Field>
