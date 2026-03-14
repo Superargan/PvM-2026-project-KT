@@ -187,7 +187,7 @@ export default function SessionDetails({ session, programId, isBackoffice = true
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["session_documents", session.id] });
+      qc.invalidateQueries({ queryKey: programKeys.sessionDocs(session.id) });
       toast({ title: "Document verwijderd" });
     },
     onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),

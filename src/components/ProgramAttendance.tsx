@@ -210,7 +210,7 @@ export default function ProgramAttendance({
           programStartDate={programStartDate}
           programEndDate={programEndDate}
           existingSessions={sessions}
-          onGenerated={() => qc.invalidateQueries({ queryKey: ["program_sessions", programId] })}
+          onGenerated={() => qc.invalidateQueries({ queryKey: programKeys.sessions(programId) })}
         />
 
         {/* Status filter */}
