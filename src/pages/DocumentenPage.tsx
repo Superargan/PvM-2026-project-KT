@@ -839,7 +839,7 @@ function GenerateTab() {
   });
 
   const { data: staffList = [] } = useQuery({
-    queryKey: ["staff-list"],
+    queryKey: staffKeys.trainers,
     queryFn: async () => {
       const { data, error } = await supabase.from("staff").select("id, name, trade_name").eq("archived", false).order("name");
       if (error) throw error;
