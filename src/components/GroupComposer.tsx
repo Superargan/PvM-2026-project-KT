@@ -720,7 +720,9 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     }
   };
 
-  // Expose save + active simulation state to parent via ref (T07-T10)
+  const hasUnsavedWork = simulatedGroups.size > 0 || isDirty;
+
+  // Expose save + active simulation state to parent via ref
   useImperativeHandle(ref, () => ({
     triggerSave: async () => {
       if (scenarioName.trim()) {
@@ -731,7 +733,8 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     },
     hasActiveSimulation: isSimulating,
     isDirty,
-  }), [isSimulating, scenarioName, isDirty]);
+    hasUnsavedWork,
+  }), [isSimulating, scenarioName, isDirty, hasUnsavedWork]);
 
   // === SCENARIO CONVERT ===
   const handleConvert = async () => {
