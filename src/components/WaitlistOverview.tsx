@@ -56,7 +56,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
     },
   });
 
-  const prefsByClient = useMemo(() => buildPrefsByClientMap(allPreferences as any), [allPreferences]);
+  const prefsByClient = useMemo(() => buildPrefsByClientMap(allPreferences), [allPreferences]);
 
   const ageCategories: AgeCategory[] = ["4-7 jaar", "8-12 jaar"];
 
