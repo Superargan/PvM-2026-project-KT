@@ -586,3 +586,101 @@ Bij het aanmaken van een groep:
 7. Scenario-validatie
 8. Rapportages
 9. Tests
+
+---
+
+# Gemeente (Municipality) — Audit & Beleidsregels
+
+## Import Parity Verification
+
+A specific comparison was performed between the municipality import behavior and other existing import flows in the repository to ensure functional parity.
+
+The following aspects were verified:
+
+| Aspect | Status |
+|--------|--------|
+| Column detection logic | Uses `findMatchingColumn()` with `MUNICIPALITY_COLUMNS` alias list |
+| Case normalization | Case-insensitive matching applied |
+| Column alias handling | Municipality supports common aliases (`gemeente`, `municipality`, `city`, `woonplaats`) |
+| Import overwrite safety | Existing explicit municipality values are never overwritten by blank values |
+| Invalid value handling | Invalid municipality values are skipped and counted |
+| Import summary reporting | Municipality updates included in import summary metrics |
+| Duplicate record detection | Uses the same identifier hierarchy as other imports |
+| Import enrichment behavior | Consistent with other enrichment-only imports |
+
+Conclusion: municipality import behavior is aligned with the existing import architecture and does not introduce weaker matching behavior compared to other import pipelines.
+
+## Ambiguity Handling Policy
+
+Import matching never silently guesses when multiple possible matches exist.
+
+The following rules apply:
+
+| Condition | Behavior |
+|-----------|----------|
+| Unique high-confidence match | Record is updated |
+| Multiple possible matches | Record skipped and counted as ambiguous |
+| No reliable match | Record skipped and counted as unresolved |
+| Invalid municipality value | Record skipped and counted as invalid |
+
+This prevents destructive updates caused by fuzzy matching errors.
+
+## Municipality Import Enrichment Policy
+
+Municipality imports follow an **enrichment-only policy**.
+
+Rules:
+
+- Municipality values are only written when the existing value is null.
+- Existing explicit municipality values are never overwritten by imports.
+- Imports cannot be used to correct existing municipality values.
+- Corrections must be performed through the manual school edit interface.
+
+This policy prevents accidental data corruption during bulk imports.
+
+## SSOT Integrity Verification
+
+The repository was inspected to confirm that municipality data is stored in exactly one authoritative location.
+
+Verification results:
+
+| Check | Result |
+|-------|--------|
+| Municipality stored only on `schools.municipality` | Confirmed |
+| No duplicate municipality field on clients | Confirmed |
+| Client municipality display derived via `getEffectiveMunicipality()` | Confirmed |
+| No persisted derived municipality values | Confirmed |
+| No duplicate municipality storage in forms or import staging models | Confirmed |
+| Municipality resolution centralized in `schoolTimes.ts` | Confirmed |
+
+Conclusion: the system follows a strict single-source-of-truth model for municipality ownership.
+
+## Default Municipality Consistency
+
+`DEFAULT_MUNICIPALITY` is defined in `schoolTimes.ts` and used as the canonical default.
+
+Raw `"Rotterdam"` string comparisons should be replaced with the constant where possible to avoid drift if the default ever changes.
+
+Recommended minor refactor:
+
+- Replace `"Rotterdam"` comparison in `ClientDetailPage.tsx` with `DEFAULT_MUNICIPALITY`.
+
+## Import Safety Test Coverage
+
+Tests verify the following scenarios:
+
+| Scenario | Covered |
+|----------|---------|
+| Exact municipality column match | Yes |
+| Alias column match (`gemeente`, `city`, etc.) | Yes |
+| Blank municipality import | Yes |
+| Invalid municipality value | Yes |
+| Import enrichment only | Yes |
+| Existing municipality protected from overwrite | Yes |
+| Municipality export correctness | Yes |
+
+These tests ensure municipality imports remain safe and predictable.
+
+## Centralisatie
+
+All municipality behavior is centralized through `schoolTimes.ts`, preventing drift between UI, imports, exports, and display logic.
