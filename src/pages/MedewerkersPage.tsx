@@ -142,7 +142,7 @@ export default function MedewerkersPage() {
         .from("program_staff")
         .select("program_id, programs(id, name)")
         .eq("staff_id", docTrainerId);
-      return (data ?? []).map((ps: any) => ps.programs).filter(Boolean);
+      return (data ?? []).map((ps) => ps.programs).filter(Boolean);
     },
     enabled: !!docTrainerId && docDialogOpen,
   });
