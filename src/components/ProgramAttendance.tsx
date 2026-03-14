@@ -81,7 +81,7 @@ export default function ProgramAttendance({
         .select("client_id, clients(id, first_name, last_name)")
         .eq("program_id", programId);
       if (error) throw error;
-      return (data ?? []).map((pc: any) => pc.clients).filter(Boolean);
+      return (data ?? []).map((pc) => pc.clients).filter(Boolean);
     },
   });
 
