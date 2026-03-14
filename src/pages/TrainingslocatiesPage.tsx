@@ -56,7 +56,7 @@ export default function TrainingslocatiesPage() {
   });
 
   const filteredNeighborhoods = selectedArea
-    ? (areas.find((a: any) => a.id === selectedArea) as any)?.neighborhoods ?? []
+    ? (areas.find((a) => a.id === selectedArea) as { neighborhoods?: { id: string; name: string }[] } | undefined)?.neighborhoods ?? []
     : [];
 
   const filteredLocations = locations.filter((loc: any) => {
