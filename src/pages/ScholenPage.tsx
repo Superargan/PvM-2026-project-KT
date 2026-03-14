@@ -1973,7 +1973,7 @@ export default function ScholenPage() {
             </div>
             <div>
               <Label>Aantal leerlingen</Label>
-              <Input type="number" min="0" value={editForm.student_count ?? 0} onChange={(e) => setEditForm((f: any) => ({ ...f, student_count: e.target.value }))} />
+              <Input type="number" min="0" value={editForm.student_count ?? 0} onChange={(e) => setEditForm((f) => ({ ...f, student_count: Number(e.target.value) }))} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
