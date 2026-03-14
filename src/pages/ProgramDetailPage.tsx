@@ -226,7 +226,7 @@ export default function ProgramDetailPage() {
     mutationFn: async (enrollmentId: string) => {
       const { error } = await supabase
         .from("program_clients")
-        .update({ early_dropout: false, dropout_reason: null, dropout_action: null } as any)
+        .update({ early_dropout: false, dropout_reason: null, dropout_action: null })
         .eq("id", enrollmentId);
       if (error) throw error;
     },
