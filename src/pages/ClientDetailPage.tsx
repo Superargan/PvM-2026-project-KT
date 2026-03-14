@@ -164,7 +164,7 @@ export default function ClientDetailPage() {
     onSuccess: (data) => {
       toast({ title: "Document gegenereerd", description: data.file_name });
       setSelectedTemplateId("");
-      queryClient.invalidateQueries({ queryKey: ["client-generated-docs", id] });
+      queryClient.invalidateQueries({ queryKey: clientKeys.generatedDocs(id!) });
     },
     onError: (err: any) => {
       toast({ title: "Fout", description: err.message, variant: "destructive" });
