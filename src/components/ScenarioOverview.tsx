@@ -189,7 +189,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {scenarios.map((scenario: any) => {
+            {scenarios.map((scenario) => {
               const slots = scenario.simulation_scenario_slots ?? [];
               const isStale = scenario.last_validated_at &&
                 differenceInHours(new Date(), parseISO(scenario.last_validated_at)) > 24;
