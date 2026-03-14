@@ -1003,6 +1003,19 @@ export default function ScholenPage() {
                   <div><Label>Schooltijd begin</Label><Input name="school_start_time" type="time" /></div>
                   <div><Label>Schooltijd eind</Label><Input name="school_end_time" type="time" /></div>
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Roostertype</Label>
+                    <Select name="schedule_type">
+                      <SelectTrigger><SelectValue placeholder="Selecteer..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="traditioneel">Traditioneel</SelectItem>
+                        <SelectItem value="continu">Continu</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>Bron</Label><Input name="source" placeholder="bijv. DUO, handmatig" /></div>
+                </div>
                 <Button type="submit" className="w-full">Opslaan</Button>
               </form>
             </DialogContent>
