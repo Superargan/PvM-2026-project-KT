@@ -503,8 +503,8 @@ export default function ClientDetailPage() {
               allAreasFlexible={form.all_areas_flexible ?? false}
               onAllAreasFlexibleChange={(v) => updateField("all_areas_flexible", v)}
               areas={areas}
-              areaNotes={(form as any).area_notes ?? ""}
-              onAreaNotesChange={(v) => updateField("area_notes" as any, v)}
+              areaNotes={form.area_notes ?? ""}
+              onAreaNotesChange={(v) => updateField("area_notes", v)}
             />
 
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t border-border pt-4">Ouder/Verzorger</p>
