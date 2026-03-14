@@ -1120,7 +1120,41 @@ export default function ScholenPage() {
             </DialogContent>
           </Dialog>
 
-          {/* Add school dialog */}
+          {/* School times only upload dialog */}
+          <Dialog open={timesUploadOpen} onOpenChange={setTimesUploadOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline"><Clock className="h-4 w-4" /> Schooltijden Importeren</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Schooltijden Importeren</DialogTitle>
+                <DialogDescription>Update alleen bestaande scholen — er worden geen nieuwe scholen aangemaakt.</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Upload een Excel of CSV-bestand met een kolom <strong>Naam</strong> en tijdkolommen zoals <strong>Schooltijd begin</strong> en <strong>Schooltijd eind</strong>.
+                  Optioneel: Rooster, Bron, Gemeente. Scholen die niet in het systeem staan worden gerapporteerd maar <em>niet</em> aangemaakt.
+                </p>
+                <div className="flex items-center justify-center rounded-lg border-2 border-dashed border-border p-8">
+                  <label className="flex cursor-pointer flex-col items-center gap-2 text-center">
+                    <Clock className="h-8 w-8 text-muted-foreground" />
+                    <span className="text-sm font-medium text-foreground">
+                      {timesUploadMutation.isPending ? "Bezig met importeren..." : "Klik om bestand te kiezen"}
+                    </span>
+                    <span className="text-xs text-muted-foreground">.xlsx, .xls of .csv</span>
+                    <input
+                      type="file"
+                      accept=".xlsx,.xls,.csv"
+                      className="hidden"
+                      onChange={handleTimesFileUpload}
+                      disabled={timesUploadMutation.isPending}
+                    />
+                  </label>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           <Dialog open={addOpen} onOpenChange={(open) => { setAddOpen(open); if (!open) { setAddSchoolName(""); setAddScheduleType(""); } }}>
             <DialogTrigger asChild>
               <Button><Plus className="h-4 w-4" /> School Toevoegen</Button>
