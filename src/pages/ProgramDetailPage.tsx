@@ -675,7 +675,7 @@ function ProgramDocumentGenerator({ programId }: { programId: string }) {
             <SelectValue placeholder="Kies een template..." />
           </SelectTrigger>
           <SelectContent className="bg-popover">
-            {templates.map((t: any) => (
+            {templates.map((t) => (
               <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
             ))}
           </SelectContent>
