@@ -217,7 +217,7 @@ export default function ScholenPage() {
 
   // Fetch program counts per school
   const { data: programsBySchool = [] } = useQuery({
-    queryKey: ["programs-by-school"],
+    queryKey: programKeys.bySchool,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("programs")
