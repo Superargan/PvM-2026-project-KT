@@ -699,9 +699,9 @@ export default function AanmeldingenPage() {
                 </SelectTrigger>
                 <SelectContent className="bg-popover">
                   {(() => {
-                    const available = staffList.filter((s: any) => !assignments.some((a: any) => a.staff_id === s.id));
-                    const trainers = available.filter((s: any) => !s.user_id);
-                    const medewerkers = available.filter((s: any) => !!s.user_id);
+                    const available = staffList.filter((s) => !assignments.some((a) => a.staff_id === s.id));
+                    const trainers = available.filter((s) => !s.user_id);
+                    const medewerkers = available.filter((s) => !!s.user_id);
                     return (
                       <>
                         {trainers.length > 0 && (
