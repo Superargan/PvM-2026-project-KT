@@ -322,7 +322,7 @@ export default function ProgramDetailPage() {
               value={program.school_id ?? "geen"}
               onValueChange={async (v) => {
                 const schoolId = v === "geen" ? null : v;
-                const selectedSchool = schools.find((s: any) => s.id === schoolId);
+                const selectedSchool = schools.find((s) => s.id === schoolId);
                 const neighborhoodId = selectedSchool?.neighborhood_id ?? null;
                 const areaId = selectedSchool?.neighborhoods?.area_id ?? null;
                 const { error } = await supabase
