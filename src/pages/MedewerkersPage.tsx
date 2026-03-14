@@ -217,7 +217,7 @@ export default function MedewerkersPage() {
   const generateDocMutation = useMutation({
     mutationFn: async () => {
       if (!selectedTemplateId || !docTrainerId) throw new Error("Selecteer een template");
-      const body: any = { template_id: selectedTemplateId, staff_id: docTrainerId };
+      const body: Record<string, string> = { template_id: selectedTemplateId, staff_id: docTrainerId };
       if (selectedProgramId) body.program_id = selectedProgramId;
       const { data, error } = await supabase.functions.invoke("generate-document", {
         body,
