@@ -376,7 +376,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
                       </TableCell>
                       <TableCell>
                         {v.result === "voldoende" && (
-                          <Badge variant="outline" className="text-[10px] border-emerald-400 text-emerald-700 gap-1">
+                          <Badge variant="outline" className="text-[10px] border-success-border text-success-foreground gap-1">
                             <CheckCircle2 className="h-3 w-3" /> Voldoende
                           </Badge>
                         )}
