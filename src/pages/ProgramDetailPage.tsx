@@ -40,7 +40,7 @@ export default function ProgramDetailPage() {
   const [dropoutAction, setDropoutAction] = useState("");
   // Fetch program
   const { data: program, isLoading } = useQuery({
-    queryKey: ["program", id],
+    queryKey: programKeys.detail(id!),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("programs")
