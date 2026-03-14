@@ -98,7 +98,7 @@ export default function SessionDetails({ session, programId, isBackoffice = true
     setSessionDate(pendingDate);
     setOverrideOpen(false);
     setOverrideReason("");
-    qc.invalidateQueries({ queryKey: ["program_sessions", programId] });
+    qc.invalidateQueries({ queryKey: programKeys.sessions(programId) });
     toast({ title: "Sessie vrijgegeven met override" });
   };
 
