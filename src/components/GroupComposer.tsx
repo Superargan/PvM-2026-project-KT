@@ -1920,7 +1920,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
           </DialogHeader>
           <div className="space-y-2">
             {(convertResultDialog ?? []).map((result: any, idx: number) => (
-              <div key={idx} className={`rounded-lg border p-3 ${result.status === "gelukt" ? "border-emerald-300 bg-emerald-50" : "border-red-300 bg-red-50"}`}>
+              <div key={idx} className={`rounded-lg border p-3 ${result.status === "gelukt" ? "border-success-border bg-success-muted" : "border-destructive/30 bg-destructive/5"}`}>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold">
                     Slot {result.label ?? idx + 1}
