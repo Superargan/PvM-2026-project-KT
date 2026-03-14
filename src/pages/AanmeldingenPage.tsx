@@ -325,7 +325,7 @@ export default function AanmeldingenPage() {
 
   // Clients visible on the active tab – used for export & selection
   const visibleClients = activeTab === "intake_afgerond"
-    ? clients.filter((c: any) => c.intake_status === "intake_afgerond")
+    ? clients.filter((c) => c.intake_status === "intake_afgerond")
     : filteredClients;
 
   const [exportOpen, setExportOpen] = useState(false);
