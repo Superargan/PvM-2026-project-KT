@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { areaKeys, schoolKeys } from "@/lib/queryKeys";
+import { areaKeys, schoolKeys, clientKeys, rapportageKeys, documentKeys } from "@/lib/queryKeys";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -46,7 +46,7 @@ export default function RapportagesPage() {
 
   // Fetch all required data
   const { data: clients = [], isLoading: cl } = useQuery({
-    queryKey: ["clients", "rapportages"],
+    queryKey: clientKeys.rapportages,
     queryFn: async () => {
       const { data, error } = await supabase.from("clients").select("id, first_name, last_name, created_at, registration_date, date_of_birth, gender, school_id, postal_code, address, city, guardian_name, guardian_phone, guardian_email").eq("archived", false);
       if (error) throw error;
@@ -55,7 +55,7 @@ export default function RapportagesPage() {
   });
 
   const { data: programClients = [], isLoading: pcl } = useQuery({
-    queryKey: ["rpt_program_clients"],
+    queryKey: rapportageKeys.programClients,
     queryFn: async () => {
       const { data, error } = await supabase.from("program_clients").select("*");
       if (error) throw error;
@@ -64,7 +64,7 @@ export default function RapportagesPage() {
   });
 
   const { data: programs = [], isLoading: prl } = useQuery({
-    queryKey: ["rpt_programs"],
+    queryKey: rapportageKeys.programs,
     queryFn: async () => {
       const { data, error } = await supabase.from("programs").select("id, name, area_id, school_id, training_location_id, start_date, end_date, status, age_category, max_participants, areas(name), schools(name, address), training_locations(name, address)").eq("archived", false);
       if (error) throw error;
@@ -73,7 +73,7 @@ export default function RapportagesPage() {
   });
 
   const { data: sessions = [], isLoading: sl } = useQuery({
-    queryKey: ["rpt_sessions"],
+    queryKey: rapportageKeys.sessions,
     queryFn: async () => {
       const { data, error } = await supabase.from("program_sessions").select("id, program_id, session_number");
       if (error) throw error;
@@ -82,7 +82,7 @@ export default function RapportagesPage() {
   });
 
   const { data: attendance = [], isLoading: al } = useQuery({
-    queryKey: ["rpt_attendance"],
+    queryKey: rapportageKeys.attendance,
     queryFn: async () => {
       const { data, error } = await supabase.from("attendance").select("session_id, client_id, present");
       if (error) throw error;
@@ -109,7 +109,7 @@ export default function RapportagesPage() {
   });
 
   const { data: programStaff = [] } = useQuery({
-    queryKey: ["rpt_program_staff"],
+    queryKey: rapportageKeys.programStaff,
     queryFn: async () => {
       const { data, error } = await supabase.from("program_staff").select("program_id, staff_id, role, staff:staff!program_staff_staff_id_fkey(name, trade_name)");
       if (error) throw error;
@@ -118,7 +118,7 @@ export default function RapportagesPage() {
   });
 
   const { data: generatedDocs = [] } = useQuery({
-    queryKey: ["rpt_generated_docs"],
+    queryKey: rapportageKeys.generatedDocs,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("generated_documents")
@@ -130,7 +130,7 @@ export default function RapportagesPage() {
   });
 
   const { data: docTemplates = [] } = useQuery({
-    queryKey: ["rpt_doc_templates"],
+    queryKey: rapportageKeys.docTemplates,
     queryFn: async () => {
       const { data, error } = await supabase.from("document_templates").select("id, name, category");
       if (error) throw error;
@@ -860,7 +860,7 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
       }
 
       toast({ title: "Document aangemaakt", description: data.file_name });
-      queryClient.invalidateQueries({ queryKey: ["rpt_generated_docs"] });
+      queryClient.invalidateQueries({ queryKey: rapportageKeys.generatedDocs });
     } catch (err: any) {
       toast({ title: "Fout bij aanmaken", description: err.message, variant: "destructive" });
     } finally {

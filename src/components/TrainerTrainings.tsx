@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { staffKeys } from "@/lib/queryKeys";
 import { Badge } from "@/components/ui/badge";
 import { CalendarCheck, CalendarClock, Loader2 } from "lucide-react";
 
 export default function TrainerTrainings({ staffId }: { staffId: string }) {
   const { data, isLoading } = useQuery({
-    queryKey: ["trainer-trainings", staffId],
+    queryKey: staffKeys.trainerTrainings(staffId),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("program_staff")

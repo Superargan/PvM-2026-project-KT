@@ -2,7 +2,7 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { areaKeys, clientKeys, schoolKeys, documentKeys } from "@/lib/queryKeys";
+import { areaKeys, clientKeys, schoolKeys, documentKeys, referrerKeys, auditKeys } from "@/lib/queryKeys";
 import { formatSchoolTimeRange, getEffectiveMunicipality, DEFAULT_MUNICIPALITY } from "@/lib/schoolTimes";
 import { getResolvedAreaName } from "@/lib/clientUtils";
 import { useEffect, useState } from "react";
@@ -58,7 +58,7 @@ export default function ClientDetailPage() {
 
   // Fetch client
   const { data: client, isLoading } = useQuery({
-    queryKey: ["clients", "detail", id],
+    queryKey: clientKeys.detail(id!),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
@@ -82,7 +82,7 @@ export default function ClientDetailPage() {
 
   // Fetch referrers
   const { data: referrers = [] } = useQuery({
-    queryKey: ["referrers-list"],
+    queryKey: referrerKeys.dropdown,
     queryFn: async () => {
       const { data } = await supabase.from("referrers").select("id, name, function_title, school_id").order("name");
       return data ?? [];
@@ -100,7 +100,7 @@ export default function ClientDetailPage() {
 
   // Fetch programs for this client
   const { data: programs = [] } = useQuery({
-    queryKey: ["client-programs", id],
+    queryKey: clientKeys.programs(id!),
     queryFn: async () => {
       const { data } = await supabase
         .from("program_clients")
@@ -113,7 +113,7 @@ export default function ClientDetailPage() {
 
   // Fetch audit log
   const { data: auditLog = [] } = useQuery({
-    queryKey: ["client-audit", id],
+    queryKey: auditKeys.forClient(id!),
     queryFn: async () => {
       const { data } = await supabase
         .from("audit_log")
@@ -137,7 +137,7 @@ export default function ClientDetailPage() {
 
   // Fetch generated documents for this client
   const { data: generatedDocs = [] } = useQuery({
-    queryKey: ["client-generated-docs", id],
+    queryKey: clientKeys.generatedDocs(id!),
     queryFn: async () => {
       const { data } = await supabase
         .from("generated_documents")
@@ -164,7 +164,7 @@ export default function ClientDetailPage() {
     onSuccess: (data) => {
       toast({ title: "Document gegenereerd", description: data.file_name });
       setSelectedTemplateId("");
-      queryClient.invalidateQueries({ queryKey: ["client-generated-docs", id] });
+      queryClient.invalidateQueries({ queryKey: clientKeys.generatedDocs(id!) });
     },
     onError: (err: any) => {
       toast({ title: "Fout", description: err.message, variant: "destructive" });
@@ -291,8 +291,8 @@ export default function ClientDetailPage() {
     onSuccess: () => {
       toast({ title: "Opgeslagen" });
       setDirty(false);
-      queryClient.invalidateQueries({ queryKey: ["clients"] });
-      queryClient.invalidateQueries({ queryKey: ["client-audit", id] });
+      queryClient.invalidateQueries({ queryKey: clientKeys.all });
+      queryClient.invalidateQueries({ queryKey: auditKeys.forClient(id!) });
     },
     onError: (err: any) => {
       toast({ title: "Fout", description: err.message, variant: "destructive" });
@@ -315,7 +315,7 @@ export default function ClientDetailPage() {
     },
     onSuccess: () => {
       toast({ title: "Deelnemer verwijderd" });
-      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: clientKeys.all });
       navigate("/clienten");
     },
     onError: (err: any) => {

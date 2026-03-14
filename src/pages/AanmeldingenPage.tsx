@@ -130,7 +130,7 @@ export default function AanmeldingenPage() {
   });
 
   const { data: assignments = [], refetch: refetchAssignments } = useQuery({
-    queryKey: ["client-assignments", editClient?.id],
+    queryKey: clientKeys.assignments(editClient?.id),
     enabled: !!editClient?.id,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -284,7 +284,7 @@ export default function AanmeldingenPage() {
     toast({ title: "Aanmelding bijgewerkt" });
     setEditOpen(false);
     queryClient.invalidateQueries({ queryKey: ["clients"] });
-    queryClient.invalidateQueries({ queryKey: ["client-assignments"] });
+    queryClient.invalidateQueries({ queryKey: clientKeys.assignments() });
   };
 
   const handleWaitlist = async (clientId: string, waitlistStatus: string, areaId?: string) => {

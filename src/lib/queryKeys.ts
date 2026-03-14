@@ -29,6 +29,12 @@ export const clientKeys = {
   overrideLogs: ["clients", "override-logs"] as const,
   /** All client availability (unpaginated) — single source of truth */
   allAvailability: ["clients", "all-availability"] as const,
+  /** Programs linked to a specific client */
+  programs: (clientId: string) => ["clients", "programs", clientId] as const,
+  /** Generated docs for a specific client */
+  generatedDocs: (clientId: string) => ["clients", "generated-docs", clientId] as const,
+  /** Assignments for a specific client */
+  assignments: (clientId?: string) => ["clients", "assignments", clientId] as const,
 };
 
 /** Shared area query key — use everywhere */
@@ -59,6 +65,10 @@ export const staffKeys = {
   trainers: ["staff", "trainers"] as const,
   trainerPrograms: (trainerId?: string) => ["staff", "trainer-programs", trainerId] as const,
   trainerDocs: (trainerId?: string) => ["staff", "trainer-docs", trainerId] as const,
+  /** Trainings (programs) linked to a specific trainer */
+  trainerTrainings: (staffId: string) => ["staff", "trainer-trainings", staffId] as const,
+  /** Programs for invoice dropdown */
+  trainerProgramsForInvoice: (staffId?: string) => ["staff", "trainer-programs-invoice", staffId] as const,
 };
 
 /** Document query keys */
@@ -91,6 +101,30 @@ export const locationKeys = {
 export const referrerKeys = {
   all: ["referrers"] as const,
   list: ["referrers", "list"] as const,
+  dropdown: ["referrers", "dropdown"] as const,
+};
+
+/** Attendance query keys */
+export const attendanceKeys = {
+  all: ["attendance"] as const,
+  rapportages: ["attendance", "rapportages"] as const,
+};
+
+/** Audit log query keys */
+export const auditKeys = {
+  all: ["audit"] as const,
+  forClient: (clientId: string) => ["audit", "client", clientId] as const,
+};
+
+/** Rapportages-specific composite query keys */
+export const rapportageKeys = {
+  programClients: ["rapportages", "program-clients"] as const,
+  programs: ["rapportages", "programs"] as const,
+  sessions: ["rapportages", "sessions"] as const,
+  attendance: ["rapportages", "attendance"] as const,
+  programStaff: ["rapportages", "program-staff"] as const,
+  generatedDocs: ["rapportages", "generated-docs"] as const,
+  docTemplates: ["rapportages", "doc-templates"] as const,
 };
 
 /** Invoice query keys */

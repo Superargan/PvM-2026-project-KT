@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { invoiceKeys } from "@/lib/queryKeys";
+import { invoiceKeys, staffKeys } from "@/lib/queryKeys";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +32,7 @@ export default function InvoiceManager({ staffId, staffName }: { staffId?: strin
 
   // Fetch invoices
   const { data: invoices = [], isLoading } = useQuery({
-    queryKey: ["invoices", staffId],
+    queryKey: invoiceKeys.all,
     queryFn: async () => {
       let query = supabase
         .from("invoices")
@@ -47,7 +47,7 @@ export default function InvoiceManager({ staffId, staffName }: { staffId?: strin
 
   // Fetch completed programs for this trainer
   const { data: trainerPrograms = [] } = useQuery({
-    queryKey: ["trainer-programs-for-invoice", staffId],
+    queryKey: staffKeys.trainerProgramsForInvoice(staffId),
     queryFn: async () => {
       if (!staffId) return [];
       const { data, error } = await supabase
