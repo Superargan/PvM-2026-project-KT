@@ -312,9 +312,10 @@ export default function AanmeldingenPage() {
     },
   });
 
-  const assignmentsByClient = allAssignments.reduce((acc: Record<string, string[]>, a: any) => {
+  const assignmentsByClient = allAssignments.reduce((acc: Record<string, string[]>, a) => {
     if (!acc[a.client_id]) acc[a.client_id] = [];
-    if (a.staff?.name) acc[a.client_id].push(a.staff.name);
+    const staffName = (a.staff as { name: string | null } | null)?.name;
+    if (staffName) acc[a.client_id].push(staffName);
     return acc;
   }, {});
 
