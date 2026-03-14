@@ -35,7 +35,7 @@ export default function Dashboard() {
   });
 
   const { data: newClientCount = 0 } = useQuery({
-    queryKey: ["clients", "dashboard", "new"],
+    queryKey: clientKeys.dashboard("new"),
     queryFn: async () => {
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
