@@ -1178,6 +1178,9 @@ export default function ScholenPage() {
                       </Button>
                     </div>
                   </td>
+                  <td className="hidden px-5 py-4 lg:table-cell text-center">
+                    <span className="text-xs text-card-foreground">{formatSchoolTimeRange((school as any).school_start_time, (school as any).school_end_time)}</span>
+                  </td>
                   <td className="px-5 py-4 text-right">
                     <span className="font-display text-sm font-bold text-card-foreground">{school.student_count ?? 0}</span>
                   </td>
