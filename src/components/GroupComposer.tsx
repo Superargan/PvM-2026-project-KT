@@ -1724,9 +1724,9 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
         return (
           <>
             {noArea.length > 0 && (
-              <Card className="border-amber-200 bg-amber-50/50">
+              <Card className="border-warning-border bg-warning-muted/50">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-semibold text-amber-800">
+                  <CardTitle className="text-sm font-semibold text-warning-foreground">
                     <AlertTriangle className="h-4 w-4 inline mr-1" />
                     Aanmelders zonder gebied ({noArea.length})
                   </CardTitle>
@@ -1734,7 +1734,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                 <CardContent>
                   <div className="flex flex-wrap gap-1">
                     {noArea.map((c: any) => (
-                      <Badge key={c.id} variant="outline" className="text-xs border-amber-300 text-amber-700 cursor-pointer hover:bg-amber-100" onClick={() => navigate(`/clienten/${c.id}`)}>
+                      <Badge key={c.id} variant="outline" className="text-xs border-warning-border text-warning-foreground cursor-pointer hover:bg-warning-muted" onClick={() => navigate(`/clienten/${c.id}`)}>
                         {c.first_name} {c.last_name}
                       </Badge>
                     ))}
