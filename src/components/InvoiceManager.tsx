@@ -32,7 +32,7 @@ export default function InvoiceManager({ staffId, staffName }: { staffId?: strin
 
   // Fetch invoices
   const { data: invoices = [], isLoading } = useQuery({
-    queryKey: ["invoices", staffId],
+    queryKey: invoiceKeys.all,
     queryFn: async () => {
       let query = supabase
         .from("invoices")
