@@ -315,14 +315,14 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                                   {validationLabels[sr.status] ?? sr.status}
                                 </Badge>
                               </div>
-                              {(sr.slotIssues ?? []).length > 0 && (
+                              {((sr as Record<string, unknown>).slotIssues as string[] ?? []).length > 0 && (
                                 <ul className="list-disc list-inside text-destructive mb-1">
-                                  {sr.slotIssues.map((issue: string, j: number) => (
+                                  {((sr as Record<string, unknown>).slotIssues as string[]).map((issue: string, j: number) => (
                                     <li key={j}>{issue}</li>
                                   ))}
                                 </ul>
                               )}
-                              {(sr.memberResults ?? []).filter((mr: any) => mr.issues?.length > 0).map((mr: any) => (
+                              {((sr as Record<string, unknown>).memberResults as Array<{clientId: string; status: string; issues: string[]}> ?? []).filter((mr) => mr.issues?.length > 0).map((mr) => (
                                 <div key={mr.clientId} className="flex items-start gap-1.5 ml-3 mt-0.5">
                                   <span className="text-muted-foreground">•</span>
                                   <span className="text-foreground font-medium">{mr.clientId.slice(0, 8)}…</span>
