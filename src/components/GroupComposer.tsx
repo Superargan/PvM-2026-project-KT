@@ -1298,7 +1298,13 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
           const intakeClients = group.clients.filter(cm => cm.client.intake_status === "intake_afgerond");
           const wachtlijstClients_ = group.clients.filter(cm => cm.client.intake_status !== "intake_afgerond");
           const showReserve = expandedReserve.has(key);
-          const reserveCandidates = showReserve ? getReserveCandidates(group) : [];
+          // Always compute reserve candidates so we can show selected ones in main list
+          const allReserveCandidates = getReserveCandidates(group);
+          const primaryClientIds = new Set(group.clients.map(cm => cm.client.id));
+          // Selected reserves: reserve candidates that are checked in this group
+          const selectedReserves = allReserveCandidates.filter(cm => selected.has(cm.client.id) && !primaryClientIds.has(cm.client.id));
+          // Unselected reserves: only show in reserve section
+          const unselectedReserves = allReserveCandidates.filter(cm => !selected.has(cm.client.id));
           const isGroupSimulated = simulatedGroups.has(key);
 
           return (
@@ -1327,6 +1333,9 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                       {wachtlijstClients_.length > 0 && (
                         <span className="text-orange-700 ml-1">· {wachtlijstClients_.length} wachtlijst</span>
                       )}
+                      {selectedReserves.length > 0 && (
+                        <span className="text-purple-700 ml-1">· {selectedReserves.length} uit reserve</span>
+                      )}
                     </p>
                   </div>
                   <Badge className={`${status.color} gap-1`}>
@@ -1346,7 +1355,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                       {selected.size === group.clients.length ? "Deselecteer alles" : "Selecteer alles"}
                     </button>
                   </div>
-                  <div className="max-h-56 overflow-y-auto space-y-0.5 pr-1">
+                  <div className="max-h-72 overflow-y-auto space-y-0.5 pr-1">
                     {intakeClients.length > 0 && (
                       <>
                         <div className="text-[10px] font-semibold text-blue-700 uppercase tracking-wider px-2 pt-1 pb-0.5">
@@ -1361,6 +1370,15 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                           Wachtlijst ({wachtlijstClients_.length})
                         </div>
                         {wachtlijstClients_.map(cm => renderClientRow(cm, group, selected))}
+                      </>
+                    )}
+                    {selectedReserves.length > 0 && (
+                      <>
+                        <div className="text-[10px] font-semibold text-purple-700 uppercase tracking-wider px-2 pt-2 pb-0.5 flex items-center gap-1">
+                          <Search className="h-2.5 w-2.5" />
+                          Uit reservegebied ({selectedReserves.length})
+                        </div>
+                        {selectedReserves.map(cm => renderClientRow(cm, group, selected))}
                       </>
                     )}
                   </div>
@@ -1379,13 +1397,13 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                 {showReserve && (
                   <div className="rounded-lg border border-border bg-muted/20 p-2 space-y-1">
                     <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-1">
-                      Extra kandidaten via reservegebied ({reserveCandidates.length})
+                      Extra kandidaten via reservegebied ({unselectedReserves.length})
                     </p>
-                    {reserveCandidates.length === 0 ? (
+                    {unselectedReserves.length === 0 ? (
                       <p className="text-xs text-muted-foreground px-1 py-1">Geen extra kandidaten gevonden.</p>
                     ) : (
                       <div className="max-h-32 overflow-y-auto space-y-0.5">
-                        {reserveCandidates.map(cm => renderClientRow(cm, group, selected))}
+                        {unselectedReserves.map(cm => renderClientRow(cm, group, selected))}
                       </div>
                     )}
                   </div>
