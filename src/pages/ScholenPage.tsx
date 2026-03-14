@@ -1758,7 +1758,7 @@ export default function ScholenPage() {
             {/* Existing referrers */}
             {selectedSchoolReferrers.length > 0 ? (
               <div className="space-y-2">
-                {selectedSchoolReferrers.map((ref: any) => (
+                {selectedSchoolReferrers.map((ref) => (
                   <div key={ref.id} className="flex items-start justify-between gap-2 rounded-lg border border-border p-3">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-card-foreground">{ref.name}</p>
