@@ -970,6 +970,10 @@ export default function ScholenPage() {
                 </div>
                 <div><Label>Website</Label><Input name="website_url" type="url" placeholder="https://..." /></div>
                 <div><Label>Aantal leerlingen</Label><Input name="student_count" type="number" min="0" /></div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div><Label>Schooltijd begin</Label><Input name="school_start_time" type="time" /></div>
+                  <div><Label>Schooltijd eind</Label><Input name="school_end_time" type="time" /></div>
+                </div>
                 <Button type="submit" className="w-full">Opslaan</Button>
               </form>
             </DialogContent>
