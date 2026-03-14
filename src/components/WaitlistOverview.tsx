@@ -174,14 +174,14 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
             <Users className="h-3.5 w-3.5 mr-1.5" />
             {clients.length} totaal
           </Badge>
-          <Badge variant="outline" className="text-sm px-3 py-1 border-blue-300 text-blue-700">
+          <Badge variant="outline" className="text-sm px-3 py-1 border-info-border text-info-foreground">
             {totalIntake} intake afgerond
           </Badge>
-          <Badge variant="outline" className="text-sm px-3 py-1 border-orange-300 text-orange-700">
+          <Badge variant="outline" className="text-sm px-3 py-1 border-warning-border text-warning-foreground">
             {totalWachtlijst} wachtlijst
           </Badge>
           {matrix.noArea > 0 && (
-            <Badge variant="outline" className="text-sm px-3 py-1 border-amber-400 text-amber-700">
+            <Badge variant="outline" className="text-sm px-3 py-1 border-warning-border text-warning-foreground">
               {matrix.noArea} zonder gebied
             </Badge>
           )}
@@ -191,7 +191,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
             </Badge>
           )}
           {matrix.outsideRange > 0 && (
-            <Badge variant="outline" className="text-sm px-3 py-1 border-purple-400 text-purple-700">
+            <Badge variant="outline" className="text-sm px-3 py-1 border-role-border text-role-foreground">
               {matrix.outsideRange} buiten leeftijdsbereik (5-12)
             </Badge>
           )}
