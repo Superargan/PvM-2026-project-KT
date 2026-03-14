@@ -765,9 +765,9 @@ export default function AanmeldingenPage() {
                 <Select value={selectedProgramId} onValueChange={setSelectedProgramId}>
                   <SelectTrigger><SelectValue placeholder="Kies een programma..." /></SelectTrigger>
                   <SelectContent className="bg-popover">
-                    {availablePrograms.map((p: any) => (
+                    {availablePrograms.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
-                        {p.name} {p.age_category ? `(${p.age_category})` : ""} — {(p as any).schools?.name ?? "Geen school"}
+                        {p.name} {p.age_category ? `(${p.age_category})` : ""} — {p.schools?.name ?? "Geen school"}
                       </SelectItem>
                     ))}
                   </SelectContent>
