@@ -882,7 +882,7 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
           {result && (
             <div className="space-y-2">
               {result.success > 0 && (
-                <div className="flex items-center gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-sm text-emerald-800">
+                <div className="flex items-center gap-2 rounded-lg bg-success-muted border border-success-border px-3 py-2 text-sm text-success-foreground">
                   <CheckCircle2 className="h-4 w-4" /> {result.success} rij(en) succesvol geïmporteerd
                 </div>
               )}

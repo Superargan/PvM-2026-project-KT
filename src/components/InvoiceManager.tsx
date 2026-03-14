@@ -16,9 +16,9 @@ import { nl } from "date-fns/locale";
 
 const statusLabels: Record<string, string> = { pending: "In behandeling", approved: "Goedgekeurd", rejected: "Afgewezen" };
 const statusColors: Record<string, string> = {
-  pending: "bg-amber-100 text-amber-800",
-  approved: "bg-green-100 text-green-800",
-  rejected: "bg-red-100 text-red-800",
+  pending: "bg-warning-muted text-warning-foreground",
+  approved: "bg-success-muted text-success-foreground",
+  rejected: "bg-destructive/10 text-destructive",
 };
 
 export default function InvoiceManager({ staffId, staffName }: { staffId?: string; staffName?: string }) {

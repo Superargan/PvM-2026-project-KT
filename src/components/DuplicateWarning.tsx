@@ -40,8 +40,8 @@ export default function DuplicateWarning({ firstName, lastName, excludeId, clien
   if (matches.length === 0) return null;
 
   return (
-    <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-700 p-3 space-y-2">
-      <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
+    <div className="rounded-lg border border-warning-border bg-warning-muted p-3 space-y-2">
+      <div className="flex items-center gap-2 text-warning-foreground">
         <AlertTriangle className="h-4 w-4 shrink-0" />
         <p className="text-sm font-semibold">
           Mogelijke duplica{matches.length === 1 ? "at" : "ten"} gevonden ({matches.length})
@@ -70,7 +70,7 @@ export default function DuplicateWarning({ firstName, lastName, excludeId, clien
             {m.matchType === "exact" ? (
               <Badge className="text-[9px] bg-destructive/10 text-destructive border-destructive/30">Exact</Badge>
             ) : (
-              <Badge className="text-[9px] bg-amber-100 text-amber-700 border-amber-300">Lijkt op</Badge>
+              <Badge className="text-[9px] bg-warning-muted text-warning-foreground border-warning-border">Lijkt op</Badge>
             )}
           </div>
         ))}

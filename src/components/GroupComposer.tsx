@@ -665,9 +665,9 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
   };
 
   const getStatusInfo = (count: number) => {
-    if (count >= 7) return { color: "text-emerald-700 bg-emerald-50 border-emerald-200", label: "Gereed om te starten", icon: <Check className="h-4 w-4" /> };
-    if (count >= 5) return { color: "text-amber-700 bg-amber-50 border-amber-200", label: `Nog ${7 - count} nodig`, icon: <AlertTriangle className="h-4 w-4" /> };
-    return { color: "text-red-700 bg-red-50 border-red-200", label: `Nog ${7 - count} nodig`, icon: <AlertTriangle className="h-4 w-4" /> };
+    if (count >= 7) return { color: "text-success-foreground bg-success-muted border-success-border", label: "Gereed om te starten", icon: <Check className="h-4 w-4" /> };
+    if (count >= 5) return { color: "text-warning-foreground bg-warning-muted border-warning-border", label: `Nog ${7 - count} nodig`, icon: <AlertTriangle className="h-4 w-4" /> };
+    return { color: "text-destructive bg-destructive/10 border-destructive/30", label: `Nog ${7 - count} nodig`, icon: <AlertTriangle className="h-4 w-4" /> };
   };
 
   const toggleReserveSearch = (key: string) => {

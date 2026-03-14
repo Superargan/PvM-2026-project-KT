@@ -486,12 +486,12 @@ export default function ScheduleGenerator({ programId, programName, programStart
 
       {/* Skipped dates info */}
       {skippedDates.length > 0 && (
-        <div className="rounded-lg border border-amber-300/50 bg-amber-50 dark:bg-amber-950/20 p-3 space-y-1">
-          <div className="flex items-center gap-2 text-sm font-medium text-amber-800 dark:text-amber-300">
+        <div className="rounded-lg border border-warning-border/50 bg-warning-muted p-3 space-y-1">
+          <div className="flex items-center gap-2 text-sm font-medium text-warning-foreground">
             <AlertTriangle className="h-4 w-4" />
             Overgeslagen datums
           </div>
-          <ul className="text-xs text-amber-700 dark:text-amber-400 space-y-0.5">
+          <ul className="text-xs text-warning-foreground/80 space-y-0.5">
             {skippedDates.map((s) => {
               const skippedSpecial = isSpecialDay(s.skippedDate!);
               const reason = skippedSpecial.holidays.map((h) => h.name).join(", ") || skippedSpecial.vacation?.name || "Feestdag/vakantie";
@@ -617,8 +617,8 @@ export default function ScheduleGenerator({ programId, programName, programStart
 
           {/* Availability warnings */}
           {Object.keys(availabilityWarnings).length > 0 && (
-            <div className="rounded-lg border border-amber-300/50 bg-amber-50 dark:bg-amber-950/20 p-3 space-y-2">
-              <div className="flex items-center gap-2 text-sm font-medium text-amber-800 dark:text-amber-300">
+            <div className="rounded-lg border border-warning-border/50 bg-warning-muted p-3 space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-warning-foreground">
                 <Users className="h-4 w-4" />
                 Beschikbaarheidswaarschuwingen
               </div>
@@ -716,7 +716,7 @@ export default function ScheduleGenerator({ programId, programName, programStart
             <AlertDialogAction
               onClick={handleOverrideConfirm}
               disabled={!overrideReason.trim()}
-              className="bg-amber-600 text-white hover:bg-amber-700"
+              className="bg-warning text-white hover:bg-warning/90"
             >
               Ja, toch vrijgeven
             </AlertDialogAction>

@@ -43,9 +43,9 @@ const trainerTypeLabels: Record<string, string> = {
 };
 
 const trainerTypeColors: Record<string, string> = {
-  oudertrainer: "bg-purple-100 text-purple-800",
-  kindtrainer: "bg-sky-100 text-sky-800",
-  beide: "bg-indigo-100 text-indigo-800",
+  oudertrainer: "bg-role-muted text-role-foreground",
+  kindtrainer: "bg-info-muted text-info-foreground",
+  beide: "bg-role-muted text-role-foreground",
 };
 
 type ViewMode = "week" | "maand";
@@ -127,9 +127,9 @@ function AvailabilitySummaryPanel({ filterArea, filterAge, areaName }: { filterA
               <div
                 className={`rounded-lg py-2 text-sm font-bold ${
                   pct >= 0.5
-                    ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                    ? "bg-success-muted text-success-foreground border border-success-border"
                     : count > 0
-                    ? "bg-amber-100 text-amber-800 border border-amber-300"
+                    ? "bg-warning-muted text-warning-foreground border border-warning-border"
                     : "bg-muted text-muted-foreground border border-border"
                 }`}
               >
@@ -148,15 +148,15 @@ function WarningButton({ count, label, icon: Icon, color, onClick }: {
   count: number;
   label: string;
   icon: any;
-  color: "amber" | "red" | "blue" | "purple";
+  color: "warning" | "destructive" | "info" | "role";
   onClick?: () => void;
 }) {
   if (count === 0) return null;
   const colorMap = {
-    amber: "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100",
-    red: "bg-red-50 text-red-800 border-red-200 hover:bg-red-100",
-    blue: "bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100",
-    purple: "bg-purple-50 text-purple-800 border-purple-200 hover:bg-purple-100",
+    warning: "bg-warning-muted text-warning-foreground border-warning-border hover:bg-warning-muted/80",
+    destructive: "bg-destructive/10 text-destructive border-destructive/30 hover:bg-destructive/15",
+    info: "bg-info-muted text-info-foreground border-info-border hover:bg-info-muted/80",
+    role: "bg-role-muted text-role-foreground border-role-border hover:bg-role-muted/80",
   };
   return (
     <button
@@ -625,11 +625,11 @@ export default function PlanningPage() {
 
       {/* Warning buttons */}
       <div className="flex flex-wrap gap-2">
-        <WarningButton count={warningCounts.noAvail} label="Beschikbaarheid nog doorgeven" icon={AlertTriangle} color="amber" onClick={() => setWarningFilter("noAvail")} />
-        <WarningButton count={warningCounts.unusableAvail} label="Onbruikbare beschikbaarheid" icon={ShieldAlert} color="red" onClick={() => setWarningFilter("unusable")} />
-        <WarningButton count={warningCounts.staleCoverage} label="Beschikbaarheid actualiseren" icon={RefreshCw} color="amber" onClick={() => setWarningFilter("stale")} />
-        <WarningButton count={warningCounts.noArea} label="Geen gebied" icon={MapPinOff} color="blue" onClick={() => setWarningFilter("noArea")} />
-        <WarningButton count={warningCounts.overridden} label="Overruled (admin)" icon={ShieldCheck} color="purple" onClick={() => setWarningFilter("overridden")} />
+        <WarningButton count={warningCounts.noAvail} label="Beschikbaarheid nog doorgeven" icon={AlertTriangle} color="warning" onClick={() => setWarningFilter("noAvail")} />
+        <WarningButton count={warningCounts.unusableAvail} label="Onbruikbare beschikbaarheid" icon={ShieldAlert} color="destructive" onClick={() => setWarningFilter("unusable")} />
+        <WarningButton count={warningCounts.staleCoverage} label="Beschikbaarheid actualiseren" icon={RefreshCw} color="warning" onClick={() => setWarningFilter("stale")} />
+        <WarningButton count={warningCounts.noArea} label="Geen gebied" icon={MapPinOff} color="info" onClick={() => setWarningFilter("noArea")} />
+        <WarningButton count={warningCounts.overridden} label="Overruled (admin)" icon={ShieldCheck} color="role" onClick={() => setWarningFilter("overridden")} />
       </div>
 
       {/* Warning detail dialog */}
@@ -810,14 +810,14 @@ export default function PlanningPage() {
                       {items?.intakes.map((intake: any) => (
                         <div
                           key={intake.id}
-                          className="flex items-center gap-2 rounded-md bg-amber-50 border border-amber-200 px-2.5 py-1.5 cursor-pointer hover:bg-amber-100 transition-colors"
+                          className="flex items-center gap-2 rounded-md bg-warning-muted border border-warning-border px-2.5 py-1.5 cursor-pointer hover:bg-warning-muted/80 transition-colors"
                           onClick={() => navigate(`/clienten/${intake.id}`)}
                         >
-                          <Clock className="h-3.5 w-3.5 text-amber-700 shrink-0" />
-                          <span className="text-xs font-semibold text-amber-900 truncate">
+                          <Clock className="h-3.5 w-3.5 text-warning-foreground shrink-0" />
+                          <span className="text-xs font-semibold text-warning-foreground truncate">
                             Intake: {intake.first_name} {intake.last_name}
                           </span>
-                          <span className="text-[10px] text-amber-700 truncate ml-auto">
+                          <span className="text-[10px] text-warning-foreground/70 truncate ml-auto">
                             {intake.schools?.name ?? ""} {(() => { const aName = getResolvedAreaName(intake); return aName !== "—" ? `· ${aName}` : ""; })()}
                           </span>
                           {(intakeAssignmentMap[intake.id] ?? []).map((name: string, i: number) => (
@@ -833,14 +833,14 @@ export default function PlanningPage() {
                         return (
                           <div
                             key={session.id}
-                            className="flex items-center gap-2 rounded-md bg-sky-50 border border-sky-200 px-2.5 py-1.5 cursor-pointer hover:bg-sky-100 transition-colors"
+                            className="flex items-center gap-2 rounded-md bg-info-muted border border-info-border px-2.5 py-1.5 cursor-pointer hover:bg-info-muted/80 transition-colors"
                             onClick={() => navigate(`/programmas/${session.program_id}`)}
                           >
-                            <CalendarDays className="h-3.5 w-3.5 text-sky-700 shrink-0" />
-                            <span className="text-xs font-semibold text-sky-900 truncate">
+                            <CalendarDays className="h-3.5 w-3.5 text-info-foreground shrink-0" />
+                            <span className="text-xs font-semibold text-info-foreground truncate">
                               {prog?.name ?? "Training"} — S{session.session_number}
                             </span>
-                            <span className="text-[10px] text-sky-700 truncate">
+                            <span className="text-[10px] text-info-foreground/70 truncate">
                               {prog?.age_category ?? ""} {prog?.areas?.name ? `· ${prog.areas.name}` : ""}
                             </span>
                             <div className="flex gap-0.5 ml-auto shrink-0">
@@ -850,7 +850,7 @@ export default function PlanningPage() {
                                 </Badge>
                               ))}
                               {invallers.length > 0 && (
-                                <Badge variant="outline" className="text-[9px] h-4 border-orange-300 text-orange-700">
+                                <Badge variant="outline" className="text-[9px] h-4 border-warning-border text-warning-foreground">
                                   +{invallers.length} inval
                                 </Badge>
                               )}
@@ -905,12 +905,12 @@ export default function PlanningPage() {
                         </div>
                       )}
                       {intakeCount > 0 && (
-                        <div className="rounded bg-amber-100 px-1 py-0.5 text-[9px] font-medium text-amber-800">
+                        <div className="rounded bg-warning-muted px-1 py-0.5 text-[9px] font-medium text-warning-foreground">
                           {intakeCount}× intake
                         </div>
                       )}
                       {sessionCount > 0 && (
-                        <div className="rounded bg-sky-100 px-1 py-0.5 text-[9px] font-medium text-sky-800">
+                        <div className="rounded bg-info-muted px-1 py-0.5 text-[9px] font-medium text-info-foreground">
                           {sessionCount}× sessie
                         </div>
                       )}
@@ -1058,7 +1058,7 @@ export default function PlanningPage() {
                           <td className="px-3 py-2">
                             <div className="flex flex-wrap gap-1">
                               {trainerAvail.length > 0 ? trainerAvail.map((a: any) => (
-                                <Badge key={a.id} variant="outline" className="text-[9px] border-emerald-300 text-emerald-700">
+                                <Badge key={a.id} variant="outline" className="text-[9px] border-success-border text-success-foreground">
                                   {format(parseISO(a.available_date), "d MMM", { locale: nl })}
                                 </Badge>
                               )) : (
@@ -1111,7 +1111,7 @@ export default function PlanningPage() {
                                   <TooltipProvider>
                                     <Tooltip>
                                       <TooltipTrigger>
-                                        <Badge className="text-[9px] h-4 bg-purple-100 text-purple-800 border-purple-300">
+                                        <Badge className="text-[9px] h-4 bg-role-muted text-role-foreground border-role-border">
                                           <ShieldCheck className="h-2.5 w-2.5 mr-0.5" />Override
                                         </Badge>
                                       </TooltipTrigger>
@@ -1132,7 +1132,7 @@ export default function PlanningPage() {
                             <td className="px-3 py-2">
                               <div className="flex flex-wrap gap-1">
                                 {clientAvail.length > 0 ? clientAvail.map((a: any) => (
-                                  <Badge key={a.id} variant="outline" className="text-[9px] border-emerald-300 text-emerald-700">
+                                  <Badge key={a.id} variant="outline" className="text-[9px] border-success-border text-success-foreground">
                                     {format(parseISO(a.available_date), "d MMM", { locale: nl })}
                                   </Badge>
                                 )) : (
@@ -1201,7 +1201,7 @@ export default function PlanningPage() {
                             <td className="px-3 py-2">
                               <div className="flex flex-wrap gap-1">
                                 {clientAvail.length > 0 ? clientAvail.map((a: any) => (
-                                  <Badge key={a.id} variant="outline" className="text-[9px] border-emerald-300 text-emerald-700">
+                                  <Badge key={a.id} variant="outline" className="text-[9px] border-success-border text-success-foreground">
                                     {format(parseISO(a.available_date), "d MMM", { locale: nl })}
                                   </Badge>
                                 )) : (
