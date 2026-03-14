@@ -1928,7 +1928,7 @@ export default function ScholenPage() {
           <form onSubmit={handleEditSchool} className="space-y-4">
             <div>
               <Label>Naam *</Label>
-              <Input value={editForm.name ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, name: e.target.value }))} required />
+              <Input value={editForm.name ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} required />
             </div>
             <SchoolDuplicateWarning name={editForm.name ?? ""} excludeId={selectedSchool?.id} schools={schools} />
             <div>
