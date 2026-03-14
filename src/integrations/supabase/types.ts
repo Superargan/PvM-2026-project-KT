@@ -1021,8 +1021,10 @@ export type Database = {
           id: string
           name: string
           neighborhood_id: string | null
+          schedule_type: string | null
           school_end_time: string | null
           school_start_time: string | null
+          source: string | null
           student_count: number | null
           updated_at: string
           website_url: string | null
@@ -1035,8 +1037,10 @@ export type Database = {
           id?: string
           name: string
           neighborhood_id?: string | null
+          schedule_type?: string | null
           school_end_time?: string | null
           school_start_time?: string | null
+          source?: string | null
           student_count?: number | null
           updated_at?: string
           website_url?: string | null
@@ -1049,8 +1053,10 @@ export type Database = {
           id?: string
           name?: string
           neighborhood_id?: string | null
+          schedule_type?: string | null
           school_end_time?: string | null
           school_start_time?: string | null
+          source?: string | null
           student_count?: number | null
           updated_at?: string
           website_url?: string | null
