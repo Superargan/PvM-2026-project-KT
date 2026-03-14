@@ -111,7 +111,7 @@ export default function MedewerkersPage() {
 
   // Fetch external trainers
   const { data: trainers = [], isLoading: loadingTrainers } = useQuery({
-    queryKey: ["trainers"],
+    queryKey: staffKeys.trainers,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("staff")
