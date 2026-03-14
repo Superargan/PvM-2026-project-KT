@@ -1925,7 +1925,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                   <span className="text-sm font-semibold">
                     Slot {result.label ?? idx + 1}
                   </span>
-                  <Badge variant="outline" className={result.status === "gelukt" ? "border-emerald-300 text-emerald-700" : "border-red-300 text-red-700"}>
+                  <Badge variant="outline" className={result.status === "gelukt" ? "border-success-border text-success-foreground" : "border-destructive/30 text-destructive"}>
                     {result.status === "gelukt" ? (result.linked ? "✓ Gekoppeld" : "✓ Omgezet") : "✗ Mislukt"}
                   </Badge>
                 </div>

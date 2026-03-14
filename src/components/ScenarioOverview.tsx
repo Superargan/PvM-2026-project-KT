@@ -304,9 +304,9 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                         <div className="space-y-2">
                           {slotResults.map((sr: any, i: number) => (
                             <div key={sr.slotId ?? i} className={`rounded-lg border p-2 text-xs ${
-                              sr.status === "geldig" ? "border-emerald-200 bg-emerald-50/50" :
-                              sr.status === "aandacht_vereist" ? "border-amber-200 bg-amber-50/50" :
-                              "border-red-200 bg-red-50/50"
+                              sr.status === "geldig" ? "border-success-border bg-success-muted/50" :
+                              sr.status === "aandacht_vereist" ? "border-warning-border bg-warning-muted/50" :
+                              "border-destructive/30 bg-destructive/5"
                             }`}>
                               <div className="flex items-center gap-2 mb-1">
                                 <span className="font-semibold text-foreground">Slot {i + 1}</span>

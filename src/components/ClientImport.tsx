@@ -919,7 +919,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
           {result && (
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-2 text-sm">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <CheckCircle2 className="h-5 w-5 text-success" />
                 <span><strong>{result.added}</strong> toegevoegd</span>
                 {result.updated > 0 && (
                   <span className="text-muted-foreground">• {result.updated} bijgewerkt</span>
