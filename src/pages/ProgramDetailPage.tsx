@@ -113,7 +113,7 @@ export default function ProgramDetailPage() {
 
   // Fetch sessions for overlap check
   const { data: programSessions = [] } = useQuery({
-    queryKey: ["program_sessions", id],
+    queryKey: programKeys.sessions(id!),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("program_sessions")
