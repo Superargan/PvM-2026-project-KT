@@ -20,6 +20,7 @@ import { getResolvedLocationName } from "@/lib/DomainResolver";
 import ProgramTrainers from "@/components/ProgramTrainers";
 import ProgramAttendance from "@/components/ProgramAttendance";
 import GroupComposer from "@/components/GroupComposer";
+import type { EnrolledClientRow, SchoolDropdownRow, ProgramStaffWithTradeName } from "@/lib/queryShapes";
 
 const statusMap: Record<string, { css: string; label: string }> = {
   te_plannen: { css: "status-rood", label: "Te plannen" },
