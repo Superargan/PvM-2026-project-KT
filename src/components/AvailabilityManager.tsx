@@ -127,7 +127,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
 
   // Fetch existing availability for selected person + period
   const { data: existingAvailability = [], refetch: refetchAvail } = useQuery({
-    queryKey: ["avail-existing", type, selectedPersonId, dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryKey: [planningKeys.availability, type, selectedPersonId, dateRange.start.toISOString(), dateRange.end.toISOString()],
     enabled: !!selectedPersonId,
     queryFn: async () => {
       const startStr = format(dateRange.start, "yyyy-MM-dd");

@@ -399,7 +399,7 @@ export default function PlanningPage() {
 
   // Check if current user is admin
   const { data: isAdmin = false } = useQuery({
-    queryKey: ["user-is-admin", session?.user?.id],
+    queryKey: authKeys.isAdmin(session?.user?.id),
     enabled: !!session?.user?.id,
     queryFn: async () => {
       const { data, error } = await supabase

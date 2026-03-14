@@ -149,6 +149,16 @@ export const invoiceKeys = {
 export const planningKeys = {
   availability: ["planning", "availability"] as const,
   clientAvailability: ["planning", "client-availability"] as const,
+  sessions: (start: string, end: string) => ["planning", "sessions", start, end] as const,
+  programStaff: (ids: string[]) => ["planning", "program-staff", ids] as const,
+  trainers: ["planning", "trainers"] as const,
+  staffAvailability: (start: string, end: string) => ["planning", "staff-availability", start, end] as const,
+  intakeAssignments: (ids: string[]) => ["planning", "intake-assignments", ids] as const,
+};
+
+/** Auth / role query keys */
+export const authKeys = {
+  isAdmin: (userId?: string) => ["auth", "is-admin", userId] as const,
 };
 
 /** Availability validation query keys */
