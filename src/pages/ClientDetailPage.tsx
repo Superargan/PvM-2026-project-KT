@@ -293,7 +293,7 @@ export default function ClientDetailPage() {
       queryClient.invalidateQueries({ queryKey: clientKeys.all });
       queryClient.invalidateQueries({ queryKey: auditKeys.forClient(id!) });
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast({ title: "Fout", description: err.message, variant: "destructive" });
     },
   });
