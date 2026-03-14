@@ -115,7 +115,7 @@ export default function MedewerkersPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("staff")
-        .select("id, name, trade_name, kvk_number, address, postal_code, city, phone, email, user_id, kvk_uittreksel_path, kvk_uittreksel_uploaded_at, vog_path, vog_uploaded_at, program_staff!program_staff_staff_id_fkey(id, programs(name))")
+        .select("id, name, trade_name, kvk_number, address, postal_code, city, phone, email, user_id, trainer_type, kvk_uittreksel_path, kvk_uittreksel_uploaded_at, vog_path, vog_uploaded_at, program_staff!program_staff_staff_id_fkey(id, programs(name))")
         .eq("archived", false)
         .not("name", "is", null)
         .order("name");
