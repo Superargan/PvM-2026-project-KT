@@ -1052,9 +1052,9 @@ export default function ScholenPage() {
     }
   };
 
-  const handleDocDelete = async (doc: any) => {
+  const handleDocDelete = async (doc: SchoolDocumentRow) => {
     await supabase.storage.from("school-documents").remove([doc.file_path]);
-    const { error } = await supabase.from("school_documents" as any).delete().eq("id", doc.id);
+    const { error } = await supabase.from("school_documents").delete().eq("id", doc.id);
     if (error) {
       toast({ title: "Fout", description: error.message, variant: "destructive" });
     } else {
