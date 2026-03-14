@@ -35,6 +35,10 @@ export const clientKeys = {
   generatedDocs: (clientId: string) => ["clients", "generated-docs", clientId] as const,
   /** Assignments for a specific client */
   assignments: (clientId?: string) => ["clients", "assignments", clientId] as const,
+  /** All assignments (overview) */
+  allAssignments: ["clients", "all-assignments"] as const,
+  /** Duplicate check */
+  duplicateCheck: ["clients", "duplicate-check"] as const,
 };
 
 /** Shared area query key — use everywhere */
