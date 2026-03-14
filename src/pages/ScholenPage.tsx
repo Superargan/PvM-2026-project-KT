@@ -688,7 +688,7 @@ export default function ScholenPage() {
     // Starts-with match (first significant word)
     const firstWord = norm.split(/\s+/)[0];
     if (firstWord.length >= 3) {
-      const startsWith = (schools as any[]).find((s) => s.name.toLowerCase().trim().startsWith(firstWord));
+      const startsWith = schools.find((s) => s.name.toLowerCase().trim().startsWith(firstWord));
       if (startsWith) return { id: startsWith.id, name: startsWith.name };
     }
 
