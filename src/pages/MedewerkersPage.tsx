@@ -612,7 +612,7 @@ export default function MedewerkersPage() {
             {trainerDocs.length > 0 && (
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gegenereerde Documenten</p>
-                {trainerDocs.map((doc: any) => (
+                {trainerDocs.map((doc) => (
                   <div key={doc.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-3">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-card-foreground truncate">{doc.file_name}</p>
