@@ -658,7 +658,7 @@ export default function ScholenPage() {
 
     // Check user resolutions first
     if (resolutions && resolutions[norm]) {
-      const s = (schools as any[]).find((s) => s.id === resolutions[norm]);
+      const s = schools.find((s) => s.id === resolutions[norm]);
       return s ? { id: s.id, name: s.name } : null;
     }
 
