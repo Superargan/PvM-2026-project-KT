@@ -339,7 +339,7 @@ export default function PlanningPage() {
   const getAreaNameForClient = (client: any): string => getResolvedAreaName(client, areas);
 
   const { data: clientAvailability = [], refetch: refetchClientAvail } = useQuery({
-    queryKey: ["planning-client-availability", dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryKey: planningKeys.clientAvailability,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("client_availability")
