@@ -108,9 +108,9 @@ export default function ProgramDetailPage() {
     },
   });
 
-  const enrolledIds = enrolledClients.map((ec: any) => ec.client_id);
-  const activeEnrolled = enrolledClients.filter((ec: any) => !ec.early_dropout);
-  const availableClients = allClients.filter((c: any) => !enrolledIds.includes(c.id));
+  const enrolledIds = enrolledClients.map((ec) => ec.client_id);
+  const activeEnrolled = enrolledClients.filter((ec) => !ec.early_dropout);
+  const availableClients = allClients.filter((c) => !enrolledIds.includes(c.id));
 
   // Fetch sessions for overlap check
   const { data: programSessions = [] } = useQuery({
