@@ -625,11 +625,11 @@ export default function PlanningPage() {
 
       {/* Warning buttons */}
       <div className="flex flex-wrap gap-2">
-        <WarningButton count={warningCounts.noAvail} label="Beschikbaarheid nog doorgeven" icon={AlertTriangle} color="amber" onClick={() => setWarningFilter("noAvail")} />
-        <WarningButton count={warningCounts.unusableAvail} label="Onbruikbare beschikbaarheid" icon={ShieldAlert} color="red" onClick={() => setWarningFilter("unusable")} />
-        <WarningButton count={warningCounts.staleCoverage} label="Beschikbaarheid actualiseren" icon={RefreshCw} color="amber" onClick={() => setWarningFilter("stale")} />
-        <WarningButton count={warningCounts.noArea} label="Geen gebied" icon={MapPinOff} color="blue" onClick={() => setWarningFilter("noArea")} />
-        <WarningButton count={warningCounts.overridden} label="Overruled (admin)" icon={ShieldCheck} color="purple" onClick={() => setWarningFilter("overridden")} />
+        <WarningButton count={warningCounts.noAvail} label="Beschikbaarheid nog doorgeven" icon={AlertTriangle} color="warning" onClick={() => setWarningFilter("noAvail")} />
+        <WarningButton count={warningCounts.unusableAvail} label="Onbruikbare beschikbaarheid" icon={ShieldAlert} color="destructive" onClick={() => setWarningFilter("unusable")} />
+        <WarningButton count={warningCounts.staleCoverage} label="Beschikbaarheid actualiseren" icon={RefreshCw} color="warning" onClick={() => setWarningFilter("stale")} />
+        <WarningButton count={warningCounts.noArea} label="Geen gebied" icon={MapPinOff} color="info" onClick={() => setWarningFilter("noArea")} />
+        <WarningButton count={warningCounts.overridden} label="Overruled (admin)" icon={ShieldCheck} color="role" onClick={() => setWarningFilter("overridden")} />
       </div>
 
       {/* Warning detail dialog */}
