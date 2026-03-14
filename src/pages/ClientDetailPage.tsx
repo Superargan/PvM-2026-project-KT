@@ -682,7 +682,7 @@ export default function ClientDetailPage() {
                 {programs.length === 0 && (
                   <tr><td colSpan={4} className="px-5 py-8 text-center text-sm text-muted-foreground">Nog niet ingeschreven in een programma</td></tr>
                 )}
-                {programs.map((pc: any) => (
+                {programs.map((pc) => (
                   <tr key={pc.id} className="transition-colors hover:bg-muted/30">
                     <td className="px-5 py-4 text-sm font-medium text-card-foreground">{pc.programs?.name}</td>
                     <td className="px-5 py-4 text-sm text-card-foreground">{pc.programs?.schools?.name ?? "—"}</td>
