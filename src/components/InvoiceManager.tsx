@@ -61,7 +61,7 @@ export default function InvoiceManager({ staffId, staffName }: { staffId?: strin
       if (error) throw error;
       // Unique programs
       const seen = new Set<string>();
-      return (data ?? []).filter((ps: any) => {
+      return (data ?? []).filter((ps) => {
         if (seen.has(ps.program_id)) return false;
         seen.add(ps.program_id);
         return true;
