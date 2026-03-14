@@ -16,6 +16,7 @@ interface ScenarioOverviewProps {
   onLoadScenario: (scenarioId: string) => void;
   hasActiveSimulation: boolean;
   onRequestSaveFirst: () => Promise<boolean>;
+  onScenarioDeleted?: (scenarioId: string) => void;
 }
 
 const statusColors: Record<string, string> = {
@@ -63,7 +64,7 @@ const conversionStatusLabels: Record<string, string> = {
   mislukt: "✗ Mislukt",
 };
 
-export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, onRequestSaveFirst }: ScenarioOverviewProps) {
+export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, onRequestSaveFirst, onScenarioDeleted }: ScenarioOverviewProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -142,6 +143,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
     } else {
       toast({ title: "Scenario verwijderd" });
       queryClient.invalidateQueries({ queryKey: scenarioKeys.all });
+      onScenarioDeleted?.(deleteId);
     }
     setDeleteId(null);
   };
