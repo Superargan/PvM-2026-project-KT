@@ -625,7 +625,7 @@ export default function ScheduleGenerator({ programId, programName, programStart
               {Object.entries(availabilityWarnings).map(([idx, warnings]) => {
                 const session = generated[parseInt(idx)];
                 return (
-                  <div key={idx} className="text-xs text-amber-700 dark:text-amber-400">
+                  <div key={idx} className="text-xs text-warning-foreground">
                     <strong>Sessie {session.session_number} ({format(new Date(session.date), "d MMM", { locale: nl })})</strong>:
                     <ul className="ml-4 mt-0.5 space-y-0.5">
                       {warnings.map((w: any) => (
