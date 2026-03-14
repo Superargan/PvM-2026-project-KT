@@ -6,7 +6,7 @@ import {
   startOfMonth, endOfMonth, addMonths, subMonths,
   eachDayOfInterval, parseISO, getDay
 } from "date-fns";
-import { invalidateAllClientQueries, planningKeys } from "@/lib/queryKeys";
+import { invalidateAllClientQueries, planningKeys, staffKeys, clientKeys } from "@/lib/queryKeys";
 import { nl } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Sun, Moon, Clock, Save, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -94,7 +94,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
 
   // Fetch people
   const { data: trainers = [] } = useQuery({
-    queryKey: ["avail-trainers"],
+    queryKey: staffKeys.trainers,
     enabled: type === "trainer",
     queryFn: async () => {
       const { data, error } = await supabase
@@ -109,7 +109,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
   });
 
   const { data: clients = [] } = useQuery({
-    queryKey: ["clients", "avail"],
+    queryKey: clientKeys.avail,
     enabled: type === "deelnemer",
     queryFn: async () => {
       const { data, error } = await supabase
@@ -127,7 +127,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
 
   // Fetch existing availability for selected person + period
   const { data: existingAvailability = [], refetch: refetchAvail } = useQuery({
-    queryKey: ["avail-existing", type, selectedPersonId, dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryKey: [planningKeys.availability, type, selectedPersonId, dateRange.start.toISOString(), dateRange.end.toISOString()],
     enabled: !!selectedPersonId,
     queryFn: async () => {
       const startStr = format(dateRange.start, "yyyy-MM-dd");

@@ -45,6 +45,7 @@ export const clientKeys = {
 export const areaKeys = {
   all: ["areas"] as const,
   withNeighborhoods: ["areas", "with-neighborhoods"] as const,
+  neighborhoods: ["areas", "neighborhoods"] as const,
 };
 
 /** Scenario query keys — separate prefix from clients */
@@ -60,6 +61,8 @@ export const schoolKeys = {
   dropdown: ["schools", "dropdown"] as const,
   dashboard: ["schools", "dashboard"] as const,
   rapportages: ["schools", "rapportages"] as const,
+  documents: (schoolId?: string) => ["schools", "documents", schoolId] as const,
+  generatedDocs: (schoolId?: string) => ["schools", "generated-docs", schoolId] as const,
 };
 
 /** Staff / medewerkers query keys */
@@ -91,11 +94,12 @@ export const programKeys = {
   linkable: ["programs", "linkable"] as const,
   /** Available/active programs for dropdowns */
   available: ["programs", "available"] as const,
+  dashboard: ["programs", "dashboard"] as const,
+  upcoming: ["programs", "upcoming"] as const,
   clients: (programId: string) => ["programs", "clients", programId] as const,
   sessions: (programId: string) => ["programs", "sessions", programId] as const,
   staff: (programId: string) => ["programs", "staff", programId] as const,
   sessionDocs: (sessionId: string) => ["programs", "session-docs", sessionId] as const,
-  /** Staff for document generation context */
   staffForDocs: (programId: string) => ["programs", "staff-for-docs", programId] as const,
 };
 
@@ -145,6 +149,16 @@ export const invoiceKeys = {
 export const planningKeys = {
   availability: ["planning", "availability"] as const,
   clientAvailability: ["planning", "client-availability"] as const,
+  sessions: (start: string, end: string) => ["planning", "sessions", start, end] as const,
+  programStaff: (ids: string[]) => ["planning", "program-staff", ids] as const,
+  trainers: ["planning", "trainers"] as const,
+  staffAvailability: (start: string, end: string) => ["planning", "staff-availability", start, end] as const,
+  intakeAssignments: (ids: string[]) => ["planning", "intake-assignments", ids] as const,
+};
+
+/** Auth / role query keys */
+export const authKeys = {
+  isAdmin: (userId?: string) => ["auth", "is-admin", userId] as const,
 };
 
 /** Availability validation query keys */

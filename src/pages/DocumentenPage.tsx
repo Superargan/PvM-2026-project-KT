@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { schoolKeys, documentKeys } from "@/lib/queryKeys";
+import { schoolKeys, documentKeys, clientKeys, staffKeys, programKeys } from "@/lib/queryKeys";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -829,7 +829,7 @@ function GenerateTab() {
   });
 
   const { data: clients = [] } = useQuery({
-    queryKey: ["clients-list"],
+    queryKey: clientKeys.forProgram,
     queryFn: async () => {
       const { data, error } = await supabase.from("clients").select("id, first_name, last_name").eq("archived", false).order("first_name");
       if (error) throw error;
@@ -839,7 +839,7 @@ function GenerateTab() {
   });
 
   const { data: staffList = [] } = useQuery({
-    queryKey: ["staff-list"],
+    queryKey: staffKeys.trainers,
     queryFn: async () => {
       const { data, error } = await supabase.from("staff").select("id, name, trade_name").eq("archived", false).order("name");
       if (error) throw error;
@@ -859,7 +859,7 @@ function GenerateTab() {
   });
 
   const { data: programs = [] } = useQuery({
-    queryKey: ["programs-for-generate"],
+    queryKey: programKeys.all,
     queryFn: async () => {
       const { data, error } = await supabase.from("programs").select("id, name, training_number, status").order("name");
       if (error) throw error;
@@ -870,7 +870,7 @@ function GenerateTab() {
 
   // Fetch trainers for selected program
   const { data: programTrainers = [] } = useQuery({
-    queryKey: ["program-trainers-for-doc", selectedEntity],
+    queryKey: programKeys.staffForDocs(selectedEntity),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("program_staff")

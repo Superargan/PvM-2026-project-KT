@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { programKeys } from "@/lib/queryKeys";
+import { programKeys, attendanceKeys } from "@/lib/queryKeys";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -87,7 +87,7 @@ export default function ProgramAttendance({
 
   const sessionIds = sessions.map((s: any) => s.id);
   const { data: attendance = [], isLoading: attLoading } = useQuery({
-    queryKey: ["attendance", programId, sessionIds],
+    queryKey: [...attendanceKeys.all, programId, sessionIds],
     enabled: open && sessionIds.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -132,7 +132,7 @@ export default function ProgramAttendance({
         if (error) throw error;
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["attendance", programId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: attendanceKeys.all }),
     onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
 

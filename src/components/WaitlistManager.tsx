@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { clientKeys, programKeys } from "@/lib/queryKeys";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,7 @@ export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => 
   });
 
   const { data: waitlistClients = [], isLoading } = useQuery({
-    queryKey: ["clients", "waitlist", filterArea],
+    queryKey: clientKeys.waitlist(filterArea),
     queryFn: async () => {
       let query = supabase
         .from("clients")
@@ -55,7 +56,7 @@ export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => 
   });
 
   const { data: programs = [] } = useQuery({
-    queryKey: ["active-programs"],
+    queryKey: programKeys.available,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("programs")
@@ -85,7 +86,7 @@ export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => 
     },
     onSuccess: () => {
       toast.success("Deelnemer toegewezen aan programma");
-      qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: clientKeys.all });
     },
     onError: (err: any) => toast.error(err.message),
   });

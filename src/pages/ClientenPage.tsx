@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { downloadExport } from "@/lib/csvExport";
 import ClientImport from "@/components/ClientImport";
 import { calculateAge, statusLabels, filterClients } from "@/lib/clientUtils";
-import { areaKeys, schoolKeys } from "@/lib/queryKeys";
+import { areaKeys, schoolKeys, clientKeys } from "@/lib/queryKeys";
 import ClientFilters from "@/components/ClientFilters";
 import ClientListTable from "@/components/ClientListTable";
 import DuplicateWarning from "@/components/DuplicateWarning";
@@ -32,7 +32,7 @@ export default function ClientenPage() {
   const navigate = useNavigate();
 
   const { data: clients = [], isLoading, refetch } = useQuery({
-    queryKey: ["clients", "list", search],
+    queryKey: clientKeys.list(search),
     queryFn: async () => {
       let query = supabase
         .from("clients")

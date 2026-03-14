@@ -3,7 +3,7 @@ import SchoolDuplicateWarning from "@/components/SchoolDuplicateWarning";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { schoolKeys, invalidateAllSchoolQueries, areaKeys, programKeys, documentKeys } from "@/lib/queryKeys";
+import { schoolKeys, invalidateAllSchoolQueries, areaKeys, programKeys, documentKeys, clientKeys } from "@/lib/queryKeys";
 import { formatSchoolTimeRange, validateSchoolTimePair, findMatchingColumn, normalizeSchoolName, dbTimeToInput, inputTimeToDb, SCHOOL_START_TIME_COLUMNS, SCHOOL_END_TIME_COLUMNS, SCHEDULE_TYPE_COLUMNS, SOURCE_COLUMNS, MUNICIPALITY_COLUMNS, getEffectiveMunicipality, resolveImportedSchoolTimePair } from "@/lib/schoolTimes";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -203,7 +203,7 @@ export default function ScholenPage() {
 
   // Fetch client counts per school
   const { data: clientsBySchool = [] } = useQuery({
-    queryKey: ["clients", "by-school"],
+    queryKey: clientKeys.bySchool,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
@@ -880,7 +880,7 @@ export default function ScholenPage() {
         : undefined;
       toast({ title: `${imported} contactpersonen geïmporteerd`, description: desc });
       setContactUploadOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["schools"] });
+      queryClient.invalidateQueries({ queryKey: schoolKeys.all });
     },
     onError: (err: any) => {
       toast({ title: "Import mislukt", description: err.message, variant: "destructive" });
@@ -955,7 +955,7 @@ export default function ScholenPage() {
 
   // ── Documents for selected school ──
   const { data: schoolDocs = [], refetch: refetchDocs } = useQuery({
-    queryKey: ["school-documents", selectedSchool?.id],
+    queryKey: schoolKeys.documents(selectedSchool?.id),
     queryFn: async () => {
       if (!selectedSchool?.id) return [];
       const { data, error } = await supabase
@@ -971,7 +971,7 @@ export default function ScholenPage() {
 
   // Fetch generated docs for selected school
   const { data: schoolGeneratedDocs = [], refetch: refetchSchoolGenDocs } = useQuery({
-    queryKey: ["school-generated-docs", selectedSchool?.id],
+    queryKey: schoolKeys.generatedDocs(selectedSchool?.id),
     queryFn: async () => {
       if (!selectedSchool?.id) return [];
       const { data } = await supabase

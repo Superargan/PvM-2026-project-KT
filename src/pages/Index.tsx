@@ -3,11 +3,11 @@ import StatCard from "@/components/StatCard";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { schoolKeys } from "@/lib/queryKeys";
+import { schoolKeys, clientKeys, programKeys, staffKeys } from "@/lib/queryKeys";
 
 export default function Dashboard() {
   const { data: clientCount = 0 } = useQuery({
-    queryKey: ["clients", "dashboard", "participants"],
+    queryKey: clientKeys.dashboard("participants"),
     queryFn: async () => {
       const { count } = await supabase
         .from("clients")
@@ -19,7 +19,7 @@ export default function Dashboard() {
   });
 
   const { data: programCount = 0 } = useQuery({
-    queryKey: ["dashboard-programs"],
+    queryKey: programKeys.dashboard,
     queryFn: async () => {
       const { count } = await supabase.from("programs").select("*", { count: "exact", head: true }).eq("archived", false).eq("status", "te_plannen");
       return count ?? 0;
@@ -35,7 +35,7 @@ export default function Dashboard() {
   });
 
   const { data: newClientCount = 0 } = useQuery({
-    queryKey: ["clients", "dashboard", "new"],
+    queryKey: clientKeys.dashboard("new"),
     queryFn: async () => {
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
@@ -49,7 +49,7 @@ export default function Dashboard() {
   });
 
   const { data: trainerCount = 0 } = useQuery({
-    queryKey: ["dashboard-trainers"],
+    queryKey: staffKeys.all,
     queryFn: async () => {
       const { count } = await supabase.from("staff").select("*", { count: "exact", head: true }).eq("archived", false).not("name", "is", null);
       return count ?? 0;
@@ -57,7 +57,7 @@ export default function Dashboard() {
   });
 
   const { data: intakeGeplandCount = 0 } = useQuery({
-    queryKey: ["clients", "dashboard", "intake-gepland"],
+    queryKey: clientKeys.dashboard("intake-gepland"),
     queryFn: async () => {
       const { count } = await supabase.from("clients").select("*", { count: "exact", head: true }).eq("archived", false).eq("intake_status", "intake_gepland");
       return count ?? 0;
@@ -65,7 +65,7 @@ export default function Dashboard() {
   });
 
   const { data: waitlistCount = 0 } = useQuery({
-    queryKey: ["clients", "dashboard", "waitlist"],
+    queryKey: clientKeys.dashboard("waitlist"),
     queryFn: async () => {
       const { count } = await supabase
         .from("clients")
@@ -77,7 +77,7 @@ export default function Dashboard() {
   });
 
   const { data: recentClients = [] } = useQuery({
-    queryKey: ["clients", "dashboard", "recent"],
+    queryKey: clientKeys.dashboard("recent"),
     queryFn: async () => {
       const { data } = await supabase
         .from("clients")
@@ -90,7 +90,7 @@ export default function Dashboard() {
   });
 
   const { data: upcomingPrograms = [] } = useQuery({
-    queryKey: ["dashboard-upcoming-programs"],
+    queryKey: programKeys.upcoming,
     queryFn: async () => {
       const { data } = await supabase
         .from("programs")

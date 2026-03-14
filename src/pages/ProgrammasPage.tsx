@@ -59,7 +59,7 @@ export default function ProgrammasPage() {
   });
 
   const { data: neighborhoods = [] } = useQuery({
-    queryKey: ["neighborhoods"],
+    queryKey: areaKeys.neighborhoods,
     queryFn: async () => {
       const { data, error } = await supabase.from("neighborhoods").select("*").order("name");
       if (error) throw error;

@@ -13,7 +13,7 @@ import {
   getResolvedAreaName,
   type ClientDataCompleteness,
 } from "@/lib/clientUtils";
-import { clientKeys, areaKeys } from "@/lib/queryKeys";
+import { clientKeys, areaKeys, planningKeys, staffKeys, authKeys } from "@/lib/queryKeys";
 import { nl } from "date-fns/locale";
 import { CalendarDays, ChevronLeft, ChevronRight, Users, Clock, Plus, X, FileSpreadsheet, Star, Palmtree, CalendarClock, AlertTriangle, ShieldAlert, MapPinOff, RefreshCw, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -254,7 +254,7 @@ export default function PlanningPage() {
 
   const intakeClientIds = intakes.map((i: any) => i.id);
   const { data: intakeAssignments = [] } = useQuery({
-    queryKey: ["planning-intake-assignments", intakeClientIds],
+    queryKey: planningKeys.intakeAssignments(intakeClientIds),
     enabled: intakeClientIds.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -267,7 +267,7 @@ export default function PlanningPage() {
   });
 
   const { data: sessions = [] } = useQuery({
-    queryKey: ["planning-sessions", dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryKey: planningKeys.sessions(dateRange.start.toISOString(), dateRange.end.toISOString()),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("program_sessions")
@@ -282,7 +282,7 @@ export default function PlanningPage() {
 
   const programIds = [...new Set(sessions.map((s: any) => s.program_id))];
   const { data: programStaff = [] } = useQuery({
-    queryKey: ["planning-program-staff", programIds],
+    queryKey: planningKeys.programStaff(programIds),
     enabled: programIds.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -295,7 +295,7 @@ export default function PlanningPage() {
   });
 
   const { data: allTrainers = [] } = useQuery({
-    queryKey: ["planning-trainers"],
+    queryKey: planningKeys.trainers,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("staff")
@@ -309,7 +309,7 @@ export default function PlanningPage() {
   });
 
   const { data: availability = [], refetch: refetchAvailability } = useQuery({
-    queryKey: ["planning-availability", dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryKey: planningKeys.staffAvailability(dateRange.start.toISOString(), dateRange.end.toISOString()),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("staff_availability")
@@ -339,7 +339,7 @@ export default function PlanningPage() {
   const getAreaNameForClient = (client: any): string => getResolvedAreaName(client, areas);
 
   const { data: clientAvailability = [], refetch: refetchClientAvail } = useQuery({
-    queryKey: ["planning-client-availability", dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryKey: planningKeys.clientAvailability,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("client_availability")
@@ -399,7 +399,7 @@ export default function PlanningPage() {
 
   // Check if current user is admin
   const { data: isAdmin = false } = useQuery({
-    queryKey: ["user-is-admin", session?.user?.id],
+    queryKey: authKeys.isAdmin(session?.user?.id),
     enabled: !!session?.user?.id,
     queryFn: async () => {
       const { data, error } = await supabase
