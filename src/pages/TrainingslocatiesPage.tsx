@@ -40,7 +40,7 @@ export default function TrainingslocatiesPage() {
   });
 
   const { data: locations = [], isLoading } = useQuery({
-    queryKey: ["training-locations", search],
+    queryKey: locationKeys.list(search),
     queryFn: async () => {
       let query = supabase
         .from("training_locations")
