@@ -1933,7 +1933,7 @@ export default function ScholenPage() {
             <SchoolDuplicateWarning name={editForm.name ?? ""} excludeId={selectedSchool?.id} schools={schools} />
             <div>
               <Label>Adres</Label>
-              <Input value={editForm.address ?? ""} onChange={(e) => { setEditForm((f: any) => ({ ...f, address: e.target.value })); }} onBlur={(e) => autoDetectNeighborhood(e.target.value)} />
+              <Input value={editForm.address ?? ""} onChange={(e) => { setEditForm((f) => ({ ...f, address: e.target.value })); }} onBlur={(e) => autoDetectNeighborhood(e.target.value)} />
             </div>
             <div>
               <Label>Gebied</Label>
