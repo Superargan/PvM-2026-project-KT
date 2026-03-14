@@ -1,4 +1,4 @@
-import { School, Search, Plus, MapPin, Loader2, Upload, Users, Trash2, Pencil, UserPlus, Wand2, FileText, Globe, Download, X, Clock } from "lucide-react";
+import { School, Search, Plus, MapPin, Loader2, Upload, Users, Trash2, Pencil, UserPlus, Wand2, FileText, Globe, Download, X, Clock, AlertTriangle as AlertTriangleIcon } from "lucide-react";
 import SchoolDuplicateWarning from "@/components/SchoolDuplicateWarning";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -161,6 +161,11 @@ export default function ScholenPage() {
   const [importResultOpen, setImportResultOpen] = useState(false);
   const [importResult, setImportResult] = useState<{ added: string[]; updated: string[]; unmatched: string[]; timesSet: number; invalidTimes: number; municipalitySet: number } | null>(null);
   const [editSaving, setEditSaving] = useState(false);
+  const [selectedSchoolIds, setSelectedSchoolIds] = useState<Set<string>>(new Set());
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [schoolsToDelete, setSchoolsToDelete] = useState<any[]>([]);
+  const [deleteBlockers, setDeleteBlockers] = useState<Record<string, { clients: number; programs: number }>>({});
+  const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -1091,6 +1096,85 @@ export default function ScholenPage() {
     if (data?.signedUrl) window.open(data.signedUrl, "_blank");
   };
 
+  // ── School deletion ──
+
+  const checkDeleteBlockers = async (schoolIds: string[]) => {
+    const blockers: Record<string, { clients: number; programs: number }> = {};
+    for (const id of schoolIds) {
+      const [{ count: clientCount }, { count: programCount }] = await Promise.all([
+        supabase.from("clients").select("id", { count: "exact", head: true }).eq("school_id", id),
+        supabase.from("programs").select("id", { count: "exact", head: true }).eq("school_id", id),
+      ]);
+      blockers[id] = { clients: clientCount ?? 0, programs: programCount ?? 0 };
+    }
+    return blockers;
+  };
+
+  const initiateDelete = async (schoolList: any[]) => {
+    const blockers = await checkDeleteBlockers(schoolList.map((s) => s.id));
+    setDeleteBlockers(blockers);
+    setSchoolsToDelete(schoolList);
+    setDeleteConfirmOpen(true);
+  };
+
+  const executeDelete = async () => {
+    setDeleting(true);
+    try {
+      const deletableIds = schoolsToDelete
+        .filter((s) => {
+          const b = deleteBlockers[s.id];
+          return !b || (b.clients === 0 && b.programs === 0);
+        })
+        .map((s) => s.id);
+
+      if (deletableIds.length === 0) {
+        toast({ title: "Geen scholen verwijderd", description: "Alle geselecteerde scholen hebben gekoppelde gegevens.", variant: "destructive" });
+        return;
+      }
+
+      // Cascade: delete referrers, school_documents, staff links, scenario slots school refs
+      for (const id of deletableIds) {
+        await Promise.all([
+          supabase.from("referrers").delete().eq("school_id", id),
+          supabase.from("school_documents" as any).delete().eq("school_id", id),
+        ]);
+      }
+
+      // Delete schools
+      for (let i = 0; i < deletableIds.length; i += 50) {
+        const chunk = deletableIds.slice(i, i + 50);
+        const { error } = await supabase.from("schools").delete().in("id", chunk);
+        if (error) throw error;
+      }
+
+      toast({ title: `${deletableIds.length} school${deletableIds.length === 1 ? "" : "en"} verwijderd` });
+      setSelectedSchoolIds(new Set());
+      setDeleteConfirmOpen(false);
+      setSchoolsToDelete([]);
+      invalidateAllSchoolQueries(queryClient);
+    } catch (err: any) {
+      toast({ title: "Fout bij verwijderen", description: err.message, variant: "destructive" });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const toggleSchoolSelection = (id: string) => {
+    setSelectedSchoolIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAllSchools = (schoolIds: string[]) => {
+    setSelectedSchoolIds((prev) => {
+      const allSelected = schoolIds.every((id) => prev.has(id));
+      if (allSelected) return new Set();
+      return new Set(schoolIds);
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1439,6 +1523,14 @@ export default function ScholenPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-border bg-muted/50">
+                <th className="px-3 py-3 text-center w-10">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-border"
+                    checked={sorted.length > 0 && sorted.every((s: any) => selectedSchoolIds.has(s.id))}
+                    onChange={() => toggleAllSchools(sorted.map((s: any) => s.id))}
+                  />
+                </th>
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">School</th>
                 <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground md:table-cell">Gebied</th>
                 <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground md:table-cell">Wijk</th>
@@ -1448,15 +1540,23 @@ export default function ScholenPage() {
                 <th className="hidden px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Rooster</th>
                 <th className="hidden px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Schooltijden</th>
                 <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Leerlingen</th>
-                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actie</th>
+                <th className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground w-10"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {sorted.length === 0 && (
-                <tr><td colSpan={10} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen scholen gevonden</td></tr>
+                <tr><td colSpan={11} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen scholen gevonden</td></tr>
               )}
               {sorted.map((school: any) => (
-                <tr key={school.id} className="transition-colors hover:bg-muted/30">
+                <tr key={school.id} className={`transition-colors hover:bg-muted/30 ${selectedSchoolIds.has(school.id) ? "bg-primary/5" : ""}`}>
+                  <td className="px-3 py-4 text-center">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-border"
+                      checked={selectedSchoolIds.has(school.id)}
+                      onChange={() => toggleSchoolSelection(school.id)}
+                    />
+                  </td>
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent/20">
@@ -1587,6 +1687,17 @@ export default function ScholenPage() {
                   <td className="px-5 py-4 text-right">
                     <span className="font-display text-sm font-bold text-card-foreground">{school.student_count ?? 0}</span>
                   </td>
+                  <td className="px-3 py-4 text-center">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                      onClick={() => initiateDelete([school])}
+                      title="School verwijderen"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -1594,6 +1705,73 @@ export default function ScholenPage() {
         </div>
         );
       })()}
+
+      {/* Bulk delete bar */}
+      {selectedSchoolIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-xl border border-border bg-card px-5 py-3 shadow-lg">
+          <span className="text-sm font-medium text-card-foreground">{selectedSchoolIds.size} school{selectedSchoolIds.size === 1 ? "" : "en"} geselecteerd</span>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => {
+              const toDelete = (schools as any[]).filter((s) => selectedSchoolIds.has(s.id));
+              initiateDelete(toDelete);
+            }}
+          >
+            <Trash2 className="h-4 w-4" /> Verwijderen
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setSelectedSchoolIds(new Set())}>
+            Deselecteren
+          </Button>
+        </div>
+      )}
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Scholen verwijderen</DialogTitle>
+            <DialogDescription>Bevestig de verwijdering van de onderstaande scholen.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {schoolsToDelete.map((school) => {
+              const b = deleteBlockers[school.id];
+              const blocked = b && (b.clients > 0 || b.programs > 0);
+              return (
+                <div key={school.id} className={`flex items-start justify-between rounded-lg border p-3 ${blocked ? "border-destructive/30 bg-destructive/5" : "border-border"}`}>
+                  <div>
+                    <p className="text-sm font-medium text-card-foreground">{school.name}</p>
+                    {school.address && <p className="text-xs text-muted-foreground">{school.address}</p>}
+                  </div>
+                  {blocked && (
+                    <div className="flex items-center gap-1.5 text-xs text-destructive shrink-0">
+                      <AlertTriangleIcon className="h-3.5 w-3.5" />
+                      {b.clients > 0 && <span>{b.clients} deelnemer{b.clients > 1 ? "s" : ""}</span>}
+                      {b.programs > 0 && <span>{b.programs} training{b.programs > 1 ? "en" : ""}</span>}
+                    </div>
+                  )}
+                  {!blocked && <span className="text-xs text-muted-foreground">Kan verwijderd worden</span>}
+                </div>
+              );
+            })}
+            {schoolsToDelete.some((s) => { const b = deleteBlockers[s.id]; return b && (b.clients > 0 || b.programs > 0); }) && (
+              <p className="text-xs text-muted-foreground">
+                Scholen met gekoppelde deelnemers of trainingen worden <strong>niet</strong> verwijderd.
+              </p>
+            )}
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)}>Annuleren</Button>
+            <Button
+              variant="destructive"
+              onClick={executeDelete}
+              disabled={deleting || schoolsToDelete.every((s) => { const b = deleteBlockers[s.id]; return b && (b.clients > 0 || b.programs > 0); })}
+            >
+              {deleting ? <><Loader2 className="h-4 w-4 animate-spin" /> Verwijderen...</> : <><Trash2 className="h-4 w-4" /> Verwijderen</>}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Contact person management dialog */}
       <Dialog open={contactDialogOpen} onOpenChange={(open) => {
