@@ -187,7 +187,7 @@ export default function MedewerkersPage() {
   const trainerMutation = useMutation({
     mutationFn: async () => {
       if (!trainerForm.name) throw new Error("Naam is verplicht");
-      const payload: any = { ...trainerForm };
+      const payload: Record<string, string | null> = { ...trainerForm };
       for (const key of Object.keys(payload)) {
         if (payload[key] === "") payload[key] = null;
       }
