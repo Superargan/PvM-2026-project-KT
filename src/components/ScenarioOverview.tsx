@@ -254,7 +254,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                         </Badge>
                       )}
                       {slots.some((s: any) => s.conversion_status === "mislukt") && (
-                        <Badge variant="outline" className="text-[9px] border-red-300 text-red-700">
+                        <Badge variant="outline" className="text-[9px] border-destructive/30 text-destructive">
                           {slots.filter((s: any) => s.conversion_status === "mislukt").length}✗
                         </Badge>
                       )}
