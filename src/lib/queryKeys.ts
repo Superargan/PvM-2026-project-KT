@@ -45,6 +45,7 @@ export const clientKeys = {
 export const areaKeys = {
   all: ["areas"] as const,
   withNeighborhoods: ["areas", "with-neighborhoods"] as const,
+  neighborhoods: ["areas", "neighborhoods"] as const,
 };
 
 /** Scenario query keys — separate prefix from clients */
