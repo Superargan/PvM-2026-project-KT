@@ -125,15 +125,16 @@ export default function ClientListTable({
                     <td className="hidden px-4 py-3 lg:table-cell">
                       <div className="flex flex-wrap gap-1">
                         {(() => {
-                          const programs = (client as any).program_clients
-                            ?.map((pc: any) => pc.programs)
-                            .filter((p: any) => p && !p.archived)
-                            .sort((a: any, b: any) => {
+                          const clientRow = client as ClientListRow;
+                          const programs = (clientRow.program_clients ?? [])
+                            .map((pc) => pc.programs)
+                            .filter((p): p is ProgramRef => !!p && !p.archived)
+                            .sort((a, b) => {
                               const order: Record<string, number> = { gepland: 0, gestart: 1, afgerond: 2 };
-                              return (order[a.status] ?? 3) - (order[b.status] ?? 3);
-                            }) ?? [];
+                              return (order[a.status ?? ""] ?? 3) - (order[b.status ?? ""] ?? 3);
+                            });
                           if (programs.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
-                          return programs.map((p: any) => {
+                          return programs.map((p) => {
                             const isActive = p.status === "gepland" || p.status === "gestart";
                             return (
                               <Badge
