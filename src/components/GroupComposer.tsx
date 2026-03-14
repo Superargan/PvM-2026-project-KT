@@ -1781,10 +1781,10 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
               <Select value={scenarioStatus} onValueChange={setScenarioStatus}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent className="bg-popover">
-                  <SelectItem value="concept">Concept</SelectItem>
-                  <SelectItem value="vastgezet">Vastgezet</SelectItem>
-                  <SelectItem value="in_uitwerking">In uitwerking</SelectItem>
-                  <SelectItem value="gecontroleerd">Gecontroleerd</SelectItem>
+                  <SelectItem value="concept">Proforma concept</SelectItem>
+                  <SelectItem value="vastgezet">Proforma vastgezet</SelectItem>
+                  <SelectItem value="in_uitwerking">Proforma in uitwerking</SelectItem>
+                  <SelectItem value="gecontroleerd">Proforma gecontroleerd</SelectItem>
                 </SelectContent>
               </Select>
             </div>
