@@ -307,7 +307,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
           <CheckCircle2 className="h-3.5 w-3.5" />
           <span className="font-bold">{counts.voldoende}</span> voldoende dekking
         </Badge>
-        <Badge variant="outline" className="gap-1.5 text-sm px-3 py-1 border-amber-400 text-amber-700">
+        <Badge variant="outline" className="gap-1.5 text-sm px-3 py-1 border-warning-border text-warning-foreground">
           <AlertTriangle className="h-3.5 w-3.5" />
           <span className="font-bold">{counts.onvolledig}</span> onvolledig
         </Badge>
