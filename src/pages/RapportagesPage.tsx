@@ -199,7 +199,7 @@ export default function RapportagesPage() {
   // === 3. <80% aanwezigheid ===
   const lowAttendance = useMemo(() => {
     const cpMap = new Map<string, { total: number; present: number; clientId: string; programId: string }>();
-    attendance.forEach((a: any) => {
+    attendance.forEach((a) => {
       const progId = sessionProgramMap.get(a.session_id);
       if (!progId) return;
       const key = `${a.client_id}_${progId}`;
@@ -209,7 +209,7 @@ export default function RapportagesPage() {
       if (a.present) entry.present++;
     });
 
-    const results: any[] = [];
+    const results: LowAttendanceRow[] = [];
     cpMap.forEach((v) => {
       const pct = v.total > 0 ? (v.present / v.total) * 100 : 100;
       if (pct < 80 && v.total >= 2) {
