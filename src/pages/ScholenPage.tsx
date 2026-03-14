@@ -445,7 +445,7 @@ export default function ScholenPage() {
       for (const a of areas) {
         areaLookup.set(a.name.toLowerCase(), {
           areaId: a.id,
-          neighborhoods: (a as any).neighborhoods ?? [],
+          neighborhoods: a.neighborhoods ?? [],
         });
       }
 
