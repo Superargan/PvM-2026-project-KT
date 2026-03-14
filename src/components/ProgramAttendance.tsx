@@ -107,7 +107,7 @@ export default function ProgramAttendance({
 
   // Derive effective status per session (persisted status + capacity check)
   const sessionsWithEffectiveStatus = useMemo(() => {
-    return sessions.map((s: any) => {
+    return sessions.map((s) => {
       const persisted = (s.status ?? "beschikbaar") as SessionStatus;
       const effective = getCapacityStatus(persisted, enrolledCount || enrolledClients.length, minParticipants ?? null, maxParticipants ?? null);
       return { ...s, effectiveStatus: effective };
@@ -117,7 +117,7 @@ export default function ProgramAttendance({
   // Filter sessions
   const filteredSessions = useMemo(() => {
     if (statusFilter === "alle") return sessionsWithEffectiveStatus;
-    return sessionsWithEffectiveStatus.filter((s: any) => s.effectiveStatus === statusFilter);
+    return sessionsWithEffectiveStatus.filter((s) => s.effectiveStatus === statusFilter);
   }, [sessionsWithEffectiveStatus, statusFilter]);
 
   const toggleAttendance = useMutation({
