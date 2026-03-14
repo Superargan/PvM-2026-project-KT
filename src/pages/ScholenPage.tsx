@@ -737,7 +737,7 @@ export default function ScholenPage() {
 
       // Fetch existing school data for enrichment policy
       const { data: existingSchools } = await supabase.from("schools").select("id, name, school_start_time, school_end_time, schedule_type, source, municipality");
-      const existingById = new Map<string, any>();
+      const existingById = new Map<string, { id: string; school_start_time: string | null; school_end_time: string | null; schedule_type: string | null; source: string | null; municipality: string | null }>();
       for (const s of existingSchools ?? []) {
         existingById.set(s.id, s);
       }
