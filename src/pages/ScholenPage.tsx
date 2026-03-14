@@ -379,6 +379,7 @@ export default function ScholenPage() {
       school_end_time: inputTimeToDb(endTime) as any,
       schedule_type: addScheduleType || null,
       source: (formData.get("source") as string) || null,
+      municipality: ((formData.get("municipality") as string) ?? "").trim() || null,
     } as any);
 
     if (error) {
