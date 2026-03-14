@@ -94,7 +94,7 @@ export default function InvoiceManager({ staffId, staffName }: { staffId?: strin
       setSelectedProgramId("");
       setAmount("");
       setNotes("");
-      qc.invalidateQueries({ queryKey: ["invoices"] });
+      qc.invalidateQueries({ queryKey: invoiceKeys.all });
     } catch (err: any) {
       toast.error(err.message);
     } finally {
