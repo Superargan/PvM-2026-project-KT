@@ -19,7 +19,7 @@ export default function Dashboard() {
   });
 
   const { data: programCount = 0 } = useQuery({
-    queryKey: ["dashboard-programs"],
+    queryKey: programKeys.dashboard,
     queryFn: async () => {
       const { count } = await supabase.from("programs").select("*", { count: "exact", head: true }).eq("archived", false).eq("status", "te_plannen");
       return count ?? 0;
