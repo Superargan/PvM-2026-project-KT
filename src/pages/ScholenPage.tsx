@@ -260,7 +260,7 @@ export default function ScholenPage() {
   const autoDetectNeighborhood = (address: string) => {
     const areaName = getAreaFromAddress(address);
     if (!areaName) return;
-    const area = areas.find((a: any) => a.name === areaName);
+    const area = areas.find((a) => a.name === areaName);
     if (area) {
       setSelectedArea(area.id);
       if (area.neighborhoods?.length > 0) {
