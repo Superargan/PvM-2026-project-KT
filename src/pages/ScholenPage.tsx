@@ -633,11 +633,77 @@ export default function ScholenPage() {
 
   // ── School TIMES ONLY upload (never creates new schools) ──
 
-  const timesUploadMutation = useMutation({
-    mutationFn: async (file: File) => {
+  const [timesRows, setTimesRows] = useState<Record<string, any>[]>([]);
+  const [timesUnmatched, setTimesUnmatched] = useState<string[]>([]);
+  const [timesResolutions, setTimesResolutions] = useState<Record<string, string>>({});
+  const [timesShowResolution, setTimesShowResolution] = useState(false);
+  const [timesImporting, setTimesImporting] = useState(false);
+
+  /** Fuzzy school name matching (same logic as client import) */
+  const findSchoolMatch = (name: string, resolutions?: Record<string, string>): { id: string; name: string } | null => {
+    if (!name) return null;
+    const norm = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
+    // Check user resolutions first
+    if (resolutions && resolutions[norm]) {
+      const s = (schools as any[]).find((s) => s.id === resolutions[norm]);
+      return s ? { id: s.id, name: s.name } : null;
+    }
+
+    // Exact match
+    const exact = (schools as any[]).find((s) => s.name.toLowerCase().trim() === norm);
+    if (exact) return { id: exact.id, name: exact.name };
+
+    // Contains: school name contains search or search contains school name
+    const contains = (schools as any[]).find((s) => {
+      const sNorm = s.name.toLowerCase().trim();
+      return sNorm.includes(norm) || norm.includes(sNorm);
+    });
+    if (contains) return { id: contains.id, name: contains.name };
+
+    // Starts-with match (first significant word)
+    const firstWord = norm.split(/\s+/)[0];
+    if (firstWord.length >= 3) {
+      const startsWith = (schools as any[]).find((s) => s.name.toLowerCase().trim().startsWith(firstWord));
+      if (startsWith) return { id: startsWith.id, name: startsWith.name };
+    }
+
+    return null;
+  };
+
+  const handleTimesFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
       const rows = await readFileAsRows(file);
       if (rows.length === 0) throw new Error("Bestand is leeg");
+      setTimesRows(rows);
+      // Detect unmatched
+      const unmatched = new Set<string>();
+      for (const r of rows) {
+        const name = r["naam"] || r["Naam"] || r["name"] || r["School"] || r["school"] || r["VESTIGINGSNAAM"] || "";
+        if (name && !findSchoolMatch(name)) {
+          const norm = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+          unmatched.add(norm);
+        }
+      }
+      if (unmatched.size > 0) {
+        setTimesUnmatched(Array.from(unmatched));
+        setTimesShowResolution(true);
+      } else {
+        setTimesUnmatched([]);
+        setTimesShowResolution(false);
+        // Auto-import if all matched
+        runTimesImport(rows, {});
+      }
+    } catch (err: any) {
+      toast({ title: "Fout bij lezen", description: err.message, variant: "destructive" });
+    }
+  };
 
+  const runTimesImport = async (rows: Record<string, any>[], resolutions: Record<string, string>) => {
+    setTimesImporting(true);
+    try {
       const headers = Object.keys(rows[0] ?? {});
       const startTimeCol = findMatchingColumn(headers, SCHOOL_START_TIME_COLUMNS);
       const endTimeCol = findMatchingColumn(headers, SCHOOL_END_TIME_COLUMNS);
@@ -645,11 +711,11 @@ export default function ScholenPage() {
       const sourceCol = findMatchingColumn(headers, SOURCE_COLUMNS);
       const municipalityCol = findMatchingColumn(headers, MUNICIPALITY_COLUMNS);
 
-      // Fetch all existing schools for matching
+      // Fetch existing school data for enrichment policy
       const { data: existingSchools } = await supabase.from("schools").select("id, name, school_start_time, school_end_time, schedule_type, source, municipality");
-      const existingMap = new Map<string, { id: string; school_start_time: string | null; school_end_time: string | null; schedule_type: string | null; source: string | null; municipality: string | null }>();
+      const existingById = new Map<string, any>();
       for (const s of existingSchools ?? []) {
-        existingMap.set(normalizeSchoolName(s.name), s);
+        existingById.set(s.id, s);
       }
 
       let invalidTimeCount = 0;
@@ -662,13 +728,14 @@ export default function ScholenPage() {
         const name = r["naam"] || r["Naam"] || r["name"] || r["School"] || r["school"] || r["VESTIGINGSNAAM"] || "";
         if (!name) continue;
 
-        const normalized = normalizeSchoolName(name);
-        const existing = existingMap.get(normalized);
-
-        if (!existing) {
+        const match = findSchoolMatch(name, resolutions);
+        if (!match) {
           unmatchedNames.push(name);
           continue;
         }
+
+        const existing = existingById.get(match.id);
+        if (!existing) continue;
 
         // Parse times
         const rawStart = startTimeCol ? r[startTimeCol] : null;
@@ -710,7 +777,7 @@ export default function ScholenPage() {
           if (hasSourceUpdate) updatePayload.source = source;
           if (hasMunicipalityUpdate) updatePayload.municipality = municipality;
 
-          const { error } = await supabase.from("schools").update(updatePayload).eq("id", existing.id);
+          const { error } = await supabase.from("schools").update(updatePayload).eq("id", match.id);
           if (!error) {
             updatedNames.push(name);
             if (hasTimeUpdate) timesSetCount++;
@@ -719,36 +786,34 @@ export default function ScholenPage() {
         }
       }
 
-      return { updatedNames, unmatchedNames, timesSet: timesSetCount, invalidTimes: invalidTimeCount, municipalitySet: municipalitySetCount };
-    },
-    onSuccess: (result) => {
       const parts: string[] = [];
-      if (result.updatedNames.length > 0) parts.push(`${result.updatedNames.length} scholen bijgewerkt`);
-      if (result.timesSet > 0) parts.push(`${result.timesSet} schooltijden ingesteld`);
-      if (result.municipalitySet > 0) parts.push(`${result.municipalitySet} gemeenten ingesteld`);
-      if (result.unmatchedNames.length > 0) parts.push(`${result.unmatchedNames.length} niet gevonden`);
-      if (result.invalidTimes > 0) parts.push(`${result.invalidTimes} ongeldige tijdwaarden`);
+      if (updatedNames.length > 0) parts.push(`${updatedNames.length} scholen bijgewerkt`);
+      if (timesSetCount > 0) parts.push(`${timesSetCount} schooltijden ingesteld`);
+      if (municipalitySetCount > 0) parts.push(`${municipalitySetCount} gemeenten ingesteld`);
+      if (unmatchedNames.length > 0) parts.push(`${unmatchedNames.length} niet gevonden`);
+      if (invalidTimeCount > 0) parts.push(`${invalidTimeCount} ongeldige tijdwaarden`);
       toast({ title: parts.join(", ") || "Import voltooid — geen wijzigingen" });
+
       setTimesUploadOpen(false);
+      setTimesRows([]);
+      setTimesUnmatched([]);
+      setTimesResolutions({});
+      setTimesShowResolution(false);
       setImportResult({
         added: [],
-        updated: result.updatedNames,
-        unmatched: result.unmatchedNames,
-        timesSet: result.timesSet,
-        invalidTimes: result.invalidTimes,
-        municipalitySet: result.municipalitySet,
+        updated: updatedNames,
+        unmatched: unmatchedNames,
+        timesSet: timesSetCount,
+        invalidTimes: invalidTimeCount,
+        municipalitySet: municipalitySetCount,
       });
       setImportResultOpen(true);
       invalidateAllSchoolQueries(queryClient);
-    },
-    onError: (err: any) => {
+    } catch (err: any) {
       toast({ title: "Import mislukt", description: err.message, variant: "destructive" });
-    },
-  });
-
-  const handleTimesFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) timesUploadMutation.mutate(file);
+    } finally {
+      setTimesImporting(false);
+    }
   };
 
   // ── Contact person file upload (Excel + CSV + Outlook) ──
