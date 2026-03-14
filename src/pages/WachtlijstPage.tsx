@@ -93,6 +93,7 @@ export default function WachtlijstPage() {
     onSuccess: () => {
       toast.success("Deelnemer toegewezen aan programma");
       qc.invalidateQueries({ queryKey: clientKeys.all });
+      qc.invalidateQueries({ queryKey: programKeys.all });
     },
     onError: (err: any) => toast.error(err.message),
   });
