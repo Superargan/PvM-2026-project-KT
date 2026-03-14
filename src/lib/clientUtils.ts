@@ -1,4 +1,5 @@
 import { differenceInYears, parseISO, addMonths, isAfter } from "date-fns";
+import type { ClientAreaFields, AreaRef, AreaPreferenceRow, ClientAvailabilityRow } from "@/lib/queryShapes";
 
 /**
  * Standaard select-fragment voor alle client-queries die gebiedsresolutie nodig hebben.
