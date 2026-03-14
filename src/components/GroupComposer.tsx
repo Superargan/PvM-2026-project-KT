@@ -1497,7 +1497,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                     )}
                   </div>
                   {linkedPrograms[key] && (
-                    <p className="text-[10px] text-blue-700 flex items-center gap-1">
+                    <p className="text-[10px] text-info-foreground flex items-center gap-1">
                       <Link2 className="h-3 w-3" />
                       Deelnemers worden bij omzetting <strong>toegevoegd</strong> aan dit programma
                     </p>
