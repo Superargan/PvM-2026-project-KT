@@ -142,11 +142,11 @@ export default function RapportagesPage() {
   const loading = cl || pcl || prl || sl || al;
 
   // Lookup maps
-  const schoolMap = useMemo(() => new Map(schools.map((s: any) => [s.id, s])), [schools]);
-  const areaMap = useMemo(() => new Map(areas.map((a: any) => [a.id, a.name])), [areas]);
-  const clientMap = useMemo(() => new Map(clients.map((c: any) => [c.id, c])), [clients]);
-  const programMap = useMemo(() => new Map(programs.map((p: any) => [p.id, p])), [programs]);
-  const sessionProgramMap = useMemo(() => new Map(sessions.map((s: any) => [s.id, s.program_id])), [sessions]);
+  const schoolMap = useMemo(() => new Map(schools.map((s) => [s.id, s])), [schools]);
+  const areaMap = useMemo(() => new Map(areas.map((a) => [a.id, a.name])), [areas]);
+  const clientMap = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
+  const programMap = useMemo(() => new Map(programs.map((p) => [p.id, p])), [programs]);
+  const sessionProgramMap = useMemo(() => new Map(sessions.map((s) => [s.id, s.program_id])), [sessions]);
 
   // Breakdown key for a client
   function breakdownKey(clientId: string): string {
