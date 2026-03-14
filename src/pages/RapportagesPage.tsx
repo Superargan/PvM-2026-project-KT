@@ -309,7 +309,7 @@ export default function RapportagesPage() {
       "Anders namelijk": 0, "Niet van toepassing": 0,
     };
 
-    const clientRows = pClients.map((pc: any, i: number) => {
+    const clientRows = pClients.map((pc, i: number) => {
       const c = clientMap.get(pc.client_id);
       const att = clientAttendance.get(pc.client_id);
       const sessionsAttended = pc.sessions_attended ?? att?.present ?? 0;

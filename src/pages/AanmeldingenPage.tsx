@@ -1021,8 +1021,8 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, are
     const schoolId = schoolAssignments[clientId];
     if (!schoolId) return;
     setSavingSchool(clientId);
-    const school = schools.find((s: any) => s.id === schoolId);
-    const neighborhoodId = (school as any)?.neighborhood_id ?? null;
+    const school = schools.find((s) => s.id === schoolId);
+    const neighborhoodId = school?.neighborhood_id ?? null;
     const { error } = await supabase.from("clients").update({ school_id: schoolId, neighborhood_id: neighborhoodId }).eq("id", clientId);
     setSavingSchool(null);
     if (error) {

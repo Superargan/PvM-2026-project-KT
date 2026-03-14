@@ -269,7 +269,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {activeAreas.map((area: any) => {
+              {activeAreas.map((area) => {
                 const row = matrix.m[area.id];
                 const areaTotal = ageCategories.reduce((sum, age) => {
                   const cell = row[age];
