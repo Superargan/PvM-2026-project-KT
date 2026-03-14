@@ -456,9 +456,9 @@ export default function ClientDetailPage() {
               </Field>
               {/* Schooltijden & Gemeente — read-only, derived from linked school (SSOT) */}
               {(() => {
-                const linkedSchool = schools.find((s: any) => s.id === form.school_id);
+                const linkedSchool = schools.find((s) => s.id === form.school_id);
                 const range = linkedSchool ? formatSchoolTimeRange(linkedSchool.school_start_time, linkedSchool.school_end_time) : "—";
-                const municipality = linkedSchool ? getEffectiveMunicipality((linkedSchool as any).municipality) : null;
+                const municipality = linkedSchool ? getEffectiveMunicipality(linkedSchool.municipality) : null;
                 return (
                   <>
                     {range !== "—" && (
