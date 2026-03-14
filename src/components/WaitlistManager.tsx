@@ -56,7 +56,7 @@ export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => 
   });
 
   const { data: programs = [] } = useQuery({
-    queryKey: ["active-programs"],
+    queryKey: programKeys.available,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("programs")
