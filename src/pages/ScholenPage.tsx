@@ -904,7 +904,7 @@ export default function ScholenPage() {
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
                   Upload een Excel (.xlsx/.xls) of CSV-bestand. Zorg dat er minimaal een kolom <strong>Naam</strong> is.
-                  Optionele kolommen: Adres, Email, Telefoon, Leerlingen.
+                  Optionele kolommen: Adres, Email, Telefoon, Leerlingen, Schooltijd begin, Schooltijd eind.
                 </p>
                 <div className="flex items-center justify-center rounded-lg border-2 border-dashed border-border p-8">
                   <label className="flex cursor-pointer flex-col items-center gap-2 text-center">
