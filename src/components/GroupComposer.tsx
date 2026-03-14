@@ -1374,7 +1374,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                     )}
                     {selectedReserves.length > 0 && (
                       <>
-                        <div className="text-[10px] font-semibold text-purple-700 uppercase tracking-wider px-2 pt-2 pb-0.5 flex items-center gap-1">
+                        <div className="text-[10px] font-semibold text-role-foreground uppercase tracking-wider px-2 pt-2 pb-0.5 flex items-center gap-1">
                           <Search className="h-2.5 w-2.5" />
                           Uit reservegebied ({selectedReserves.length})
                         </div>

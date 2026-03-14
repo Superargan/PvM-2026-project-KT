@@ -325,7 +325,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                                 <div key={mr.clientId} className="flex items-start gap-1.5 ml-3 mt-0.5">
                                   <span className="text-muted-foreground">•</span>
                                   <span className="text-foreground font-medium">{mr.clientId.slice(0, 8)}…</span>
-                                  <span className={mr.status === "ongeldig" ? "text-red-700" : "text-amber-700"}>
+                                  <span className={mr.status === "ongeldig" ? "text-destructive" : "text-warning-foreground"}>
                                     {mr.issues.join("; ")}
                                   </span>
                                 </div>
