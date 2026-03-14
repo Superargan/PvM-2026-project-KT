@@ -1340,6 +1340,49 @@ export default function PlanningPage() {
       </Dialog>
 
       <PlanningImport open={importOpen} onOpenChange={setImportOpen} />
+
+      {/* Dirty-state 3-choice dialog */}
+      <Dialog open={dirtyDialogOpen} onOpenChange={(open) => { if (!open) { setDirtyDialogOpen(false); setPendingTabSwitch(null); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Niet-opgeslagen wijzigingen</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Er zijn niet-opgeslagen wijzigingen in de groepssamenstelling. Wat wil je doen?
+          </p>
+          <div className="flex flex-col gap-2">
+            <Button onClick={async () => {
+              const saved = await groupComposerRef.current?.triggerSave();
+              if (saved) {
+                setDirtyDialogOpen(false);
+                if (dirtyDialogAction === "tab" && pendingTabSwitch) {
+                  setActiveTab(pendingTabSwitch);
+                  setPendingTabSwitch(null);
+                } else {
+                  setShowGroupComposer(false);
+                  setActiveScenarioId(null);
+                }
+              }
+            }} className="w-full">
+              Opslaan als proforma planning
+            </Button>
+            <Button variant="outline" onClick={() => {
+              setDirtyDialogOpen(false);
+              if (dirtyDialogAction === "tab" && pendingTabSwitch) {
+                setActiveTab(pendingTabSwitch);
+                setPendingTabSwitch(null);
+              }
+              setShowGroupComposer(false);
+              setActiveScenarioId(null);
+            }} className="w-full">
+              Verwerpen
+            </Button>
+            <Button variant="ghost" onClick={() => { setDirtyDialogOpen(false); setPendingTabSwitch(null); }} className="w-full">
+              Annuleren
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
