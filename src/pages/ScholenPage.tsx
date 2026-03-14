@@ -1621,7 +1621,7 @@ export default function ScholenPage() {
                     <div className="flex items-center gap-2">
                       {school.referrers && school.referrers.length > 0 ? (
                         <div className="space-y-1 flex-1">
-                          {school.referrers.slice(0, 2).map((ref: any) => (
+                          {school.referrers.slice(0, 2).map((ref) => (
                             <div key={ref.id} className="text-xs">
                               <span className="font-medium text-card-foreground">{ref.name}</span>
                               {ref.function_title && (
