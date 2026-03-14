@@ -448,6 +448,7 @@ export default function ScholenPage() {
       let invalidTimeCount = 0;
       let timesSetCount = 0;
       let updatedCount = 0;
+      let municipalitySetCount = 0;
 
       const mapped = rows.map((r) => {
         // Build address from DUO columns if available
