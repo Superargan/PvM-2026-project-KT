@@ -244,12 +244,12 @@ export default function ScholenPage() {
     return acc;
   }, {});
 
-  const schoolPrograms = programsBySchool.reduce((acc: Record<string, any[]>, p: any) => {
+  const schoolPrograms = programsBySchool.reduce((acc: Record<string, typeof programsBySchool>, p) => {
     if (!p.school_id) return acc;
     if (!acc[p.school_id]) acc[p.school_id] = [];
     acc[p.school_id].push(p);
     return acc;
-  }, {});
+  }, {} as Record<string, typeof programsBySchool>);
 
   const getTotalClients = (schoolId: string) => {
     const counts = schoolClientCounts[schoolId];
