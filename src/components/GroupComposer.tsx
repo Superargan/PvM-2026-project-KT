@@ -1611,7 +1611,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                                 </Button>
                               </div>
                               <div className="flex items-center gap-3 pl-6">
-                                <Badge variant="outline" className={`text-xs capitalize ${isThisSimulated ? "border-primary/30 text-primary" : idx === 0 ? "border-emerald-300 text-emerald-700" : "border-border text-foreground"}`}>
+                                <Badge variant="outline" className={`text-xs capitalize ${isThisSimulated ? "border-primary/30 text-primary" : idx === 0 ? "border-success-border text-success-foreground" : "border-border text-foreground"}`}>
                                   {suggestion.dayName}
                                 </Badge>
                                 <span className="text-sm font-medium text-foreground">
