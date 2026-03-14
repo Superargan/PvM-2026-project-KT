@@ -2,6 +2,7 @@ import { useState, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { areaKeys, schoolKeys, clientKeys, rapportageKeys, documentKeys } from "@/lib/queryKeys";
+import type { RapportageProgramRow, RapportageStaffRow, RapportageDocRow, LowAttendanceRow, IdNameRef } from "@/lib/queryShapes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -141,11 +142,11 @@ export default function RapportagesPage() {
   const loading = cl || pcl || prl || sl || al;
 
   // Lookup maps
-  const schoolMap = useMemo(() => new Map(schools.map((s: any) => [s.id, s])), [schools]);
-  const areaMap = useMemo(() => new Map(areas.map((a: any) => [a.id, a.name])), [areas]);
-  const clientMap = useMemo(() => new Map(clients.map((c: any) => [c.id, c])), [clients]);
-  const programMap = useMemo(() => new Map(programs.map((p: any) => [p.id, p])), [programs]);
-  const sessionProgramMap = useMemo(() => new Map(sessions.map((s: any) => [s.id, s.program_id])), [sessions]);
+  const schoolMap = useMemo(() => new Map(schools.map((s) => [s.id, s])), [schools]);
+  const areaMap = useMemo(() => new Map(areas.map((a) => [a.id, a.name])), [areas]);
+  const clientMap = useMemo(() => new Map(clients.map((c) => [c.id, c])), [clients]);
+  const programMap = useMemo(() => new Map(programs.map((p) => [p.id, p])), [programs]);
+  const sessionProgramMap = useMemo(() => new Map(sessions.map((s) => [s.id, s.program_id])), [sessions]);
 
   // Breakdown key for a client
   function breakdownKey(clientId: string): string {
@@ -169,7 +170,7 @@ export default function RapportagesPage() {
   // === 1. Aanmeldingen per periode ===
   const aanmeldData = useMemo(() => {
     const map = new Map<string, Map<string, number>>();
-    clients.forEach((c: any) => {
+    clients.forEach((c) => {
       const pk = periodKey(new Date(c.registration_date ?? c.created_at), gran);
       const bk = breakdownKey(c.id);
       if (!map.has(pk)) map.set(pk, new Map());
@@ -182,7 +183,7 @@ export default function RapportagesPage() {
   // === 2. Deelnemers per periode ===
   const deelnemerData = useMemo(() => {
     const map = new Map<string, Map<string, Set<string>>>();
-    programClients.forEach((pc: any) => {
+    programClients.forEach((pc) => {
       const pk = periodKey(new Date(pc.enrolled_at ?? pc.created_at), gran);
       const bk = breakdown === "gebied" || breakdown === "school"
         ? breakdownKeyForProgram(pc.program_id)
@@ -198,7 +199,7 @@ export default function RapportagesPage() {
   // === 3. <80% aanwezigheid ===
   const lowAttendance = useMemo(() => {
     const cpMap = new Map<string, { total: number; present: number; clientId: string; programId: string }>();
-    attendance.forEach((a: any) => {
+    attendance.forEach((a) => {
       const progId = sessionProgramMap.get(a.session_id);
       if (!progId) return;
       const key = `${a.client_id}_${progId}`;
@@ -208,7 +209,7 @@ export default function RapportagesPage() {
       if (a.present) entry.present++;
     });
 
-    const results: any[] = [];
+    const results: LowAttendanceRow[] = [];
     cpMap.forEach((v) => {
       const pct = v.total > 0 ? (v.present / v.total) * 100 : 100;
       if (pct < 80 && v.total >= 2) {
@@ -237,16 +238,16 @@ export default function RapportagesPage() {
     const program = programMap.get(programId);
     if (!program) return;
 
-    const pClients = programClients.filter((pc: any) => pc.program_id === programId);
-    const pSessions = sessions.filter((s: any) => s.program_id === programId);
+    const pClients = programClients.filter((pc) => pc.program_id === programId);
+    const pSessions = sessions.filter((s) => s.program_id === programId);
     const trainers = programStaff
-      .filter((ps: any) => ps.program_id === programId && ps.role !== "invaller")
-      .map((ps: any) => (ps.staff as any)?.name ?? "")
+      .filter((ps) => ps.program_id === programId && ps.role !== "invaller")
+      .map((ps) => (ps.staff as { name: string | null; trade_name: string | null } | null)?.name ?? "")
       .filter(Boolean);
 
     // Build attendance per client
     const clientAttendance = new Map<string, { total: number; present: number }>();
-    attendance.forEach((a: any) => {
+    attendance.forEach((a) => {
       const progId = sessionProgramMap.get(a.session_id);
       if (progId !== programId) return;
       if (!clientAttendance.has(a.client_id)) clientAttendance.set(a.client_id, { total: 0, present: 0 });
@@ -256,7 +257,8 @@ export default function RapportagesPage() {
     });
 
     // Extract postcode from address (e.g. "Gordelweg 216, 3039 GA" -> "3039 GA")
-    const addressStr = program.schools?.address ?? "";
+    const prog = programMap.get(programId) as RapportageProgramRow | undefined;
+    const addressStr = prog?.schools?.address ?? "";
     const postcodeMatch = addressStr.match(/\b(\d{4}\s?[A-Z]{2})\b/);
     const postcode = postcodeMatch ? postcodeMatch[1] : addressStr;
 
@@ -307,7 +309,7 @@ export default function RapportagesPage() {
       "Anders namelijk": 0, "Niet van toepassing": 0,
     };
 
-    const clientRows = pClients.map((pc: any, i: number) => {
+    const clientRows = pClients.map((pc, i: number) => {
       const c = clientMap.get(pc.client_id);
       const att = clientAttendance.get(pc.client_id);
       const sessionsAttended = pc.sessions_attended ?? att?.present ?? 0;

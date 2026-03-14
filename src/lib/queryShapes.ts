@@ -435,3 +435,68 @@ export interface SchoolDropdownRow {
   school_end_time?: string | null;
   municipality?: string | null;
 }
+
+/** Scenario member count query row */
+export interface ScenarioMemberCountRow {
+  scenario_slot_id: string;
+  simulation_scenario_slots: { scenario_id: string } | null;
+}
+
+/** Low-attendance result row (RapportagesPage) */
+export interface LowAttendanceRow {
+  naam: string;
+  programma: string;
+  aanwezig: number;
+  totaal: number;
+  percentage: number;
+  bk: string;
+}
+
+/** Staff dropdown row (for assignments) */
+export interface StaffDropdownRow {
+  id: string;
+  name: string | null;
+  user_id: string | null;
+}
+
+/** Client assignment row with staff join */
+export interface AssignmentWithStaff {
+  id: string;
+  staff_id: string;
+  staff: { name: string | null } | null;
+}
+
+/** Available program dropdown row */
+export interface AvailableProgramRow {
+  id: string;
+  name: string;
+  status: string | null;
+  start_date: string | null;
+  age_category: string | null;
+  schools: { name: string } | null;
+}
+
+/** Training location with joins */
+export interface TrainingLocationRow {
+  id: string;
+  name: string;
+  address: string | null;
+  postal_code: string | null;
+  city: string | null;
+  area_id: string | null;
+  neighborhood_id: string | null;
+  notes: string | null;
+  active: boolean;
+  neighborhoods: { name: string; area_id: string; areas: { name: string } | null } | null;
+  areas: { name: string } | null;
+}
+
+/** Training location form state */
+export interface TrainingLocationForm {
+  name: string;
+  address: string;
+  postal_code: string;
+  city: string;
+  notes: string;
+  active: boolean;
+}

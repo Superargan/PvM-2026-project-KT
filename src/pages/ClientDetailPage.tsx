@@ -236,22 +236,22 @@ export default function ClientDetailPage() {
         intake_notes: client.intake_notes ?? "",
         intake_status: client.intake_status ?? "nieuw",
         intake_date: client.intake_date ?? "",
-        registration_date: (client as any).registration_date ?? "",
+        registration_date: client.registration_date ?? "",
         consent_data_processing: client.consent_data_processing ?? false,
         whatsapp_consent: client.whatsapp_consent ?? false,
         notes: client.notes ?? "",
         dropout_reason: client.dropout_reason ?? "",
         dropout_action: client.dropout_action ?? "",
         waitlist_area_id: client.waitlist_area_id ?? "",
-        all_areas_flexible: (client as any).all_areas_flexible ?? false,
-        area_notes: (client as any).area_notes ?? "",
+        all_areas_flexible: client.all_areas_flexible ?? false,
+        area_notes: client.area_notes ?? "",
       });
       setDirty(false);
     }
   }, [client]);
 
-  const updateField = (field: string, value: any) => {
-    setForm((prev: any) => {
+  const updateField = (field: string, value: string | boolean | null) => {
+    setForm((prev: Record<string, unknown>) => {
       const next = { ...prev, [field]: value };
       // When user manually changes DOB, mark as no longer estimated
       if (field === "date_of_birth") {
@@ -259,10 +259,10 @@ export default function ClientDetailPage() {
       }
       // Auto-fill area and neighborhood from school
       if (field === "school_id") {
-        const school = schools.find((s: any) => s.id === value);
-        const areaId = (school as any)?.neighborhoods?.area_id;
+        const school = schools.find((s) => s.id === value);
+        const areaId = school?.neighborhoods?.area_id;
         if (areaId) next.waitlist_area_id = areaId;
-        next.neighborhood_id = (school as any)?.neighborhood_id ?? null;
+        next.neighborhood_id = school?.neighborhood_id ?? null;
       }
       return next;
     });
@@ -293,7 +293,7 @@ export default function ClientDetailPage() {
       queryClient.invalidateQueries({ queryKey: clientKeys.all });
       queryClient.invalidateQueries({ queryKey: auditKeys.forClient(id!) });
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast({ title: "Fout", description: err.message, variant: "destructive" });
     },
   });
@@ -318,7 +318,7 @@ export default function ClientDetailPage() {
       queryClient.invalidateQueries({ queryKey: programKeys.all });
       navigate("/clienten");
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast({ title: "Fout bij verwijderen", description: err.message, variant: "destructive" });
     },
   });
@@ -345,7 +345,7 @@ export default function ClientDetailPage() {
   const age = calculateAge(client.date_of_birth);
   const status = client.intake_status ?? "nieuw";
   const filteredReferrers = form.school_id
-    ? referrers.filter((r: any) => r.school_id === form.school_id)
+    ? referrers.filter((r) => r.school_id === form.school_id)
     : referrers;
 
   return (
@@ -456,9 +456,9 @@ export default function ClientDetailPage() {
               </Field>
               {/* Schooltijden & Gemeente — read-only, derived from linked school (SSOT) */}
               {(() => {
-                const linkedSchool = schools.find((s: any) => s.id === form.school_id);
+                const linkedSchool = schools.find((s) => s.id === form.school_id);
                 const range = linkedSchool ? formatSchoolTimeRange(linkedSchool.school_start_time, linkedSchool.school_end_time) : "—";
-                const municipality = linkedSchool ? getEffectiveMunicipality((linkedSchool as any).municipality) : null;
+                const municipality = linkedSchool ? getEffectiveMunicipality(linkedSchool.municipality) : null;
                 return (
                   <>
                     {range !== "—" && (
@@ -478,7 +478,7 @@ export default function ClientDetailPage() {
                 <Select value={form.waitlist_area_id ?? ""} onValueChange={(v) => updateField("waitlist_area_id", v)}>
                   <SelectTrigger><SelectValue placeholder="Automatisch via school" /></SelectTrigger>
                   <SelectContent className="bg-popover">
-                    {areas.map((a: any) => (
+                    {areas.map((a) => (
                       <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -488,7 +488,7 @@ export default function ClientDetailPage() {
                 <Select value={form.referrer_id ?? ""} onValueChange={(v) => updateField("referrer_id", v)}>
                   <SelectTrigger><SelectValue placeholder="Selecteer verwijzer" /></SelectTrigger>
                   <SelectContent className="bg-popover">
-                    {filteredReferrers.map((r: any) => (
+                    {filteredReferrers.map((r) => (
                       <SelectItem key={r.id} value={r.id}>{r.name}{r.function_title ? ` (${r.function_title})` : ""}</SelectItem>
                     ))}
                   </SelectContent>
@@ -503,8 +503,8 @@ export default function ClientDetailPage() {
               allAreasFlexible={form.all_areas_flexible ?? false}
               onAllAreasFlexibleChange={(v) => updateField("all_areas_flexible", v)}
               areas={areas}
-              areaNotes={(form as any).area_notes ?? ""}
-              onAreaNotesChange={(v) => updateField("area_notes" as any, v)}
+              areaNotes={form.area_notes ?? ""}
+              onAreaNotesChange={(v) => updateField("area_notes", v)}
             />
 
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t border-border pt-4">Ouder/Verzorger</p>
@@ -636,14 +636,14 @@ export default function ClientDetailPage() {
                 </div>
                 <div>
                   <span className="text-muted-foreground">Flexibel:</span>{" "}
-                  <span className="font-medium text-card-foreground">{(client as any).all_areas_flexible ? "Ja (alle gebieden)" : "Nee"}</span>
+                  <span className="font-medium text-card-foreground">{client.all_areas_flexible ? "Ja (alle gebieden)" : "Nee"}</span>
                 </div>
                 {areaPrefs.length > 0 && (
                   <div className="col-span-2">
                     <span className="text-muted-foreground">Reserve-gebieden:</span>{" "}
                     <span className="font-medium text-card-foreground">
-                      {areaPrefs.map((p: any) => {
-                        const areaName = areas.find((a: any) => a.id === p.area_id)?.name ?? "Onbekend";
+                      {areaPrefs.map((p) => {
+                        const areaName = areas.find((a) => a.id === p.area_id)?.name ?? "Onbekend";
                         const order = p.preference_order ?? "?";
                         return (
                           <Badge key={p.id} variant="outline" className="mr-1.5 text-xs">
@@ -654,10 +654,10 @@ export default function ClientDetailPage() {
                     </span>
                   </div>
                 )}
-                {(client as any).area_notes && (
+                {client.area_notes && (
                   <div className="col-span-2">
                     <span className="text-muted-foreground">Gebiedsnotities:</span>{" "}
-                    <span className="font-medium text-card-foreground whitespace-pre-line">{(client as any).area_notes}</span>
+                    <span className="font-medium text-card-foreground whitespace-pre-line">{client.area_notes}</span>
                   </div>
                 )}
               </div>
@@ -682,7 +682,7 @@ export default function ClientDetailPage() {
                 {programs.length === 0 && (
                   <tr><td colSpan={4} className="px-5 py-8 text-center text-sm text-muted-foreground">Nog niet ingeschreven in een programma</td></tr>
                 )}
-                {programs.map((pc: any) => (
+                {programs.map((pc) => (
                   <tr key={pc.id} className="transition-colors hover:bg-muted/30">
                     <td className="px-5 py-4 text-sm font-medium text-card-foreground">{pc.programs?.name}</td>
                     <td className="px-5 py-4 text-sm text-card-foreground">{pc.programs?.schools?.name ?? "—"}</td>
@@ -716,7 +716,7 @@ export default function ClientDetailPage() {
                   <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
                     <SelectTrigger><SelectValue placeholder="Selecteer een template" /></SelectTrigger>
                     <SelectContent className="bg-popover">
-                      {docTemplates.map((t: any) => (
+                      {docTemplates.map((t) => (
                         <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -743,7 +743,7 @@ export default function ClientDetailPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {generatedDocs.map((doc: any) => (
+                  {generatedDocs.map((doc) => (
                     <tr key={doc.id} className="transition-colors hover:bg-muted/30">
                       <td className="px-5 py-4 text-sm font-medium text-card-foreground">{doc.file_name}</td>
                       <td className="px-5 py-4">

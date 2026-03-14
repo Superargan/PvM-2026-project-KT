@@ -56,20 +56,20 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
     },
   });
 
-  const prefsByClient = useMemo(() => buildPrefsByClientMap(allPreferences as any), [allPreferences]);
+  const prefsByClient = useMemo(() => buildPrefsByClientMap(allPreferences), [allPreferences]);
 
   const ageCategories: AgeCategory[] = ["4-7 jaar", "8-12 jaar"];
 
   // Build matrix: area × age → { intake: client[], wachtlijst: client[], reserveIntake: client[], reserveWachtlijst: client[] }
   const matrix = useMemo(() => {
-    const m: Record<string, Record<string, { intake: any[]; wachtlijst: any[]; reserveIntake: any[]; reserveWachtlijst: any[] }>> = {};
+    const m: Record<string, Record<string, { intake: typeof clients; wachtlijst: typeof clients; reserveIntake: typeof clients; reserveWachtlijst: typeof clients }>> = {};
     let noArea = 0;
     let noDob = 0;
     let outsideRange = 0;
     let estimatedDob = 0;
-    const estimatedDobClients: any[] = [];
+    const estimatedDobClients: typeof clients = [];
 
-    areas.forEach((a: any) => {
+    areas.forEach((a) => {
       m[a.id] = {
         "4-7 jaar": { intake: [], wachtlijst: [], reserveIntake: [], reserveWachtlijst: [] },
         "8-12 jaar": { intake: [], wachtlijst: [], reserveIntake: [], reserveWachtlijst: [] },
@@ -78,7 +78,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
 
     const fixableClients: { clientId: string; areaId: string }[] = [];
 
-    clients.forEach((c: any) => {
+    clients.forEach((c) => {
       const primaryAreaId = resolveAreaId(c);
       const age = getAgeCategoryPlanning(c.date_of_birth);
       const isIntake = (c.intake_status ?? "wachtlijst") === "intake_afgerond";
@@ -119,7 +119,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
 
       // Flexible
       if (c.all_areas_flexible) {
-        areas.forEach((a: any) => {
+        areas.forEach((a) => {
           if (a.id !== primaryAreaId && m[a.id] && !(prefs && prefs[a.id])) {
             if (isIntake) m[a.id][age].reserveIntake.push(c);
             else m[a.id][age].reserveWachtlijst.push(c);
@@ -132,7 +132,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
   }, [clients, areas, prefsByClient]);
 
   const activeAreas = useMemo(() => {
-    return areas.filter((a: any) => {
+    return areas.filter((a) => {
       // Apply global area filter
       if (filterArea && filterArea !== "alle" && a.id !== filterArea) return false;
       const row = matrix.m[a.id];
@@ -162,8 +162,8 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
   }, [matrix]);
 
   // Count totals for summary
-  const totalIntake = clients.filter((c: any) => c.intake_status === "intake_afgerond").length;
-  const totalWachtlijst = clients.filter((c: any) => c.intake_status === "wachtlijst").length;
+  const totalIntake = clients.filter((c) => c.intake_status === "intake_afgerond").length;
+  const totalWachtlijst = clients.filter((c) => c.intake_status === "wachtlijst").length;
 
   return (
     <TooltipProvider>
@@ -203,7 +203,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
               <PopoverContent className="w-72 max-h-64 overflow-y-auto p-2" align="start">
                 <p className="text-xs font-semibold text-muted-foreground mb-2">Geschatte geboortedatum (uit import)</p>
                 <div className="space-y-1">
-                  {matrix.estimatedDobClients.map((c: any) => (
+                  {matrix.estimatedDobClients.map((c) => (
                     <button
                       key={c.id}
                       className="w-full text-left text-sm px-2 py-1.5 rounded hover:bg-muted/50 transition-colors text-primary hover:underline"
@@ -269,7 +269,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {activeAreas.map((area: any) => {
+              {activeAreas.map((area) => {
                 const row = matrix.m[area.id];
                 const areaTotal = ageCategories.reduce((sum, age) => {
                   const cell = row[age];

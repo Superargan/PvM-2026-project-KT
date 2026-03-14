@@ -115,7 +115,7 @@ export default function MedewerkersPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("staff")
-        .select("id, name, trade_name, kvk_number, address, postal_code, city, phone, email, user_id, kvk_uittreksel_path, kvk_uittreksel_uploaded_at, vog_path, vog_uploaded_at, program_staff!program_staff_staff_id_fkey(id, programs(name))")
+        .select("id, name, trade_name, kvk_number, address, postal_code, city, phone, email, user_id, trainer_type, kvk_uittreksel_path, kvk_uittreksel_uploaded_at, vog_path, vog_uploaded_at, program_staff!program_staff_staff_id_fkey(id, programs(name))")
         .eq("archived", false)
         .not("name", "is", null)
         .order("name");
@@ -142,7 +142,7 @@ export default function MedewerkersPage() {
         .from("program_staff")
         .select("program_id, programs(id, name)")
         .eq("staff_id", docTrainerId);
-      return (data ?? []).map((ps: any) => ps.programs).filter(Boolean);
+      return (data ?? []).map((ps) => ps.programs).filter(Boolean);
     },
     enabled: !!docTrainerId && docDialogOpen,
   });
@@ -187,7 +187,7 @@ export default function MedewerkersPage() {
   const trainerMutation = useMutation({
     mutationFn: async () => {
       if (!trainerForm.name) throw new Error("Naam is verplicht");
-      const payload: any = { ...trainerForm };
+      const payload: Record<string, string | null> = { ...trainerForm };
       for (const key of Object.keys(payload)) {
         if (payload[key] === "") payload[key] = null;
       }
@@ -217,7 +217,7 @@ export default function MedewerkersPage() {
   const generateDocMutation = useMutation({
     mutationFn: async () => {
       if (!selectedTemplateId || !docTrainerId) throw new Error("Selecteer een template");
-      const body: any = { template_id: selectedTemplateId, staff_id: docTrainerId };
+      const body: Record<string, string> = { template_id: selectedTemplateId, staff_id: docTrainerId };
       if (selectedProgramId) body.program_id = selectedProgramId;
       const { data, error } = await supabase.functions.invoke("generate-document", {
         body,
@@ -231,14 +231,14 @@ export default function MedewerkersPage() {
       setSelectedTemplateId("");
       queryClient.invalidateQueries({ queryKey: staffKeys.trainerDocs(docTrainerId) });
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast.error(err.message);
     },
   });
 
   // Delete generated document
   const deleteDocMutation = useMutation({
-    mutationFn: async (doc: any) => {
+    mutationFn: async (doc: { id: string; file_path: string }) => {
       await supabase.storage.from("generated-documents").remove([doc.file_path]);
       const { error } = await supabase.from("generated_documents").delete().eq("id", doc.id);
       if (error) throw error;
@@ -247,11 +247,11 @@ export default function MedewerkersPage() {
       toast.success("Document verwijderd");
       queryClient.invalidateQueries({ queryKey: staffKeys.trainerDocs(docTrainerId) });
     },
-    onError: (err: any) => toast.error(err.message || "Verwijderen mislukt"),
+    onError: (err: Error) => toast.error(err.message || "Verwijderen mislukt"),
   });
 
   // Download generated document
-  const handleDownloadDoc = async (doc: any) => {
+  const handleDownloadDoc = async (doc: { file_path: string; file_name: string }) => {
     const { data, error } = await supabase.storage.from("generated-documents").download(doc.file_path);
     if (error || !data) {
       toast.error("Download mislukt");
@@ -265,7 +265,7 @@ export default function MedewerkersPage() {
     URL.revokeObjectURL(url);
   };
 
-  const handleEditTrainer = (trainer: any) => {
+  const handleEditTrainer = (trainer: typeof trainers[number]) => {
     setTrainerForm({
       name: trainer.name || "",
       trade_name: trainer.trade_name || "",
@@ -287,7 +287,7 @@ export default function MedewerkersPage() {
     setTrainerDialogOpen(true);
   };
 
-  const handleOpenDocs = (trainer: any) => {
+  const handleOpenDocs = (trainer: typeof trainers[number]) => {
     setDocTrainerId(trainer.id);
     setDocTrainerName(trainer.name ?? "Trainer");
     setSelectedTemplateId("");
@@ -300,7 +300,7 @@ export default function MedewerkersPage() {
     return m.naam.toLowerCase().includes(q) || m.rol.toLowerCase().includes(q) || m.specialisatie.toLowerCase().includes(q);
   });
 
-  const filteredTrainers = trainers.filter((t: any) => {
+  const filteredTrainers = trainers.filter((t) => {
     const q = searchQuery.toLowerCase();
     return (t.name?.toLowerCase().includes(q) || t.trade_name?.toLowerCase().includes(q) || t.city?.toLowerCase().includes(q));
   });
@@ -360,7 +360,7 @@ export default function MedewerkersPage() {
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredTrainers.map((trainer: any) => (
+              {filteredTrainers.map((trainer) => (
                 <div key={trainer.id} className="rounded-xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1">
@@ -564,7 +564,7 @@ export default function MedewerkersPage() {
               trainerId={docTrainerId}
               trainerName={docTrainerName}
               onRefresh={() => queryClient.invalidateQueries({ queryKey: staffKeys.trainers })}
-              trainer={trainers.find((t: any) => t.id === docTrainerId)}
+              trainer={trainers.find((t) => t.id === docTrainerId)}
             />
 
             {/* Generate new document */}
@@ -580,7 +580,7 @@ export default function MedewerkersPage() {
                       <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
                         <SelectTrigger><SelectValue placeholder="Selecteer een template" /></SelectTrigger>
                         <SelectContent className="bg-popover">
-                          {docTemplates.map((t: any) => (
+                          {docTemplates.map((t) => (
                             <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                           ))}
                         </SelectContent>
@@ -593,7 +593,7 @@ export default function MedewerkersPage() {
                       <Select value={selectedProgramId} onValueChange={setSelectedProgramId}>
                         <SelectTrigger><SelectValue placeholder="Selecteer een programma..." /></SelectTrigger>
                         <SelectContent className="bg-popover">
-                          {trainerPrograms.map((p: any) => (
+                          {trainerPrograms.map((p) => (
                             <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                           ))}
                         </SelectContent>
@@ -612,7 +612,7 @@ export default function MedewerkersPage() {
             {trainerDocs.length > 0 && (
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gegenereerde Documenten</p>
-                {trainerDocs.map((doc: any) => (
+                {trainerDocs.map((doc) => (
                   <div key={doc.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-3">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-card-foreground truncate">{doc.file_name}</p>
@@ -646,7 +646,7 @@ export default function MedewerkersPage() {
   );
 }
 
-function DossierDocumentSection({ trainerId, trainerName, onRefresh, trainer }: { trainerId: string | null; trainerName: string; onRefresh: () => void; trainer: any }) {
+function DossierDocumentSection({ trainerId, trainerName, onRefresh, trainer }: { trainerId: string | null; trainerName: string; onRefresh: () => void; trainer: { kvk_uittreksel_path: string | null; kvk_uittreksel_uploaded_at: string | null; vog_path: string | null; vog_uploaded_at: string | null } | undefined }) {
   const kvkInputRef = useRef<HTMLInputElement>(null);
   const vogInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState<string | null>(null);
@@ -673,8 +673,8 @@ function DossierDocumentSection({ trainerId, trainerName, onRefresh, trainer }: 
 
       toast.success(`${type === "kvk_uittreksel" ? "KVK uittreksel" : "VOG"} geüpload`);
       onRefresh();
-    } catch (err: any) {
-      toast.error(err.message || "Upload mislukt");
+    } catch (err: unknown) {
+      toast.error((err as Error).message || "Upload mislukt");
     } finally {
       setUploading(null);
     }
@@ -719,7 +719,7 @@ function DossierDocumentSection({ trainerId, trainerName, onRefresh, trainer }: 
               <p className="text-sm font-medium text-card-foreground">{doc.label}</p>
               {doc.path && doc.date ? (
                 <p className="text-xs text-muted-foreground">
-                  Geüpload op {format(new Date(doc.date), "d MMM yyyy", { locale: nl })}
+                  Geüpload op {format(new Date(doc.date as string), "d MMM yyyy", { locale: nl })}
                 </p>
               ) : (
                 <p className="text-xs text-muted-foreground">Nog niet geüpload</p>
@@ -728,7 +728,7 @@ function DossierDocumentSection({ trainerId, trainerName, onRefresh, trainer }: 
           </div>
           <div className="flex gap-1">
             {doc.path && (
-              <Button variant="ghost" size="icon" onClick={() => handleDownload(doc.path!, `${doc.label} - ${trainerName}.pdf`)}>
+              <Button variant="ghost" size="icon" onClick={() => handleDownload(doc.path as string, `${doc.label} - ${trainerName}.pdf`)}>
                 <Download className="h-4 w-4" />
               </Button>
             )}

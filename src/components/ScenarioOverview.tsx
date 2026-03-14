@@ -2,13 +2,14 @@ import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { scenarioKeys } from "@/lib/queryKeys";
+import type { ScenarioListRow, ValidationDetails, ScenarioMemberCountRow } from "@/lib/queryShapes";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, RefreshCw, Trash2, FolderOpen, AlertTriangle, CheckCircle2, XCircle, HelpCircle } from "lucide-react";
+import { FileText, RefreshCw, Trash2, FolderOpen, AlertTriangle, CheckCircle2, XCircle, HelpCircle, type LucideIcon } from "lucide-react";
 import { formatDistanceToNow, differenceInHours, parseISO } from "date-fns";
 import { nl } from "date-fns/locale";
 
@@ -51,7 +52,7 @@ const validationLabels: Record<string, string> = {
   niet_gevalideerd: "Niet gevalideerd",
 };
 
-const validationIcons: Record<string, any> = {
+const validationIcons: Record<string, LucideIcon> = {
   geldig: CheckCircle2,
   aandacht_vereist: AlertTriangle,
   ongeldig: XCircle,
@@ -89,8 +90,8 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
   });
 
   // Get member counts per scenario via separate query
-  const scenarioIds = scenarios.map((s: any) => s.id);
-  const { data: memberCounts = {} } = useQuery({
+  const scenarioIds = scenarios.map((s) => s.id);
+  const { data: memberCounts = {} as Record<string, number> } = useQuery({
     queryKey: [...scenarioKeys.all, "member-counts", scenarioIds],
     enabled: scenarioIds.length > 0,
     queryFn: async () => {
@@ -99,8 +100,8 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
         .select("scenario_slot_id, simulation_scenario_slots!inner(scenario_id)");
       if (error) throw error;
       const counts: Record<string, number> = {};
-      (data ?? []).forEach((m: any) => {
-        const sid = m.simulation_scenario_slots?.scenario_id;
+      (data ?? []).forEach((m) => {
+        const sid = (m as unknown as ScenarioMemberCountRow).simulation_scenario_slots?.scenario_id;
         if (sid) counts[sid] = (counts[sid] ?? 0) + 1;
       });
       return counts;
@@ -188,7 +189,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {scenarios.map((scenario: any) => {
+            {scenarios.map((scenario) => {
               const slots = scenario.simulation_scenario_slots ?? [];
               const isStale = scenario.last_validated_at &&
                 differenceInHours(new Date(), parseISO(scenario.last_validated_at)) > 24;
@@ -204,7 +205,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                     )}
                   </td>
                   <td className="px-3 py-2">
-                    <span className="text-xs font-mono text-muted-foreground">{(scenario as any).proforma_number ?? "—"}</span>
+                    <span className="text-xs font-mono text-muted-foreground">{scenario.proforma_number ?? "—"}</span>
                   </td>
                   <td className="px-3 py-2">
                     <Badge variant="outline" className={`text-[10px] ${statusColors[scenario.status] ?? ""}`}>
@@ -248,20 +249,20 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-1">
                       <span className="text-sm text-foreground">{slots.length}</span>
-                      {slots.some((s: any) => s.conversion_status === "gelukt") && (
+                      {slots.some((s) => s.conversion_status === "gelukt") && (
                         <Badge variant="outline" className="text-[9px] border-success-border text-success-foreground">
-                          {slots.filter((s: any) => s.conversion_status === "gelukt").length}✓
+                          {slots.filter((s) => s.conversion_status === "gelukt").length}✓
                         </Badge>
                       )}
-                      {slots.some((s: any) => s.conversion_status === "mislukt") && (
+                      {slots.some((s) => s.conversion_status === "mislukt") && (
                         <Badge variant="outline" className="text-[9px] border-destructive/30 text-destructive">
-                          {slots.filter((s: any) => s.conversion_status === "mislukt").length}✗
+                          {slots.filter((s) => s.conversion_status === "mislukt").length}✗
                         </Badge>
                       )}
                     </div>
                   </td>
                   <td className="px-3 py-2">
-                    <span className="text-sm text-foreground">{(memberCounts as any)[scenario.id] ?? 0}</span>
+                    <span className="text-sm text-foreground">{memberCounts[scenario.id] ?? 0}</span>
                   </td>
                   <td className="px-3 py-2">
                     <span className="text-xs text-muted-foreground">
@@ -293,7 +294,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                 </tr>
                 {/* Expandable validation details (T12) */}
                 {expandedValidation === scenario.id && scenario.validation_details && (() => {
-                  const details = scenario.validation_details as any;
+                  const details = scenario.validation_details as unknown as ValidationDetails;
                   const slotResults = details?.slotResults ?? [];
                   if (slotResults.length === 0) return (
                     <tr><td colSpan={7} className="px-4 py-3 bg-muted/20 text-xs text-muted-foreground">Geen validatiedetails beschikbaar.</td></tr>
@@ -302,7 +303,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                     <tr>
                       <td colSpan={7} className="px-4 py-3 bg-muted/20">
                         <div className="space-y-2">
-                          {slotResults.map((sr: any, i: number) => (
+                          {slotResults.map((sr, i: number) => (
                             <div key={sr.slotId ?? i} className={`rounded-lg border p-2 text-xs ${
                               sr.status === "geldig" ? "border-success-border bg-success-muted/50" :
                               sr.status === "aandacht_vereist" ? "border-warning-border bg-warning-muted/50" :
@@ -314,14 +315,14 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                                   {validationLabels[sr.status] ?? sr.status}
                                 </Badge>
                               </div>
-                              {(sr.slotIssues ?? []).length > 0 && (
+                              {((sr as Record<string, unknown>).slotIssues as string[] ?? []).length > 0 && (
                                 <ul className="list-disc list-inside text-destructive mb-1">
-                                  {sr.slotIssues.map((issue: string, j: number) => (
+                                  {((sr as Record<string, unknown>).slotIssues as string[]).map((issue: string, j: number) => (
                                     <li key={j}>{issue}</li>
                                   ))}
                                 </ul>
                               )}
-                              {(sr.memberResults ?? []).filter((mr: any) => mr.issues?.length > 0).map((mr: any) => (
+                              {((sr as Record<string, unknown>).memberResults as Array<{clientId: string; status: string; issues: string[]}> ?? []).filter((mr) => mr.issues?.length > 0).map((mr) => (
                                 <div key={mr.clientId} className="flex items-start gap-1.5 ml-3 mt-0.5">
                                   <span className="text-muted-foreground">•</span>
                                   <span className="text-foreground font-medium">{mr.clientId.slice(0, 8)}…</span>

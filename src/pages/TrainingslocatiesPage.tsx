@@ -19,10 +19,10 @@ export default function TrainingslocatiesPage() {
   const [filterAreaId, setFilterAreaId] = useState<string>("all");
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState<any>(null);
+  const [selectedLocation, setSelectedLocation] = useState<Record<string, unknown> | null>(null);
   const [selectedArea, setSelectedArea] = useState<string>("");
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
-  const [form, setForm] = useState<any>({});
+  const [form, setForm] = useState<{ name: string; address: string; postal_code: string; city: string; notes: string; active: boolean }>({ name: "", address: "", postal_code: "", city: "", notes: "", active: true });
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -56,10 +56,10 @@ export default function TrainingslocatiesPage() {
   });
 
   const filteredNeighborhoods = selectedArea
-    ? (areas.find((a: any) => a.id === selectedArea) as any)?.neighborhoods ?? []
+    ? (areas.find((a) => a.id === selectedArea) as { neighborhoods?: { id: string; name: string }[] } | undefined)?.neighborhoods ?? []
     : [];
 
-  const filteredLocations = locations.filter((loc: any) => {
+  const filteredLocations = locations.filter((loc) => {
     if (filterAreaId === "all") return true;
     const locAreaId = loc.area_id ?? loc.neighborhoods?.area_id;
     return locAreaId === filterAreaId;
@@ -70,11 +70,11 @@ export default function TrainingslocatiesPage() {
     if (!pc) return;
     const areaName = getAreaFromPostcode(pc);
     if (!areaName) return;
-    const area = areas.find((a: any) => a.name === areaName);
+    const area = areas.find((a) => a.name === areaName);
     if (area) {
       setSelectedArea(area.id);
-      if (area.neighborhoods?.length > 0) {
-        setSelectedNeighborhood(area.neighborhoods[0].id);
+      if ((area as { neighborhoods?: { id: string }[] }).neighborhoods?.length ?? 0 > 0) {
+        setSelectedNeighborhood(((area as { neighborhoods?: { id: string }[] }).neighborhoods ?? [])[0]?.id ?? "");
       } else {
         setSelectedNeighborhood("");
       }
@@ -82,7 +82,7 @@ export default function TrainingslocatiesPage() {
   };
 
   const resetForm = () => {
-    setForm({});
+    setForm({ name: "", address: "", postal_code: "", city: "", notes: "", active: true });
     setSelectedArea("");
     setSelectedNeighborhood("");
   };
@@ -116,11 +116,11 @@ export default function TrainingslocatiesPage() {
     }
   };
 
-  const openEdit = (loc: any) => {
+  const openEdit = (loc: typeof locations[number]) => {
     const neighborhoodId = loc.neighborhood_id ?? "";
     let areaId = loc.area_id ?? "";
     if (!areaId && neighborhoodId) {
-      const area = areas.find((a: any) => (a.neighborhoods ?? []).some((n: any) => n.id === neighborhoodId));
+      const area = areas.find((a) => ((a as { neighborhoods?: { id: string }[] }).neighborhoods ?? []).some((n) => n.id === neighborhoodId));
       if (area) areaId = area.id;
     }
     setSelectedArea(areaId);
@@ -151,7 +151,7 @@ export default function TrainingslocatiesPage() {
       area_id: selectedArea || null,
       notes: form.notes || null,
       active: form.active,
-    }).eq("id", selectedLocation.id);
+    }).eq("id", (selectedLocation as { id: string }).id);
 
     setSaving(false);
     if (error) {
@@ -174,7 +174,7 @@ export default function TrainingslocatiesPage() {
     }
   };
 
-  const LocationForm = ({ onSubmit, isEdit }: { onSubmit: (e: any) => void; isEdit: boolean }) => (
+  const LocationForm = ({ onSubmit, isEdit }: { onSubmit: (e: React.FormEvent<HTMLFormElement>) => void; isEdit: boolean }) => (
     <form onSubmit={onSubmit} className="space-y-4">
       <div>
         <Label>Naam *</Label>
@@ -221,7 +221,7 @@ export default function TrainingslocatiesPage() {
           <Select value={selectedArea} onValueChange={(v) => { setSelectedArea(v); setSelectedNeighborhood(""); }}>
             <SelectTrigger><SelectValue placeholder="Selecteer gebied" /></SelectTrigger>
             <SelectContent className="bg-popover">
-              {areas.map((a: any) => (
+              {areas.map((a) => (
                 <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
               ))}
             </SelectContent>
@@ -232,7 +232,7 @@ export default function TrainingslocatiesPage() {
           <Select value={selectedNeighborhood} onValueChange={setSelectedNeighborhood} disabled={!selectedArea}>
             <SelectTrigger><SelectValue placeholder="Selecteer wijk" /></SelectTrigger>
             <SelectContent className="bg-popover">
-              {filteredNeighborhoods.map((n: any) => (
+              {filteredNeighborhoods.map((n) => (
                 <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>
               ))}
             </SelectContent>
@@ -300,7 +300,7 @@ export default function TrainingslocatiesPage() {
           </SelectTrigger>
           <SelectContent className="bg-popover">
             <SelectItem value="all">Alle gebieden</SelectItem>
-            {areas.map((a: any) => (
+            {areas.map((a) => (
               <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
             ))}
           </SelectContent>
@@ -331,7 +331,7 @@ export default function TrainingslocatiesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filteredLocations.map((loc: any) => {
+              {filteredLocations.map((loc) => {
                 const areaName = loc.areas?.name ?? loc.neighborhoods?.areas?.name ?? "—";
                 const neighborhoodName = loc.neighborhoods?.name ?? "—";
                 return (

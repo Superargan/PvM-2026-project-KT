@@ -194,15 +194,15 @@ export default function AanmeldingenPage() {
     setEditOpen(true);
   };
 
-  const updateField = (field: keyof EditForm, value: any) => {
+  const updateField = (field: keyof EditForm, value: string | boolean | null) => {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
       // Auto-fill area and neighborhood from school (consistent met ClientDetailPage)
       if (field === "school_id") {
-        const school = schools.find((s: any) => s.id === value);
-        const areaId = (school as any)?.neighborhoods?.area_id;
+        const school = schools.find((s) => s.id === value);
+        const areaId = school?.neighborhoods?.area_id;
         if (areaId) next.waitlist_area_id = areaId;
-        next.neighborhood_id = (school as any)?.neighborhood_id ?? null;
+        next.neighborhood_id = school?.neighborhood_id ?? null;
       }
       return next;
     });
@@ -214,7 +214,7 @@ export default function AanmeldingenPage() {
     const { error } = await supabase.from("client_assignments").insert({
       client_id: editClient.id,
       staff_id: staffId,
-    } as any);
+    });
     if (error) {
       if (error.code === "23505") {
         toast({ title: "Al toegewezen", variant: "destructive" });
@@ -312,9 +312,10 @@ export default function AanmeldingenPage() {
     },
   });
 
-  const assignmentsByClient = allAssignments.reduce((acc: Record<string, string[]>, a: any) => {
+  const assignmentsByClient = allAssignments.reduce((acc: Record<string, string[]>, a) => {
     if (!acc[a.client_id]) acc[a.client_id] = [];
-    if (a.staff?.name) acc[a.client_id].push(a.staff.name);
+    const staffName = (a.staff as { name: string | null } | null)?.name;
+    if (staffName) acc[a.client_id].push(staffName);
     return acc;
   }, {});
 
@@ -324,7 +325,7 @@ export default function AanmeldingenPage() {
 
   // Clients visible on the active tab – used for export & selection
   const visibleClients = activeTab === "intake_afgerond"
-    ? clients.filter((c: any) => c.intake_status === "intake_afgerond")
+    ? clients.filter((c) => c.intake_status === "intake_afgerond")
     : filteredClients;
 
   const [exportOpen, setExportOpen] = useState(false);
@@ -682,9 +683,9 @@ export default function AanmeldingenPage() {
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t border-border pt-4">Toegewezen aan</p>
             <div className="space-y-2">
               <div className="flex flex-wrap gap-2">
-                {assignments.map((a: any) => (
+                {assignments.map((a) => (
                   <Badge key={a.id} variant="secondary" className="gap-1 pr-1">
-                    {(a as any).staff?.name ?? "Onbekend"}
+                    {(a.staff as { name: string | null } | null)?.name ?? "Onbekend"}
                     <button type="button" onClick={() => removeAssignment(a.id)} className="ml-1 rounded-full p-0.5 hover:bg-muted-foreground/20">
                       <X className="h-3 w-3" />
                     </button>
@@ -698,15 +699,15 @@ export default function AanmeldingenPage() {
                 </SelectTrigger>
                 <SelectContent className="bg-popover">
                   {(() => {
-                    const available = staffList.filter((s: any) => !assignments.some((a: any) => a.staff_id === s.id));
-                    const trainers = available.filter((s: any) => !s.user_id);
-                    const medewerkers = available.filter((s: any) => !!s.user_id);
+                    const available = staffList.filter((s) => !assignments.some((a) => a.staff_id === s.id));
+                    const trainers = available.filter((s) => !s.user_id);
+                    const medewerkers = available.filter((s) => !!s.user_id);
                     return (
                       <>
                         {trainers.length > 0 && (
                           <>
                             <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Trainers</p>
-                            {trainers.map((s: any) => (
+                            {trainers.map((s) => (
                               <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                             ))}
                           </>
@@ -714,7 +715,7 @@ export default function AanmeldingenPage() {
                         {medewerkers.length > 0 && (
                           <>
                             <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Medewerkers</p>
-                            {medewerkers.map((s: any) => (
+                            {medewerkers.map((s) => (
                               <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                             ))}
                           </>
@@ -764,9 +765,9 @@ export default function AanmeldingenPage() {
                 <Select value={selectedProgramId} onValueChange={setSelectedProgramId}>
                   <SelectTrigger><SelectValue placeholder="Kies een programma..." /></SelectTrigger>
                   <SelectContent className="bg-popover">
-                    {availablePrograms.map((p: any) => (
+                    {availablePrograms.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
-                        {p.name} {p.age_category ? `(${p.age_category})` : ""} — {(p as any).schools?.name ?? "Geen school"}
+                        {p.name} {p.age_category ? `(${p.age_category})` : ""} — {p.schools?.name ?? "Geen school"}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -778,12 +779,12 @@ export default function AanmeldingenPage() {
               <div className="rounded-lg border border-accent/30 bg-accent/10 p-3 space-y-3">
                 <p className="text-xs font-semibold text-accent-foreground">Wachtlijst-instellingen</p>
                 <FieldWrapper label="Wachtlijst-gebied">
-                  <Select value={(editClient as any)?.waitlist_area_id ?? ""} onValueChange={(v) => {
+                  <Select value={editClient?.waitlist_area_id ?? ""} onValueChange={(v) => {
                     handleWaitlist(editClient.id, "waiting", v);
                   }}>
                     <SelectTrigger><SelectValue placeholder="Selecteer gebied" /></SelectTrigger>
                     <SelectContent className="bg-popover">
-                      {areas.map((a: any) => (
+                      {areas.map((a) => (
                         <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -792,16 +793,16 @@ export default function AanmeldingenPage() {
               {editClient?.id && (
                 <AreaPreferencesEditor
                   clientId={editClient.id}
-                  primaryAreaId={(editClient as any)?.waitlist_area_id ?? null}
-                  allAreasFlexible={(editClient as any)?.all_areas_flexible ?? false}
+                  primaryAreaId={editClient?.waitlist_area_id ?? null}
+                  allAreasFlexible={editClient?.all_areas_flexible ?? false}
                   onAllAreasFlexibleChange={async (v) => {
-                    await supabase.from("clients").update({ all_areas_flexible: v } as any).eq("id", editClient.id);
-                    setEditClient((prev: any) => ({ ...prev, all_areas_flexible: v }));
+                    await supabase.from("clients").update({ all_areas_flexible: v }).eq("id", editClient.id);
+                    setEditClient((prev: Record<string, unknown>) => ({ ...prev, all_areas_flexible: v }));
                     queryClient.invalidateQueries({ queryKey: clientKeys.all });
                   }}
                   areas={areas}
                    areaNotes={form.area_notes ?? ""}
-                   onAreaNotesChange={(v) => updateField("area_notes" as any, v)}
+                   onAreaNotesChange={(v) => updateField("area_notes", v)}
                 />
               )}
               </div>
@@ -990,7 +991,7 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, are
   isLoading: boolean;
   onNavigate: (id: string) => void;
   onEdit: (client: any) => void;
-  schools: { id: string; name: string }[];
+  schools: { id: string; name: string; neighborhood_id: string | null }[];
   areas: { id: string; name: string }[];
   refetch: () => void;
 }) {
@@ -1020,8 +1021,8 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, are
     const schoolId = schoolAssignments[clientId];
     if (!schoolId) return;
     setSavingSchool(clientId);
-    const school = schools.find((s: any) => s.id === schoolId);
-    const neighborhoodId = (school as any)?.neighborhood_id ?? null;
+    const school = schools.find((s) => s.id === schoolId);
+    const neighborhoodId = school?.neighborhood_id ?? null;
     const { error } = await supabase.from("clients").update({ school_id: schoolId, neighborhood_id: neighborhoodId }).eq("id", clientId);
     setSavingSchool(null);
     if (error) {
