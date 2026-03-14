@@ -387,12 +387,12 @@ export default function ScholenPage() {
       website_url: (formData.get("website_url") as string) || null,
       student_count: Number(formData.get("student_count")) || 0,
       neighborhood_id: neighborhoodId,
-      school_start_time: inputTimeToDb(startTime) as any,
-      school_end_time: inputTimeToDb(endTime) as any,
+      school_start_time: inputTimeToDb(startTime),
+      school_end_time: inputTimeToDb(endTime),
       schedule_type: addScheduleType || null,
       source: (formData.get("source") as string) || null,
       municipality: ((formData.get("municipality") as string) ?? "").trim() || null,
-    } as any);
+    });
 
     if (error) {
       toast({ title: "Fout", description: error.message, variant: "destructive" });
