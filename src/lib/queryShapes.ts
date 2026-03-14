@@ -9,6 +9,50 @@
  *   <Entity>With<Join> — entity + specific joined relations
  */
 
+import type { TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+
+// ─── Re-export SDK payload types for convenience ────────────────────
+
+export type { TablesInsert, TablesUpdate };
+
+// ─── Typed payload builders ─────────────────────────────────────────
+
+/** Typed insert payload for program_sessions */
+export type SessionInsert = TablesInsert<"program_sessions">;
+
+/** Typed update payload for program_sessions */
+export type SessionUpdate = TablesUpdate<"program_sessions">;
+
+/** Typed insert payload for session_override_logs */
+export type SessionOverrideLogInsert = TablesInsert<"session_override_logs">;
+
+/** Typed insert payload for session_documents */
+export type SessionDocumentInsert = TablesInsert<"session_documents">;
+
+/** Typed insert payload for attendance */
+export type AttendanceInsert = TablesInsert<"attendance">;
+
+/** Typed update payload for attendance */
+export type AttendanceUpdate = TablesUpdate<"attendance">;
+
+/** Typed insert payload for program_staff */
+export type ProgramStaffInsert = TablesInsert<"program_staff">;
+
+/** Typed insert payload for client_assignments */
+export type ClientAssignmentInsert = TablesInsert<"client_assignments">;
+
+/** Typed insert payload for staff_availability */
+export type StaffAvailabilityInsert = TablesInsert<"staff_availability">;
+
+/** Typed insert payload for client_availability */
+export type ClientAvailabilityInsert = TablesInsert<"client_availability">;
+
+/** Typed update payload for generated_documents */
+export type GeneratedDocumentUpdate = TablesUpdate<"generated_documents">;
+
+/** Typed update payload for clients */
+export type ClientUpdate = TablesUpdate<"clients">;
+
 // ─── Primitives: nested join fragments ───────────────────────────────
 
 /** areas(id, name) — minimal area lookup */
@@ -184,6 +228,24 @@ export interface ProgramStaffRow {
   } | null;
 }
 
+/** Program staff with trade_name (rapportages) */
+export interface RapportageStaffRow {
+  program_id: string;
+  staff_id: string;
+  role: string | null;
+  staff: {
+    name: string | null;
+    trade_name: string | null;
+  } | null;
+}
+
+/** Staff trainer row (staff list) */
+export interface StaffTrainerRef {
+  id: string;
+  name: string | null;
+  trainer_type: string | null;
+}
+
 /** Client assignment with staff name */
 export interface ClientAssignmentRow {
   client_id: string;
@@ -230,9 +292,22 @@ export interface RapportageProgramRow {
   status: string | null;
   age_category: string | null;
   max_participants: number | null;
+  training_number?: string | null;
   areas: { name: string } | null;
   schools: { name: string; address: string | null } | null;
   training_locations: { name: string; address: string | null } | null;
+}
+
+/** Generated document with template category join (rapportages) */
+export interface RapportageDocRow {
+  id: string;
+  staff_id: string | null;
+  program_id: string | null;
+  template_id: string | null;
+  file_name: string;
+  created_at: string;
+  signed_file_path: string | null;
+  document_templates: { category: string } | null;
 }
 
 // ─── Document shapes ────────────────────────────────────────────────
@@ -278,4 +353,85 @@ export interface OverrideLogRow {
   reason: string;
   active: boolean;
   created_at: string;
+}
+
+// ─── Scenario / Validation shapes ───────────────────────────────────
+
+/** Validation result stored in simulation_scenarios.validation_details (JSON) */
+export interface ValidationDetails {
+  status: "geldig" | "aandacht_vereist" | "ongeldig";
+  slotResults?: Array<{
+    slotId: string;
+    label?: string;
+    status: string;
+    warnings: string[];
+    errors: string[];
+  }>;
+  [key: string]: unknown;
+}
+
+/** Scenario slot with nested members (from .select() join) */
+export interface ScenarioSlotWithMembers {
+  id: string;
+  area_id: string;
+  age_category: string | null;
+  label: string | null;
+  mode: string | null;
+  proposal_idx: number | null;
+  day_name: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  confirmed: boolean;
+  notes: string | null;
+  linked_program_id: string | null;
+  school_id?: string | null;
+  training_location_id?: string | null;
+  conversion_status?: string;
+  converted_program_id?: string | null;
+  conversion_error?: string | null;
+  simulation_scenario_members?: Array<{
+    client_id: string;
+    has_override: boolean;
+  }>;
+}
+
+/** Scenario list row (ScenarioOverview) */
+export interface ScenarioListRow {
+  id: string;
+  name: string;
+  description: string | null;
+  status: string;
+  proforma_number: string | null;
+  validation_status: string;
+  validation_details: ValidationDetails | null;
+  last_validated_at: string | null;
+  created_at: string;
+  updated_at: string;
+  simulation_scenario_slots: Array<{
+    id: string;
+    conversion_status: string;
+    converted_program_id: string | null;
+    conversion_error: string | null;
+    label: string | null;
+    confirmed: boolean;
+  }>;
+}
+
+// ─── Common callback helper types ───────────────────────────────────
+
+/** Minimal ID+name reference used in lookups */
+export interface IdNameRef {
+  id: string;
+  name: string;
+}
+
+/** School dropdown row with neighborhood area join */
+export interface SchoolDropdownRow {
+  id: string;
+  name: string;
+  neighborhood_id: string | null;
+  neighborhoods: { area_id: string } | null;
+  school_start_time?: string | null;
+  school_end_time?: string | null;
+  municipality?: string | null;
 }
