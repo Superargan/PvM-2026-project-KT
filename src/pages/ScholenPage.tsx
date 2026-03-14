@@ -836,7 +836,7 @@ export default function ScholenPage() {
 
       // Build school lookup (case-insensitive)
       const schoolLookup = new Map<string, string>();
-      schools.forEach((s: any) => {
+      schools.forEach((s) => {
         schoolLookup.set(s.name.toLowerCase(), s.id);
       });
 
