@@ -238,7 +238,7 @@ export default function ScholenPage() {
     return acc;
   }, {});
 
-  const schoolProgramCounts = programsBySchool.reduce((acc: Record<string, number>, p: any) => {
+  const schoolProgramCounts = programsBySchool.reduce((acc: Record<string, number>, p) => {
     if (!p.school_id) return acc;
     acc[p.school_id] = (acc[p.school_id] || 0) + 1;
     return acc;
