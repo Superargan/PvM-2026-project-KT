@@ -109,7 +109,7 @@ export default function WachtlijstPage() {
     onSuccess: (_, ids) => {
       toast.success(`${ids.length} deelnemer(s) verwijderd van de wachtlijst`);
       setSelected(new Set());
-      qc.invalidateQueries({ queryKey: ["clients"] });
+      qc.invalidateQueries({ queryKey: clientKeys.all });
     },
     onError: (err: any) => toast.error(err.message),
   });

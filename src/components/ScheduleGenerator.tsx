@@ -377,8 +377,7 @@ export default function ScheduleGenerator({ programId, programName, programStart
     },
     onSuccess: () => {
       toast({ title: "Planning opgeslagen", description: `${generated?.length} sessies aangemaakt` });
-      qc.invalidateQueries({ queryKey: ["program_sessions", programId] });
-      qc.invalidateQueries({ queryKey: ["program", programId] });
+      qc.invalidateQueries({ queryKey: programKeys.all });
       setGenerated(null);
       onGenerated();
     },
