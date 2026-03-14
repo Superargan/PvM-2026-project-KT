@@ -2,13 +2,14 @@ import React, { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { scenarioKeys } from "@/lib/queryKeys";
+import type { ScenarioListRow, ValidationDetails, ScenarioMemberCountRow } from "@/lib/queryShapes";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, RefreshCw, Trash2, FolderOpen, AlertTriangle, CheckCircle2, XCircle, HelpCircle } from "lucide-react";
+import { FileText, RefreshCw, Trash2, FolderOpen, AlertTriangle, CheckCircle2, XCircle, HelpCircle, type LucideIcon } from "lucide-react";
 import { formatDistanceToNow, differenceInHours, parseISO } from "date-fns";
 import { nl } from "date-fns/locale";
 
