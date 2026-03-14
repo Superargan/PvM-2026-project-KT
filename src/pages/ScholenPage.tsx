@@ -1940,7 +1940,7 @@ export default function ScholenPage() {
               <Select value={selectedArea} onValueChange={(val) => { setSelectedArea(val); setSelectedNeighborhood(""); }}>
                 <SelectTrigger><SelectValue placeholder="Selecteer een gebied..." /></SelectTrigger>
                 <SelectContent className="bg-popover">
-                  {areas.map((a: any) => (
+                  {areas.map((a) => (
                     <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                   ))}
                 </SelectContent>
