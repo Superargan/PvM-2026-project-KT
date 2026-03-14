@@ -174,7 +174,7 @@ export default function TrainingslocatiesPage() {
     }
   };
 
-  const LocationForm = ({ onSubmit, isEdit }: { onSubmit: (e: any) => void; isEdit: boolean }) => (
+  const LocationForm = ({ onSubmit, isEdit }: { onSubmit: (e: React.FormEvent<HTMLFormElement>) => void; isEdit: boolean }) => (
     <form onSubmit={onSubmit} className="space-y-4">
       <div>
         <Label>Naam *</Label>
