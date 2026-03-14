@@ -1444,7 +1444,7 @@ export default function ScholenPage() {
           <SelectTrigger className="w-[180px]"><SelectValue placeholder="Gebied" /></SelectTrigger>
           <SelectContent className="bg-popover">
             <SelectItem value="all">Alle gebieden</SelectItem>
-            {areas.map((a: any) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+            {areas.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={filterNeighborhoodId} onValueChange={setFilterNeighborhoodId} disabled={filterAreaId === "all"}>
