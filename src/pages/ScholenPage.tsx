@@ -525,7 +525,7 @@ export default function ScholenPage() {
       const newSchools: Record<string, any>[] = [];
       const addedNames: string[] = [];
       const updatedNames: string[] = [];
-      const updatePromises: Promise<any>[] = [];
+      const updatePromises: Promise<void>[] = [];
 
       for (const s of mapped) {
         const normalized = normalizeSchoolName(s.name);
