@@ -137,7 +137,7 @@ export default function ClientDetailPage() {
 
   // Fetch generated documents for this client
   const { data: generatedDocs = [] } = useQuery({
-    queryKey: ["client-generated-docs", id],
+    queryKey: clientKeys.generatedDocs(id!),
     queryFn: async () => {
       const { data } = await supabase
         .from("generated_documents")
