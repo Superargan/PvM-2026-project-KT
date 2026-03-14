@@ -231,7 +231,7 @@ export default function MedewerkersPage() {
       setSelectedTemplateId("");
       queryClient.invalidateQueries({ queryKey: staffKeys.trainerDocs(docTrainerId) });
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast.error(err.message);
     },
   });
