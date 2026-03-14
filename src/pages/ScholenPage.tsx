@@ -1982,7 +1982,7 @@ export default function ScholenPage() {
               </div>
               <div>
                 <Label>Schooltijd eind</Label>
-                <Input type="time" value={editForm.school_end_time ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, school_end_time: e.target.value }))} />
+                <Input type="time" value={editForm.school_end_time ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, school_end_time: e.target.value }))} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
