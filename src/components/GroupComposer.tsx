@@ -1111,6 +1111,11 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                   }
                   {" — "}{simulatedGroups.size} voorstel(len), {simulatedClientIds.size} deelnemers
                 </span>
+                {loadedProformaNumber && (
+                  <Badge variant="outline" className="text-[10px] border-primary/40 text-primary font-mono">
+                    {loadedProformaNumber}
+                  </Badge>
+                )}
                 {isDirty && (
                   <Badge variant="outline" className="text-[10px] border-amber-300 text-amber-700 gap-0.5">
                     <AlertTriangle className="h-2.5 w-2.5" />
