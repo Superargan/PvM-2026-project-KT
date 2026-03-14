@@ -47,7 +47,7 @@ export default function InvoiceManager({ staffId, staffName }: { staffId?: strin
 
   // Fetch completed programs for this trainer
   const { data: trainerPrograms = [] } = useQuery({
-    queryKey: ["trainer-programs-for-invoice", staffId],
+    queryKey: staffKeys.trainerProgramsForInvoice(staffId),
     queryFn: async () => {
       if (!staffId) return [];
       const { data, error } = await supabase

@@ -860,7 +860,7 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
       }
 
       toast({ title: "Document aangemaakt", description: data.file_name });
-      queryClient.invalidateQueries({ queryKey: ["rpt_generated_docs"] });
+      queryClient.invalidateQueries({ queryKey: rapportageKeys.generatedDocs });
     } catch (err: any) {
       toast({ title: "Fout bij aanmaken", description: err.message, variant: "destructive" });
     } finally {
