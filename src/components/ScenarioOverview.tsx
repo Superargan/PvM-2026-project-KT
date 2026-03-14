@@ -64,7 +64,7 @@ const conversionStatusLabels: Record<string, string> = {
   mislukt: "✗ Mislukt",
 };
 
-export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, onRequestSaveFirst }: ScenarioOverviewProps) {
+export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, onRequestSaveFirst, onScenarioDeleted }: ScenarioOverviewProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [deleteId, setDeleteId] = useState<string | null>(null);

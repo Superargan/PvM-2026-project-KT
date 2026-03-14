@@ -899,6 +899,12 @@ export default function PlanningPage() {
               setActiveScenarioId(scenarioId);
               setShowGroupComposer(true);
             }}
+            onScenarioDeleted={(deletedId) => {
+              if (deletedId === activeScenarioId) {
+                setActiveScenarioId(null);
+                setShowGroupComposer(false);
+              }
+            }}
             hasActiveSimulation={groupComposerRef.current?.hasActiveSimulation ?? false}
             onRequestSaveFirst={async () => {
               return groupComposerRef.current?.triggerSave() ?? false;
