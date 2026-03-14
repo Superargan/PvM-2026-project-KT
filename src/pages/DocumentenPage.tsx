@@ -820,7 +820,7 @@ function GenerateTab() {
   const [selectedTrainers, setSelectedTrainers] = useState<string[]>([]);
 
   const { data: templates = [] } = useQuery({
-    queryKey: ["document-templates"],
+    queryKey: documentKeys.templates,
     queryFn: async () => {
       const { data, error } = await supabase.from("document_templates").select("*").order("name");
       if (error) throw error;
