@@ -478,7 +478,7 @@ export default function ClientDetailPage() {
                 <Select value={form.waitlist_area_id ?? ""} onValueChange={(v) => updateField("waitlist_area_id", v)}>
                   <SelectTrigger><SelectValue placeholder="Automatisch via school" /></SelectTrigger>
                   <SelectContent className="bg-popover">
-                    {areas.map((a: any) => (
+                    {areas.map((a) => (
                       <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                     ))}
                   </SelectContent>
