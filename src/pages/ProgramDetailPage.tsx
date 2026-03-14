@@ -356,8 +356,7 @@ export default function ProgramDetailPage() {
                   toast({ title: "Fout", description: error.message, variant: "destructive" });
                 } else {
                   toast({ title: "Trainingslocatie gekoppeld" });
-                  qc.invalidateQueries({ queryKey: ["program", id] });
-                  qc.invalidateQueries({ queryKey: ["programs"] });
+                  qc.invalidateQueries({ queryKey: programKeys.all });
                 }
               }}
             >
