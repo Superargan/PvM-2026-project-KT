@@ -155,6 +155,7 @@ export default function ScholenPage() {
   const [editForm, setEditForm] = useState<any>({});
   const [addScheduleType, setAddScheduleType] = useState<string>("");
   const [addSchoolName, setAddSchoolName] = useState<string>("");
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
