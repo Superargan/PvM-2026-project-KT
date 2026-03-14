@@ -38,9 +38,9 @@ const statusLabels: Record<string, string> = {
 };
 
 const validationColors: Record<string, string> = {
-  geldig: "bg-emerald-100 text-emerald-800 border-emerald-300",
-  aandacht_vereist: "bg-amber-100 text-amber-800 border-amber-300",
-  ongeldig: "bg-red-100 text-red-800 border-red-300",
+  geldig: "bg-success-muted text-success-foreground border-success-border",
+  aandacht_vereist: "bg-warning-muted text-warning-foreground border-warning-border",
+  ongeldig: "bg-destructive/10 text-destructive border-destructive/30",
   niet_gevalideerd: "bg-muted text-muted-foreground border-border",
 };
 
