@@ -6,7 +6,7 @@ import {
   startOfMonth, endOfMonth, addMonths, subMonths,
   eachDayOfInterval, parseISO, getDay
 } from "date-fns";
-import { invalidateAllClientQueries, planningKeys } from "@/lib/queryKeys";
+import { invalidateAllClientQueries, planningKeys, staffKeys, clientKeys } from "@/lib/queryKeys";
 import { nl } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Sun, Moon, Clock, Save, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
