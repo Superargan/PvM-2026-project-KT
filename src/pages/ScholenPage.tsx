@@ -281,7 +281,7 @@ export default function ScholenPage() {
     const neighborhoodId = school.neighborhood_id ?? "";
     let areaId = "";
     if (neighborhoodId) {
-      const area = areas.find((a: any) => (a.neighborhoods ?? []).some((n: any) => n.id === neighborhoodId));
+      const area = areas.find((a) => (a.neighborhoods ?? []).some((n) => n.id === neighborhoodId));
       if (area) areaId = area.id;
     }
     setSelectedArea(areaId);
