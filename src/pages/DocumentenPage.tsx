@@ -92,7 +92,7 @@ function TemplatesTab() {
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
 
   const { data: templates = [], isLoading } = useQuery({
-    queryKey: ["document-templates"],
+    queryKey: documentKeys.templates,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("document_templates")
