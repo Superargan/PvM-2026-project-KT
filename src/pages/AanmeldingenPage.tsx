@@ -130,7 +130,7 @@ export default function AanmeldingenPage() {
   });
 
   const { data: assignments = [], refetch: refetchAssignments } = useQuery({
-    queryKey: ["client-assignments", editClient?.id],
+    queryKey: clientKeys.assignments(editClient?.id),
     enabled: !!editClient?.id,
     queryFn: async () => {
       const { data, error } = await supabase
