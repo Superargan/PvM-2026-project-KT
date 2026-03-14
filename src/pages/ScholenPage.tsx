@@ -883,7 +883,7 @@ export default function ScholenPage() {
       setContactUploadOpen(false);
       queryClient.invalidateQueries({ queryKey: schoolKeys.all });
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast({ title: "Import mislukt", description: err.message, variant: "destructive" });
     },
   });
