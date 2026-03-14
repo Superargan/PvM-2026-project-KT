@@ -1,4 +1,4 @@
-import { School, Search, Plus, MapPin, Loader2, Upload, Users, Trash2, Pencil, UserPlus, Wand2, FileText, Globe, Download, X, Clock } from "lucide-react";
+import { School, Search, Plus, MapPin, Loader2, Upload, Users, Trash2, Pencil, UserPlus, Wand2, FileText, Globe, Download, X, Clock, AlertTriangle as AlertTriangleIcon } from "lucide-react";
 import SchoolDuplicateWarning from "@/components/SchoolDuplicateWarning";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
