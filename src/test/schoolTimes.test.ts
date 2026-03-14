@@ -8,6 +8,9 @@ import {
   normalizeSchoolName,
   dbTimeToInput,
   inputTimeToDb,
+  getEffectiveMunicipality,
+  DEFAULT_MUNICIPALITY,
+  MUNICIPALITY_COLUMNS,
 } from "@/lib/schoolTimes";
 
 describe("formatSchoolTime", () => {
