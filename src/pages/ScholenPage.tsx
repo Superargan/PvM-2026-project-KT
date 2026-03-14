@@ -1969,7 +1969,7 @@ export default function ScholenPage() {
             </div>
             <div>
               <Label>Website</Label>
-              <Input type="url" placeholder="https://..." value={editForm.website_url ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, website_url: e.target.value }))} />
+              <Input type="url" placeholder="https://..." value={editForm.website_url ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, website_url: e.target.value }))} />
             </div>
             <div>
               <Label>Aantal leerlingen</Label>
