@@ -329,7 +329,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
                               <TooltipContent>
                                 <p className="font-medium">{intakeCount} intake afgerond, {wachtlijstCount} wachtlijst</p>
                                 {reserveTotal > 0 && <p>{reserveTotal} reserve/flexibel</p>}
-                                {ready && <p className="font-semibold text-emerald-600">Groep mogelijk!</p>}
+                                {ready && <p className="font-semibold text-success">Groep mogelijk!</p>}
                               </TooltipContent>
                             </Tooltip>
                           ) : (
