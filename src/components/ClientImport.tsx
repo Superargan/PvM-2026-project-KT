@@ -379,10 +379,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       let referrer_id: string | null = null;
 
       if (referralRaw) {
-        const normalizedRef = referralRaw.toLowerCase().trim();
-        const isNonPerson = NON_PERSON_REFERRAL_SOURCES.some(
-          (src) => normalizedRef === src || normalizedRef.includes(src)
-        );
+        const isNonPerson = isNonPersonReferralSource(referralRaw);
 
         if (isNonPerson) {
           // It's a generic source like "flyer", "internet" — store as reason only
