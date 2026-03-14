@@ -221,7 +221,7 @@ export default function TrainingslocatiesPage() {
           <Select value={selectedArea} onValueChange={(v) => { setSelectedArea(v); setSelectedNeighborhood(""); }}>
             <SelectTrigger><SelectValue placeholder="Selecteer gebied" /></SelectTrigger>
             <SelectContent className="bg-popover">
-              {areas.map((a: any) => (
+              {areas.map((a) => (
                 <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
               ))}
             </SelectContent>
