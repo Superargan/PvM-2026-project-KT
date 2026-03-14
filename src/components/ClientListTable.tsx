@@ -120,6 +120,34 @@ export default function ClientListTable({
                   <td className="hidden px-4 py-3 md:table-cell">
                     <span className="text-sm text-card-foreground">{getResolvedAreaName(client, areas) || "—"}</span>
                   </td>
+                  {showTraining && (
+                    <td className="hidden px-4 py-3 lg:table-cell">
+                      <div className="flex flex-wrap gap-1">
+                        {(() => {
+                          const programs = (client as any).program_clients
+                            ?.map((pc: any) => pc.programs)
+                            .filter((p: any) => p && !p.archived)
+                            .sort((a: any, b: any) => {
+                              const order: Record<string, number> = { gepland: 0, gestart: 1, afgerond: 2 };
+                              return (order[a.status] ?? 3) - (order[b.status] ?? 3);
+                            }) ?? [];
+                          if (programs.length === 0) return <span className="text-xs text-muted-foreground">—</span>;
+                          return programs.map((p: any) => {
+                            const isActive = p.status === "gepland" || p.status === "gestart";
+                            return (
+                              <Badge
+                                key={p.id}
+                                variant="outline"
+                                className={`text-[10px] ${isActive ? "border-emerald-300 text-emerald-700" : "border-border text-muted-foreground"}`}
+                              >
+                                {p.training_number ? `${p.training_number}` : p.name}
+                              </Badge>
+                            );
+                          });
+                        })()}
+                      </div>
+                    </td>
+                  )}
                   <td className="hidden px-4 py-3 lg:table-cell">
                     <span className="text-sm text-card-foreground">{client.guardian_phone ?? client.guardian_name ?? "—"}</span>
                   </td>
