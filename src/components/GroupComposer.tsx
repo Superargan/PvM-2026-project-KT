@@ -329,6 +329,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
       }
 
       setLoadedScenarioName(scenario.name);
+      setLoadedProformaNumber((scenario as any).proforma_number ?? null);
       setScenarioName(scenario.name);
       setScenarioDescription(scenario.description ?? "");
       setScenarioStatus(scenario.status);
