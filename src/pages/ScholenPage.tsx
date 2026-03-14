@@ -1998,7 +1998,7 @@ export default function ScholenPage() {
               </div>
               <div>
                 <Label>Bron</Label>
-                <Input value={editForm.source ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, source: e.target.value }))} placeholder="bijv. DUO, handmatig" />
+                <Input value={editForm.source ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, source: e.target.value }))} placeholder="bijv. DUO, handmatig" />
               </div>
             </div>
             <div>
