@@ -1523,6 +1523,14 @@ export default function ScholenPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-border bg-muted/50">
+                <th className="px-3 py-3 text-center w-10">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-border"
+                    checked={sorted.length > 0 && sorted.every((s: any) => selectedSchoolIds.has(s.id))}
+                    onChange={() => toggleAllSchools(sorted.map((s: any) => s.id))}
+                  />
+                </th>
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">School</th>
                 <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground md:table-cell">Gebied</th>
                 <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground md:table-cell">Wijk</th>
@@ -1532,7 +1540,7 @@ export default function ScholenPage() {
                 <th className="hidden px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Rooster</th>
                 <th className="hidden px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Schooltijden</th>
                 <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Leerlingen</th>
-                <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actie</th>
+                <th className="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground w-10"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
