@@ -683,9 +683,9 @@ export default function AanmeldingenPage() {
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-t border-border pt-4">Toegewezen aan</p>
             <div className="space-y-2">
               <div className="flex flex-wrap gap-2">
-                {assignments.map((a: any) => (
+                {assignments.map((a) => (
                   <Badge key={a.id} variant="secondary" className="gap-1 pr-1">
-                    {(a as any).staff?.name ?? "Onbekend"}
+                    {(a.staff as { name: string | null } | null)?.name ?? "Onbekend"}
                     <button type="button" onClick={() => removeAssignment(a.id)} className="ml-1 rounded-full p-0.5 hover:bg-muted-foreground/20">
                       <X className="h-3 w-3" />
                     </button>
