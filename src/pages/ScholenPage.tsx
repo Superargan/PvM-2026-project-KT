@@ -3,7 +3,7 @@ import SchoolDuplicateWarning from "@/components/SchoolDuplicateWarning";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { schoolKeys, invalidateAllSchoolQueries } from "@/lib/queryKeys";
+import { schoolKeys, invalidateAllSchoolQueries, areaKeys, programKeys, documentKeys } from "@/lib/queryKeys";
 import { formatSchoolTimeRange, validateSchoolTimePair, findMatchingColumn, normalizeSchoolName, dbTimeToInput, inputTimeToDb, SCHOOL_START_TIME_COLUMNS, SCHOOL_END_TIME_COLUMNS, SCHEDULE_TYPE_COLUMNS, SOURCE_COLUMNS, MUNICIPALITY_COLUMNS, getEffectiveMunicipality, resolveImportedSchoolTimePair } from "@/lib/schoolTimes";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -172,7 +172,7 @@ export default function ScholenPage() {
 
   // Fetch areas with neighborhoods
   const { data: areas = [] } = useQuery({
-    queryKey: ["areas-with-neighborhoods"],
+    queryKey: areaKeys.withNeighborhoods,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("areas")
@@ -217,7 +217,7 @@ export default function ScholenPage() {
 
   // Fetch program counts per school
   const { data: programsBySchool = [] } = useQuery({
-    queryKey: ["programs-by-school"],
+    queryKey: programKeys.bySchool,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("programs")
@@ -946,7 +946,7 @@ export default function ScholenPage() {
 
   // Fetch document templates
   const { data: schoolDocTemplates = [] } = useQuery({
-    queryKey: ["document-templates"],
+    queryKey: documentKeys.templates,
     queryFn: async () => {
       const { data } = await supabase.from("document_templates").select("*").order("name");
       return data ?? [];

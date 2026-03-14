@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { invoiceKeys } from "@/lib/queryKeys";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -94,7 +95,7 @@ export default function InvoiceManager({ staffId, staffName }: { staffId?: strin
       setSelectedProgramId("");
       setAmount("");
       setNotes("");
-      qc.invalidateQueries({ queryKey: ["invoices"] });
+      qc.invalidateQueries({ queryKey: invoiceKeys.all });
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -112,7 +113,7 @@ export default function InvoiceManager({ staffId, staffName }: { staffId?: strin
     },
     onSuccess: () => {
       toast.success("Status bijgewerkt");
-      qc.invalidateQueries({ queryKey: ["invoices"] });
+      qc.invalidateQueries({ queryKey: invoiceKeys.all });
     },
     onError: (err: any) => toast.error(err.message),
   });

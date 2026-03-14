@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { MapPin, Plus, Search, Pencil, Trash2, Loader2 } from "lucide-react";
 import { getAreaFromAddress, getAreaFromPostcode, extractPostcode } from "@/lib/postcodeMapping";
-import { areaKeys } from "@/lib/queryKeys";
+import { areaKeys, locationKeys } from "@/lib/queryKeys";
 
 export default function TrainingslocatiesPage() {
   const [search, setSearch] = useState("");
@@ -28,7 +28,7 @@ export default function TrainingslocatiesPage() {
   const queryClient = useQueryClient();
 
   const { data: areas = [] } = useQuery({
-    queryKey: ["areas-with-neighborhoods"],
+    queryKey: areaKeys.withNeighborhoods,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("areas")
@@ -40,7 +40,7 @@ export default function TrainingslocatiesPage() {
   });
 
   const { data: locations = [], isLoading } = useQuery({
-    queryKey: ["training-locations", search],
+    queryKey: locationKeys.list(search),
     queryFn: async () => {
       let query = supabase
         .from("training_locations")
@@ -112,7 +112,7 @@ export default function TrainingslocatiesPage() {
       toast({ title: "Trainingslocatie toegevoegd" });
       setAddOpen(false);
       resetForm();
-      queryClient.invalidateQueries({ queryKey: ["training-locations"] });
+      queryClient.invalidateQueries({ queryKey: locationKeys.all });
     }
   };
 
@@ -160,7 +160,7 @@ export default function TrainingslocatiesPage() {
       toast({ title: "Trainingslocatie bijgewerkt" });
       setEditOpen(false);
       setSelectedLocation(null);
-      queryClient.invalidateQueries({ queryKey: ["training-locations"] });
+      queryClient.invalidateQueries({ queryKey: locationKeys.all });
     }
   };
 
@@ -170,7 +170,7 @@ export default function TrainingslocatiesPage() {
       toast({ title: "Fout", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Trainingslocatie verwijderd" });
-      queryClient.invalidateQueries({ queryKey: ["training-locations"] });
+      queryClient.invalidateQueries({ queryKey: locationKeys.all });
     }
   };
 

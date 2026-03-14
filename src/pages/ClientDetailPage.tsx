@@ -2,7 +2,7 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { areaKeys, clientKeys, schoolKeys } from "@/lib/queryKeys";
+import { areaKeys, clientKeys, schoolKeys, documentKeys } from "@/lib/queryKeys";
 import { formatSchoolTimeRange, getEffectiveMunicipality, DEFAULT_MUNICIPALITY } from "@/lib/schoolTimes";
 import { getResolvedAreaName } from "@/lib/clientUtils";
 import { useEffect, useState } from "react";
@@ -128,7 +128,7 @@ export default function ClientDetailPage() {
 
   // Fetch document templates
   const { data: docTemplates = [] } = useQuery({
-    queryKey: ["document-templates"],
+    queryKey: documentKeys.templates,
     queryFn: async () => {
       const { data } = await supabase.from("document_templates").select("*").order("name");
       return data ?? [];

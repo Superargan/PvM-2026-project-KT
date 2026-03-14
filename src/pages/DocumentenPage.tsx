@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { schoolKeys } from "@/lib/queryKeys";
+import { schoolKeys, documentKeys } from "@/lib/queryKeys";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -92,7 +92,7 @@ function TemplatesTab() {
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
 
   const { data: templates = [], isLoading } = useQuery({
-    queryKey: ["document-templates"],
+    queryKey: documentKeys.templates,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("document_templates")
@@ -135,7 +135,7 @@ function TemplatesTab() {
       setUploadFile(null);
       setTemplateName("");
       setTemplateCategory("overig");
-      queryClient.invalidateQueries({ queryKey: ["document-templates"] });
+      queryClient.invalidateQueries({ queryKey: documentKeys.templates });
     },
     onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
@@ -156,7 +156,7 @@ function TemplatesTab() {
       setBuilderName("");
       setBuilderCategory("overig");
       setBuilderContent("");
-      queryClient.invalidateQueries({ queryKey: ["document-templates"] });
+      queryClient.invalidateQueries({ queryKey: documentKeys.templates });
     },
     onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
@@ -169,7 +169,7 @@ function TemplatesTab() {
     },
     onSuccess: () => {
       toast({ title: "Template verwijderd" });
-      queryClient.invalidateQueries({ queryKey: ["document-templates"] });
+      queryClient.invalidateQueries({ queryKey: documentKeys.templates });
     },
     onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
@@ -206,7 +206,7 @@ function TemplatesTab() {
         template={editingTemplate}
         onClose={() => {
           setEditingTemplate(null);
-          queryClient.invalidateQueries({ queryKey: ["document-templates"] });
+          queryClient.invalidateQueries({ queryKey: documentKeys.templates });
         }}
       />
     );
@@ -820,7 +820,7 @@ function GenerateTab() {
   const [selectedTrainers, setSelectedTrainers] = useState<string[]>([]);
 
   const { data: templates = [] } = useQuery({
-    queryKey: ["document-templates"],
+    queryKey: documentKeys.templates,
     queryFn: async () => {
       const { data, error } = await supabase.from("document_templates").select("*").order("name");
       if (error) throw error;
@@ -959,7 +959,7 @@ function GenerateTab() {
           URL.revokeObjectURL(url);
         }
       }
-      queryClient.invalidateQueries({ queryKey: ["generated-documents"] });
+      queryClient.invalidateQueries({ queryKey: documentKeys.generated });
     },
     onError: (err: any) => toast({ title: "Fout bij genereren", description: err.message, variant: "destructive" }),
   });
@@ -1189,7 +1189,7 @@ function GeneratedDocsTab() {
   const signedFileRef = useRef<HTMLInputElement>(null);
 
   const { data: documents = [], isLoading } = useQuery({
-    queryKey: ["generated-documents"],
+    queryKey: documentKeys.generated,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("generated_documents")
@@ -1223,7 +1223,7 @@ function GeneratedDocsTab() {
     },
     onSuccess: () => {
       toast({ title: "Document verwijderd" });
-      queryClient.invalidateQueries({ queryKey: ["generated-documents"] });
+      queryClient.invalidateQueries({ queryKey: documentKeys.generated });
     },
     onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
@@ -1255,7 +1255,7 @@ function GeneratedDocsTab() {
     onSuccess: () => {
       toast({ title: "Ondertekend document geüpload" });
       setUploadingId(null);
-      queryClient.invalidateQueries({ queryKey: ["generated-documents"] });
+      queryClient.invalidateQueries({ queryKey: documentKeys.generated });
     },
     onError: (err: any) => {
       toast({ title: "Upload mislukt", description: err.message, variant: "destructive" });
@@ -1290,7 +1290,7 @@ function GeneratedDocsTab() {
     },
     onSuccess: () => {
       toast({ title: "Ondertekend document verwijderd" });
-      queryClient.invalidateQueries({ queryKey: ["generated-documents"] });
+      queryClient.invalidateQueries({ queryKey: documentKeys.generated });
     },
     onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });

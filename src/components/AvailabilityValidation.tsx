@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { buildAvailabilityByClient, hasAvailabilityCoverage, statusLabels, getResolvedAreaName } from "@/lib/clientUtils";
-import { clientKeys, areaKeys } from "@/lib/queryKeys";
+import { clientKeys, areaKeys, availabilityValidationKeys } from "@/lib/queryKeys";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -32,7 +32,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
 
   // Clients that require availability
   const { data: clients = [], isLoading: loadingClients } = useQuery({
-    queryKey: ["availability-validation-clients"],
+    queryKey: availabilityValidationKeys.clients,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
@@ -49,7 +49,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
 
   // All availability records for these clients
   const { data: allAvail = [], isLoading: loadingAvail } = useQuery({
-    queryKey: ["availability-validation-data", clientIds.length],
+    queryKey: availabilityValidationKeys.data(clientIds.length),
     enabled: clientIds.length > 0,
     queryFn: async () => {
       // Batch in chunks of 50 clients to avoid URI-too-long,
@@ -230,8 +230,8 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
       });
 
       // Refresh data
-      queryClient.invalidateQueries({ queryKey: ["availability-validation-data"] });
-      queryClient.invalidateQueries({ queryKey: ["availability-validation-clients"] });
+      queryClient.invalidateQueries({ queryKey: availabilityValidationKeys.data(clientIds.length) });
+      queryClient.invalidateQueries({ queryKey: availabilityValidationKeys.clients });
     } catch (err: any) {
       toast({ title: "Fout", description: err.message, variant: "destructive" });
     } finally {

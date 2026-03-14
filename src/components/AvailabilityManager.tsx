@@ -6,7 +6,7 @@ import {
   startOfMonth, endOfMonth, addMonths, subMonths,
   eachDayOfInterval, parseISO, getDay
 } from "date-fns";
-import { invalidateAllClientQueries } from "@/lib/queryKeys";
+import { invalidateAllClientQueries, planningKeys } from "@/lib/queryKeys";
 import { nl } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Sun, Moon, Clock, Save, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -371,8 +371,8 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
       refetchAvail();
       // Centralized invalidation — SSOT: all client-related queries + planning queries
       invalidateAllClientQueries(queryClient);
-      queryClient.invalidateQueries({ queryKey: ["planning-availability"] });
-      queryClient.invalidateQueries({ queryKey: ["planning-client-availability"] });
+      queryClient.invalidateQueries({ queryKey: planningKeys.availability });
+      queryClient.invalidateQueries({ queryKey: planningKeys.clientAvailability });
     } catch (err: any) {
       toast({ title: "Fout bij opslaan", description: err.message, variant: "destructive" });
     } finally {

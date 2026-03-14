@@ -34,6 +34,7 @@ export const clientKeys = {
 /** Shared area query key — use everywhere */
 export const areaKeys = {
   all: ["areas"] as const,
+  withNeighborhoods: ["areas", "with-neighborhoods"] as const,
 };
 
 /** Scenario query keys — separate prefix from clients */
@@ -51,6 +52,53 @@ export const schoolKeys = {
   rapportages: ["schools", "rapportages"] as const,
 };
 
+/** Staff / medewerkers query keys */
+export const staffKeys = {
+  all: ["staff"] as const,
+  medewerkers: ["staff", "medewerkers"] as const,
+  trainers: ["staff", "trainers"] as const,
+  trainerPrograms: (trainerId?: string) => ["staff", "trainer-programs", trainerId] as const,
+  trainerDocs: (trainerId?: string) => ["staff", "trainer-docs", trainerId] as const,
+};
+
+/** Document query keys */
+export const documentKeys = {
+  all: ["documents"] as const,
+  templates: ["documents", "templates"] as const,
+  generated: ["documents", "generated"] as const,
+};
+
+/** Program query keys */
+export const programKeys = {
+  all: ["programs"] as const,
+  bySchool: ["programs", "by-school"] as const,
+  clientsActive: ["programs", "clients-active"] as const,
+  linkable: ["programs", "linkable"] as const,
+};
+
+/** Training location query keys */
+export const locationKeys = {
+  all: ["training-locations"] as const,
+  list: (search?: string) => ["training-locations", "list", search] as const,
+};
+
+/** Invoice query keys */
+export const invoiceKeys = {
+  all: ["invoices"] as const,
+};
+
+/** Planning query keys */
+export const planningKeys = {
+  availability: ["planning", "availability"] as const,
+  clientAvailability: ["planning", "client-availability"] as const,
+};
+
+/** Availability validation query keys */
+export const availabilityValidationKeys = {
+  clients: ["availability-validation", "clients"] as const,
+  data: (count: number) => ["availability-validation", "data", count] as const,
+};
+
 /**
  * Invalidate ALL school-related queries in one call.
  * All keys start with ["schools"], so this matches everything.
@@ -65,4 +113,18 @@ export function invalidateAllSchoolQueries(queryClient: QueryClient) {
  */
 export function invalidateAllClientQueries(queryClient: QueryClient) {
   queryClient.invalidateQueries({ queryKey: ["clients"] });
+}
+
+/**
+ * Invalidate ALL staff-related queries in one call.
+ */
+export function invalidateAllStaffQueries(queryClient: QueryClient) {
+  queryClient.invalidateQueries({ queryKey: staffKeys.all });
+}
+
+/**
+ * Invalidate ALL document-related queries in one call.
+ */
+export function invalidateAllDocumentQueries(queryClient: QueryClient) {
+  queryClient.invalidateQueries({ queryKey: documentKeys.all });
 }

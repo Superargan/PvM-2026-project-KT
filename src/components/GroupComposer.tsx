@@ -34,7 +34,7 @@ import {
   type AgeCategory,
   type MatchType,
 } from "@/lib/clientUtils";
-import { clientKeys, areaKeys, scenarioKeys } from "@/lib/queryKeys";
+import { clientKeys, areaKeys, scenarioKeys, programKeys, staffKeys } from "@/lib/queryKeys";
 import { downloadExport } from "@/lib/csvExport";
 
 interface ClientWithMatch {
@@ -202,7 +202,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
 
   // Fetch program_clients for "al ingepland" check (AC-2)
   const { data: programClients = [] } = useQuery({
-    queryKey: ["program-clients-active"],
+    queryKey: programKeys.clientsActive,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("program_clients")
@@ -234,7 +234,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
   const getSuggestions = (clientIds: Set<string>) => getTopAvailabilityOverlaps(clientIds, availByClient, 3, 90);
 
   const { data: allTrainers = [] } = useQuery({
-    queryKey: ["group-composer-trainers"],
+    queryKey: staffKeys.trainers,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("staff")
@@ -249,7 +249,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
 
   // Fetch non-archived programs for linking
   const { data: linkablePrograms = [] } = useQuery({
-    queryKey: ["linkable-programs"],
+    queryKey: programKeys.linkable,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("programs")

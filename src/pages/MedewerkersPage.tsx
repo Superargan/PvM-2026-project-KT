@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { UserCog, Plus, Search, Mail, Phone, Loader2, Building2, Edit, FileText, Download, Upload, CheckCircle2, XCircle, ShieldCheck, Trash2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { staffKeys, documentKeys } from "@/lib/queryKeys";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -75,7 +76,7 @@ export default function MedewerkersPage() {
 
   // Fetch medewerkers (users with accounts)
   const { data: medewerkers = [], isLoading: loadingMedewerkers } = useQuery({
-    queryKey: ["medewerkers"],
+    queryKey: staffKeys.medewerkers,
     queryFn: async () => {
       const { data: profiles, error: pErr } = await supabase
         .from("profiles")
@@ -110,7 +111,7 @@ export default function MedewerkersPage() {
 
   // Fetch external trainers
   const { data: trainers = [], isLoading: loadingTrainers } = useQuery({
-    queryKey: ["trainers"],
+    queryKey: staffKeys.trainers,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("staff")
@@ -125,7 +126,7 @@ export default function MedewerkersPage() {
 
   // Fetch document templates
   const { data: docTemplates = [] } = useQuery({
-    queryKey: ["document-templates"],
+    queryKey: documentKeys.templates,
     queryFn: async () => {
       const { data } = await supabase.from("document_templates").select("*").order("name");
       return data ?? [];
@@ -134,7 +135,7 @@ export default function MedewerkersPage() {
 
   // Fetch programs for trainer document generation
   const { data: trainerPrograms = [] } = useQuery({
-    queryKey: ["trainer-programs", docTrainerId],
+    queryKey: staffKeys.trainerPrograms(docTrainerId),
     queryFn: async () => {
       if (!docTrainerId) return [];
       const { data } = await supabase
@@ -148,7 +149,7 @@ export default function MedewerkersPage() {
 
   // Fetch generated docs for selected trainer
   const { data: trainerDocs = [] } = useQuery({
-    queryKey: ["trainer-generated-docs", docTrainerId],
+    queryKey: staffKeys.trainerDocs(docTrainerId),
     queryFn: async () => {
       if (!docTrainerId) return [];
       const { data } = await supabase
@@ -176,7 +177,7 @@ export default function MedewerkersPage() {
       setInviteEmail("");
       setInviteName("");
       setInviteRole("");
-      queryClient.invalidateQueries({ queryKey: ["medewerkers"] });
+      queryClient.invalidateQueries({ queryKey: staffKeys.medewerkers });
     },
     onError: (err: Error) => {
       toast.error(err.message || "Uitnodiging kon niet worden verstuurd");
@@ -205,7 +206,7 @@ export default function MedewerkersPage() {
       setTrainerDialogOpen(false);
       setTrainerForm(emptyTrainerForm);
       setEditingTrainerId(null);
-      queryClient.invalidateQueries({ queryKey: ["trainers"] });
+      queryClient.invalidateQueries({ queryKey: staffKeys.trainers });
     },
     onError: (err: Error) => {
       toast.error(err.message);
@@ -228,7 +229,7 @@ export default function MedewerkersPage() {
     onSuccess: (data) => {
       toast.success(`Document gegenereerd: ${data.file_name}`);
       setSelectedTemplateId("");
-      queryClient.invalidateQueries({ queryKey: ["trainer-generated-docs", docTrainerId] });
+      queryClient.invalidateQueries({ queryKey: staffKeys.trainerDocs(docTrainerId) });
     },
     onError: (err: any) => {
       toast.error(err.message);
@@ -244,7 +245,7 @@ export default function MedewerkersPage() {
     },
     onSuccess: () => {
       toast.success("Document verwijderd");
-      queryClient.invalidateQueries({ queryKey: ["trainer-generated-docs", docTrainerId] });
+      queryClient.invalidateQueries({ queryKey: staffKeys.trainerDocs(docTrainerId) });
     },
     onError: (err: any) => toast.error(err.message || "Verwijderen mislukt"),
   });
@@ -562,7 +563,7 @@ export default function MedewerkersPage() {
             <DossierDocumentSection
               trainerId={docTrainerId}
               trainerName={docTrainerName}
-              onRefresh={() => queryClient.invalidateQueries({ queryKey: ["trainers"] })}
+              onRefresh={() => queryClient.invalidateQueries({ queryKey: staffKeys.trainers })}
               trainer={trainers.find((t: any) => t.id === docTrainerId)}
             />
 
