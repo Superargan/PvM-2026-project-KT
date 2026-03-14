@@ -331,7 +331,7 @@ export default function TrainingslocatiesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filteredLocations.map((loc: any) => {
+              {filteredLocations.map((loc) => {
                 const areaName = loc.areas?.name ?? loc.neighborhoods?.areas?.name ?? "—";
                 const neighborhoodName = loc.neighborhoods?.name ?? "—";
                 return (

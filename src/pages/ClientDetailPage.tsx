@@ -743,7 +743,7 @@ export default function ClientDetailPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {generatedDocs.map((doc: any) => (
+                  {generatedDocs.map((doc) => (
                     <tr key={doc.id} className="transition-colors hover:bg-muted/30">
                       <td className="px-5 py-4 text-sm font-medium text-card-foreground">{doc.file_name}</td>
                       <td className="px-5 py-4">

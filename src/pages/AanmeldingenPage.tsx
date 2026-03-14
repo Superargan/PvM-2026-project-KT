@@ -991,7 +991,7 @@ function MissingDataCheck({ clients, isLoading, onNavigate, onEdit, schools, are
   isLoading: boolean;
   onNavigate: (id: string) => void;
   onEdit: (client: any) => void;
-  schools: { id: string; name: string }[];
+  schools: { id: string; name: string; neighborhood_id: string | null }[];
   areas: { id: string; name: string }[];
   refetch: () => void;
 }) {
