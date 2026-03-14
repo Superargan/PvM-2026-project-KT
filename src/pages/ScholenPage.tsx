@@ -667,7 +667,7 @@ export default function ScholenPage() {
     if (exact) return { id: exact.id, name: exact.name };
 
     // Contains: school name contains search or search contains school name
-    const contains = (schools as any[]).find((s) => {
+    const contains = schools.find((s) => {
       const sNorm = s.name.toLowerCase().trim();
       return sNorm.includes(norm) || norm.includes(sNorm);
     });
