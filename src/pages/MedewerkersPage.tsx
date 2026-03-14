@@ -564,7 +564,7 @@ export default function MedewerkersPage() {
               trainerId={docTrainerId}
               trainerName={docTrainerName}
               onRefresh={() => queryClient.invalidateQueries({ queryKey: staffKeys.trainers })}
-              trainer={trainers.find((t: any) => t.id === docTrainerId)}
+              trainer={trainers.find((t) => t.id === docTrainerId)}
             />
 
             {/* Generate new document */}
