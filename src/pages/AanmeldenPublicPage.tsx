@@ -34,7 +34,7 @@ export default function AanmeldenPublicPage() {
   const [form, setForm] = useState<Partial<AanmeldForm>>({});
 
   const { data: schools = [] } = useQuery({
-    queryKey: ["public-schools"],
+    queryKey: schoolKeys.dropdown,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("schools")
