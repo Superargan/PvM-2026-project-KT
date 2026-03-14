@@ -445,7 +445,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       };
 
       // Parse availability from day columns (Maandag-Zondag)
-      const parsedAvail: ParsedAvailability[] = [];
+      const parsedAvail: ParsedAvailabilityLocal[] = [];
       for (let di = 0; di < DAY_COLUMNS.length; di++) {
         const dayName = DAY_COLUMNS[di];
         const cellValue = findCol(row, dayName, dayName.toLowerCase());
