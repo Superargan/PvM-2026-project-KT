@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { buildAvailabilityByClient, hasAvailabilityCoverage, statusLabels, getResolvedAreaName } from "@/lib/clientUtils";
-import { clientKeys, areaKeys } from "@/lib/queryKeys";
+import { clientKeys, areaKeys, availabilityValidationKeys } from "@/lib/queryKeys";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
