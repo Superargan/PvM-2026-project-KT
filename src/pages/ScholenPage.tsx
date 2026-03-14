@@ -119,7 +119,7 @@ const OUTLOOK_COL_MAP: Record<string, string> = {
   "school": "company",
 };
 
-function mapOutlookRow(row: Record<string, any>) {
+function mapOutlookRow(row: Record<string, string | number | null>) {
   const mapped: Record<string, string> = {};
   for (const [col, val] of Object.entries(row)) {
     const key = OUTLOOK_COL_MAP[col.toLowerCase().trim()];
