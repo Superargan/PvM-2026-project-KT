@@ -544,20 +544,25 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
 
   const toggleClient = (g: GroupedClients, clientId: string) => {
     const key = getGroupKey(g);
-    const existingGroup = clientGroupAssignment.get(clientId);
-    if (existingGroup && existingGroup !== key) {
-      // Client is already selected in another group — block
-      const parts = existingGroup.split("__");
-      const areaName = areaMap[parts[0]] ?? "Onbekend";
-      const subLabel = parts[2] !== undefined ? ` ${SUB_GROUP_LABELS[parseInt(parts[2])] ?? ""}` : "";
-      toast({
-        title: "Cliënt al geselecteerd",
-        description: `Deze cliënt is al aangevinkt in groep ${areaName} ${parts[1]}${subLabel}. Verwijder eerst de selectie daar.`,
-        variant: "destructive",
-      });
-      return;
-    }
     const current = getSelectedForGroup(g);
+    const isCurrentlySelected = current.has(clientId);
+
+    // Only block adding to a new group, never block unchecking
+    if (!isCurrentlySelected) {
+      const existingGroup = clientGroupAssignment.get(clientId);
+      if (existingGroup && existingGroup !== key) {
+        const parts = existingGroup.split("__");
+        const areaName = areaMap[parts[0]] ?? "Onbekend";
+        const subLabel = parts[2] !== undefined ? ` ${SUB_GROUP_LABELS[parseInt(parts[2])] ?? ""}` : "";
+        toast({
+          title: "Cliënt al geselecteerd",
+          description: `Deze cliënt is al aangevinkt in groep ${areaName} ${parts[1]}${subLabel}. Verwijder eerst de selectie daar.`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     const next = new Set(current);
     if (next.has(clientId)) next.delete(clientId);
     else next.add(clientId);
@@ -1035,6 +1040,9 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     const currentKey = getGroupKey(group);
     const assignedTo = clientGroupAssignment.get(client.id);
     const isAssignedElsewhere = !!assignedTo && assignedTo !== currentKey;
+    const isCheckedHere = selected.has(client.id);
+    // Only disable if assigned elsewhere AND not checked here (allow unchecking)
+    const isDisabled = isAssignedElsewhere && !isCheckedHere;
     const isInProgram = programClientIds.has(client.id);
 
     // Build label for the other group
@@ -1052,15 +1060,15 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
           <TooltipTrigger asChild>
             <label
               className={`flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors ${
-                isAssignedElsewhere
+                isDisabled
                   ? "opacity-50 cursor-not-allowed"
                   : "hover:bg-muted/50 cursor-pointer"
               }`}
             >
               <Checkbox
-                checked={selected.has(client.id)}
+                checked={isCheckedHere}
                 onCheckedChange={() => toggleClient(group, client.id)}
-                disabled={isAssignedElsewhere}
+                disabled={isDisabled}
               />
               <span className="text-sm text-foreground truncate">
                 {client.first_name} {client.last_name}
