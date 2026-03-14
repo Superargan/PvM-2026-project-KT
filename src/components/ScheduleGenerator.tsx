@@ -658,7 +658,7 @@ export default function ScheduleGenerator({ programId, programName, programStart
               Bevestig planning
             </Button>
             {blockedSessions.length > 0 && (
-              <span className="text-xs text-amber-600">
+              <span className="text-xs text-warning">
                 {blockedSessions.length} sessie(s) geblokkeerd (feestdag/vakantie)
               </span>
             )}
