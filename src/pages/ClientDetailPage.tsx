@@ -250,8 +250,8 @@ export default function ClientDetailPage() {
     }
   }, [client]);
 
-  const updateField = (field: string, value: any) => {
-    setForm((prev: any) => {
+  const updateField = (field: string, value: string | boolean | null) => {
+    setForm((prev: Record<string, unknown>) => {
       const next = { ...prev, [field]: value };
       // When user manually changes DOB, mark as no longer estimated
       if (field === "date_of_birth") {
@@ -259,10 +259,10 @@ export default function ClientDetailPage() {
       }
       // Auto-fill area and neighborhood from school
       if (field === "school_id") {
-        const school = schools.find((s: any) => s.id === value);
-        const areaId = (school as any)?.neighborhoods?.area_id;
+        const school = schools.find((s) => s.id === value);
+        const areaId = school?.neighborhoods?.area_id;
         if (areaId) next.waitlist_area_id = areaId;
-        next.neighborhood_id = (school as any)?.neighborhood_id ?? null;
+        next.neighborhood_id = school?.neighborhood_id ?? null;
       }
       return next;
     });
