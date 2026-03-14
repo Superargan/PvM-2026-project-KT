@@ -300,7 +300,7 @@ export default function MedewerkersPage() {
     return m.naam.toLowerCase().includes(q) || m.rol.toLowerCase().includes(q) || m.specialisatie.toLowerCase().includes(q);
   });
 
-  const filteredTrainers = trainers.filter((t: any) => {
+  const filteredTrainers = trainers.filter((t) => {
     const q = searchQuery.toLowerCase();
     return (t.name?.toLowerCase().includes(q) || t.trade_name?.toLowerCase().includes(q) || t.city?.toLowerCase().includes(q));
   });
