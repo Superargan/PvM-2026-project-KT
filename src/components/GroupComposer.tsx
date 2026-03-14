@@ -371,6 +371,17 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     return ids;
   }, [simulatedGroups, selectedClients]);
 
+  // Track which group each client is assigned to (for exclusive selection)
+  const clientGroupAssignment = useMemo(() => {
+    const map = new Map<string, string>();
+    Object.entries(selectedClients).forEach(([groupKey, clientSet]) => {
+      clientSet.forEach(clientId => {
+        map.set(clientId, groupKey);
+      });
+    });
+    return map;
+  }, [selectedClients]);
+
   const isSimulating = simulatedGroups.size > 0;
 
   // Broad guard: blocks ALL definitive writes from non-definitive work states
@@ -533,6 +544,19 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
 
   const toggleClient = (g: GroupedClients, clientId: string) => {
     const key = getGroupKey(g);
+    const existingGroup = clientGroupAssignment.get(clientId);
+    if (existingGroup && existingGroup !== key) {
+      // Client is already selected in another group — block
+      const parts = existingGroup.split("__");
+      const areaName = areaMap[parts[0]] ?? "Onbekend";
+      const subLabel = parts[2] !== undefined ? ` ${SUB_GROUP_LABELS[parseInt(parts[2])] ?? ""}` : "";
+      toast({
+        title: "Cliënt al geselecteerd",
+        description: `Deze cliënt is al aangevinkt in groep ${areaName} ${parts[1]}${subLabel}. Verwijder eerst de selectie daar.`,
+        variant: "destructive",
+      });
+      return;
+    }
     const current = getSelectedForGroup(g);
     const next = new Set(current);
     if (next.has(clientId)) next.delete(clientId);
@@ -543,10 +567,15 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
   const toggleAll = (g: GroupedClients) => {
     const key = getGroupKey(g);
     const current = getSelectedForGroup(g);
-    if (current.size === g.clients.length) {
+    // Filter out clients already assigned to other groups
+    const availableClients = g.clients.filter(cm => {
+      const assigned = clientGroupAssignment.get(cm.client.id);
+      return !assigned || assigned === key;
+    });
+    if (current.size === availableClients.length) {
       setSelectedClients(prev => ({ ...prev, [key]: new Set() }));
     } else {
-      setSelectedClients(prev => ({ ...prev, [key]: new Set(g.clients.map((cm) => cm.client.id)) }));
+      setSelectedClients(prev => ({ ...prev, [key]: new Set(availableClients.map((cm) => cm.client.id)) }));
     }
   };
 
@@ -1003,35 +1032,75 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     const { client, matchType } = cm;
     const age = calculateAge(client.date_of_birth);
     const statusStyle = statusBadgeStyles[client.intake_status] ?? statusBadgeStyles.wachtlijst;
+    const currentKey = getGroupKey(group);
+    const assignedTo = clientGroupAssignment.get(client.id);
+    const isAssignedElsewhere = !!assignedTo && assignedTo !== currentKey;
+    const isInProgram = programClientIds.has(client.id);
+
+    // Build label for the other group
+    let assignedGroupLabel = "";
+    if (isAssignedElsewhere && assignedTo) {
+      const parts = assignedTo.split("__");
+      const aName = areaMap[parts[0]] ?? "Onbekend";
+      const subLabel = parts[2] !== undefined ? ` ${SUB_GROUP_LABELS[parseInt(parts[2])] ?? ""}` : "";
+      assignedGroupLabel = `${aName} ${parts[1]}${subLabel}`;
+    }
 
     return (
-      <label
-        key={client.id}
-        className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted/50 cursor-pointer transition-colors"
-      >
-        <Checkbox
-          checked={selected.has(client.id)}
-          onCheckedChange={() => toggleClient(group, client.id)}
-        />
-        <span className="text-sm text-foreground truncate">
-          {client.first_name} {client.last_name}
-        </span>
-        <Badge
-          variant="outline"
-          className={`text-[10px] px-1.5 py-0 ml-auto shrink-0 ${statusStyle.className}`}
-        >
-          {statusStyle.label}
-        </Badge>
-        <Badge
-          variant="outline"
-          className={`text-[10px] px-1.5 py-0 shrink-0 ${matchColors[matchType]}`}
-        >
-          {matchType}
-        </Badge>
-        {age !== null && (
-          <span className="text-xs text-muted-foreground shrink-0">{age}j</span>
-        )}
-      </label>
+      <TooltipProvider key={client.id}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <label
+              className={`flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors ${
+                isAssignedElsewhere
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-muted/50 cursor-pointer"
+              }`}
+            >
+              <Checkbox
+                checked={selected.has(client.id)}
+                onCheckedChange={() => toggleClient(group, client.id)}
+                disabled={isAssignedElsewhere}
+              />
+              <span className="text-sm text-foreground truncate">
+                {client.first_name} {client.last_name}
+              </span>
+              {isAssignedElsewhere && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 border-amber-300 text-amber-700 gap-0.5">
+                  <AlertTriangle className="h-2.5 w-2.5" />
+                  Al in {assignedGroupLabel}
+                </Badge>
+              )}
+              {isInProgram && !isAssignedElsewhere && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 border-destructive/40 text-destructive gap-0.5">
+                  <ShieldAlert className="h-2.5 w-2.5" />
+                  Al ingepland
+                </Badge>
+              )}
+              <Badge
+                variant="outline"
+                className={`text-[10px] px-1.5 py-0 ml-auto shrink-0 ${statusStyle.className}`}
+              >
+                {statusStyle.label}
+              </Badge>
+              <Badge
+                variant="outline"
+                className={`text-[10px] px-1.5 py-0 shrink-0 ${matchColors[matchType]}`}
+              >
+                {matchType}
+              </Badge>
+              {age !== null && (
+                <span className="text-xs text-muted-foreground shrink-0">{age}j</span>
+              )}
+            </label>
+          </TooltipTrigger>
+          {isAssignedElsewhere && (
+            <TooltipContent>
+              <p className="text-xs">Al geselecteerd in groep {assignedGroupLabel}. Verwijder eerst de selectie daar.</p>
+            </TooltipContent>
+          )}
+        </Tooltip>
+      </TooltipProvider>
     );
   };
 
