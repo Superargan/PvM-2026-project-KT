@@ -1654,7 +1654,7 @@ export default function ScholenPage() {
                     <span className="text-xs text-card-foreground">{school.schedule_type ? (school.schedule_type === "continu" ? "Continu" : "Traditioneel") : "—"}</span>
                   </td>
                   <td className="hidden px-5 py-4 lg:table-cell text-center">
-                    <span className="text-xs text-card-foreground">{formatSchoolTimeRange((school as any).school_start_time, (school as any).school_end_time)}</span>
+                    <span className="text-xs text-card-foreground">{formatSchoolTimeRange(school.school_start_time, school.school_end_time)}</span>
                   </td>
                   <td className="px-5 py-4 text-right">
                     <span className="font-display text-sm font-bold text-card-foreground">{school.student_count ?? 0}</span>
