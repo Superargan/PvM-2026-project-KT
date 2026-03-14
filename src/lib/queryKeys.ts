@@ -103,6 +103,7 @@ export const programKeys = {
 export const locationKeys = {
   all: ["training-locations"] as const,
   list: (search?: string) => ["training-locations", "list", search] as const,
+  dropdown: ["training-locations", "dropdown"] as const,
 };
 
 /** Referrer query keys */
