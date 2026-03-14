@@ -1007,7 +1007,7 @@ export default function ScholenPage() {
   });
 
   // Download generated school document
-  const handleGenDocDownload = async (doc: any) => {
+  const handleGenDocDownload = async (doc: { file_path: string; file_name: string }) => {
     const { data, error } = await supabase.storage.from("generated-documents").download(doc.file_path);
     if (error || !data) {
       toast({ title: "Download mislukt", variant: "destructive" });
