@@ -294,7 +294,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                 </tr>
                 {/* Expandable validation details (T12) */}
                 {expandedValidation === scenario.id && scenario.validation_details && (() => {
-                  const details = scenario.validation_details as any;
+                  const details = scenario.validation_details as unknown as ValidationDetails;
                   const slotResults = details?.slotResults ?? [];
                   if (slotResults.length === 0) return (
                     <tr><td colSpan={7} className="px-4 py-3 bg-muted/20 text-xs text-muted-foreground">Geen validatiedetails beschikbaar.</td></tr>
@@ -303,7 +303,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                     <tr>
                       <td colSpan={7} className="px-4 py-3 bg-muted/20">
                         <div className="space-y-2">
-                          {slotResults.map((sr: any, i: number) => (
+                          {slotResults.map((sr, i: number) => (
                             <div key={sr.slotId ?? i} className={`rounded-lg border p-2 text-xs ${
                               sr.status === "geldig" ? "border-success-border bg-success-muted/50" :
                               sr.status === "aandacht_vereist" ? "border-warning-border bg-warning-muted/50" :
