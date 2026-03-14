@@ -360,7 +360,7 @@ export default function MedewerkersPage() {
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredTrainers.map((trainer: any) => (
+              {filteredTrainers.map((trainer) => (
                 <div key={trainer.id} className="rounded-xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1">
