@@ -1743,9 +1743,9 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
               </Card>
             )}
             {noAge.length > 0 && (
-              <Card className="border-red-200 bg-red-50/50">
+              <Card className="border-destructive/30 bg-destructive/5">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-semibold text-red-800">
+                  <CardTitle className="text-sm font-semibold text-destructive">
                     <AlertTriangle className="h-4 w-4 inline mr-1" />
                     Aanmelders zonder geboortedatum ({noAge.length})
                   </CardTitle>
@@ -1753,7 +1753,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                 <CardContent>
                   <div className="flex flex-wrap gap-1">
                     {noAge.map((c: any) => (
-                      <Badge key={c.id} variant="outline" className="text-xs border-red-300 text-red-700 cursor-pointer hover:bg-red-100" onClick={() => navigate(`/clienten/${c.id}`)}>
+                      <Badge key={c.id} variant="outline" className="text-xs border-destructive/30 text-destructive cursor-pointer hover:bg-destructive/10" onClick={() => navigate(`/clienten/${c.id}`)}>
                         {c.first_name} {c.last_name}
                       </Badge>
                     ))}

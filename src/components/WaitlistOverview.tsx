@@ -387,10 +387,10 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
         </div>
 
         <p className="text-xs text-muted-foreground">
-          <span className="inline-block w-3 h-3 rounded bg-emerald-200 border border-emerald-300 mr-1 align-middle" /> ≥7 (gereed)
-          <span className="inline-block w-3 h-3 rounded bg-amber-200 border border-amber-300 mr-1 ml-3 align-middle" /> 5-6 (bijna)
-          <span className="inline-block w-3 h-3 rounded bg-red-200 border border-red-300 mr-1 ml-3 align-middle" /> &lt;5
-          <span className="ml-3"><span className="text-blue-700 font-semibold">i</span>=intake afgerond <span className="text-orange-700 font-semibold">w</span>=wachtlijst</span>
+          <span className="inline-block w-3 h-3 rounded bg-success-muted border border-success-border mr-1 align-middle" /> ≥7 (gereed)
+          <span className="inline-block w-3 h-3 rounded bg-warning-muted border border-warning-border mr-1 ml-3 align-middle" /> 5-6 (bijna)
+          <span className="inline-block w-3 h-3 rounded bg-destructive/10 border border-destructive/30 mr-1 ml-3 align-middle" /> &lt;5
+          <span className="ml-3"><span className="text-info-foreground font-semibold">i</span>=intake afgerond <span className="text-warning-foreground font-semibold">w</span>=wachtlijst</span>
         </p>
       </div>
     </TooltipProvider>

@@ -585,7 +585,7 @@ export default function ScheduleGenerator({ programId, programName, programStart
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-6 w-6 p-0 text-amber-600"
+                              className="h-6 w-6 p-0 text-warning"
                               title="Override (alleen admin)"
                               onClick={() => {
                                 const overrideType: OverrideType = session.status === "feestdag" ? "feestdag" : "schoolvakantie";

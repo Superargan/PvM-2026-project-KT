@@ -1350,9 +1350,9 @@ function GeneratedDocsTab() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleDownload(doc.signed_file_path, doc.signed_file_name || "ondertekend.pdf")}
-                        className="flex items-center gap-1 text-sm text-green-600 hover:underline"
+                        className="flex items-center gap-1 text-sm text-success hover:underline"
                       >
-                        <Badge variant="secondary" className="bg-green-100 text-green-700 text-[10px]">
+                        <Badge variant="secondary" className="bg-success-muted text-success-foreground text-[10px]">
                           PDF ✓
                         </Badge>
                       </button>
