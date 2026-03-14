@@ -82,7 +82,7 @@ export default function TrainingslocatiesPage() {
   };
 
   const resetForm = () => {
-    setForm({});
+    setForm({ name: "", address: "", postal_code: "", city: "", notes: "", active: true });
     setSelectedArea("");
     setSelectedNeighborhood("");
   };
