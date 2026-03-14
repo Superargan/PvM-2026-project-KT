@@ -39,6 +39,7 @@ export default function ClientListTable({
   onToggleAll,
   renderActions,
   emptyMessage = "Geen resultaten gevonden",
+  showTraining,
 }: ClientListTableProps) {
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
