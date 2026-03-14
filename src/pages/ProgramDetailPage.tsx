@@ -178,7 +178,7 @@ export default function ProgramDetailPage() {
     onSuccess: () => {
       setSelectedClientId("");
       refetchEnrolled();
-      qc.invalidateQueries({ queryKey: ["programs"] });
+      qc.invalidateQueries({ queryKey: programKeys.all });
       toast({ title: "Deelnemer toegevoegd" });
     },
     onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
