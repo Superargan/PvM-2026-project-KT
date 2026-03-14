@@ -1474,7 +1474,7 @@ export default function ScholenPage() {
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : (() => {
-        const filtered = schools.filter((school: any) => {
+        const filtered = schools.filter((school) => {
           if (filterAreaId !== "all") {
             const schoolAreaId = school.neighborhoods?.area_id;
             if (schoolAreaId !== filterAreaId) return false;
