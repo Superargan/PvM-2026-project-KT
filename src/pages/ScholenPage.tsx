@@ -536,6 +536,7 @@ export default function ScholenPage() {
           // New school — insert with times
           newSchools.push(s);
           if (s.school_start_time) timesSetCount++;
+          if (s.municipality) municipalitySetCount++;
         } else {
           // Existing school — enrich with times, schedule_type, source when valid values provided
           const hasTimeUpdate = s.school_start_time && s.school_end_time;
