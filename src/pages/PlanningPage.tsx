@@ -1111,7 +1111,7 @@ export default function PlanningPage() {
                                   <TooltipProvider>
                                     <Tooltip>
                                       <TooltipTrigger>
-                                        <Badge className="text-[9px] h-4 bg-purple-100 text-purple-800 border-purple-300">
+                                        <Badge className="text-[9px] h-4 bg-role-muted text-role-foreground border-role-border">
                                           <ShieldCheck className="h-2.5 w-2.5 mr-0.5" />Override
                                         </Badge>
                                       </TooltipTrigger>
