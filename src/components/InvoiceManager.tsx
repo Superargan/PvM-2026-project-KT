@@ -119,7 +119,7 @@ export default function InvoiceManager({ staffId, staffName }: { staffId?: strin
       toast.success("Status bijgewerkt");
       qc.invalidateQueries({ queryKey: invoiceKeys.all });
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: Error) => toast.error(err.message),
   });
 
   const handleDownload = async (inv: any) => {
