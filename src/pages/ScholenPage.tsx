@@ -1695,6 +1695,66 @@ export default function ScholenPage() {
           })()}
         </DialogContent>
       </Dialog>
+
+      {/* Import result overview dialog */}
+      <Dialog open={importResultOpen} onOpenChange={setImportResultOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Import Resultaat</DialogTitle>
+            <DialogDescription>Overzicht van toegevoegde en bijgewerkte scholen</DialogDescription>
+          </DialogHeader>
+          {importResult && (
+            <div className="space-y-4">
+              {/* Summary stats */}
+              <div className="flex flex-wrap gap-3">
+                <Badge variant="default" className="text-sm">{importResult.added.length} toegevoegd</Badge>
+                <Badge variant="secondary" className="text-sm">{importResult.updated.length} bijgewerkt</Badge>
+                {importResult.timesSet > 0 && <Badge variant="outline" className="text-sm">{importResult.timesSet} tijden ingesteld</Badge>}
+                {importResult.municipalitySet > 0 && <Badge variant="outline" className="text-sm">{importResult.municipalitySet} gemeenten ingesteld</Badge>}
+                {importResult.invalidTimes > 0 && <Badge variant="destructive" className="text-sm">{importResult.invalidTimes} ongeldige tijdwaarden</Badge>}
+              </div>
+
+              {/* Added schools */}
+              {importResult.added.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-card-foreground flex items-center gap-2">
+                    <Plus className="h-4 w-4 text-primary" />
+                    Toegevoegde scholen ({importResult.added.length})
+                  </p>
+                  <div className="rounded-lg border border-border bg-muted/30 p-3 max-h-48 overflow-y-auto">
+                    <ul className="space-y-1">
+                      {importResult.added.map((name, i) => (
+                        <li key={i} className="text-sm text-card-foreground">{name}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {/* Updated schools */}
+              {importResult.updated.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-card-foreground flex items-center gap-2">
+                    <Pencil className="h-4 w-4 text-muted-foreground" />
+                    Bijgewerkte scholen ({importResult.updated.length})
+                  </p>
+                  <div className="rounded-lg border border-border bg-muted/30 p-3 max-h-48 overflow-y-auto">
+                    <ul className="space-y-1">
+                      {importResult.updated.map((name, i) => (
+                        <li key={i} className="text-sm text-card-foreground">{name}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {importResult.added.length === 0 && importResult.updated.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">Geen wijzigingen — alle scholen bestonden al.</p>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
