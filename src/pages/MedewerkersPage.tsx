@@ -593,7 +593,7 @@ export default function MedewerkersPage() {
                       <Select value={selectedProgramId} onValueChange={setSelectedProgramId}>
                         <SelectTrigger><SelectValue placeholder="Selecteer een programma..." /></SelectTrigger>
                         <SelectContent className="bg-popover">
-                          {trainerPrograms.map((p: any) => (
+                          {trainerPrograms.map((p) => (
                             <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                           ))}
                         </SelectContent>
