@@ -443,6 +443,7 @@ export default function ScholenPage() {
       const endTimeCol = findMatchingColumn(headers, SCHOOL_END_TIME_COLUMNS);
       const scheduleTypeCol = findMatchingColumn(headers, SCHEDULE_TYPE_COLUMNS);
       const sourceCol = findMatchingColumn(headers, SOURCE_COLUMNS);
+      const municipalityCol = findMatchingColumn(headers, MUNICIPALITY_COLUMNS);
 
       let invalidTimeCount = 0;
       let timesSetCount = 0;
