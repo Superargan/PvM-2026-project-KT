@@ -930,8 +930,8 @@ export default function ScholenPage() {
   };
 
   // Flatten areas → neighborhoods for select
-  const neighborhoodOptions = areas.flatMap((area: any) =>
-    (area.neighborhoods ?? []).map((n: any) => ({
+  const neighborhoodOptions = areas.flatMap((area) =>
+    (area.neighborhoods ?? []).map((n) => ({
       id: n.id,
       label: `${area.name} – ${n.name}`,
     }))
