@@ -22,7 +22,7 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
   const [showAdd, setShowAdd] = useState(false);
 
   const { data: assignments = [] } = useQuery({
-    queryKey: ["program_staff", programId],
+    queryKey: programKeys.staff(programId),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("program_staff")
