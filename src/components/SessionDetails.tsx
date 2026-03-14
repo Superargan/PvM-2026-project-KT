@@ -138,7 +138,7 @@ export default function SessionDetails({ session, programId, isBackoffice = true
 
   // Fetch documents for this session
   const { data: docs = [], isLoading: docsLoading } = useQuery({
-    queryKey: ["session_documents", session.id],
+    queryKey: programKeys.sessionDocs(session.id),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("session_documents")
