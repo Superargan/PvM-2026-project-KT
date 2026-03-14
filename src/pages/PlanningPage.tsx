@@ -1058,7 +1058,7 @@ export default function PlanningPage() {
                           <td className="px-3 py-2">
                             <div className="flex flex-wrap gap-1">
                               {trainerAvail.length > 0 ? trainerAvail.map((a: any) => (
-                                <Badge key={a.id} variant="outline" className="text-[9px] border-emerald-300 text-emerald-700">
+                                <Badge key={a.id} variant="outline" className="text-[9px] border-success-border text-success-foreground">
                                   {format(parseISO(a.available_date), "d MMM", { locale: nl })}
                                 </Badge>
                               )) : (
