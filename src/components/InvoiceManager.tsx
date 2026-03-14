@@ -112,7 +112,7 @@ export default function InvoiceManager({ staffId, staffName }: { staffId?: strin
     },
     onSuccess: () => {
       toast.success("Status bijgewerkt");
-      qc.invalidateQueries({ queryKey: ["invoices"] });
+      qc.invalidateQueries({ queryKey: invoiceKeys.all });
     },
     onError: (err: any) => toast.error(err.message),
   });

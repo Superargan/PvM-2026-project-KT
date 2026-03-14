@@ -230,8 +230,8 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
       });
 
       // Refresh data
-      queryClient.invalidateQueries({ queryKey: ["availability-validation-data"] });
-      queryClient.invalidateQueries({ queryKey: ["availability-validation-clients"] });
+      queryClient.invalidateQueries({ queryKey: availabilityValidationKeys.data(clientIds.length) });
+      queryClient.invalidateQueries({ queryKey: availabilityValidationKeys.clients });
     } catch (err: any) {
       toast({ title: "Fout", description: err.message, variant: "destructive" });
     } finally {
