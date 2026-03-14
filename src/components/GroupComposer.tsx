@@ -1622,7 +1622,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                                 </span>
                                 {suggestion.alternativesOnDay > 0 && (
                                   <button
-                                    className="text-xs text-blue-600 font-medium hover:underline cursor-pointer"
+                                    className="text-xs text-info font-medium hover:underline cursor-pointer"
                                     onClick={() => setExpandedAlternatives(prev => {
                                       const next = new Set(prev);
                                       if (next.has(altKey)) next.delete(altKey); else next.add(altKey);
