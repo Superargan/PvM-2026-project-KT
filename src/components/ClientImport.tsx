@@ -267,33 +267,11 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     reader.readAsBinaryString(file);
   };
 
-  /** Fuzzy school name matching: exact → contains → best partial → user resolutions */
+  /** Find school ID using shared matching logic */
   const findSchoolId = (name: string | undefined, resolutions?: Record<string, string>): string | null => {
     if (!name) return null;
-    const norm = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-
-    // Check user resolutions first
-    if (resolutions && resolutions[norm]) return resolutions[norm];
-
-    // Exact match
-    const exact = schools.find((s) => s.name.toLowerCase().trim() === norm);
-    if (exact) return exact.id;
-
-    // Contains: school name contains search or search contains school name
-    const contains = schools.find((s) => {
-      const sNorm = s.name.toLowerCase().trim();
-      return sNorm.includes(norm) || norm.includes(sNorm);
-    });
-    if (contains) return contains.id;
-
-    // Starts-with match (first significant word)
-    const firstWord = norm.split(/\s+/)[0];
-    if (firstWord.length >= 3) {
-      const startsWith = schools.find((s) => s.name.toLowerCase().trim().startsWith(firstWord));
-      if (startsWith) return startsWith.id;
-    }
-
-    return null;
+    const match = findSchoolMatch(name, schools as EntityRef[], resolutions);
+    return match?.id ?? null;
   };
 
   /** Scan rows for school names that don't match any known school */
@@ -324,58 +302,18 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     }
   };
 
-  /** Common area abbreviations / aliases */
-  const AREA_ALIASES: Record<string, string[]> = {
-    "hillegersberg-schiebroek": ["his", "hillegersberg", "schiebroek"],
-    "kralingen-crooswijk": ["kralingen", "crooswijk"],
-    "prins alexander": ["prins alexander", "prinsalexander"],
-    "ijsselmonde": ["ijsselmonde"],
-    "hoek van holland": ["hvh", "hoek van holland"],
-  };
-
+  /** Find area ID using shared matching logic */
   const findAreaId = (name: string | undefined): string | null => {
     if (!name) return null;
-    const norm = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-    if (!norm) return null;
-    
-    // Exact match
-    const exact = areas.find((a) => a.name.toLowerCase().trim() === norm);
-    if (exact) return exact.id;
-    
-    // Contains match
-    const contains = areas.find((a) => {
-      const aNorm = a.name.toLowerCase().trim();
-      return aNorm.includes(norm) || norm.includes(aNorm);
-    });
-    if (contains) return contains.id;
-    
-    // Alias match
-    for (const area of areas) {
-      const areaKey = area.name.toLowerCase().trim();
-      const aliases = AREA_ALIASES[areaKey];
-      if (aliases && aliases.some(alias => norm === alias || norm.includes(alias) || alias.includes(norm))) {
-        return area.id;
-      }
-    }
-    
-    return null;
+    const match = findAreaMatch(name, areas as EntityRef[]);
+    return match?.id ?? null;
   };
 
+  /** Find referrer ID using shared matching logic */
   const findReferrerId = (name: string | undefined, schoolId: string | null): string | null => {
     if (!name) return null;
-    const norm = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-    // Try match with same school first
-    if (schoolId) {
-      const sameSchool = referrers.find((r) => r.school_id === schoolId && r.name.toLowerCase().trim() === norm);
-      if (sameSchool) return sameSchool.id;
-    }
-    const exact = referrers.find((r) => r.name.toLowerCase().trim() === norm);
-    if (exact) return exact.id;
-    const contains = referrers.find((r) => {
-      const rNorm = r.name.toLowerCase().trim();
-      return rNorm.includes(norm) || norm.includes(rNorm);
-    });
-    return contains?.id ?? null;
+    const match = findReferrerMatch(name, referrers as any[], schoolId);
+    return match?.id ?? null;
   };
 
   const handleImport = async () => {
