@@ -497,6 +497,8 @@ export default function ScholenPage() {
         const rawScheduleType = scheduleTypeCol ? String(r[scheduleTypeCol] ?? "").trim().toLowerCase() : "";
         const schedule_type = rawScheduleType === "traditioneel" || rawScheduleType === "continu" ? rawScheduleType : null;
         const source = sourceCol ? String(r[sourceCol] ?? "").trim() || null : null;
+        const rawMunicipality = municipalityCol ? String(r[municipalityCol] ?? "").trim() : "";
+        const municipality = rawMunicipality || null;
 
         return {
           name: r["naam"] || r["Naam"] || r["name"] || r["School"] || r["school"] || r["VESTIGINGSNAAM"] || "",
@@ -510,6 +512,7 @@ export default function ScholenPage() {
           school_end_time,
           schedule_type,
           source,
+          municipality,
         };
       }).filter((s) => s.name);
 
