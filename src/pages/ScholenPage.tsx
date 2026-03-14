@@ -863,6 +863,8 @@ export default function ScholenPage() {
                 { key: "gebied", label: "Gebied" },
                 { key: "wijk", label: "Wijk" },
                 { key: "leerlingen", label: "Leerlingen" },
+                { key: "roostertype", label: "Roostertype" },
+                { key: "bron", label: "Bron" },
                 { key: "schooltijden", label: "Schooltijden" },
                 { key: "email", label: "E-mail" },
                 { key: "telefoon", label: "Telefoon" },
