@@ -63,7 +63,7 @@ export default function ProgramAttendance({
       const { error } = await supabase.from("program_sessions").insert(rows as any);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["program_sessions", programId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: programKeys.sessions(programId) }),
   });
 
   useEffect(() => {
