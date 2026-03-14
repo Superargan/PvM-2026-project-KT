@@ -725,7 +725,10 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
     setResult({ success, errors });
     setImporting(false);
     if (success > 0) {
-      queryClient.invalidateQueries();
+      queryClient.invalidateQueries({ queryKey: staffKeys.all });
+      queryClient.invalidateQueries({ queryKey: clientKeys.all });
+      queryClient.invalidateQueries({ queryKey: programKeys.all });
+      queryClient.invalidateQueries({ queryKey: planningKeys.availability });
       toast({ title: `${success} rij(en) geïmporteerd`, description: errors.length > 0 ? `${errors.length} fout(en)` : undefined });
     }
   };
