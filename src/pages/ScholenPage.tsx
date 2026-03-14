@@ -1186,11 +1186,14 @@ export default function ScholenPage() {
           </Dialog>
 
           {/* School times only upload dialog */}
-          <Dialog open={timesUploadOpen} onOpenChange={setTimesUploadOpen}>
+          <Dialog open={timesUploadOpen} onOpenChange={(open) => {
+            setTimesUploadOpen(open);
+            if (!open) { setTimesRows([]); setTimesUnmatched([]); setTimesResolutions({}); setTimesShowResolution(false); }
+          }}>
             <DialogTrigger asChild>
               <Button variant="outline"><Clock className="h-4 w-4" /> Schooltijden Importeren</Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Schooltijden Importeren</DialogTitle>
                 <DialogDescription>Update alleen bestaande scholen — er worden geen nieuwe scholen aangemaakt.</DialogDescription>
@@ -1198,24 +1201,67 @@ export default function ScholenPage() {
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
                   Upload een Excel of CSV-bestand met een kolom <strong>Naam</strong> en tijdkolommen zoals <strong>Schooltijd begin</strong> en <strong>Schooltijd eind</strong>.
-                  Optioneel: Rooster, Bron, Gemeente. Scholen die niet in het systeem staan worden gerapporteerd maar <em>niet</em> aangemaakt.
+                  Optioneel: Rooster, Bron, Gemeente. Schoolnamen worden fuzzy gematcht met bestaande scholen.
                 </p>
-                <div className="flex items-center justify-center rounded-lg border-2 border-dashed border-border p-8">
-                  <label className="flex cursor-pointer flex-col items-center gap-2 text-center">
-                    <Clock className="h-8 w-8 text-muted-foreground" />
-                    <span className="text-sm font-medium text-foreground">
-                      {timesUploadMutation.isPending ? "Bezig met importeren..." : "Klik om bestand te kiezen"}
-                    </span>
-                    <span className="text-xs text-muted-foreground">.xlsx, .xls of .csv</span>
-                    <input
-                      type="file"
-                      accept=".xlsx,.xls,.csv"
-                      className="hidden"
-                      onChange={handleTimesFileUpload}
-                      disabled={timesUploadMutation.isPending}
-                    />
-                  </label>
-                </div>
+
+                {timesRows.length === 0 && (
+                  <div className="flex items-center justify-center rounded-lg border-2 border-dashed border-border p-8">
+                    <label className="flex cursor-pointer flex-col items-center gap-2 text-center">
+                      <Clock className="h-8 w-8 text-muted-foreground" />
+                      <span className="text-sm font-medium text-foreground">Klik om bestand te kiezen</span>
+                      <span className="text-xs text-muted-foreground">.xlsx, .xls of .csv</span>
+                      <input
+                        type="file"
+                        accept=".xlsx,.xls,.csv"
+                        className="hidden"
+                        onChange={handleTimesFileSelect}
+                      />
+                    </label>
+                  </div>
+                )}
+
+                {timesRows.length > 0 && (
+                  <Badge variant="secondary" className="text-sm">{timesRows.length} rijen ingelezen</Badge>
+                )}
+
+                {/* School name resolution step */}
+                {timesShowResolution && timesUnmatched.length > 0 && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2">
+                    <p className="text-sm font-medium text-amber-900 flex items-center gap-1.5">
+                      <AlertTriangle className="h-4 w-4" />
+                      {timesUnmatched.length} schoolna{timesUnmatched.length === 1 ? "am" : "men"} niet automatisch herkend
+                    </p>
+                    <p className="text-xs text-amber-700">Koppel hieronder de juiste school, of laat op "Overslaan" om deze rij(en) te negeren.</p>
+                    {timesUnmatched.map((name) => (
+                      <div key={name} className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-amber-900 min-w-[120px] truncate" title={name}>"{name}"</span>
+                        <select
+                          className="flex-1 rounded border border-amber-300 bg-white px-2 py-1 text-xs"
+                          value={timesResolutions[name] ?? ""}
+                          onChange={(e) => setTimesResolutions((prev) => ({ ...prev, [name]: e.target.value }))}
+                        >
+                          <option value="">— Overslaan —</option>
+                          {(schools as any[]).map((s) => (
+                            <option key={s.id} value={s.id}>{s.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {timesRows.length > 0 && (
+                  <Button
+                    onClick={() => runTimesImport(timesRows, timesResolutions)}
+                    disabled={timesImporting}
+                    className="w-full"
+                  >
+                    {timesImporting
+                      ? <><Loader2 className="h-4 w-4 animate-spin" /> Importeren...</>
+                      : <><Clock className="h-4 w-4" /> {timesShowResolution ? "Importeren met bovenstaande keuzes" : `${timesRows.length} schooltijden importeren`}</>
+                    }
+                  </Button>
+                )}
               </div>
             </DialogContent>
           </Dialog>
