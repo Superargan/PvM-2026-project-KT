@@ -132,7 +132,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
   }, [clients, areas, prefsByClient]);
 
   const activeAreas = useMemo(() => {
-    return areas.filter((a: any) => {
+    return areas.filter((a) => {
       // Apply global area filter
       if (filterArea && filterArea !== "alle" && a.id !== filterArea) return false;
       const row = matrix.m[a.id];
