@@ -70,7 +70,7 @@ export default function TrainingslocatiesPage() {
     if (!pc) return;
     const areaName = getAreaFromPostcode(pc);
     if (!areaName) return;
-    const area = areas.find((a: any) => a.name === areaName);
+    const area = areas.find((a) => a.name === areaName);
     if (area) {
       setSelectedArea(area.id);
       if (area.neighborhoods?.length > 0) {
