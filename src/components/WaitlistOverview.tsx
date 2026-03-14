@@ -300,10 +300,10 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
                                   onClick={() => onSelectGroup?.(area.id, age)}
                                   className={`inline-flex flex-col items-center rounded-lg px-3 py-1.5 text-sm font-bold transition-colors min-w-[80px] ${
                                     ready
-                                      ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300"
+                                      ? "bg-success-muted text-success-foreground hover:bg-success-muted/80 border border-success-border"
                                       : partial
-                                      ? "bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300"
-                                      : "bg-red-100 text-red-800 hover:bg-red-200 border border-red-300"
+                                      ? "bg-warning-muted text-warning-foreground hover:bg-warning-muted/80 border border-warning-border"
+                                      : "bg-destructive/10 text-destructive hover:bg-destructive/15 border border-destructive/30"
                                   }`}
                                 >
                                   <span className="flex items-center gap-1.5">
