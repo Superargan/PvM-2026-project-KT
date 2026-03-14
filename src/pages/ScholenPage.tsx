@@ -1096,7 +1096,85 @@ export default function ScholenPage() {
     if (data?.signedUrl) window.open(data.signedUrl, "_blank");
   };
 
-  return (
+  // ── School deletion ──
+
+  const checkDeleteBlockers = async (schoolIds: string[]) => {
+    const blockers: Record<string, { clients: number; programs: number }> = {};
+    for (const id of schoolIds) {
+      const [{ count: clientCount }, { count: programCount }] = await Promise.all([
+        supabase.from("clients").select("id", { count: "exact", head: true }).eq("school_id", id),
+        supabase.from("programs").select("id", { count: "exact", head: true }).eq("school_id", id),
+      ]);
+      blockers[id] = { clients: clientCount ?? 0, programs: programCount ?? 0 };
+    }
+    return blockers;
+  };
+
+  const initiateDelete = async (schoolList: any[]) => {
+    const blockers = await checkDeleteBlockers(schoolList.map((s) => s.id));
+    setDeleteBlockers(blockers);
+    setSchoolsToDelete(schoolList);
+    setDeleteConfirmOpen(true);
+  };
+
+  const executeDelete = async () => {
+    setDeleting(true);
+    try {
+      const deletableIds = schoolsToDelete
+        .filter((s) => {
+          const b = deleteBlockers[s.id];
+          return !b || (b.clients === 0 && b.programs === 0);
+        })
+        .map((s) => s.id);
+
+      if (deletableIds.length === 0) {
+        toast({ title: "Geen scholen verwijderd", description: "Alle geselecteerde scholen hebben gekoppelde gegevens.", variant: "destructive" });
+        return;
+      }
+
+      // Cascade: delete referrers, school_documents, staff links, scenario slots school refs
+      for (const id of deletableIds) {
+        await Promise.all([
+          supabase.from("referrers").delete().eq("school_id", id),
+          supabase.from("school_documents" as any).delete().eq("school_id", id),
+        ]);
+      }
+
+      // Delete schools
+      for (let i = 0; i < deletableIds.length; i += 50) {
+        const chunk = deletableIds.slice(i, i + 50);
+        const { error } = await supabase.from("schools").delete().in("id", chunk);
+        if (error) throw error;
+      }
+
+      toast({ title: `${deletableIds.length} school${deletableIds.length === 1 ? "" : "en"} verwijderd` });
+      setSelectedSchoolIds(new Set());
+      setDeleteConfirmOpen(false);
+      setSchoolsToDelete([]);
+      invalidateAllSchoolQueries(queryClient);
+    } catch (err: any) {
+      toast({ title: "Fout bij verwijderen", description: err.message, variant: "destructive" });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const toggleSchoolSelection = (id: string) => {
+    setSelectedSchoolIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAllSchools = (schoolIds: string[]) => {
+    setSelectedSchoolIds((prev) => {
+      const allSelected = schoolIds.every((id) => prev.has(id));
+      if (allSelected) return new Set();
+      return new Set(schoolIds);
+    });
+  };
+
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
