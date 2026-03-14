@@ -84,7 +84,7 @@ export default function AanmeldingenPage() {
   const queryClient = useQueryClient();
 
   const { data: clients = [], isLoading, refetch } = useQuery({
-    queryKey: ["clients", "aanmeldingen", search],
+    queryKey: clientKeys.aanmeldingen(search),
     queryFn: async () => {
       let query = supabase
         .from("clients")
