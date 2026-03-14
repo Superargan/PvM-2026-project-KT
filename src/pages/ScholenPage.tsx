@@ -1687,6 +1687,17 @@ export default function ScholenPage() {
                   <td className="px-5 py-4 text-right">
                     <span className="font-display text-sm font-bold text-card-foreground">{school.student_count ?? 0}</span>
                   </td>
+                  <td className="px-3 py-4 text-center">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                      onClick={() => initiateDelete([school])}
+                      title="School verwijderen"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </td>
                 </tr>
               ))}
             </tbody>
