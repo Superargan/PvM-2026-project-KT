@@ -127,9 +127,9 @@ function AvailabilitySummaryPanel({ filterArea, filterAge, areaName }: { filterA
               <div
                 className={`rounded-lg py-2 text-sm font-bold ${
                   pct >= 0.5
-                    ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                    ? "bg-success-muted text-success-foreground border border-success-border"
                     : count > 0
-                    ? "bg-amber-100 text-amber-800 border border-amber-300"
+                    ? "bg-warning-muted text-warning-foreground border border-warning-border"
                     : "bg-muted text-muted-foreground border border-border"
                 }`}
               >
