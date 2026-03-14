@@ -1,7 +1,7 @@
 import { AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useMemo } from "react";
-import { normalizeSchoolName } from "@/lib/schoolTimes";
+import { normalizeSchoolName } from "@/lib/DomainResolver";
 
 interface SchoolDuplicateWarningProps {
   name: string;

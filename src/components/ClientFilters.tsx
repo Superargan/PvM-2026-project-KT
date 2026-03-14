@@ -1,7 +1,7 @@
 import { Search, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { statusLabels } from "@/lib/clientUtils";
+import { statusLabels } from "@/lib/DomainResolver";
 
 interface ClientFiltersProps {
   search: string;

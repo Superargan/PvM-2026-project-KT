@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { clientKeys } from "@/lib/queryKeys";
-import { findPotentialDuplicates, statusLabels, calculateAge, type DuplicateMatch } from "@/lib/clientUtils";
+import { findPotentialDuplicates, statusLabels, calculateAge, type DuplicateMatch } from "@/lib/DomainResolver";
 import { AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useMemo } from "react";

@@ -33,7 +33,7 @@ import {
   validateScenario,
   type AgeCategory,
   type MatchType,
-} from "@/lib/clientUtils";
+} from "@/lib/DomainResolver";
 import { clientKeys, areaKeys, scenarioKeys, programKeys, staffKeys } from "@/lib/queryKeys";
 import { downloadExport } from "@/lib/csvExport";
 

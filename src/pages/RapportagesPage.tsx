@@ -16,7 +16,7 @@ import {
 import { nl } from "date-fns/locale";
 import InvoiceManager from "@/components/InvoiceManager";
 import * as XLSX from "xlsx";
-import { getAgeCategoryReport as ageCategory, getAgeCategoryReportLabel as ageCategoryLabel } from "@/lib/clientUtils";
+import { getAgeCategoryReport as ageCategory, getAgeCategoryReportLabel as ageCategoryLabel } from "@/lib/DomainResolver";
 
 type Granularity = "week" | "maand" | "jaar";
 type Breakdown = "totaal" | "school" | "gebied" | "leeftijd" | "geslacht";

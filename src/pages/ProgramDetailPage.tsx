@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, Loader2, Users, UserPlus, X, GraduationCap, Calendar, MapPin, Settings, ClipboardList, FileText, School, AlertTriangle, UsersRound,
 } from "lucide-react";
-import { getResolvedLocationName } from "@/lib/locationUtils";
+import { getResolvedLocationName } from "@/lib/DomainResolver";
 import ProgramTrainers from "@/components/ProgramTrainers";
 import ProgramAttendance from "@/components/ProgramAttendance";
 import GroupComposer from "@/components/GroupComposer";
