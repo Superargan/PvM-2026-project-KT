@@ -169,7 +169,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
           <FileText className="h-4 w-4" />
-          Opgeslagen scenario's ({scenarios.length})
+          Proforma planningen ({scenarios.length})
         </h3>
       </div>
 
@@ -178,6 +178,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
           <thead>
             <tr className="border-b border-border bg-muted/50">
               <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Naam</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">PF-nr.</th>
               <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
               <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Validatie</th>
               <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Slots</th>
