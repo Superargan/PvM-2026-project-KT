@@ -381,7 +381,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
                           </Badge>
                         )}
                         {v.result === "onvolledig" && (
-                          <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-700 gap-1">
+                          <Badge variant="outline" className="text-[10px] border-warning-border text-warning-foreground gap-1">
                             <AlertTriangle className="h-3 w-3" /> Onvolledig
                           </Badge>
                         )}
