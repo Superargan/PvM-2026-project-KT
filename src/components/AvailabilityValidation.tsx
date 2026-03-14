@@ -49,7 +49,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
 
   // All availability records for these clients
   const { data: allAvail = [], isLoading: loadingAvail } = useQuery({
-    queryKey: ["availability-validation-data", clientIds.length],
+    queryKey: availabilityValidationKeys.data(clientIds.length),
     enabled: clientIds.length > 0,
     queryFn: async () => {
       // Batch in chunks of 50 clients to avoid URI-too-long,
