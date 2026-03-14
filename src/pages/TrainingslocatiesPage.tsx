@@ -73,7 +73,7 @@ export default function TrainingslocatiesPage() {
     const area = areas.find((a) => a.name === areaName);
     if (area) {
       setSelectedArea(area.id);
-      if (area.neighborhoods?.length > 0) {
+      if ((area as { neighborhoods?: { id: string }[] }).neighborhoods?.length ?? 0 > 0) {
         setSelectedNeighborhood(area.neighborhoods[0].id);
       } else {
         setSelectedNeighborhood("");
