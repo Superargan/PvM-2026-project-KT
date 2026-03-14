@@ -1755,7 +1755,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
           <DialogHeader>
             <DialogTitle>{activeScenarioId ? "Proforma planning bijwerken" : "Opslaan als proforma planning"}</DialogTitle>
             <DialogDescription>
-              Geef het scenario een naam en optioneel een beschrijving.
+              Geef de proforma planning een naam en optioneel een beschrijving.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
