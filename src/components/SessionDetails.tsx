@@ -110,7 +110,7 @@ export default function SessionDetails({ session, programId, isBackoffice = true
           session_date: sessionDate || null,
           start_time: sessionStartTime || null,
           end_time: sessionEndTime || null,
-        } as any)
+        })
         .eq("id", session.id);
       if (error) throw error;
     },
@@ -118,14 +118,14 @@ export default function SessionDetails({ session, programId, isBackoffice = true
       qc.invalidateQueries({ queryKey: programKeys.sessions(programId) });
       toast({ title: "Sessie opgeslagen" });
     },
-    onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
+    onError: (err: Error) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
 
   const updateLocation = useMutation({
     mutationFn: async () => {
       const { error } = await supabase
         .from("program_sessions")
-        .update({ location } as any)
+        .update({ location })
         .eq("id", session.id);
       if (error) throw error;
     },
@@ -133,7 +133,7 @@ export default function SessionDetails({ session, programId, isBackoffice = true
       qc.invalidateQueries({ queryKey: programKeys.sessions(programId) });
       toast({ title: "Locatie opgeslagen" });
     },
-    onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
+    onError: (err: Error) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
 
   // Fetch documents for this session
