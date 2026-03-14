@@ -760,9 +760,9 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
 
   const programStaffHasOvereenkomstGenerated = useMemo(() => {
     const set = new Set<string>();
-    generatedDocs.forEach((doc: any) => {
+    generatedDocs.forEach((doc) => {
       if (!doc.staff_id) return;
-      const cat = (doc.document_templates as any)?.category?.toLowerCase() ?? "";
+      const cat = (doc.document_templates as { category: string } | null)?.category?.toLowerCase() ?? "";
       if (cat === "overeenkomst" && doc.program_id) {
         set.add(`${doc.program_id}_${doc.staff_id}`);
       }
