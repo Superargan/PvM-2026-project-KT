@@ -1836,9 +1836,9 @@ export default function ScholenPage() {
                   </Button>
                 </div>
               )}
-              {(schoolGeneratedDocs as any[]).length > 0 && (
+              {schoolGeneratedDocs.length > 0 && (
                 <div className="space-y-1 mt-2">
-                  {(schoolGeneratedDocs as any[]).map((doc: any) => (
+                  {schoolGeneratedDocs.map((doc) => (
                     <div key={doc.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-2">
                       <div className="min-w-0">
                         <p className="text-xs font-medium text-card-foreground truncate">{doc.file_name}</p>
