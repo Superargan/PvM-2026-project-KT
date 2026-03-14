@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
+import { schoolKeys, areaKeys } from "@/lib/queryKeys";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateInput } from "@/components/DateInput";
@@ -33,7 +34,7 @@ export default function AanmeldenPublicPage() {
   const [form, setForm] = useState<Partial<AanmeldForm>>({});
 
   const { data: schools = [] } = useQuery({
-    queryKey: ["public-schools"],
+    queryKey: schoolKeys.dropdown,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("schools")
@@ -45,7 +46,7 @@ export default function AanmeldenPublicPage() {
   });
 
   const { data: areas = [] } = useQuery({
-    queryKey: ["public-areas"],
+    queryKey: areaKeys.all,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("areas")

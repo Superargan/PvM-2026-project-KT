@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { programKeys, clientKeys } from "@/lib/queryKeys";
+import { programKeys, clientKeys, schoolKeys, locationKeys, documentKeys } from "@/lib/queryKeys";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,7 +69,7 @@ export default function ProgramDetailPage() {
 
   // Fetch all clients for adding
   const { data: allClients = [] } = useQuery({
-    queryKey: ["clients", "for-program"],
+    queryKey: clientKeys.forProgram,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
@@ -82,7 +82,7 @@ export default function ProgramDetailPage() {
 
   // Fetch schools for linking
   const { data: schools = [] } = useQuery({
-    queryKey: ["all-schools-for-program"],
+    queryKey: schoolKeys.dropdown,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("schools")
@@ -95,7 +95,7 @@ export default function ProgramDetailPage() {
 
   // Fetch training locations for linking
   const { data: trainingLocations = [] } = useQuery({
-    queryKey: ["all-training-locations-for-program"],
+    queryKey: locationKeys.dropdown,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("training_locations")
@@ -591,7 +591,7 @@ function ProgramDocumentGenerator({ programId }: { programId: string }) {
   const { toast } = useToast();
 
   const { data: templates = [] } = useQuery({
-    queryKey: ["overeenkomst-templates"],
+    queryKey: documentKeys.templates,
     queryFn: async () => {
       const { data, error } = await supabase.from("document_templates").select("*").order("name");
       if (error) throw error;
@@ -600,7 +600,7 @@ function ProgramDocumentGenerator({ programId }: { programId: string }) {
   });
 
   const { data: trainers = [] } = useQuery({
-    queryKey: ["program_staff_for_docs", programId],
+    queryKey: programKeys.staffForDocs(programId),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("program_staff")

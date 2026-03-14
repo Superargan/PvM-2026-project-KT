@@ -889,7 +889,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
 
       setConvertResultDialog(results as any[]);
       queryClient.invalidateQueries({ queryKey: scenarioKeys.all });
-      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: clientKeys.all });
     } catch (err: any) {
       toast({ title: "Fout bij omzetten", description: err.message, variant: "destructive" });
     } finally {
@@ -1042,7 +1042,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
       if (updateErr) throw updateErr;
 
       toast({ title: "Groep definitief aangemaakt", description: `${programName} met ${selected.size} deelnemers` });
-      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: clientKeys.all });
       navigate(`/programmas/${program.id}`);
     } catch (err: any) {
       toast({ title: "Fout bij aanmaken", description: err.message, variant: "destructive" });

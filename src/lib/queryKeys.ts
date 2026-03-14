@@ -35,6 +35,10 @@ export const clientKeys = {
   generatedDocs: (clientId: string) => ["clients", "generated-docs", clientId] as const,
   /** Assignments for a specific client */
   assignments: (clientId?: string) => ["clients", "assignments", clientId] as const,
+  /** All assignments (overview) */
+  allAssignments: ["clients", "all-assignments"] as const,
+  /** Duplicate check */
+  duplicateCheck: ["clients", "duplicate-check"] as const,
 };
 
 /** Shared area query key — use everywhere */
@@ -85,16 +89,21 @@ export const programKeys = {
   bySchool: ["programs", "by-school"] as const,
   clientsActive: ["programs", "clients-active"] as const,
   linkable: ["programs", "linkable"] as const,
+  /** Available/active programs for dropdowns */
+  available: ["programs", "available"] as const,
   clients: (programId: string) => ["programs", "clients", programId] as const,
   sessions: (programId: string) => ["programs", "sessions", programId] as const,
   staff: (programId: string) => ["programs", "staff", programId] as const,
   sessionDocs: (sessionId: string) => ["programs", "session-docs", sessionId] as const,
+  /** Staff for document generation context */
+  staffForDocs: (programId: string) => ["programs", "staff-for-docs", programId] as const,
 };
 
 /** Training location query keys */
 export const locationKeys = {
   all: ["training-locations"] as const,
   list: (search?: string) => ["training-locations", "list", search] as const,
+  dropdown: ["training-locations", "dropdown"] as const,
 };
 
 /** Referrer query keys */

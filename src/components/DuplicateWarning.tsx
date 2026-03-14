@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { clientKeys } from "@/lib/queryKeys";
 import { findPotentialDuplicates, statusLabels, calculateAge, type DuplicateMatch } from "@/lib/clientUtils";
 import { AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +17,7 @@ interface DuplicateWarningProps {
 
 export default function DuplicateWarning({ firstName, lastName, excludeId, clients: clientsProp, onNavigate }: DuplicateWarningProps) {
   const { data: fetchedClients } = useQuery({
-    queryKey: ["clients", "duplicate-check"],
+    queryKey: clientKeys.duplicateCheck,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")

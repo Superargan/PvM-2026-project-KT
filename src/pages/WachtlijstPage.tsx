@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { clientKeys, programKeys, areaKeys, schoolKeys } from "@/lib/queryKeys";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -9,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Trash2, Clock, UserPlus, Upload } from "lucide-react";
 import ClientImport from "@/components/ClientImport";
 import { filterClients, statusLabels, statusStyles } from "@/lib/clientUtils";
-import { areaKeys, schoolKeys, clientKeys } from "@/lib/queryKeys";
 import ClientFilters from "@/components/ClientFilters";
 import ClientListTable from "@/components/ClientListTable";
 
@@ -45,7 +45,7 @@ export default function WachtlijstPage() {
   });
 
   const { data: waitlistClients = [], isLoading } = useQuery({
-    queryKey: ["clients", "waitlist"],
+    queryKey: clientKeys.waitlist(),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
@@ -60,7 +60,7 @@ export default function WachtlijstPage() {
   });
 
   const { data: programs = [] } = useQuery({
-    queryKey: ["active-programs"],
+    queryKey: programKeys.available,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("programs")

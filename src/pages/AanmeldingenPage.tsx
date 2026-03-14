@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { areaKeys, clientKeys, schoolKeys } from "@/lib/queryKeys";
+import { areaKeys, clientKeys, schoolKeys, staffKeys, programKeys } from "@/lib/queryKeys";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -84,7 +84,7 @@ export default function AanmeldingenPage() {
   const queryClient = useQueryClient();
 
   const { data: clients = [], isLoading, refetch } = useQuery({
-    queryKey: ["clients", "aanmeldingen", search],
+    queryKey: clientKeys.aanmeldingen(search),
     queryFn: async () => {
       let query = supabase
         .from("clients")
@@ -121,7 +121,7 @@ export default function AanmeldingenPage() {
   });
 
   const { data: staffList = [] } = useQuery({
-    queryKey: ["staff-list-for-assignment"],
+    queryKey: staffKeys.all,
     queryFn: async () => {
       const { data, error } = await supabase.from("staff").select("id, name, user_id").eq("archived", false).not("name", "is", null).order("name");
       if (error) throw error;
@@ -143,7 +143,7 @@ export default function AanmeldingenPage() {
   });
 
   const { data: availablePrograms = [] } = useQuery({
-    queryKey: ["available-programs"],
+    queryKey: programKeys.available,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("programs")
@@ -283,7 +283,7 @@ export default function AanmeldingenPage() {
     setSaving(false);
     toast({ title: "Aanmelding bijgewerkt" });
     setEditOpen(false);
-    queryClient.invalidateQueries({ queryKey: ["clients"] });
+    queryClient.invalidateQueries({ queryKey: clientKeys.all });
     queryClient.invalidateQueries({ queryKey: clientKeys.assignments() });
   };
 
@@ -302,7 +302,7 @@ export default function AanmeldingenPage() {
   };
 
   const { data: allAssignments = [] } = useQuery({
-    queryKey: ["all-client-assignments"],
+    queryKey: clientKeys.allAssignments,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("client_assignments")
@@ -1172,7 +1172,7 @@ function DuplicateScan({ clients, isLoading, onNavigate, onEdit }: {
       const { error } = await supabase.from("clients").delete().eq("id", client.id);
       if (error) throw error;
       toast({ title: `${client.first_name} ${client.last_name} verwijderd` });
-      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: clientKeys.all });
     } catch (err: any) {
       toast({ title: "Fout bij verwijderen", description: err.message, variant: "destructive" });
     } finally {
