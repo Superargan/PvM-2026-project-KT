@@ -183,7 +183,7 @@ export default function RapportagesPage() {
   // === 2. Deelnemers per periode ===
   const deelnemerData = useMemo(() => {
     const map = new Map<string, Map<string, Set<string>>>();
-    programClients.forEach((pc: any) => {
+    programClients.forEach((pc) => {
       const pk = periodKey(new Date(pc.enrolled_at ?? pc.created_at), gran);
       const bk = breakdown === "gebied" || breakdown === "school"
         ? breakdownKeyForProgram(pc.program_id)
