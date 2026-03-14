@@ -532,6 +532,8 @@ export default function ScholenPage() {
       }
 
       const newSchools: any[] = [];
+      const addedNames: string[] = [];
+      const updatedNames: string[] = [];
       const updatePromises: Promise<any>[] = [];
 
       for (const s of mapped) {
@@ -541,6 +543,7 @@ export default function ScholenPage() {
         if (!existing) {
           // New school — insert with times
           newSchools.push(s);
+          addedNames.push(s.name);
           if (s.school_start_time) timesSetCount++;
           if (s.municipality) municipalitySetCount++;
         } else {
@@ -551,6 +554,7 @@ export default function ScholenPage() {
           const hasMunicipalityUpdate = s.municipality && !existing.municipality;
 
           if (hasTimeUpdate || hasScheduleTypeUpdate || hasSourceUpdate || hasMunicipalityUpdate) {
+            const schoolName = s.name;
             const updateFn = async () => {
               const updatePayload: Record<string, any> = {};
               if (hasTimeUpdate) {
@@ -564,6 +568,7 @@ export default function ScholenPage() {
               const { error } = await supabase.from("schools").update(updatePayload).eq("id", existing.id);
               if (!error) {
                 updatedCount++;
+                updatedNames.push(schoolName);
                 if (hasTimeUpdate) timesSetCount++;
                 if (hasMunicipalityUpdate) municipalitySetCount++;
               }
@@ -590,6 +595,8 @@ export default function ScholenPage() {
         timesSet: timesSetCount,
         invalidTimes: invalidTimeCount,
         municipalitySet: municipalitySetCount,
+        addedNames,
+        updatedNames,
       };
     },
     onSuccess: (result) => {
