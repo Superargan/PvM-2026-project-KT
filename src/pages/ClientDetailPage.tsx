@@ -2,7 +2,7 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { areaKeys, clientKeys, schoolKeys, documentKeys } from "@/lib/queryKeys";
+import { areaKeys, clientKeys, schoolKeys, documentKeys, referrerKeys, auditKeys } from "@/lib/queryKeys";
 import { formatSchoolTimeRange, getEffectiveMunicipality, DEFAULT_MUNICIPALITY } from "@/lib/schoolTimes";
 import { getResolvedAreaName } from "@/lib/clientUtils";
 import { useEffect, useState } from "react";
