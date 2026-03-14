@@ -172,7 +172,7 @@ export default function ScholenPage() {
 
   // Fetch areas with neighborhoods
   const { data: areas = [] } = useQuery({
-    queryKey: ["areas-with-neighborhoods"],
+    queryKey: areaKeys.withNeighborhoods,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("areas")
