@@ -810,14 +810,14 @@ export default function PlanningPage() {
                       {items?.intakes.map((intake: any) => (
                         <div
                           key={intake.id}
-                          className="flex items-center gap-2 rounded-md bg-amber-50 border border-amber-200 px-2.5 py-1.5 cursor-pointer hover:bg-amber-100 transition-colors"
+                          className="flex items-center gap-2 rounded-md bg-warning-muted border border-warning-border px-2.5 py-1.5 cursor-pointer hover:bg-warning-muted/80 transition-colors"
                           onClick={() => navigate(`/clienten/${intake.id}`)}
                         >
-                          <Clock className="h-3.5 w-3.5 text-amber-700 shrink-0" />
-                          <span className="text-xs font-semibold text-amber-900 truncate">
+                          <Clock className="h-3.5 w-3.5 text-warning-foreground shrink-0" />
+                          <span className="text-xs font-semibold text-warning-foreground truncate">
                             Intake: {intake.first_name} {intake.last_name}
                           </span>
-                          <span className="text-[10px] text-amber-700 truncate ml-auto">
+                          <span className="text-[10px] text-warning-foreground/70 truncate ml-auto">
                             {intake.schools?.name ?? ""} {(() => { const aName = getResolvedAreaName(intake); return aName !== "—" ? `· ${aName}` : ""; })()}
                           </span>
                           {(intakeAssignmentMap[intake.id] ?? []).map((name: string, i: number) => (
