@@ -591,7 +591,7 @@ function ProgramDocumentGenerator({ programId }: { programId: string }) {
   const { toast } = useToast();
 
   const { data: templates = [] } = useQuery({
-    queryKey: ["overeenkomst-templates"],
+    queryKey: documentKeys.templates,
     queryFn: async () => {
       const { data, error } = await supabase.from("document_templates").select("*").order("name");
       if (error) throw error;
