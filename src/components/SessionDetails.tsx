@@ -76,7 +76,7 @@ export default function SessionDetails({ session, programId, isBackoffice = true
       .update({
         session_date: pendingDate,
         status: "handmatig_vrijgegeven",
-      } as any)
+      })
       .eq("id", session.id);
 
     if (error) {
@@ -90,10 +90,10 @@ export default function SessionDetails({ session, programId, isBackoffice = true
 
     await supabase.from("session_override_logs").insert({
       session_id: session.id,
-      overridden_by: userData.user?.id,
+      overridden_by: userData.user?.id ?? "",
       override_type: overrideType,
       reason: overrideReason.trim(),
-    } as any);
+    });
 
     setSessionDate(pendingDate);
     setOverrideOpen(false);
