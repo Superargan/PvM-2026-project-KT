@@ -32,7 +32,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
 
   // Clients that require availability
   const { data: clients = [], isLoading: loadingClients } = useQuery({
-    queryKey: ["availability-validation-clients"],
+    queryKey: availabilityValidationKeys.clients,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
