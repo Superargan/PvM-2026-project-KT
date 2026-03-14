@@ -315,7 +315,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                                 </Badge>
                               </div>
                               {(sr.slotIssues ?? []).length > 0 && (
-                                <ul className="list-disc list-inside text-red-700 mb-1">
+                                <ul className="list-disc list-inside text-destructive mb-1">
                                   {sr.slotIssues.map((issue: string, j: number) => (
                                     <li key={j}>{issue}</li>
                                   ))}
