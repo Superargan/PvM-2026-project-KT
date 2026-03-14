@@ -171,7 +171,7 @@ export default function ScholenPage() {
   });
 
   const { data: schools = [], isLoading, refetch } = useQuery({
-    queryKey: ["schools", search],
+    queryKey: schoolKeys.list(search),
     queryFn: async () => {
       let query = supabase
         .from("schools")
