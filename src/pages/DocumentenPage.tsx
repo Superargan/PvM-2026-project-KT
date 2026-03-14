@@ -135,7 +135,7 @@ function TemplatesTab() {
       setUploadFile(null);
       setTemplateName("");
       setTemplateCategory("overig");
-      queryClient.invalidateQueries({ queryKey: ["document-templates"] });
+      queryClient.invalidateQueries({ queryKey: documentKeys.templates });
     },
     onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
