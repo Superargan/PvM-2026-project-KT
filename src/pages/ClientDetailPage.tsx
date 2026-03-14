@@ -113,7 +113,7 @@ export default function ClientDetailPage() {
 
   // Fetch audit log
   const { data: auditLog = [] } = useQuery({
-    queryKey: ["client-audit", id],
+    queryKey: auditKeys.forClient(id!),
     queryFn: async () => {
       const { data } = await supabase
         .from("audit_log")
