@@ -2,6 +2,8 @@ import { School, Search, Plus, MapPin, Loader2, Upload, Users, Trash2, Pencil, U
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { schoolKeys, invalidateAllSchoolQueries } from "@/lib/queryKeys";
+import { formatSchoolTimeRange, validateSchoolTimePair, parseImportedSchoolTime, findMatchingColumn, normalizeSchoolName, dbTimeToInput, inputTimeToDb, SCHOOL_START_TIME_COLUMNS, SCHOOL_END_TIME_COLUMNS } from "@/lib/schoolTimes";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -169,7 +171,7 @@ export default function ScholenPage() {
   });
 
   const { data: schools = [], isLoading, refetch } = useQuery({
-    queryKey: ["schools", search],
+    queryKey: schoolKeys.list(search),
     queryFn: async () => {
       let query = supabase
         .from("schools")
@@ -278,6 +280,8 @@ export default function ScholenPage() {
       contact_phone: school.contact_phone ?? "",
       website_url: school.website_url ?? "",
       student_count: school.student_count ?? 0,
+      school_start_time: dbTimeToInput(school.school_start_time),
+      school_end_time: dbTimeToInput(school.school_end_time),
     });
     setSelectedSchool(school);
     setEditOpen(true);
@@ -286,6 +290,14 @@ export default function ScholenPage() {
   const handleEditSchool = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedSchool) return;
+
+    // Validate time pair before submit
+    const timeValidation = validateSchoolTimePair(editForm.school_start_time, editForm.school_end_time);
+    if (!timeValidation.valid) {
+      toast({ title: "Ongeldige schooltijden", description: timeValidation.error, variant: "destructive" });
+      return;
+    }
+
     setEditSaving(true);
 
     let neighborhoodId = selectedNeighborhood || null;
@@ -307,6 +319,8 @@ export default function ScholenPage() {
       website_url: editForm.website_url || null,
       student_count: Number(editForm.student_count) || 0,
       neighborhood_id: neighborhoodId,
+      school_start_time: inputTimeToDb(editForm.school_start_time ?? "") as any,
+      school_end_time: inputTimeToDb(editForm.school_end_time ?? "") as any,
     }).eq("id", selectedSchool.id);
 
     setEditSaving(false);
@@ -316,14 +330,23 @@ export default function ScholenPage() {
       toast({ title: "School bijgewerkt" });
       setEditOpen(false);
       setSelectedSchool(null);
-      refetch();
+      invalidateAllSchoolQueries(queryClient);
     }
   };
 
   const handleAddSchool = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    const address = (form.get("address") as string) || "";
+    const formData = new FormData(e.currentTarget);
+    const address = (formData.get("address") as string) || "";
+    const startTime = (formData.get("school_start_time") as string) || "";
+    const endTime = (formData.get("school_end_time") as string) || "";
+
+    // Validate time pair
+    const timeValidation = validateSchoolTimePair(startTime, endTime);
+    if (!timeValidation.valid) {
+      toast({ title: "Ongeldige schooltijden", description: timeValidation.error, variant: "destructive" });
+      return;
+    }
 
     // Auto-detect neighborhood if not manually selected
     let neighborhoodId = selectedNeighborhood || null;
@@ -338,13 +361,15 @@ export default function ScholenPage() {
     }
 
     const { error } = await supabase.from("schools").insert({
-      name: form.get("name") as string,
+      name: formData.get("name") as string,
       address: address || null,
-      contact_email: (form.get("contact_email") as string) || null,
-      contact_phone: (form.get("contact_phone") as string) || null,
-      website_url: (form.get("website_url") as string) || null,
-      student_count: Number(form.get("student_count")) || 0,
+      contact_email: (formData.get("contact_email") as string) || null,
+      contact_phone: (formData.get("contact_phone") as string) || null,
+      website_url: (formData.get("website_url") as string) || null,
+      student_count: Number(formData.get("student_count")) || 0,
       neighborhood_id: neighborhoodId,
+      school_start_time: inputTimeToDb(startTime) as any,
+      school_end_time: inputTimeToDb(endTime) as any,
     } as any);
 
     if (error) {
@@ -353,7 +378,7 @@ export default function ScholenPage() {
       toast({ title: "School toegevoegd" });
       setSelectedArea("");
       setSelectedNeighborhood("");
-      refetch();
+      invalidateAllSchoolQueries(queryClient);
     }
   };
 
@@ -378,7 +403,7 @@ export default function ScholenPage() {
     },
     onSuccess: (count) => {
       toast({ title: `${count} scholen gekoppeld aan een gebied` });
-      queryClient.invalidateQueries({ queryKey: ["schools"] });
+      invalidateAllSchoolQueries(queryClient);
     },
     onError: (err: any) => {
       toast({ title: "Fout bij koppelen", description: err.message, variant: "destructive" });
@@ -401,6 +426,15 @@ export default function ScholenPage() {
         });
       }
 
+      // Detect time columns in import headers
+      const headers = Object.keys(rows[0] ?? {});
+      const startTimeCol = findMatchingColumn(headers, SCHOOL_START_TIME_COLUMNS);
+      const endTimeCol = findMatchingColumn(headers, SCHOOL_END_TIME_COLUMNS);
+
+      let invalidTimeCount = 0;
+      let timesSetCount = 0;
+      let updatedCount = 0;
+
       const mapped = rows.map((r) => {
         // Build address from DUO columns if available
         const duoStraat = r["STRAATNAAM"];
@@ -417,10 +451,31 @@ export default function ScholenPage() {
           if (areaName) {
             const entry = areaLookup.get(areaName.toLowerCase());
             if (entry && entry.neighborhoods.length > 0) {
-              // Pick first neighborhood in that area as default
               neighborhoodId = entry.neighborhoods[0].id;
             }
           }
+        }
+
+        // Parse school times from import row
+        const rawStart = startTimeCol ? r[startTimeCol] : null;
+        const rawEnd = endTimeCol ? r[endTimeCol] : null;
+        const parsedStart = parseImportedSchoolTime(rawStart);
+        const parsedEnd = parseImportedSchoolTime(rawEnd);
+
+        // Validate: count invalid values (non-empty but unparseable)
+        if (rawStart && !parsedStart) invalidTimeCount++;
+        if (rawEnd && !parsedEnd) invalidTimeCount++;
+
+        // Only accept a valid complete pair
+        let school_start_time: string | null = null;
+        let school_end_time: string | null = null;
+        const pairValidation = validateSchoolTimePair(parsedStart, parsedEnd);
+        if (pairValidation.valid && parsedStart && parsedEnd) {
+          school_start_time = parsedStart;
+          school_end_time = parsedEnd;
+        } else if (parsedStart || parsedEnd) {
+          // Partial or invalid pair — count as invalid
+          invalidTimeCount++;
         }
 
         return {
@@ -431,35 +486,76 @@ export default function ScholenPage() {
           website_url: r["website"] || r["Website"] || r["website_url"] || r["URL"] || r["url"] || r["Website URL"] || r["website url"] || r["INTERNETADRES"] || null,
           student_count: Number(r["leerlingen"] || r["Leerlingen"] || r["student_count"] || r["Aantal leerlingen"] || 0) || 0,
           neighborhood_id: neighborhoodId,
+          school_start_time,
+          school_end_time,
         };
       }).filter((s) => s.name);
 
       if (mapped.length === 0) throw new Error("Geen geldige scholen gevonden. Zorg dat er een kolom 'Naam' is.");
 
-      // Fetch existing school names for deduplication
-      const { data: existingSchools } = await supabase.from("schools").select("name");
-      const existingNames = new Set((existingSchools ?? []).map((s) => s.name.toLowerCase().trim()));
-      const newSchools = mapped.filter((s) => !existingNames.has(s.name.toLowerCase().trim()));
-
-      if (newSchools.length === 0) {
-        return { imported: 0, skipped: mapped.length };
+      // Fetch existing schools for deduplication (include times for enrichment policy)
+      const { data: existingSchools } = await supabase.from("schools").select("id, name, school_start_time, school_end_time");
+      const existingMap = new Map<string, { id: string; school_start_time: string | null; school_end_time: string | null }>();
+      for (const s of existingSchools ?? []) {
+        existingMap.set(normalizeSchoolName(s.name), s);
       }
 
+      const newSchools: any[] = [];
+      const updatePromises: Promise<any>[] = [];
+
+      for (const s of mapped) {
+        const normalized = normalizeSchoolName(s.name);
+        const existing = existingMap.get(normalized);
+
+        if (!existing) {
+          // New school — insert with times
+          newSchools.push(s);
+          if (s.school_start_time) timesSetCount++;
+        } else if (s.school_start_time && s.school_end_time) {
+          // Existing school — enrich with times only when valid pair provided
+          // Follow overwrite policy: only update when import has valid non-empty values
+          const updateFn = async () => {
+            const { error } = await supabase.from("schools").update({
+              school_start_time: s.school_start_time as any,
+              school_end_time: s.school_end_time as any,
+            }).eq("id", existing.id);
+            if (!error) {
+              updatedCount++;
+              timesSetCount++;
+            }
+          };
+          updatePromises.push(updateFn());
+        }
+      }
+
+      // Batch insert new schools
       for (let i = 0; i < newSchools.length; i += 50) {
         const chunk = newSchools.slice(i, i + 50);
         const { error } = await supabase.from("schools").insert(chunk);
         if (error) throw error;
       }
 
-      return { imported: newSchools.length, skipped: mapped.length - newSchools.length };
+      // Wait for all time updates
+      await Promise.all(updatePromises);
+
+      return {
+        imported: newSchools.length,
+        skipped: mapped.length - newSchools.length,
+        updated: updatedCount,
+        timesSet: timesSetCount,
+        invalidTimes: invalidTimeCount,
+      };
     },
     onSuccess: (result) => {
-      const msg = result.skipped > 0
-        ? `${result.imported} scholen geïmporteerd, ${result.skipped} duplicaten overgeslagen`
-        : `${result.imported} scholen geïmporteerd`;
-      toast({ title: msg });
+      const parts: string[] = [];
+      if (result.imported > 0) parts.push(`${result.imported} scholen geïmporteerd`);
+      if (result.skipped > 0) parts.push(`${result.skipped} duplicaten overgeslagen`);
+      if (result.updated > 0) parts.push(`${result.updated} scholen bijgewerkt`);
+      if (result.timesSet > 0) parts.push(`${result.timesSet} schooltijden ingesteld`);
+      if (result.invalidTimes > 0) parts.push(`${result.invalidTimes} ongeldige tijdwaarden`);
+      toast({ title: parts.join(", ") || "Import voltooid" });
       setUploadOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["schools"] });
+      invalidateAllSchoolQueries(queryClient);
     },
     onError: (err: any) => {
       toast({ title: "Import mislukt", description: err.message, variant: "destructive" });
@@ -728,6 +824,7 @@ export default function ScholenPage() {
                 gebied: s.neighborhoods?.areas?.name ?? "",
                 wijk: s.neighborhoods?.name ?? "",
                 leerlingen: s.student_count ?? 0,
+                schooltijden: formatSchoolTimeRange(s.school_start_time, s.school_end_time),
                 email: s.contact_email ?? "",
                 telefoon: s.contact_phone ?? "",
                 website: s.website_url ?? "",
@@ -739,6 +836,7 @@ export default function ScholenPage() {
                 { key: "gebied", label: "Gebied" },
                 { key: "wijk", label: "Wijk" },
                 { key: "leerlingen", label: "Leerlingen" },
+                { key: "schooltijden", label: "Schooltijden" },
                 { key: "email", label: "E-mail" },
                 { key: "telefoon", label: "Telefoon" },
                 { key: "website", label: "Website" },
@@ -806,7 +904,7 @@ export default function ScholenPage() {
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
                   Upload een Excel (.xlsx/.xls) of CSV-bestand. Zorg dat er minimaal een kolom <strong>Naam</strong> is.
-                  Optionele kolommen: Adres, Email, Telefoon, Leerlingen.
+                  Optionele kolommen: Adres, Email, Telefoon, Leerlingen, Schooltijd begin, Schooltijd eind.
                 </p>
                 <div className="flex items-center justify-center rounded-lg border-2 border-dashed border-border p-8">
                   <label className="flex cursor-pointer flex-col items-center gap-2 text-center">
@@ -872,6 +970,10 @@ export default function ScholenPage() {
                 </div>
                 <div><Label>Website</Label><Input name="website_url" type="url" placeholder="https://..." /></div>
                 <div><Label>Aantal leerlingen</Label><Input name="student_count" type="number" min="0" /></div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div><Label>Schooltijd begin</Label><Input name="school_start_time" type="time" /></div>
+                  <div><Label>Schooltijd eind</Label><Input name="school_end_time" type="time" /></div>
+                </div>
                 <Button type="submit" className="w-full">Opslaan</Button>
               </form>
             </DialogContent>
@@ -952,6 +1054,7 @@ export default function ScholenPage() {
                 <th className="hidden px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Aanmeldingen</th>
                 <th className="hidden px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Trainingen</th>
                 <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground xl:table-cell">Contactpersonen</th>
+                <th className="hidden px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Schooltijden</th>
                 <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Leerlingen</th>
                 <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actie</th>
               </tr>
@@ -1074,6 +1177,9 @@ export default function ScholenPage() {
                         <UserPlus className="h-3.5 w-3.5" />
                       </Button>
                     </div>
+                  </td>
+                  <td className="hidden px-5 py-4 lg:table-cell text-center">
+                    <span className="text-xs text-card-foreground">{formatSchoolTimeRange((school as any).school_start_time, (school as any).school_end_time)}</span>
                   </td>
                   <td className="px-5 py-4 text-right">
                     <span className="font-display text-sm font-bold text-card-foreground">{school.student_count ?? 0}</span>
@@ -1319,6 +1425,16 @@ export default function ScholenPage() {
             <div>
               <Label>Aantal leerlingen</Label>
               <Input type="number" min="0" value={editForm.student_count ?? 0} onChange={(e) => setEditForm((f: any) => ({ ...f, student_count: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Schooltijd begin</Label>
+                <Input type="time" value={editForm.school_start_time ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, school_start_time: e.target.value }))} />
+              </div>
+              <div>
+                <Label>Schooltijd eind</Label>
+                <Input type="time" value={editForm.school_end_time ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, school_end_time: e.target.value }))} />
+              </div>
             </div>
             <Button type="submit" className="w-full" disabled={editSaving}>
               {editSaving ? "Opslaan..." : "Opslaan"}

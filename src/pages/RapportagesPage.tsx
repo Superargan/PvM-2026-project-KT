@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { areaKeys } from "@/lib/queryKeys";
+import { areaKeys, schoolKeys } from "@/lib/queryKeys";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -91,7 +91,7 @@ export default function RapportagesPage() {
   });
 
   const { data: schools = [] } = useQuery({
-    queryKey: ["rpt_schools"],
+    queryKey: schoolKeys.rapportages,
     queryFn: async () => {
       const { data, error } = await supabase.from("schools").select("id, name, address");
       if (error) throw error;

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { schoolKeys } from "@/lib/queryKeys";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -848,7 +849,7 @@ function GenerateTab() {
   });
 
   const { data: schools = [] } = useQuery({
-    queryKey: ["schools-list"],
+    queryKey: schoolKeys.dropdown,
     queryFn: async () => {
       const { data, error } = await supabase.from("schools").select("id, name").order("name");
       if (error) throw error;

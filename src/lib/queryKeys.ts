@@ -42,6 +42,23 @@ export const scenarioKeys = {
   detail: (id: string) => ["scenarios", id] as const,
 };
 
+/** School query keys — SSOT for all school-related queries */
+export const schoolKeys = {
+  all: ["schools"] as const,
+  list: (search?: string) => ["schools", "list", search] as const,
+  dropdown: ["schools", "dropdown"] as const,
+  dashboard: ["schools", "dashboard"] as const,
+  rapportages: ["schools", "rapportages"] as const,
+};
+
+/**
+ * Invalidate ALL school-related queries in one call.
+ * All keys start with ["schools"], so this matches everything.
+ */
+export function invalidateAllSchoolQueries(queryClient: QueryClient) {
+  queryClient.invalidateQueries({ queryKey: schoolKeys.all });
+}
+
 /**
  * Invalidate ALL client-related queries in one call.
  * Because all keys start with ["clients"], this matches everything.

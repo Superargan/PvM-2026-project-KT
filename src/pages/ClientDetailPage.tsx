@@ -2,7 +2,8 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { areaKeys, clientKeys } from "@/lib/queryKeys";
+import { areaKeys, clientKeys, schoolKeys } from "@/lib/queryKeys";
+import { formatSchoolTimeRange } from "@/lib/schoolTimes";
 import { getResolvedAreaName } from "@/lib/clientUtils";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, Save, User, ClipboardList, BookOpen, Shield, FileText, Download, CalendarDays, Trash2 } from "lucide-react";
@@ -61,7 +62,7 @@ export default function ClientDetailPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("*, schools(name, neighborhood_id, neighborhoods(id, area_id, areas:area_id(id, name))), referrers(name, function_title, email, phone), neighborhoods:neighborhood_id(id, area_id, areas:area_id(id, name))")
+        .select("*, schools(name, neighborhood_id, school_start_time, school_end_time, neighborhoods(id, area_id, areas:area_id(id, name))), referrers(name, function_title, email, phone), neighborhoods:neighborhood_id(id, area_id, areas:area_id(id, name))")
         .eq("id", id!)
         .single();
       if (error) throw error;
@@ -72,9 +73,9 @@ export default function ClientDetailPage() {
 
   // Fetch schools for dropdown (include neighborhood→area for auto-fill)
   const { data: schools = [] } = useQuery({
-    queryKey: ["schools-list"],
+    queryKey: schoolKeys.dropdown,
     queryFn: async () => {
-      const { data } = await supabase.from("schools").select("id, name, neighborhood_id, neighborhoods(area_id)").order("name");
+      const { data } = await supabase.from("schools").select("id, name, neighborhood_id, school_start_time, school_end_time, neighborhoods(area_id)").order("name");
       return data ?? [];
     },
   });
@@ -453,6 +454,16 @@ export default function ClientDetailPage() {
                   onValueChange={(v) => updateField("school_id", v)}
                 />
               </Field>
+              {/* Schooltijden — read-only, derived from linked school (SSOT) */}
+              {(() => {
+                const linkedSchool = schools.find((s: any) => s.id === form.school_id);
+                const range = linkedSchool ? formatSchoolTimeRange(linkedSchool.school_start_time, linkedSchool.school_end_time) : "—";
+                return range !== "—" ? (
+                  <Field label="Schooltijden">
+                    <p className="text-sm text-card-foreground py-2">{range}</p>
+                  </Field>
+                ) : null;
+              })()}
               <Field label="Gebied">
                 <Select value={form.waitlist_area_id ?? ""} onValueChange={(v) => updateField("waitlist_area_id", v)}>
                   <SelectTrigger><SelectValue placeholder="Automatisch via school" /></SelectTrigger>

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { areaKeys, clientKeys } from "@/lib/queryKeys";
+import { areaKeys, clientKeys, schoolKeys } from "@/lib/queryKeys";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -103,7 +103,7 @@ export default function AanmeldingenPage() {
   });
 
   const { data: schools = [] } = useQuery({
-    queryKey: ["schools-list"],
+    queryKey: schoolKeys.dropdown,
     queryFn: async () => {
       const { data, error } = await supabase.from("schools").select("id, name, neighborhood_id, neighborhoods(area_id)").order("name");
       if (error) throw error;

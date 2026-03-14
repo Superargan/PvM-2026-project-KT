@@ -3,6 +3,7 @@ import StatCard from "@/components/StatCard";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { schoolKeys } from "@/lib/queryKeys";
 
 export default function Dashboard() {
   const { data: clientCount = 0 } = useQuery({
@@ -26,7 +27,7 @@ export default function Dashboard() {
   });
 
   const { data: schoolCount = 0 } = useQuery({
-    queryKey: ["dashboard-schools"],
+    queryKey: schoolKeys.dashboard,
     queryFn: async () => {
       const { count } = await supabase.from("schools").select("*", { count: "exact", head: true });
       return count ?? 0;

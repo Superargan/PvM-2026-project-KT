@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Trash2, Clock, UserPlus, Upload } from "lucide-react";
 import ClientImport from "@/components/ClientImport";
 import { filterClients, statusLabels, statusStyles } from "@/lib/clientUtils";
-import { areaKeys } from "@/lib/queryKeys";
+import { areaKeys, schoolKeys } from "@/lib/queryKeys";
 import ClientFilters from "@/components/ClientFilters";
 import ClientListTable from "@/components/ClientListTable";
 
@@ -36,7 +36,7 @@ export default function WachtlijstPage() {
   });
 
   const { data: schools = [] } = useQuery({
-    queryKey: ["schools-list"],
+    queryKey: schoolKeys.dropdown,
     queryFn: async () => {
       const { data, error } = await supabase.from("schools").select("id, name").order("name");
       if (error) throw error;
