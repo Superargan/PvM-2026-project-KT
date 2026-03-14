@@ -720,7 +720,7 @@ export default function ScholenPage() {
         // Auto-import if all matched
         runTimesImport(rows, {});
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({ title: "Fout bij lezen", description: err.message, variant: "destructive" });
     }
   };
