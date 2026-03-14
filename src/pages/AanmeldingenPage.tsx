@@ -302,7 +302,7 @@ export default function AanmeldingenPage() {
   };
 
   const { data: allAssignments = [] } = useQuery({
-    queryKey: ["all-client-assignments"],
+    queryKey: clientKeys.allAssignments,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("client_assignments")
