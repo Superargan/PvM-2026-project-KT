@@ -488,7 +488,7 @@ export default function ClientDetailPage() {
                 <Select value={form.referrer_id ?? ""} onValueChange={(v) => updateField("referrer_id", v)}>
                   <SelectTrigger><SelectValue placeholder="Selecteer verwijzer" /></SelectTrigger>
                   <SelectContent className="bg-popover">
-                    {filteredReferrers.map((r: any) => (
+                    {filteredReferrers.map((r) => (
                       <SelectItem key={r.id} value={r.id}>{r.name}{r.function_title ? ` (${r.function_title})` : ""}</SelectItem>
                     ))}
                   </SelectContent>
