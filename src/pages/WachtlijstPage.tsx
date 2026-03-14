@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Trash2, Clock, UserPlus, Upload } from "lucide-react";
 import ClientImport from "@/components/ClientImport";
 import { filterClients, statusLabels, statusStyles } from "@/lib/clientUtils";
-import { areaKeys, schoolKeys } from "@/lib/queryKeys";
+import { areaKeys, schoolKeys, clientKeys } from "@/lib/queryKeys";
 import ClientFilters from "@/components/ClientFilters";
 import ClientListTable from "@/components/ClientListTable";
 
