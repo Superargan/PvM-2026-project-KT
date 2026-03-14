@@ -497,7 +497,7 @@ export default function PlanningPage() {
 
   const intakeAssignmentMap = useMemo(() => {
     const map: Record<string, string[]> = {};
-    intakeAssignments.forEach((a: any) => {
+    (intakeAssignments as ClientAssignmentRow[]).forEach((a) => {
       if (!map[a.client_id]) map[a.client_id] = [];
       if (a.staff?.name) map[a.client_id].push(a.staff.name);
     });
