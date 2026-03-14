@@ -676,7 +676,7 @@ export default function ScholenPage() {
     // Prefix-stripped matching: strip known prefixes and compare core names
     const strippedInput = stripSchoolPrefix(name);
     if (strippedInput.length >= 3) {
-      const prefixMatch = (schools as any[]).find((s) => {
+      const prefixMatch = schools.find((s) => {
         const strippedExisting = stripSchoolPrefix(s.name);
         return strippedExisting === strippedInput
           || strippedExisting.includes(strippedInput)
