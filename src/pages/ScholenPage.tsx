@@ -1008,7 +1008,7 @@ export default function ScholenPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label>Roostertype</Label>
-                    <Select name="schedule_type">
+                    <Select value={addScheduleType} onValueChange={setAddScheduleType}>
                       <SelectTrigger><SelectValue placeholder="Selecteer..." /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="traditioneel">Traditioneel</SelectItem>
