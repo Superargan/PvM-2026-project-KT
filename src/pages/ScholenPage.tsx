@@ -336,8 +336,17 @@ export default function ScholenPage() {
 
   const handleAddSchool = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    const address = (form.get("address") as string) || "";
+    const formData = new FormData(e.currentTarget);
+    const address = (formData.get("address") as string) || "";
+    const startTime = (formData.get("school_start_time") as string) || "";
+    const endTime = (formData.get("school_end_time") as string) || "";
+
+    // Validate time pair
+    const timeValidation = validateSchoolTimePair(startTime, endTime);
+    if (!timeValidation.valid) {
+      toast({ title: "Ongeldige schooltijden", description: timeValidation.error, variant: "destructive" });
+      return;
+    }
 
     // Auto-detect neighborhood if not manually selected
     let neighborhoodId = selectedNeighborhood || null;
@@ -352,13 +361,15 @@ export default function ScholenPage() {
     }
 
     const { error } = await supabase.from("schools").insert({
-      name: form.get("name") as string,
+      name: formData.get("name") as string,
       address: address || null,
-      contact_email: (form.get("contact_email") as string) || null,
-      contact_phone: (form.get("contact_phone") as string) || null,
-      website_url: (form.get("website_url") as string) || null,
-      student_count: Number(form.get("student_count")) || 0,
+      contact_email: (formData.get("contact_email") as string) || null,
+      contact_phone: (formData.get("contact_phone") as string) || null,
+      website_url: (formData.get("website_url") as string) || null,
+      student_count: Number(formData.get("student_count")) || 0,
       neighborhood_id: neighborhoodId,
+      school_start_time: inputTimeToDb(startTime) as any,
+      school_end_time: inputTimeToDb(endTime) as any,
     } as any);
 
     if (error) {
@@ -367,7 +378,7 @@ export default function ScholenPage() {
       toast({ title: "School toegevoegd" });
       setSelectedArea("");
       setSelectedNeighborhood("");
-      refetch();
+      invalidateAllSchoolQueries(queryClient);
     }
   };
 
