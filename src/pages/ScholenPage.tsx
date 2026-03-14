@@ -1108,7 +1108,7 @@ export default function ScholenPage() {
       for (const id of deletableIds) {
         await Promise.all([
           supabase.from("referrers").delete().eq("school_id", id),
-          supabase.from("school_documents" as any).delete().eq("school_id", id),
+          supabase.from("school_documents").delete().eq("school_id", id),
         ]);
       }
 
