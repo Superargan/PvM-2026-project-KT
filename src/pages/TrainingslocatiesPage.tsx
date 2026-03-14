@@ -232,7 +232,7 @@ export default function TrainingslocatiesPage() {
           <Select value={selectedNeighborhood} onValueChange={setSelectedNeighborhood} disabled={!selectedArea}>
             <SelectTrigger><SelectValue placeholder="Selecteer wijk" /></SelectTrigger>
             <SelectContent className="bg-popover">
-              {filteredNeighborhoods.map((n: any) => (
+              {filteredNeighborhoods.map((n) => (
                 <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>
               ))}
             </SelectContent>
