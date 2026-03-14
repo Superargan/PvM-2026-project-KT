@@ -1078,7 +1078,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
         )}
       </div>
 
-      {/* Simulation / scenario banner */}
+      {/* Simulation / proforma banner */}
       {isSimulating && (() => {
         const affectedAreas = new Set<string>();
         simulatedGroups.forEach((val, simKey) => {
@@ -1106,8 +1106,8 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                 <FlaskConical className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium text-foreground">
                   {loadedScenarioName
-                    ? `Scenario: ${loadedScenarioName}`
-                    : "Losse simulatie"
+                    ? `Proforma planning: ${loadedScenarioName}`
+                    : "Simulatie (niet opgeslagen)"
                   }
                   {" — "}{simulatedGroups.size} voorstel(len), {simulatedClientIds.size} deelnemers
                 </span>
