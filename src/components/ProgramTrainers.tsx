@@ -35,7 +35,7 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
 
   // Fetch sessions for invaller selection
   const { data: sessions = [] } = useQuery({
-    queryKey: ["program_sessions", programId],
+    queryKey: programKeys.sessions(programId),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("program_sessions")
