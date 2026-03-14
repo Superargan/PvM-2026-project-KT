@@ -959,7 +959,7 @@ function GenerateTab() {
           URL.revokeObjectURL(url);
         }
       }
-      queryClient.invalidateQueries({ queryKey: ["generated-documents"] });
+      queryClient.invalidateQueries({ queryKey: documentKeys.generated });
     },
     onError: (err: any) => toast({ title: "Fout bij genereren", description: err.message, variant: "destructive" }),
   });
