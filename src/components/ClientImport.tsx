@@ -340,7 +340,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       const postal_code = pcCijfers ? `${pcCijfers}${pcLetters ? " " + pcLetters : ""}`.trim() : null;
 
       // Gender
-      const gender = mapGender(findCol(row, "Geslacht", "geslacht", "Gender"));
+      const gender = normalizeGender(findCol(row, "Geslacht", "geslacht", "Gender"));
 
       // Class/group — avoid matching "leeftijdsgroep" which is age category
       const classGroupRaw = findCol(row, "Klas", "klas", "Class");
