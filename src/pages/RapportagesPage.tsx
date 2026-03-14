@@ -73,7 +73,7 @@ export default function RapportagesPage() {
   });
 
   const { data: sessions = [], isLoading: sl } = useQuery({
-    queryKey: ["rpt_sessions"],
+    queryKey: rapportageKeys.sessions,
     queryFn: async () => {
       const { data, error } = await supabase.from("program_sessions").select("id, program_id, session_number");
       if (error) throw error;
