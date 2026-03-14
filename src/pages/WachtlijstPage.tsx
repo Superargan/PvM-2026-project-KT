@@ -111,6 +111,7 @@ export default function WachtlijstPage() {
       toast.success(`${ids.length} deelnemer(s) verwijderd van de wachtlijst`);
       setSelected(new Set());
       qc.invalidateQueries({ queryKey: clientKeys.all });
+      qc.invalidateQueries({ queryKey: programKeys.all });
     },
     onError: (err: any) => toast.error(err.message),
   });

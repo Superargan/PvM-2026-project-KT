@@ -230,6 +230,7 @@ export default function ProgramDetailPage() {
     },
     onSuccess: () => {
       refetchEnrolled();
+      qc.invalidateQueries({ queryKey: programKeys.all });
       toast({ title: "Uitval ongedaan gemaakt" });
     },
     onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
