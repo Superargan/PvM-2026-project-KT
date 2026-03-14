@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { schoolKeys, invalidateAllSchoolQueries } from "@/lib/queryKeys";
-import { formatSchoolTimeRange, validateSchoolTimePair, parseImportedSchoolTime, findMatchingColumn, normalizeSchoolName, dbTimeToInput, inputTimeToDb, SCHOOL_START_TIME_COLUMNS, SCHOOL_END_TIME_COLUMNS, SCHEDULE_TYPE_COLUMNS, SOURCE_COLUMNS, MUNICIPALITY_COLUMNS, getEffectiveMunicipality } from "@/lib/schoolTimes";
+import { formatSchoolTimeRange, validateSchoolTimePair, findMatchingColumn, normalizeSchoolName, dbTimeToInput, inputTimeToDb, SCHOOL_START_TIME_COLUMNS, SCHOOL_END_TIME_COLUMNS, SCHEDULE_TYPE_COLUMNS, SOURCE_COLUMNS, MUNICIPALITY_COLUMNS, getEffectiveMunicipality, resolveImportedSchoolTimePair } from "@/lib/schoolTimes";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
@@ -483,27 +483,11 @@ export default function ScholenPage() {
           }
         }
 
-        // Parse school times from import row
-        const rawStart = startTimeCol ? r[startTimeCol] : null;
-        const rawEnd = endTimeCol ? r[endTimeCol] : null;
-        const parsedStart = parseImportedSchoolTime(rawStart);
-        const parsedEnd = parseImportedSchoolTime(rawEnd);
-
-        // Validate: count invalid values (non-empty but unparseable)
-        if (rawStart && !parsedStart) invalidTimeCount++;
-        if (rawEnd && !parsedEnd) invalidTimeCount++;
-
-        // Only accept a valid complete pair
-        let school_start_time: string | null = null;
-        let school_end_time: string | null = null;
-        const pairValidation = validateSchoolTimePair(parsedStart, parsedEnd);
-        if (pairValidation.valid && parsedStart && parsedEnd) {
-          school_start_time = parsedStart;
-          school_end_time = parsedEnd;
-        } else if (parsedStart || parsedEnd) {
-          // Partial or invalid pair — count as invalid
-          invalidTimeCount++;
-        }
+        // Resolve school times from explicit columns, range cells, or weekday columns (Maandag–Vrijdag)
+        const resolvedTimes = resolveImportedSchoolTimePair(r, headers, startTimeCol, endTimeCol);
+        invalidTimeCount += resolvedTimes.invalidValues;
+        const school_start_time = resolvedTimes.school_start_time;
+        const school_end_time = resolvedTimes.school_end_time;
 
         // Parse schedule type and source
         const rawScheduleType = scheduleTypeCol ? String(r[scheduleTypeCol] ?? "").trim().toLowerCase() : "";
@@ -776,24 +760,11 @@ export default function ScholenPage() {
         const existing = existingById.get(match.id);
         if (!existing) continue;
 
-        // Parse times
-        const rawStart = startTimeCol ? r[startTimeCol] : null;
-        const rawEnd = endTimeCol ? r[endTimeCol] : null;
-        const parsedStart = parseImportedSchoolTime(rawStart);
-        const parsedEnd = parseImportedSchoolTime(rawEnd);
-
-        if (rawStart && !parsedStart) invalidTimeCount++;
-        if (rawEnd && !parsedEnd) invalidTimeCount++;
-
-        let school_start_time: string | null = null;
-        let school_end_time: string | null = null;
-        const pairValidation = validateSchoolTimePair(parsedStart, parsedEnd);
-        if (pairValidation.valid && parsedStart && parsedEnd) {
-          school_start_time = parsedStart;
-          school_end_time = parsedEnd;
-        } else if (parsedStart || parsedEnd) {
-          invalidTimeCount++;
-        }
+        // Resolve school times from explicit columns, range cells, or weekday columns (Maandag–Vrijdag)
+        const resolvedTimes = resolveImportedSchoolTimePair(r, headers, startTimeCol, endTimeCol);
+        invalidTimeCount += resolvedTimes.invalidValues;
+        const school_start_time = resolvedTimes.school_start_time;
+        const school_end_time = resolvedTimes.school_end_time;
 
         const rawScheduleType = scheduleTypeCol ? String(r[scheduleTypeCol] ?? "").trim().toLowerCase() : "";
         const schedule_type = rawScheduleType === "traditioneel" || rawScheduleType === "continu" ? rawScheduleType : null;
@@ -1318,7 +1289,7 @@ export default function ScholenPage() {
               </DialogHeader>
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Upload een Excel of CSV-bestand met een kolom <strong>Naam</strong> en tijdkolommen zoals <strong>Schooltijd begin</strong> en <strong>Schooltijd eind</strong>.
+                  Upload een Excel of CSV-bestand met een kolom <strong>Naam</strong> en óf losse tijdkolommen (<strong>Schooltijd begin</strong>/<strong>Schooltijd eind</strong>) óf dagkolommen (<strong>Maandag</strong> t/m <strong>Vrijdag</strong>) met waarden zoals 08:30–15:00.
                   Optioneel: Rooster, Bron, Gemeente. Schoolnamen worden fuzzy gematcht met bestaande scholen.
                 </p>
 
