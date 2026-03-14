@@ -273,7 +273,7 @@ export default function ScholenPage() {
 
   // Neighborhoods filtered by selected area
   const filteredNeighborhoods = selectedArea
-    ? (areas.find((a: any) => a.id === selectedArea) as any)?.neighborhoods ?? []
+    ? areas.find((a) => a.id === selectedArea)?.neighborhoods ?? []
     : [];
 
   const openEditSchool = (school: any) => {
