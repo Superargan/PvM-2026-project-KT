@@ -55,7 +55,7 @@ export default function ProgramDetailPage() {
 
   // Fetch enrolled clients
   const { data: enrolledClients = [], refetch: refetchEnrolled } = useQuery({
-    queryKey: ["program_clients_full", id],
+    queryKey: programKeys.clients(id!),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("program_clients")
