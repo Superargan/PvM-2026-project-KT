@@ -262,7 +262,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                     </div>
                   </td>
                   <td className="px-3 py-2">
-                    <span className="text-sm text-foreground">{(memberCounts as any)[scenario.id] ?? 0}</span>
+                    <span className="text-sm text-foreground">{memberCounts[scenario.id] ?? 0}</span>
                   </td>
                   <td className="px-3 py-2">
                     <span className="text-xs text-muted-foreground">
