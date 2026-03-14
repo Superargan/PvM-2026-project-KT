@@ -52,7 +52,7 @@ const validationLabels: Record<string, string> = {
   niet_gevalideerd: "Niet gevalideerd",
 };
 
-const validationIcons: Record<string, any> = {
+const validationIcons: Record<string, LucideIcon> = {
   geldig: CheckCircle2,
   aandacht_vereist: AlertTriangle,
   ongeldig: XCircle,
