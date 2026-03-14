@@ -1960,7 +1960,7 @@ export default function ScholenPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>E-mail</Label>
-                <Input type="email" value={editForm.contact_email ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, contact_email: e.target.value }))} />
+                <Input type="email" value={editForm.contact_email ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, contact_email: e.target.value }))} />
               </div>
               <div>
                 <Label>Telefoon</Label>
