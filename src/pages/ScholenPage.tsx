@@ -1289,7 +1289,7 @@ export default function ScholenPage() {
               </DialogHeader>
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Upload een Excel of CSV-bestand met een kolom <strong>Naam</strong> en tijdkolommen zoals <strong>Schooltijd begin</strong> en <strong>Schooltijd eind</strong>.
+                  Upload een Excel of CSV-bestand met een kolom <strong>Naam</strong> en óf losse tijdkolommen (<strong>Schooltijd begin</strong>/<strong>Schooltijd eind</strong>) óf dagkolommen (<strong>Maandag</strong> t/m <strong>Vrijdag</strong>) met waarden zoals 08:30–15:00.
                   Optioneel: Rooster, Bron, Gemeente. Schoolnamen worden fuzzy gematcht met bestaande scholen.
                 </p>
 
