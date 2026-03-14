@@ -71,9 +71,14 @@ export const documentKeys = {
 /** Program query keys */
 export const programKeys = {
   all: ["programs"] as const,
+  detail: (id: string) => ["programs", "detail", id] as const,
   bySchool: ["programs", "by-school"] as const,
   clientsActive: ["programs", "clients-active"] as const,
   linkable: ["programs", "linkable"] as const,
+  clients: (programId: string) => ["programs", "clients", programId] as const,
+  sessions: (programId: string) => ["programs", "sessions", programId] as const,
+  staff: (programId: string) => ["programs", "staff", programId] as const,
+  sessionDocs: (sessionId: string) => ["programs", "session-docs", sessionId] as const,
 };
 
 /** Training location query keys */
