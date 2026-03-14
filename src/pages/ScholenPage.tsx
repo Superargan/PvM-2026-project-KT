@@ -1964,7 +1964,7 @@ export default function ScholenPage() {
               </div>
               <div>
                 <Label>Telefoon</Label>
-                <Input type="tel" value={editForm.contact_phone ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, contact_phone: e.target.value }))} />
+                <Input type="tel" value={editForm.contact_phone ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, contact_phone: e.target.value }))} />
               </div>
             </div>
             <div>
