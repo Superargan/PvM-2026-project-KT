@@ -1516,6 +1516,10 @@ export default function ScholenPage() {
                 <Input value={editForm.source ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, source: e.target.value }))} placeholder="bijv. DUO, handmatig" />
               </div>
             </div>
+            <div>
+              <Label>Gemeente</Label>
+              <Input value={editForm.municipality ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, municipality: e.target.value }))} placeholder="Leeg = Rotterdam" />
+            </div>
             <Button type="submit" className="w-full" disabled={editSaving}>
               {editSaving ? "Opslaan..." : "Opslaan"}
             </Button>
