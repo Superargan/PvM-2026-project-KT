@@ -344,7 +344,7 @@ export default function ProgramDetailPage() {
               value={program.training_location_id ?? "geen"}
               onValueChange={async (v) => {
                 const tlId = v === "geen" ? null : v;
-                const tl = trainingLocations.find((t: any) => t.id === tlId);
+                const tl = trainingLocations.find((t) => t.id === tlId);
                 const neighborhoodId = tl?.neighborhood_id ?? null;
                 const areaId = tl?.area_id ?? tl?.neighborhoods?.area_id ?? null;
                 const { error } = await supabase
