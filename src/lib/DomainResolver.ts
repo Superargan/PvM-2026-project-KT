@@ -55,6 +55,7 @@ export {
   type PlannabilityStatus,
   type ClientDataCompleteness,
   type DuplicateMatch,
+  type ClientLike,
 } from "@/lib/clientUtils";
 
 export {
