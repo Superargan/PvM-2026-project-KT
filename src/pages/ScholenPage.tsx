@@ -1545,11 +1545,18 @@ export default function ScholenPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {sorted.length === 0 && (
-                <tr><td colSpan={10} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen scholen gevonden</td></tr>
+                <tr><td colSpan={11} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen scholen gevonden</td></tr>
               )}
               {sorted.map((school: any) => (
-                <tr key={school.id} className="transition-colors hover:bg-muted/30">
-                  <td className="px-5 py-4">
+                <tr key={school.id} className={`transition-colors hover:bg-muted/30 ${selectedSchoolIds.has(school.id) ? "bg-primary/5" : ""}`}>
+                  <td className="px-3 py-4 text-center">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-border"
+                      checked={selectedSchoolIds.has(school.id)}
+                      onChange={() => toggleSchoolSelection(school.id)}
+                    />
+                  </td>
                     <div className="flex items-center gap-3">
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent/20">
                         <School className="h-4 w-4 text-accent" />
