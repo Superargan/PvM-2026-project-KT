@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Trash2, Clock, UserPlus, Upload } from "lucide-react";
 import ClientImport from "@/components/ClientImport";
-import { filterClients, statusLabels, statusStyles } from "@/lib/clientUtils";
+import { filterClients, statusLabels, statusStyles } from "@/lib/DomainResolver";
 import ClientFilters from "@/components/ClientFilters";
 import ClientListTable from "@/components/ClientListTable";
 

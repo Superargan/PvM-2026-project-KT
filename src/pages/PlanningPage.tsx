@@ -12,7 +12,7 @@ import {
   resolveAreaId,
   getResolvedAreaName,
   type ClientDataCompleteness,
-} from "@/lib/clientUtils";
+} from "@/lib/DomainResolver";
 import { clientKeys, areaKeys, planningKeys, staffKeys, authKeys } from "@/lib/queryKeys";
 import { nl } from "date-fns/locale";
 import { CalendarDays, ChevronLeft, ChevronRight, Users, Clock, Plus, X, FileSpreadsheet, Star, Palmtree, CalendarClock, AlertTriangle, ShieldAlert, MapPinOff, RefreshCw, ShieldCheck } from "lucide-react";

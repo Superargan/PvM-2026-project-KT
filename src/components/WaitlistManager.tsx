@@ -11,7 +11,7 @@ import { Loader2, UserPlus, Clock, XCircle, Upload, Pencil } from "lucide-react"
 import ClientImport from "@/components/ClientImport";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
-import { getAgeGroup } from "@/lib/clientUtils";
+import { getAgeGroup } from "@/lib/DomainResolver";
 import { areaKeys } from "@/lib/queryKeys";
 
 const statusLabels: Record<string, string> = {

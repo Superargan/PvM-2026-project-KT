@@ -31,6 +31,9 @@ export {
   getAgeCategoryReportLabel,
   getMatchType,
   matchSortOrder,
+  matchColors,
+  statusBadgeStyles,
+  statusStyles,
   getPlannabilityStatus,
   getClientDataCompleteness,
   hasAvailabilityCoverage,
@@ -38,16 +41,25 @@ export {
   buildAvailabilityByClient,
   getAvailabilityOverlap,
   getTopAvailabilityOverlaps,
+  getAlternativeWindowsForDay,
+  validateScenario,
+  validateScenarioSlot,
   getMissingFields,
   statusLabels,
   allStatuses,
   filterClients,
+  findPotentialDuplicates,
   CLIENT_AREA_SELECT,
   type AgeCategory,
   type MatchType,
   type PlannabilityStatus,
   type ClientDataCompleteness,
+  type DuplicateMatch,
 } from "@/lib/clientUtils";
+
+export {
+  normalizeSchoolName,
+} from "@/lib/schoolTimes";
 
 export {
   resolveLocationForProgram,
