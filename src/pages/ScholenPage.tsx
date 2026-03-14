@@ -939,7 +939,7 @@ export default function ScholenPage() {
 
   // Get current referrers for selected school
   const selectedSchoolReferrers = selectedSchool
-    ? (schools.find((s: any) => s.id === selectedSchool.id) as any)?.referrers ?? []
+    ? schools.find((s) => s.id === selectedSchool.id)?.referrers ?? []
     : [];
 
   // Document generation state for schools
