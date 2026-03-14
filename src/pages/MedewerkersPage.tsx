@@ -673,7 +673,7 @@ function DossierDocumentSection({ trainerId, trainerName, onRefresh, trainer }: 
 
       toast.success(`${type === "kvk_uittreksel" ? "KVK uittreksel" : "VOG"} geüpload`);
       onRefresh();
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(err.message || "Upload mislukt");
     } finally {
       setUploading(null);
