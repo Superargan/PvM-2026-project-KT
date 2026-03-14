@@ -385,6 +385,7 @@ export default function ScholenPage() {
       toast({ title: "School toegevoegd" });
       setSelectedArea("");
       setSelectedNeighborhood("");
+      setAddScheduleType("");
       invalidateAllSchoolQueries(queryClient);
     }
   };
