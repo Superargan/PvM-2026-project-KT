@@ -1482,6 +1482,22 @@ export default function ScholenPage() {
                 <Input type="time" value={editForm.school_end_time ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, school_end_time: e.target.value }))} />
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Roostertype</Label>
+                <Select value={editForm.schedule_type ?? ""} onValueChange={(val) => setEditForm((f: any) => ({ ...f, schedule_type: val }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecteer..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="traditioneel">Traditioneel</SelectItem>
+                    <SelectItem value="continu">Continu</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Bron</Label>
+                <Input value={editForm.source ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, source: e.target.value }))} placeholder="bijv. DUO, handmatig" />
+              </div>
+            </div>
             <Button type="submit" className="w-full" disabled={editSaving}>
               {editSaving ? "Opslaan..." : "Opslaan"}
             </Button>
