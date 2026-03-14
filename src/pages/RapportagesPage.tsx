@@ -130,7 +130,7 @@ export default function RapportagesPage() {
   });
 
   const { data: docTemplates = [] } = useQuery({
-    queryKey: ["rpt_doc_templates"],
+    queryKey: rapportageKeys.docTemplates,
     queryFn: async () => {
       const { data, error } = await supabase.from("document_templates").select("id, name, category");
       if (error) throw error;
