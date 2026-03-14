@@ -821,7 +821,7 @@ export default function ScholenPage() {
       setImportResultOpen(true);
       invalidateAllSchoolQueries(queryClient);
     } catch (err: unknown) {
-      toast({ title: "Import mislukt", description: err.message, variant: "destructive" });
+      toast({ title: "Import mislukt", description: err instanceof Error ? err.message : "Onbekende fout", variant: "destructive" });
     } finally {
       setTimesImporting(false);
     }
