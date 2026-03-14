@@ -91,6 +91,30 @@ export const locationKeys = {
 export const referrerKeys = {
   all: ["referrers"] as const,
   list: ["referrers", "list"] as const,
+  dropdown: ["referrers", "dropdown"] as const,
+};
+
+/** Attendance query keys */
+export const attendanceKeys = {
+  all: ["attendance"] as const,
+  rapportages: ["attendance", "rapportages"] as const,
+};
+
+/** Audit log query keys */
+export const auditKeys = {
+  all: ["audit"] as const,
+  forClient: (clientId: string) => ["audit", "client", clientId] as const,
+};
+
+/** Rapportages-specific composite query keys */
+export const rapportageKeys = {
+  programClients: ["rapportages", "program-clients"] as const,
+  programs: ["rapportages", "programs"] as const,
+  sessions: ["rapportages", "sessions"] as const,
+  attendance: ["rapportages", "attendance"] as const,
+  programStaff: ["rapportages", "program-staff"] as const,
+  generatedDocs: ["rapportages", "generated-docs"] as const,
+  docTemplates: ["rapportages", "doc-templates"] as const,
 };
 
 /** Invoice query keys */
