@@ -94,11 +94,12 @@ export const programKeys = {
   linkable: ["programs", "linkable"] as const,
   /** Available/active programs for dropdowns */
   available: ["programs", "available"] as const,
+  dashboard: ["programs", "dashboard"] as const,
+  upcoming: ["programs", "upcoming"] as const,
   clients: (programId: string) => ["programs", "clients", programId] as const,
   sessions: (programId: string) => ["programs", "sessions", programId] as const,
   staff: (programId: string) => ["programs", "staff", programId] as const,
   sessionDocs: (sessionId: string) => ["programs", "session-docs", sessionId] as const,
-  /** Staff for document generation context */
   staffForDocs: (programId: string) => ["programs", "staff-for-docs", programId] as const,
 };
 
