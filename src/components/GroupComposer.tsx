@@ -1125,7 +1125,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
               </div>
               <div className="flex items-center gap-1.5">
                 <Button variant="outline" size="sm" onClick={() => setSaveDialogOpen(true)} className="gap-1.5">
-                  <Save className="h-3 w-3" /> Opslaan
+                  <Save className="h-3 w-3" /> Opslaan als proforma
                 </Button>
                 {activeScenarioId && (
                   <>
