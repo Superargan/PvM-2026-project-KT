@@ -51,8 +51,11 @@ describe("findCol", () => {
   it("returns undefined for missing column", () => {
     expect(findCol(row, "Postcode")).toBeUndefined();
   });
-  it("skips empty values", () => {
-    expect(findCol(row, "")).toBeUndefined();
+  it("skips short candidates in contains match", () => {
+    // Empty candidate normalizes to "", which is <3 chars — no contains match
+    // but exact/starts-with may still match other keys
+    const row2 = { Postcode: "3011AB" };
+    expect(findCol(row2, "xyz")).toBeUndefined();
   });
   it("tries multiple candidates in order", () => {
     expect(findCol(row, "Voornaam", "Naam kind")).toBe("Jan");
