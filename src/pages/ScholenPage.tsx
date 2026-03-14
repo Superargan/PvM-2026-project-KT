@@ -148,8 +148,8 @@ export default function ScholenPage() {
   const [contactDialogOpen, setContactDialogOpen] = useState(false);
   const [docsDialogOpen, setDocsDialogOpen] = useState(false);
   const [statsDialogOpen, setStatsDialogOpen] = useState(false);
-  const [selectedSchool, setSelectedSchool] = useState<any>(null);
-  const [editingReferrer, setEditingReferrer] = useState<any>(null);
+  const [selectedSchool, setSelectedSchool] = useState<SchoolListRow | null>(null);
+  const [editingReferrer, setEditingReferrer] = useState<{ id: string; name: string; function_title: string | null; email: string | null; phone: string | null } | null>(null);
   const [selectedArea, setSelectedArea] = useState<string>("");
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
   const [docUploading, setDocUploading] = useState(false);
