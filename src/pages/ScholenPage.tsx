@@ -1547,8 +1547,8 @@ export default function ScholenPage() {
                           </p>
                         )}
                         <div className="flex items-center gap-2 mt-0.5">
-                          {(school as any).website_url && (
-                            <a href={(school as any).website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary hover:underline">
+                          {school.website_url && (
+                            <a href={school.website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary hover:underline">
                               <Globe className="h-3 w-3" /> Website
                             </a>
                           )}
