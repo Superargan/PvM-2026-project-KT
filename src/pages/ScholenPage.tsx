@@ -1170,7 +1170,7 @@ export default function ScholenPage() {
                  email: s.contact_email ?? "",
                  telefoon: s.contact_phone ?? "",
                  website: s.website_url ?? "",
-                 contactpersonen: (s.referrers ?? []).map((r: any) => r.name).join(", "),
+                 contactpersonen: (s.referrers ?? []).map((r) => r.name).join(", "),
                }));
                downloadExport(`scholen.${fmt}`, [
                  { key: "naam", label: "Naam" },
