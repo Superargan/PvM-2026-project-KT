@@ -1255,7 +1255,7 @@ function GeneratedDocsTab() {
     onSuccess: () => {
       toast({ title: "Ondertekend document geüpload" });
       setUploadingId(null);
-      queryClient.invalidateQueries({ queryKey: ["generated-documents"] });
+      queryClient.invalidateQueries({ queryKey: documentKeys.generated });
     },
     onError: (err: any) => {
       toast({ title: "Upload mislukt", description: err.message, variant: "destructive" });
