@@ -26,6 +26,7 @@ import {
   statusBadgeStyles,
   getTopAvailabilityOverlaps,
   getAlternativeWindowsForDay,
+  resolveAreaId,
   type MatchType,
 } from "@/lib/DomainResolver";
 import { clientKeys, scenarioKeys } from "@/lib/queryKeys";
