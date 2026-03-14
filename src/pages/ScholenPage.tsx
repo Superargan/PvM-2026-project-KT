@@ -327,6 +327,7 @@ export default function ScholenPage() {
       school_end_time: inputTimeToDb(editForm.school_end_time ?? "") as any,
       schedule_type: editForm.schedule_type || null,
       source: editForm.source || null,
+      municipality: editForm.municipality?.trim() || null,
     }).eq("id", selectedSchool.id);
 
     setEditSaving(false);
