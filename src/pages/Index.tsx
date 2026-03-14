@@ -57,7 +57,7 @@ export default function Dashboard() {
   });
 
   const { data: intakeGeplandCount = 0 } = useQuery({
-    queryKey: ["clients", "dashboard", "intake-gepland"],
+    queryKey: clientKeys.dashboard("intake-gepland"),
     queryFn: async () => {
       const { count } = await supabase.from("clients").select("*", { count: "exact", head: true }).eq("archived", false).eq("intake_status", "intake_gepland");
       return count ?? 0;
