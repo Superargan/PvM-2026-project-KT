@@ -1519,7 +1519,7 @@ export default function ScholenPage() {
               {sorted.length === 0 && (
                 <tr><td colSpan={11} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen scholen gevonden</td></tr>
               )}
-              {sorted.map((school: any) => (
+              {sorted.map((school) => (
                 <tr key={school.id} className={`transition-colors hover:bg-muted/30 ${selectedSchoolIds.has(school.id) ? "bg-primary/5" : ""}`}>
                   <td className="px-3 py-4 text-center">
                     <input
