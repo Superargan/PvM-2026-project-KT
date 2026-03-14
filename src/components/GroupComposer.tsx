@@ -58,6 +58,7 @@ export interface GroupComposerHandle {
   triggerSave: () => Promise<boolean>;
   hasActiveSimulation: boolean;
   isDirty: boolean;
+  hasUnsavedWork: boolean;
 }
 
 interface GroupComposerProps {
