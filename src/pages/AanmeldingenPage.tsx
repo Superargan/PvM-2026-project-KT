@@ -793,16 +793,16 @@ export default function AanmeldingenPage() {
               {editClient?.id && (
                 <AreaPreferencesEditor
                   clientId={editClient.id}
-                  primaryAreaId={(editClient as any)?.waitlist_area_id ?? null}
-                  allAreasFlexible={(editClient as any)?.all_areas_flexible ?? false}
+                  primaryAreaId={editClient?.waitlist_area_id ?? null}
+                  allAreasFlexible={editClient?.all_areas_flexible ?? false}
                   onAllAreasFlexibleChange={async (v) => {
-                    await supabase.from("clients").update({ all_areas_flexible: v } as any).eq("id", editClient.id);
-                    setEditClient((prev: any) => ({ ...prev, all_areas_flexible: v }));
+                    await supabase.from("clients").update({ all_areas_flexible: v }).eq("id", editClient.id);
+                    setEditClient((prev: Record<string, unknown>) => ({ ...prev, all_areas_flexible: v }));
                     queryClient.invalidateQueries({ queryKey: clientKeys.all });
                   }}
                   areas={areas}
                    areaNotes={form.area_notes ?? ""}
-                   onAreaNotesChange={(v) => updateField("area_notes" as any, v)}
+                   onAreaNotesChange={(v) => updateField("area_notes", v)}
                 />
               )}
               </div>
