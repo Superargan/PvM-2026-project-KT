@@ -104,7 +104,7 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["program_staff", programId] });
+      queryClient.invalidateQueries({ queryKey: programKeys.staff(programId) });
       toast({ title: "Rol gewijzigd" });
     },
     onError: (err: any) => {
