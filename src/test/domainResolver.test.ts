@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  // Derived resolvers
   getEffectiveClientMunicipality,
   getEffectiveClientSchoolTimeRange,
   hasExplicitOverride,
@@ -7,9 +8,11 @@ import {
   resolveInheritedValue,
   getMunicipalityBadgeValue,
   getClientAgeDisplay,
+  // Token maps
   matchColorTokens,
   statusBadgeTokens,
   sessionStatusTokens,
+  // Constants
   DEFAULT_CITY,
   DEFAULT_MUNICIPALITY,
   AVAILABILITY_COVERAGE_MONTHS,
@@ -17,6 +20,22 @@ import {
   DEFAULT_AVAIL_END,
   SCHOOL_TIME_AVAIL_START,
   SCHOOL_TIME_AVAIL_END,
+  // Re-exported domain functions (verify accessibility)
+  calculateAge,
+  getAgeCategoryPlanning,
+  getAgeGroup,
+  statusLabels,
+  statusStyles,
+  matchColors,
+  statusBadgeStyles,
+  filterClients,
+  findPotentialDuplicates,
+  normalizeSchoolName,
+  formatSchoolTimeRange,
+  getResolvedAreaName,
+  getResolvedLocationName,
+  getAreaFromPostcode,
+  extractPostcode,
 } from "@/lib/DomainResolver";
 
 describe("DomainResolver", () => {
