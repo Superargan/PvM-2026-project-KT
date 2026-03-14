@@ -165,7 +165,7 @@ export default function InvoiceManager({ staffId, staffName }: { staffId?: strin
               </TableRow>
             </TableHeader>
             <TableBody>
-              {invoices.map((inv: any) => (
+              {invoices.map((inv) => (
                 <TableRow key={inv.id}>
                   {!staffId && <TableCell>{inv.staff?.name ?? "—"}</TableCell>}
                   <TableCell>{inv.programs?.name ?? "—"}</TableCell>
