@@ -727,9 +727,9 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
   // Only count as "done" when the document has a signed version
   const staffHasVoorovereenkomst = useMemo(() => {
     const set = new Set<string>();
-    generatedDocs.forEach((doc: any) => {
+    generatedDocs.forEach((doc) => {
       if (!doc.staff_id) return;
-      const cat = (doc.document_templates as any)?.category?.toLowerCase() ?? "";
+      const cat = (doc.document_templates as { category: string } | null)?.category?.toLowerCase() ?? "";
       if (cat === "voorovereenkomst" && doc.signed_file_path) set.add(doc.staff_id);
     });
     return set;
