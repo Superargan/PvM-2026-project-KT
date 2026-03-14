@@ -116,11 +116,11 @@ export default function TrainingslocatiesPage() {
     }
   };
 
-  const openEdit = (loc: any) => {
+  const openEdit = (loc: typeof locations[number]) => {
     const neighborhoodId = loc.neighborhood_id ?? "";
     let areaId = loc.area_id ?? "";
     if (!areaId && neighborhoodId) {
-      const area = areas.find((a: any) => (a.neighborhoods ?? []).some((n: any) => n.id === neighborhoodId));
+      const area = areas.find((a) => ((a as { neighborhoods?: { id: string }[] }).neighborhoods ?? []).some((n) => n.id === neighborhoodId));
       if (area) areaId = area.id;
     }
     setSelectedArea(areaId);
