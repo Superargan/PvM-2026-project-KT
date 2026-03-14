@@ -177,7 +177,7 @@ export default function MedewerkersPage() {
       setInviteEmail("");
       setInviteName("");
       setInviteRole("");
-      queryClient.invalidateQueries({ queryKey: ["medewerkers"] });
+      queryClient.invalidateQueries({ queryKey: staffKeys.medewerkers });
     },
     onError: (err: Error) => {
       toast.error(err.message || "Uitnodiging kon niet worden verstuurd");
