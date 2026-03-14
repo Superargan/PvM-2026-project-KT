@@ -374,6 +374,8 @@ export default function ScholenPage() {
       neighborhood_id: neighborhoodId,
       school_start_time: inputTimeToDb(startTime) as any,
       school_end_time: inputTimeToDb(endTime) as any,
+      schedule_type: (formData.get("schedule_type") as string) || null,
+      source: (formData.get("source") as string) || null,
     } as any);
 
     if (error) {
