@@ -1019,6 +1019,7 @@ export type Database = {
           contact_phone: string | null
           created_at: string
           id: string
+          municipality: string | null
           name: string
           neighborhood_id: string | null
           schedule_type: string | null
@@ -1035,6 +1036,7 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           id?: string
+          municipality?: string | null
           name: string
           neighborhood_id?: string | null
           schedule_type?: string | null
@@ -1051,6 +1053,7 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           id?: string
+          municipality?: string | null
           name?: string
           neighborhood_id?: string | null
           schedule_type?: string | null
