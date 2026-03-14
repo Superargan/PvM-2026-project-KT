@@ -721,8 +721,8 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
   const queryClient = useQueryClient();
 
   // Find template by category
-  const voorovereenkomstTemplate = useMemo(() => docTemplates.find((t: any) => t.category === "voorovereenkomst"), [docTemplates]);
-  const overeenkomstTemplate = useMemo(() => docTemplates.find((t: any) => t.category === "overeenkomst"), [docTemplates]);
+  const voorovereenkomstTemplate = useMemo(() => docTemplates.find((t) => t.category === "voorovereenkomst"), [docTemplates]);
+  const overeenkomstTemplate = useMemo(() => docTemplates.find((t) => t.category === "overeenkomst"), [docTemplates]);
 
   // Only count as "done" when the document has a signed version
   const staffHasVoorovereenkomst = useMemo(() => {
