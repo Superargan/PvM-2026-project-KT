@@ -14,13 +14,13 @@ export const CLIENT_AREA_SELECT = `id, first_name, last_name, date_of_birth, wai
  *
  * Keten: waitlist_area_id → lookup in areas array → client.neighborhoods.areas.name → client.schools.neighborhoods.areas.name
  */
-export function getResolvedAreaName(client: any, areas?: { id: string; name: string }[]): string {
+export function getResolvedAreaName(client: ClientAreaFields & { areas?: AreaRef | null }, areas?: AreaRef[]): string {
   if (client.waitlist_area_id && areas) {
     const found = areas.find((a) => a.id === client.waitlist_area_id);
     if (found) return found.name;
   }
   // Fallback: direct join op areas via waitlist_area_id (als die in de query zit als `areas:waitlist_area_id(name)`)
-  if ((client as any).areas?.name) return (client as any).areas.name;
+  if (client.areas?.name) return client.areas.name;
   // Fallback: neighborhood → area
   if (client.neighborhoods?.areas?.name) return client.neighborhoods.areas.name;
   // Fallback: school → neighborhood → area
