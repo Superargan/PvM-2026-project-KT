@@ -82,7 +82,7 @@ export default function RapportagesPage() {
   });
 
   const { data: attendance = [], isLoading: al } = useQuery({
-    queryKey: ["rpt_attendance"],
+    queryKey: rapportageKeys.attendance,
     queryFn: async () => {
       const { data, error } = await supabase.from("attendance").select("session_id, client_id, present");
       if (error) throw error;
