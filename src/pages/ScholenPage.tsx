@@ -946,7 +946,7 @@ export default function ScholenPage() {
 
   // Fetch document templates
   const { data: schoolDocTemplates = [] } = useQuery({
-    queryKey: ["document-templates"],
+    queryKey: documentKeys.templates,
     queryFn: async () => {
       const { data } = await supabase.from("document_templates").select("*").order("name");
       return data ?? [];

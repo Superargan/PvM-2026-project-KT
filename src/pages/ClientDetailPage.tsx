@@ -128,7 +128,7 @@ export default function ClientDetailPage() {
 
   // Fetch document templates
   const { data: docTemplates = [] } = useQuery({
-    queryKey: ["document-templates"],
+    queryKey: documentKeys.templates,
     queryFn: async () => {
       const { data } = await supabase.from("document_templates").select("*").order("name");
       return data ?? [];

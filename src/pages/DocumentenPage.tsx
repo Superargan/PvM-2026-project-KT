@@ -1290,7 +1290,7 @@ function GeneratedDocsTab() {
     },
     onSuccess: () => {
       toast({ title: "Ondertekend document verwijderd" });
-      queryClient.invalidateQueries({ queryKey: ["generated-documents"] });
+      queryClient.invalidateQueries({ queryKey: documentKeys.generated });
     },
     onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });

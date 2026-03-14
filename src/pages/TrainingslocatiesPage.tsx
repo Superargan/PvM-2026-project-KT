@@ -170,7 +170,7 @@ export default function TrainingslocatiesPage() {
       toast({ title: "Fout", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Trainingslocatie verwijderd" });
-      queryClient.invalidateQueries({ queryKey: ["training-locations"] });
+      queryClient.invalidateQueries({ queryKey: locationKeys.all });
     }
   };
 
