@@ -960,7 +960,7 @@ export default function ScholenPage() {
     queryFn: async () => {
       if (!selectedSchool?.id) return [];
       const { data, error } = await supabase
-        .from("school_documents" as any)
+        .from("school_documents")
         .select("*")
         .eq("school_id", selectedSchool.id)
         .order("created_at", { ascending: false });
