@@ -955,7 +955,7 @@ export default function ScholenPage() {
 
   // ── Documents for selected school ──
   const { data: schoolDocs = [], refetch: refetchDocs } = useQuery({
-    queryKey: ["school-documents", selectedSchool?.id],
+    queryKey: schoolKeys.documents(selectedSchool?.id),
     queryFn: async () => {
       if (!selectedSchool?.id) return [];
       const { data, error } = await supabase
