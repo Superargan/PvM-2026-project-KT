@@ -119,7 +119,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
 
       // Flexible
       if (c.all_areas_flexible) {
-        areas.forEach((a: any) => {
+        areas.forEach((a) => {
           if (a.id !== primaryAreaId && m[a.id] && !(prefs && prefs[a.id])) {
             if (isIntake) m[a.id][age].reserveIntake.push(c);
             else m[a.id][age].reserveWachtlijst.push(c);
