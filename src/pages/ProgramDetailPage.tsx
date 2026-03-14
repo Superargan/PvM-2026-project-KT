@@ -627,9 +627,8 @@ function ProgramDocumentGenerator({ programId }: { programId: string }) {
         (tradeName || "").toLowerCase().replace(/\s/g, "").includes("praktijk4kids") ||
         (name || "").toLowerCase().replace(/\s/g, "").includes("praktijk4kids");
 
-      const eligibleTrainers = trainers.filter((t: any) => {
-        const staff = t.staff as any;
-        return !isPraktijk4Kids(staff?.name ?? "", staff?.trade_name ?? "");
+      const eligibleTrainers = trainers.filter((t) => {
+        return !isPraktijk4Kids(t.staff?.name ?? "", t.staff?.trade_name ?? "");
       });
 
       if (eligibleTrainers.length === 0) {
