@@ -23,39 +23,7 @@ interface ParsedRow {
   [key: string]: any;
 }
 
-function normalizeKey(key: string): string {
-  return key
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]/g, "");
-}
-
-function findCol(row: ParsedRow, ...candidates: string[]): string | undefined {
-  const keys = Object.keys(row);
-  const normalizedCandidates = candidates.map(normalizeKey);
-
-  // Priority 1: exact normalized match
-  for (const c of normalizedCandidates) {
-    const found = keys.find((k) => normalizeKey(k) === c);
-    if (found && row[found] !== undefined && row[found] !== "") return String(row[found]).trim();
-  }
-
-  // Priority 2: starts-with match
-  for (const c of normalizedCandidates) {
-    const found = keys.find((k) => normalizeKey(k).startsWith(c));
-    if (found && row[found] !== undefined && row[found] !== "") return String(row[found]).trim();
-  }
-
-  // Priority 3: contains match
-  for (const c of normalizedCandidates) {
-    if (c.length < 3) continue; // avoid too short matches
-    const found = keys.find((k) => normalizeKey(k).includes(c));
-    if (found && row[found] !== undefined && row[found] !== "") return String(row[found]).trim();
-  }
-
-  return undefined;
-}
+// normalizeKey, findCol, parseExcelDate imported from @/lib/importUtils
 
 /**
  * Detect whether dates in the dataset are in MM/DD (US) or DD/MM (EU) format.
