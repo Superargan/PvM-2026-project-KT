@@ -78,7 +78,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
 
     const fixableClients: { clientId: string; areaId: string }[] = [];
 
-    clients.forEach((c: any) => {
+    clients.forEach((c) => {
       const primaryAreaId = resolveAreaId(c);
       const age = getAgeCategoryPlanning(c.date_of_birth);
       const isIntake = (c.intake_status ?? "wachtlijst") === "intake_afgerond";
