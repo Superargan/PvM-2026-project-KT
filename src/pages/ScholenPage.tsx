@@ -609,6 +609,14 @@ export default function ScholenPage() {
       if (result.invalidTimes > 0) parts.push(`${result.invalidTimes} ongeldige tijdwaarden`);
       toast({ title: parts.join(", ") || "Import voltooid" });
       setUploadOpen(false);
+      setImportResult({
+        added: result.addedNames,
+        updated: result.updatedNames,
+        timesSet: result.timesSet,
+        invalidTimes: result.invalidTimes,
+        municipalitySet: result.municipalitySet,
+      });
+      setImportResultOpen(true);
       invalidateAllSchoolQueries(queryClient);
     },
     onError: (err: any) => {
