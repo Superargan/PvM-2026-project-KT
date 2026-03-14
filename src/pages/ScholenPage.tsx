@@ -163,7 +163,7 @@ export default function ScholenPage() {
   const [editSaving, setEditSaving] = useState(false);
   const [selectedSchoolIds, setSelectedSchoolIds] = useState<Set<string>>(new Set());
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [schoolsToDelete, setSchoolsToDelete] = useState<any[]>([]);
+  const [schoolsToDelete, setSchoolsToDelete] = useState<SchoolListRow[]>([]);
   const [deleteBlockers, setDeleteBlockers] = useState<Record<string, { clients: number; programs: number }>>({});
   const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
