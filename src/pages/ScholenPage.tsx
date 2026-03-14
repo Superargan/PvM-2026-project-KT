@@ -323,6 +323,8 @@ export default function ScholenPage() {
       neighborhood_id: neighborhoodId,
       school_start_time: inputTimeToDb(editForm.school_start_time ?? "") as any,
       school_end_time: inputTimeToDb(editForm.school_end_time ?? "") as any,
+      schedule_type: editForm.schedule_type || null,
+      source: editForm.source || null,
     }).eq("id", selectedSchool.id);
 
     setEditSaving(false);
