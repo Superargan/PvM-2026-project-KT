@@ -139,6 +139,9 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
   const [convertResultDialog, setConvertResultDialog] = useState<any[] | null>(null);
   const [lastSavedSnapshot, setLastSavedSnapshot] = useState<string | null>(null);
   const [loadedScenarioName, setLoadedScenarioName] = useState<string | null>(null);
+  const [loadedProformaNumber, setLoadedProformaNumber] = useState<string | null>(null);
+  const [confirmCreateOpen, setConfirmCreateOpen] = useState(false);
+  const [confirmCreateGroup, setConfirmCreateGroup] = useState<GroupedClients | null>(null);
 
   // Fetch waitlist clients
   const { data: waitlistClients = [] } = useQuery({
