@@ -1137,6 +1137,11 @@ export default function ScholenPage() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-card-foreground">{school.name}</p>
+                        {school.municipality && (
+                          <span className="inline-flex items-center rounded-md bg-secondary/60 px-1.5 py-0.5 text-[10px] font-medium text-secondary-foreground">
+                            {school.municipality}
+                          </span>
+                        )}
                         {school.address && (
                           <p className="flex items-center gap-1 text-xs text-muted-foreground">
                             <MapPin className="h-3 w-3" /> {school.address}
