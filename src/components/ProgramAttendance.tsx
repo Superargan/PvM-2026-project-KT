@@ -87,7 +87,7 @@ export default function ProgramAttendance({
 
   const sessionIds = sessions.map((s: any) => s.id);
   const { data: attendance = [], isLoading: attLoading } = useQuery({
-    queryKey: ["attendance", programId, sessionIds],
+    queryKey: [...attendanceKeys.all, programId, sessionIds],
     enabled: open && sessionIds.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase
