@@ -285,6 +285,7 @@ export default function ScholenPage() {
       school_end_time: dbTimeToInput(school.school_end_time),
       schedule_type: school.schedule_type ?? "",
       source: school.source ?? "",
+      municipality: school.municipality ?? "",
     });
     setSelectedSchool(school);
     setEditOpen(true);
