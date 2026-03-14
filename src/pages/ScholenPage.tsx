@@ -1647,17 +1647,35 @@ export default function ScholenPage() {
             <DialogDescription>Scholen met vergelijkbare namen</DialogDescription>
           </DialogHeader>
           {(() => {
-            const groups: { key: string; items: any[] }[] = [];
-            const seen = new Map<string, any[]>();
-            for (const s of schools) {
-              const norm = normalizeSchoolName(s.name ?? "");
-              if (!norm) continue;
-              if (!seen.has(norm)) seen.set(norm, []);
-              seen.get(norm)!.push(s);
+            // Build fuzzy duplicate groups: schools whose normalized names overlap (substring match)
+            const allSchools = schools.map((s: any) => ({ ...s, norm: normalizeSchoolName(s.name ?? "") })).filter((s: any) => s.norm);
+            const visited = new Set<string>();
+            const groups: { items: any[] }[] = [];
+
+            for (let i = 0; i < allSchools.length; i++) {
+              if (visited.has(allSchools[i].id)) continue;
+              const group = [allSchools[i]];
+              visited.add(allSchools[i].id);
+
+              for (let j = i + 1; j < allSchools.length; j++) {
+                if (visited.has(allSchools[j].id)) continue;
+                // Check if any existing member in the group matches this school
+                const matches = group.some((g: any) =>
+                  g.norm === allSchools[j].norm ||
+                  g.norm.includes(allSchools[j].norm) ||
+                  allSchools[j].norm.includes(g.norm)
+                );
+                if (matches) {
+                  group.push(allSchools[j]);
+                  visited.add(allSchools[j].id);
+                }
+              }
+
+              if (group.length > 1) {
+                groups.push({ items: group });
+              }
             }
-            for (const [key, items] of seen) {
-              if (items.length > 1) groups.push({ key, items });
-            }
+
             if (groups.length === 0) {
               return (
                 <div className="text-center py-8 text-muted-foreground">
@@ -1668,11 +1686,11 @@ export default function ScholenPage() {
             return (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">{groups.length} groep{groups.length !== 1 ? "en" : ""} met mogelijke duplicaten gevonden.</p>
-                {groups.map((g) => (
-                  <div key={g.key} className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-700 p-3 space-y-2">
+                {groups.map((g, gi) => (
+                  <div key={gi} className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-700 p-3 space-y-2">
                     <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
                       <AlertTriangle className="h-4 w-4 shrink-0" />
-                      <span className="text-sm font-semibold">{g.items.length} scholen met naam "{g.items[0].name}"</span>
+                      <span className="text-sm font-semibold">{g.items.length} scholen met vergelijkbare naam</span>
                     </div>
                     <div className="space-y-1">
                       {g.items.map((s: any) => (
