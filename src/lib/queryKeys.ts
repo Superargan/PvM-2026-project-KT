@@ -61,6 +61,8 @@ export const schoolKeys = {
   dropdown: ["schools", "dropdown"] as const,
   dashboard: ["schools", "dashboard"] as const,
   rapportages: ["schools", "rapportages"] as const,
+  documents: (schoolId?: string) => ["schools", "documents", schoolId] as const,
+  generatedDocs: (schoolId?: string) => ["schools", "generated-docs", schoolId] as const,
 };
 
 /** Staff / medewerkers query keys */
