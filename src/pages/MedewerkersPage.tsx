@@ -265,7 +265,7 @@ export default function MedewerkersPage() {
     URL.revokeObjectURL(url);
   };
 
-  const handleEditTrainer = (trainer: any) => {
+  const handleEditTrainer = (trainer: typeof trainers[number]) => {
     setTrainerForm({
       name: trainer.name || "",
       trade_name: trainer.trade_name || "",
