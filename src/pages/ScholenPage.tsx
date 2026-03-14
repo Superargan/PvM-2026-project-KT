@@ -971,7 +971,7 @@ export default function ScholenPage() {
 
   // Fetch generated docs for selected school
   const { data: schoolGeneratedDocs = [], refetch: refetchSchoolGenDocs } = useQuery({
-    queryKey: ["school-generated-docs", selectedSchool?.id],
+    queryKey: schoolKeys.generatedDocs(selectedSchool?.id),
     queryFn: async () => {
       if (!selectedSchool?.id) return [];
       const { data } = await supabase

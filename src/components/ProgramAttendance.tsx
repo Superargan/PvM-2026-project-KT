@@ -132,7 +132,7 @@ export default function ProgramAttendance({
         if (error) throw error;
       }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["attendance", programId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: attendanceKeys.all }),
     onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
 

@@ -870,7 +870,7 @@ function GenerateTab() {
 
   // Fetch trainers for selected program
   const { data: programTrainers = [] } = useQuery({
-    queryKey: ["program-trainers-for-doc", selectedEntity],
+    queryKey: programKeys.staffForDocs(selectedEntity),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("program_staff")

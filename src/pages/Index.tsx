@@ -90,7 +90,7 @@ export default function Dashboard() {
   });
 
   const { data: upcomingPrograms = [] } = useQuery({
-    queryKey: ["dashboard-upcoming-programs"],
+    queryKey: programKeys.upcoming,
     queryFn: async () => {
       const { data } = await supabase
         .from("programs")
