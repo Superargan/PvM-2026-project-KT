@@ -157,6 +157,8 @@ export default function ScholenPage() {
   const [addScheduleType, setAddScheduleType] = useState<string>("");
   const [addSchoolName, setAddSchoolName] = useState<string>("");
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [importResultOpen, setImportResultOpen] = useState(false);
+  const [importResult, setImportResult] = useState<{ added: string[]; updated: string[]; timesSet: number; invalidTimes: number; municipalitySet: number } | null>(null);
   const [editSaving, setEditSaving] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
