@@ -229,7 +229,7 @@ export default function MedewerkersPage() {
     onSuccess: (data) => {
       toast.success(`Document gegenereerd: ${data.file_name}`);
       setSelectedTemplateId("");
-      queryClient.invalidateQueries({ queryKey: ["trainer-generated-docs", docTrainerId] });
+      queryClient.invalidateQueries({ queryKey: staffKeys.trainerDocs(docTrainerId) });
     },
     onError: (err: any) => {
       toast.error(err.message);
