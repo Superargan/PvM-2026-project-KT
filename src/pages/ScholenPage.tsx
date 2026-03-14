@@ -639,7 +639,29 @@ export default function ScholenPage() {
   const [timesShowResolution, setTimesShowResolution] = useState(false);
   const [timesImporting, setTimesImporting] = useState(false);
 
-  /** Fuzzy school name matching (same logic as client import) */
+  /** Strip common school type prefixes for better fuzzy matching */
+  const SCHOOL_PREFIXES = [
+    "openbare basisschool", "christelijke basisschool", "prot chr basissch",
+    "chr basissch", "protestants christelijke basisschool", "rooms katholieke basisschool",
+    "rk basisschool", "r.k. basisschool", "basisschool", "daltonschool",
+    "montessorischool", "jenaplanschool", "obs", "cbs", "kbs", "sbo", "wso",
+    "rkbs", "pcbs", "school voor",
+  ];
+
+  const stripSchoolPrefix = (name: string): string => {
+    let n = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    for (const prefix of SCHOOL_PREFIXES) {
+      if (n.startsWith(prefix + " ")) {
+        n = n.slice(prefix.length).trim();
+        break;
+      }
+    }
+    // Also strip leading "de ", "het ", "'t "
+    n = n.replace(/^(de|het|'t)\s+/i, "").trim();
+    return n;
+  };
+
+  /** Fuzzy school name matching with prefix-stripping for robust matching */
   const findSchoolMatch = (name: string, resolutions?: Record<string, string>): { id: string; name: string } | null => {
     if (!name) return null;
     const norm = name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
@@ -660,6 +682,18 @@ export default function ScholenPage() {
       return sNorm.includes(norm) || norm.includes(sNorm);
     });
     if (contains) return { id: contains.id, name: contains.name };
+
+    // Prefix-stripped matching: strip known prefixes and compare core names
+    const strippedInput = stripSchoolPrefix(name);
+    if (strippedInput.length >= 3) {
+      const prefixMatch = (schools as any[]).find((s) => {
+        const strippedExisting = stripSchoolPrefix(s.name);
+        return strippedExisting === strippedInput
+          || strippedExisting.includes(strippedInput)
+          || strippedInput.includes(strippedExisting);
+      });
+      if (prefixMatch) return { id: prefixMatch.id, name: prefixMatch.name };
+    }
 
     // Starts-with match (first significant word)
     const firstWord = norm.split(/\s+/)[0];
