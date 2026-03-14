@@ -2,6 +2,8 @@ import { School, Search, Plus, MapPin, Loader2, Upload, Users, Trash2, Pencil, U
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { schoolKeys, invalidateAllSchoolQueries } from "@/lib/queryKeys";
+import { formatSchoolTimeRange, validateSchoolTimePair, parseImportedSchoolTime, findMatchingColumn, normalizeSchoolName, dbTimeToInput, inputTimeToDb, SCHOOL_START_TIME_COLUMNS, SCHOOL_END_TIME_COLUMNS } from "@/lib/schoolTimes";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
