@@ -80,7 +80,7 @@ async function readFileAsRows(file: File): Promise<Record<string, any>[]> {
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(buf, { type: "array" });
   const ws = wb.Sheets[wb.SheetNames[0]];
-  return XLSX.utils.sheet_to_json(ws);
+  return XLSX.utils.sheet_to_json(ws, { raw: true, defval: null });
 }
 
 /** Outlook column name mapping → our field keys */
@@ -157,6 +157,8 @@ export default function ScholenPage() {
   const [addScheduleType, setAddScheduleType] = useState<string>("");
   const [addSchoolName, setAddSchoolName] = useState<string>("");
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [importResultOpen, setImportResultOpen] = useState(false);
+  const [importResult, setImportResult] = useState<{ added: string[]; updated: string[]; timesSet: number; invalidTimes: number; municipalitySet: number } | null>(null);
   const [editSaving, setEditSaving] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -530,6 +532,8 @@ export default function ScholenPage() {
       }
 
       const newSchools: any[] = [];
+      const addedNames: string[] = [];
+      const updatedNames: string[] = [];
       const updatePromises: Promise<any>[] = [];
 
       for (const s of mapped) {
@@ -539,6 +543,7 @@ export default function ScholenPage() {
         if (!existing) {
           // New school — insert with times
           newSchools.push(s);
+          addedNames.push(s.name);
           if (s.school_start_time) timesSetCount++;
           if (s.municipality) municipalitySetCount++;
         } else {
@@ -549,6 +554,7 @@ export default function ScholenPage() {
           const hasMunicipalityUpdate = s.municipality && !existing.municipality;
 
           if (hasTimeUpdate || hasScheduleTypeUpdate || hasSourceUpdate || hasMunicipalityUpdate) {
+            const schoolName = s.name;
             const updateFn = async () => {
               const updatePayload: Record<string, any> = {};
               if (hasTimeUpdate) {
@@ -562,6 +568,7 @@ export default function ScholenPage() {
               const { error } = await supabase.from("schools").update(updatePayload).eq("id", existing.id);
               if (!error) {
                 updatedCount++;
+                updatedNames.push(schoolName);
                 if (hasTimeUpdate) timesSetCount++;
                 if (hasMunicipalityUpdate) municipalitySetCount++;
               }
@@ -588,6 +595,8 @@ export default function ScholenPage() {
         timesSet: timesSetCount,
         invalidTimes: invalidTimeCount,
         municipalitySet: municipalitySetCount,
+        addedNames,
+        updatedNames,
       };
     },
     onSuccess: (result) => {
@@ -600,6 +609,14 @@ export default function ScholenPage() {
       if (result.invalidTimes > 0) parts.push(`${result.invalidTimes} ongeldige tijdwaarden`);
       toast({ title: parts.join(", ") || "Import voltooid" });
       setUploadOpen(false);
+      setImportResult({
+        added: result.addedNames,
+        updated: result.updatedNames,
+        timesSet: result.timesSet,
+        invalidTimes: result.invalidTimes,
+        municipalitySet: result.municipalitySet,
+      });
+      setImportResultOpen(true);
       invalidateAllSchoolQueries(queryClient);
     },
     onError: (err: any) => {
@@ -1676,6 +1693,66 @@ export default function ScholenPage() {
               </div>
             );
           })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Import result overview dialog */}
+      <Dialog open={importResultOpen} onOpenChange={setImportResultOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Import Resultaat</DialogTitle>
+            <DialogDescription>Overzicht van toegevoegde en bijgewerkte scholen</DialogDescription>
+          </DialogHeader>
+          {importResult && (
+            <div className="space-y-4">
+              {/* Summary stats */}
+              <div className="flex flex-wrap gap-3">
+                <Badge variant="default" className="text-sm">{importResult.added.length} toegevoegd</Badge>
+                <Badge variant="secondary" className="text-sm">{importResult.updated.length} bijgewerkt</Badge>
+                {importResult.timesSet > 0 && <Badge variant="outline" className="text-sm">{importResult.timesSet} tijden ingesteld</Badge>}
+                {importResult.municipalitySet > 0 && <Badge variant="outline" className="text-sm">{importResult.municipalitySet} gemeenten ingesteld</Badge>}
+                {importResult.invalidTimes > 0 && <Badge variant="destructive" className="text-sm">{importResult.invalidTimes} ongeldige tijdwaarden</Badge>}
+              </div>
+
+              {/* Added schools */}
+              {importResult.added.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-card-foreground flex items-center gap-2">
+                    <Plus className="h-4 w-4 text-primary" />
+                    Toegevoegde scholen ({importResult.added.length})
+                  </p>
+                  <div className="rounded-lg border border-border bg-muted/30 p-3 max-h-48 overflow-y-auto">
+                    <ul className="space-y-1">
+                      {importResult.added.map((name, i) => (
+                        <li key={i} className="text-sm text-card-foreground">{name}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {/* Updated schools */}
+              {importResult.updated.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-card-foreground flex items-center gap-2">
+                    <Pencil className="h-4 w-4 text-muted-foreground" />
+                    Bijgewerkte scholen ({importResult.updated.length})
+                  </p>
+                  <div className="rounded-lg border border-border bg-muted/30 p-3 max-h-48 overflow-y-auto">
+                    <ul className="space-y-1">
+                      {importResult.updated.map((name, i) => (
+                        <li key={i} className="text-sm text-card-foreground">{name}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {importResult.added.length === 0 && importResult.updated.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">Geen wijzigingen — alle scholen bestonden al.</p>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
