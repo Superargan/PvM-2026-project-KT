@@ -55,7 +55,7 @@ export default function RapportagesPage() {
   });
 
   const { data: programClients = [], isLoading: pcl } = useQuery({
-    queryKey: ["rpt_program_clients"],
+    queryKey: rapportageKeys.programClients,
     queryFn: async () => {
       const { data, error } = await supabase.from("program_clients").select("*");
       if (error) throw error;
