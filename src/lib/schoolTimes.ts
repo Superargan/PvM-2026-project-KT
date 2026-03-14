@@ -24,8 +24,9 @@ export const MUNICIPALITY_COLUMNS = [
   "gemeente",
   "municipality",
   "gemeentenaam",
-  "GEMEENTENAAM",
   "gemeente naam",
+  "woonplaats",
+  "city",
 ];
 
 // ── Formatting ──────────────────────────────────────────────────────
@@ -51,6 +52,36 @@ export function formatSchoolTimeRange(
 
 // ── Import parsing ──────────────────────────────────────────────────
 
+function normalizeImportColumnName(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[_\-\s]+/g, " ")
+    .trim();
+}
+
+function hasImportValue(value: any): boolean {
+  if (value === null || value === undefined) return false;
+  if (typeof value === "string") return value.trim() !== "";
+  return true;
+}
+
+function padTime(h: number, m: number): string {
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
+}
+
+function toMinutes(dbTime: string): number {
+  const [h, m] = dbTime.split(":").map((v) => parseInt(v, 10));
+  return h * 60 + m;
+}
+
+function minutesToDbTime(totalMinutes: number): string {
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return padTime(h, m);
+}
+
 /**
  * Parse an imported school time value.
  * Supports: HH:mm, H:mm, HH.mm, HH:mm:ss, Excel numeric (0.354166 → 08:30).
@@ -64,16 +95,17 @@ export function parseImportedSchoolTime(value: any): string | null {
     const h = value.getHours();
     const m = value.getMinutes();
     if (h === 0 && m === 0 && value.getSeconds() === 0) return null; // midnight = likely empty
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
+    return padTime(h, m);
   }
 
   // Excel numeric time (0–1 range)
   if (typeof value === "number") {
     if (value < 0 || value >= 1) return null;
     const totalMinutes = Math.round(value * 24 * 60);
+    if (totalMinutes >= 24 * 60) return null;
     const h = Math.floor(totalMinutes / 60);
     const m = totalMinutes % 60;
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
+    return padTime(h, m);
   }
 
   const str = String(value).trim();
@@ -85,7 +117,7 @@ export function parseImportedSchoolTime(value: any): string | null {
     const h = parseInt(match[1], 10);
     const m = parseInt(match[2], 10);
     if (h >= 0 && h <= 23 && m >= 0 && m <= 59) {
-      return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
+      return padTime(h, m);
     }
     return null;
   }
@@ -96,7 +128,7 @@ export function parseImportedSchoolTime(value: any): string | null {
     const h = parseInt(match[1], 10);
     const m = parseInt(match[2], 10);
     if (h >= 0 && h <= 23 && m >= 0 && m <= 59) {
-      return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
+      return padTime(h, m);
     }
     return null;
   }
@@ -107,7 +139,7 @@ export function parseImportedSchoolTime(value: any): string | null {
     const h = parseInt(match[1], 10);
     const m = parseInt(match[2], 10);
     if (h >= 0 && h <= 23 && m >= 0 && m <= 59) {
-      return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
+      return padTime(h, m);
     }
     return null;
   }
@@ -116,12 +148,191 @@ export function parseImportedSchoolTime(value: any): string | null {
   const num = parseFloat(str);
   if (!isNaN(num) && num >= 0 && num < 1) {
     const totalMinutes = Math.round(num * 24 * 60);
+    if (totalMinutes >= 24 * 60) return null;
     const h = Math.floor(totalMinutes / 60);
     const m = totalMinutes % 60;
-    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`;
+    return padTime(h, m);
   }
 
   return null;
+}
+
+function extractDbTimesFromText(value: string): string[] {
+  const matches = value.matchAll(/(?:^|[^\d])([01]?\d|2[0-3])[:.]([0-5]\d)(?=$|[^\d])/g);
+  const times: string[] = [];
+  for (const match of matches) {
+    const h = parseInt(match[1], 10);
+    const m = parseInt(match[2], 10);
+    times.push(padTime(h, m));
+  }
+  return times;
+}
+
+/**
+ * Parse textual range values like:
+ * - "08:30–15:00"
+ * - "08:30-11:45 / 12:45-14:45"
+ * - "gr.1-2 08:30–12:00 / gr.3-8 08:30–14:45"
+ */
+export function parseImportedSchoolTimeRange(
+  value: any,
+): { start: string; end: string } | null {
+  if (!hasImportValue(value)) return null;
+  const str = String(value).trim();
+  const times = extractDbTimesFromText(str);
+  if (times.length < 2) return null;
+
+  const minutes = times.map(toMinutes);
+  const start = Math.min(...minutes);
+  const end = Math.max(...minutes);
+  if (end <= start) return null;
+
+  return {
+    start: minutesToDbTime(start),
+    end: minutesToDbTime(end),
+  };
+}
+
+/** Optional day-based column aliases for school-time imports */
+const SCHOOL_DAY_TIME_COLUMNS = [
+  ["maandag", "monday"],
+  ["dinsdag", "tuesday"],
+  ["woensdag", "wednesday"],
+  ["donderdag", "thursday"],
+  ["vrijdag", "friday"],
+] as const;
+
+interface TimePair {
+  start: string;
+  end: string;
+}
+
+function pickMostFrequentTimePair(pairs: TimePair[]): TimePair | null {
+  if (pairs.length === 0) return null;
+
+  const counts = new Map<string, { count: number; firstIndex: number; pair: TimePair }>();
+  pairs.forEach((pair, index) => {
+    const key = `${pair.start}|${pair.end}`;
+    const prev = counts.get(key);
+    if (prev) {
+      prev.count += 1;
+    } else {
+      counts.set(key, { count: 1, firstIndex: index, pair });
+    }
+  });
+
+  let best: { count: number; firstIndex: number; pair: TimePair } | null = null;
+  for (const entry of counts.values()) {
+    if (!best) {
+      best = entry;
+      continue;
+    }
+    if (entry.count > best.count) {
+      best = entry;
+      continue;
+    }
+    if (entry.count === best.count && entry.firstIndex < best.firstIndex) {
+      best = entry;
+    }
+  }
+
+  return best?.pair ?? null;
+}
+
+export interface ResolvedImportedSchoolTimePair {
+  school_start_time: string | null;
+  school_end_time: string | null;
+  invalidValues: number;
+}
+
+/**
+ * Resolve a valid school time pair from a row:
+ * 1) explicit start/end columns
+ * 2) range inside one explicit time cell
+ * 3) fallback to day columns (Maandag–Vrijdag) with majority pair
+ */
+export function resolveImportedSchoolTimePair(
+  row: Record<string, any>,
+  headers: string[],
+  startTimeCol: string | null,
+  endTimeCol: string | null,
+): ResolvedImportedSchoolTimePair {
+  let invalidValues = 0;
+
+  const rawStart = startTimeCol ? row[startTimeCol] : null;
+  const rawEnd = endTimeCol ? row[endTimeCol] : null;
+
+  const hasRawStart = hasImportValue(rawStart);
+  const hasRawEnd = hasImportValue(rawEnd);
+
+  const parsedStart = hasRawStart ? parseImportedSchoolTime(rawStart) : null;
+  const parsedEnd = hasRawEnd ? parseImportedSchoolTime(rawEnd) : null;
+
+  const startRange = hasRawStart ? parseImportedSchoolTimeRange(rawStart) : null;
+  const endRange = hasRawEnd ? parseImportedSchoolTimeRange(rawEnd) : null;
+
+  if (hasRawStart && !parsedStart && !startRange) invalidValues += 1;
+  if (hasRawEnd && !parsedEnd && !endRange) invalidValues += 1;
+
+  const explicitValidation = validateSchoolTimePair(parsedStart, parsedEnd);
+  if (explicitValidation.valid && parsedStart && parsedEnd) {
+    return {
+      school_start_time: parsedStart,
+      school_end_time: parsedEnd,
+      invalidValues,
+    };
+  }
+
+  if (startRange) {
+    return {
+      school_start_time: startRange.start,
+      school_end_time: startRange.end,
+      invalidValues,
+    };
+  }
+
+  if (endRange) {
+    return {
+      school_start_time: endRange.start,
+      school_end_time: endRange.end,
+      invalidValues,
+    };
+  }
+
+  if (parsedStart || parsedEnd) {
+    invalidValues += 1;
+  }
+
+  const dayPairs: TimePair[] = [];
+  for (const aliases of SCHOOL_DAY_TIME_COLUMNS) {
+    const dayCol = findMatchingColumn(headers, [...aliases]);
+    if (!dayCol) continue;
+
+    const rawDayValue = row[dayCol];
+    if (!hasImportValue(rawDayValue)) continue;
+
+    const parsedDayRange = parseImportedSchoolTimeRange(rawDayValue);
+    if (parsedDayRange) {
+      dayPairs.push(parsedDayRange);
+    } else {
+      invalidValues += 1;
+    }
+  }
+
+  const bestDayPair = pickMostFrequentTimePair(dayPairs);
+  if (bestDayPair) {
+    return {
+      school_start_time: bestDayPair.start,
+      school_end_time: bestDayPair.end,
+      invalidValues,
+    };
+  }
+
+  return {
+    school_start_time: null,
+    school_end_time: null,
+    invalidValues,
+  };
 }
 
 // ── Validation ──────────────────────────────────────────────────────
@@ -198,19 +409,44 @@ export const SOURCE_COLUMNS = [
 ];
 
 /**
- * Find the first header that matches any of the candidate names (case-insensitive, trimmed).
+ * Find the first header that matches any candidate.
+ * Matching strategy: exact → starts-with (unique) → contains (unique).
+ * Matching is case-insensitive and accent/whitespace/underscore tolerant.
  * Returns the original header string or null.
  */
 export function findMatchingColumn(
   headers: string[],
   candidates: string[],
 ): string | null {
-  const normalizedCandidates = candidates.map((c) => c.toLowerCase().trim());
-  for (const header of headers) {
-    if (normalizedCandidates.includes(header.toLowerCase().trim())) {
-      return header;
-    }
+  const normalizedHeaders = headers.map((header) => ({
+    raw: header,
+    normalized: normalizeImportColumnName(header),
+  }));
+  const normalizedCandidates = candidates.map(normalizeImportColumnName);
+
+  // Priority 1: exact
+  for (const candidate of normalizedCandidates) {
+    const exact = normalizedHeaders.find((header) => header.normalized === candidate);
+    if (exact) return exact.raw;
   }
+
+  // Priority 2: starts-with (only if unique)
+  for (const candidate of normalizedCandidates) {
+    const startsWithMatches = normalizedHeaders.filter((header) =>
+      header.normalized.startsWith(candidate),
+    );
+    if (startsWithMatches.length === 1) return startsWithMatches[0].raw;
+  }
+
+  // Priority 3: contains (only if unique + avoid too-short candidate)
+  for (const candidate of normalizedCandidates) {
+    if (candidate.length < 4) continue;
+    const containsMatches = normalizedHeaders.filter((header) =>
+      header.normalized.includes(candidate),
+    );
+    if (containsMatches.length === 1) return containsMatches[0].raw;
+  }
+
   return null;
 }
 
