@@ -300,7 +300,7 @@ export default function TrainingslocatiesPage() {
           </SelectTrigger>
           <SelectContent className="bg-popover">
             <SelectItem value="all">Alle gebieden</SelectItem>
-            {areas.map((a: any) => (
+            {areas.map((a) => (
               <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
             ))}
           </SelectContent>
