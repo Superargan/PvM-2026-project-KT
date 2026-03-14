@@ -409,7 +409,7 @@ export default function ScholenPage() {
   const bulkAssignMutation = useMutation({
     mutationFn: async () => {
       let assigned = 0;
-      for (const school of schools as any[]) {
+      for (const school of schools) {
         if (!school.address) continue;
         const areaName = getAreaFromAddress(school.address);
         if (!areaName) continue;
