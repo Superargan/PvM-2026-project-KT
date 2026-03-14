@@ -245,7 +245,7 @@ export default function MedewerkersPage() {
     },
     onSuccess: () => {
       toast.success("Document verwijderd");
-      queryClient.invalidateQueries({ queryKey: ["trainer-generated-docs", docTrainerId] });
+      queryClient.invalidateQueries({ queryKey: staffKeys.trainerDocs(docTrainerId) });
     },
     onError: (err: any) => toast.error(err.message || "Verwijderen mislukt"),
   });
