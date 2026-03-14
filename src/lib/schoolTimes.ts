@@ -1,7 +1,32 @@
 /**
  * Shared utility for school time formatting, parsing, and validation.
  * SSOT: school times exist only on schools.school_start_time / school_end_time.
+ * SSOT: municipality exists only on schools.municipality (null = Rotterdam).
  */
+
+// ── Municipality (Gemeente) ─────────────────────────────────────────
+
+/** Default municipality when none is explicitly set. */
+export const DEFAULT_MUNICIPALITY = "Rotterdam";
+
+/**
+ * Get effective municipality for display.
+ * SSOT: school.municipality is authoritative; null/empty → Rotterdam.
+ * For clients: derive from linked school.
+ */
+export function getEffectiveMunicipality(municipality: string | null | undefined): string {
+  const trimmed = (municipality ?? "").trim();
+  return trimmed || DEFAULT_MUNICIPALITY;
+}
+
+/** Import column candidates for municipality */
+export const MUNICIPALITY_COLUMNS = [
+  "gemeente",
+  "municipality",
+  "gemeentenaam",
+  "GEMEENTENAAM",
+  "gemeente naam",
+];
 
 // ── Formatting ──────────────────────────────────────────────────────
 

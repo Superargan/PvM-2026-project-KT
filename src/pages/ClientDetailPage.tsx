@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { areaKeys, clientKeys, schoolKeys } from "@/lib/queryKeys";
-import { formatSchoolTimeRange } from "@/lib/schoolTimes";
+import { formatSchoolTimeRange, getEffectiveMunicipality } from "@/lib/schoolTimes";
 import { getResolvedAreaName } from "@/lib/clientUtils";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, Save, User, ClipboardList, BookOpen, Shield, FileText, Download, CalendarDays, Trash2 } from "lucide-react";
@@ -75,7 +75,7 @@ export default function ClientDetailPage() {
   const { data: schools = [] } = useQuery({
     queryKey: schoolKeys.dropdown,
     queryFn: async () => {
-      const { data } = await supabase.from("schools").select("id, name, neighborhood_id, school_start_time, school_end_time, neighborhoods(area_id)").order("name");
+      const { data } = await supabase.from("schools").select("id, name, neighborhood_id, school_start_time, school_end_time, municipality, neighborhoods(area_id)").order("name");
       return data ?? [];
     },
   });
@@ -454,15 +454,25 @@ export default function ClientDetailPage() {
                   onValueChange={(v) => updateField("school_id", v)}
                 />
               </Field>
-              {/* Schooltijden — read-only, derived from linked school (SSOT) */}
+              {/* Schooltijden & Gemeente — read-only, derived from linked school (SSOT) */}
               {(() => {
                 const linkedSchool = schools.find((s: any) => s.id === form.school_id);
                 const range = linkedSchool ? formatSchoolTimeRange(linkedSchool.school_start_time, linkedSchool.school_end_time) : "—";
-                return range !== "—" ? (
-                  <Field label="Schooltijden">
-                    <p className="text-sm text-card-foreground py-2">{range}</p>
-                  </Field>
-                ) : null;
+                const municipality = linkedSchool ? getEffectiveMunicipality((linkedSchool as any).municipality) : null;
+                return (
+                  <>
+                    {range !== "—" && (
+                      <Field label="Schooltijden">
+                        <p className="text-sm text-card-foreground py-2">{range}</p>
+                      </Field>
+                    )}
+                    {municipality && municipality !== "Rotterdam" && (
+                      <Field label="Gemeente">
+                        <p className="text-sm text-card-foreground py-2">{municipality}</p>
+                      </Field>
+                    )}
+                  </>
+                );
               })()}
               <Field label="Gebied">
                 <Select value={form.waitlist_area_id ?? ""} onValueChange={(v) => updateField("waitlist_area_id", v)}>

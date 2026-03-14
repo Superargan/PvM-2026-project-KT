@@ -8,6 +8,9 @@ import {
   normalizeSchoolName,
   dbTimeToInput,
   inputTimeToDb,
+  getEffectiveMunicipality,
+  DEFAULT_MUNICIPALITY,
+  MUNICIPALITY_COLUMNS,
 } from "@/lib/schoolTimes";
 
 describe("formatSchoolTime", () => {
@@ -156,5 +159,43 @@ describe("dbTimeToInput / inputTimeToDb", () => {
     expect(inputTimeToDb("08:30")).toBe("08:30:00");
     expect(inputTimeToDb("")).toBeNull();
     expect(inputTimeToDb("08:30:00")).toBe("08:30:00");
+  });
+});
+
+describe("getEffectiveMunicipality", () => {
+  it("returns Rotterdam for null/undefined/empty", () => {
+    expect(getEffectiveMunicipality(null)).toBe("Rotterdam");
+    expect(getEffectiveMunicipality(undefined)).toBe("Rotterdam");
+    expect(getEffectiveMunicipality("")).toBe("Rotterdam");
+    expect(getEffectiveMunicipality("   ")).toBe("Rotterdam");
+  });
+
+  it("returns the explicit municipality when set", () => {
+    expect(getEffectiveMunicipality("Capelle aan den IJssel")).toBe("Capelle aan den IJssel");
+    expect(getEffectiveMunicipality("Schiedam")).toBe("Schiedam");
+  });
+
+  it("trims whitespace from explicit municipality", () => {
+    expect(getEffectiveMunicipality("  Schiedam  ")).toBe("Schiedam");
+  });
+
+  it("DEFAULT_MUNICIPALITY is Rotterdam", () => {
+    expect(DEFAULT_MUNICIPALITY).toBe("Rotterdam");
+  });
+});
+
+describe("MUNICIPALITY_COLUMNS", () => {
+  it("matches gemeente column in import headers", () => {
+    const headers = ["Naam", "Adres", "Gemeente"];
+    expect(findMatchingColumn(headers, MUNICIPALITY_COLUMNS)).toBe("Gemeente");
+  });
+
+  it("matches municipality column", () => {
+    const headers = ["name", "municipality"];
+    expect(findMatchingColumn(headers, MUNICIPALITY_COLUMNS)).toBe("municipality");
+  });
+
+  it("returns null when no municipality column", () => {
+    expect(findMatchingColumn(["Naam", "Adres"], MUNICIPALITY_COLUMNS)).toBeNull();
   });
 });

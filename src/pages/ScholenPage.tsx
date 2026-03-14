@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { schoolKeys, invalidateAllSchoolQueries } from "@/lib/queryKeys";
-import { formatSchoolTimeRange, validateSchoolTimePair, parseImportedSchoolTime, findMatchingColumn, normalizeSchoolName, dbTimeToInput, inputTimeToDb, SCHOOL_START_TIME_COLUMNS, SCHOOL_END_TIME_COLUMNS, SCHEDULE_TYPE_COLUMNS, SOURCE_COLUMNS } from "@/lib/schoolTimes";
+import { formatSchoolTimeRange, validateSchoolTimePair, parseImportedSchoolTime, findMatchingColumn, normalizeSchoolName, dbTimeToInput, inputTimeToDb, SCHOOL_START_TIME_COLUMNS, SCHOOL_END_TIME_COLUMNS, SCHEDULE_TYPE_COLUMNS, SOURCE_COLUMNS, MUNICIPALITY_COLUMNS, getEffectiveMunicipality } from "@/lib/schoolTimes";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -285,6 +285,7 @@ export default function ScholenPage() {
       school_end_time: dbTimeToInput(school.school_end_time),
       schedule_type: school.schedule_type ?? "",
       source: school.source ?? "",
+      municipality: school.municipality ?? "",
     });
     setSelectedSchool(school);
     setEditOpen(true);
@@ -326,6 +327,7 @@ export default function ScholenPage() {
       school_end_time: inputTimeToDb(editForm.school_end_time ?? "") as any,
       schedule_type: editForm.schedule_type || null,
       source: editForm.source || null,
+      municipality: editForm.municipality?.trim() || null,
     }).eq("id", selectedSchool.id);
 
     setEditSaving(false);
@@ -377,6 +379,7 @@ export default function ScholenPage() {
       school_end_time: inputTimeToDb(endTime) as any,
       schedule_type: addScheduleType || null,
       source: (formData.get("source") as string) || null,
+      municipality: ((formData.get("municipality") as string) ?? "").trim() || null,
     } as any);
 
     if (error) {
@@ -440,10 +443,12 @@ export default function ScholenPage() {
       const endTimeCol = findMatchingColumn(headers, SCHOOL_END_TIME_COLUMNS);
       const scheduleTypeCol = findMatchingColumn(headers, SCHEDULE_TYPE_COLUMNS);
       const sourceCol = findMatchingColumn(headers, SOURCE_COLUMNS);
+      const municipalityCol = findMatchingColumn(headers, MUNICIPALITY_COLUMNS);
 
       let invalidTimeCount = 0;
       let timesSetCount = 0;
       let updatedCount = 0;
+      let municipalitySetCount = 0;
 
       const mapped = rows.map((r) => {
         // Build address from DUO columns if available
@@ -492,6 +497,8 @@ export default function ScholenPage() {
         const rawScheduleType = scheduleTypeCol ? String(r[scheduleTypeCol] ?? "").trim().toLowerCase() : "";
         const schedule_type = rawScheduleType === "traditioneel" || rawScheduleType === "continu" ? rawScheduleType : null;
         const source = sourceCol ? String(r[sourceCol] ?? "").trim() || null : null;
+        const rawMunicipality = municipalityCol ? String(r[municipalityCol] ?? "").trim() : "";
+        const municipality = rawMunicipality || null;
 
         return {
           name: r["naam"] || r["Naam"] || r["name"] || r["School"] || r["school"] || r["VESTIGINGSNAAM"] || "",
@@ -505,14 +512,15 @@ export default function ScholenPage() {
           school_end_time,
           schedule_type,
           source,
+          municipality,
         };
       }).filter((s) => s.name);
 
       if (mapped.length === 0) throw new Error("Geen geldige scholen gevonden. Zorg dat er een kolom 'Naam' is.");
 
       // Fetch existing schools for deduplication (include times for enrichment policy)
-      const { data: existingSchools } = await supabase.from("schools").select("id, name, school_start_time, school_end_time, schedule_type, source");
-      const existingMap = new Map<string, { id: string; school_start_time: string | null; school_end_time: string | null; schedule_type: string | null; source: string | null }>();
+      const { data: existingSchools } = await supabase.from("schools").select("id, name, school_start_time, school_end_time, schedule_type, source, municipality");
+      const existingMap = new Map<string, { id: string; school_start_time: string | null; school_end_time: string | null; schedule_type: string | null; source: string | null; municipality: string | null }>();
       for (const s of existingSchools ?? []) {
         existingMap.set(normalizeSchoolName(s.name), s);
       }
@@ -528,13 +536,15 @@ export default function ScholenPage() {
           // New school — insert with times
           newSchools.push(s);
           if (s.school_start_time) timesSetCount++;
+          if (s.municipality) municipalitySetCount++;
         } else {
           // Existing school — enrich with times, schedule_type, source when valid values provided
           const hasTimeUpdate = s.school_start_time && s.school_end_time;
           const hasScheduleTypeUpdate = s.schedule_type && !existing.schedule_type;
           const hasSourceUpdate = s.source && !existing.source;
+          const hasMunicipalityUpdate = s.municipality && !existing.municipality;
 
-          if (hasTimeUpdate || hasScheduleTypeUpdate || hasSourceUpdate) {
+          if (hasTimeUpdate || hasScheduleTypeUpdate || hasSourceUpdate || hasMunicipalityUpdate) {
             const updateFn = async () => {
               const updatePayload: Record<string, any> = {};
               if (hasTimeUpdate) {
@@ -543,11 +553,13 @@ export default function ScholenPage() {
               }
               if (hasScheduleTypeUpdate) updatePayload.schedule_type = s.schedule_type;
               if (hasSourceUpdate) updatePayload.source = s.source;
+              if (hasMunicipalityUpdate) updatePayload.municipality = s.municipality;
 
               const { error } = await supabase.from("schools").update(updatePayload).eq("id", existing.id);
               if (!error) {
                 updatedCount++;
                 if (hasTimeUpdate) timesSetCount++;
+                if (hasMunicipalityUpdate) municipalitySetCount++;
               }
             };
             updatePromises.push(updateFn());
@@ -571,6 +583,7 @@ export default function ScholenPage() {
         updated: updatedCount,
         timesSet: timesSetCount,
         invalidTimes: invalidTimeCount,
+        municipalitySet: municipalitySetCount,
       };
     },
     onSuccess: (result) => {
@@ -579,6 +592,7 @@ export default function ScholenPage() {
       if (result.skipped > 0) parts.push(`${result.skipped} duplicaten overgeslagen`);
       if (result.updated > 0) parts.push(`${result.updated} scholen bijgewerkt`);
       if (result.timesSet > 0) parts.push(`${result.timesSet} schooltijden ingesteld`);
+      if (result.municipalitySet > 0) parts.push(`${result.municipalitySet} gemeenten ingesteld`);
       if (result.invalidTimes > 0) parts.push(`${result.invalidTimes} ongeldige tijdwaarden`);
       toast({ title: parts.join(", ") || "Import voltooid" });
       setUploadOpen(false);
@@ -851,27 +865,29 @@ export default function ScholenPage() {
                 gebied: s.neighborhoods?.areas?.name ?? "",
                 wijk: s.neighborhoods?.name ?? "",
                 leerlingen: s.student_count ?? 0,
-                roostertype: s.schedule_type ?? "",
-                bron: s.source ?? "",
-                schooltijden: formatSchoolTimeRange(s.school_start_time, s.school_end_time),
-                email: s.contact_email ?? "",
-                telefoon: s.contact_phone ?? "",
-                website: s.website_url ?? "",
-                contactpersonen: (s.referrers ?? []).map((r: any) => r.name).join(", "),
-              }));
-              downloadExport(`scholen.${fmt}`, [
-                { key: "naam", label: "Naam" },
-                { key: "adres", label: "Adres" },
-                { key: "gebied", label: "Gebied" },
-                { key: "wijk", label: "Wijk" },
-                { key: "leerlingen", label: "Leerlingen" },
-                { key: "roostertype", label: "Roostertype" },
-                { key: "bron", label: "Bron" },
-                { key: "schooltijden", label: "Schooltijden" },
-                { key: "email", label: "E-mail" },
-                { key: "telefoon", label: "Telefoon" },
-                { key: "website", label: "Website" },
-                { key: "contactpersonen", label: "Contactpersonen" },
+                 roostertype: s.schedule_type ?? "",
+                 bron: s.source ?? "",
+                 gemeente: getEffectiveMunicipality(s.municipality),
+                 schooltijden: formatSchoolTimeRange(s.school_start_time, s.school_end_time),
+                 email: s.contact_email ?? "",
+                 telefoon: s.contact_phone ?? "",
+                 website: s.website_url ?? "",
+                 contactpersonen: (s.referrers ?? []).map((r: any) => r.name).join(", "),
+               }));
+               downloadExport(`scholen.${fmt}`, [
+                 { key: "naam", label: "Naam" },
+                 { key: "adres", label: "Adres" },
+                 { key: "gebied", label: "Gebied" },
+                 { key: "wijk", label: "Wijk" },
+                 { key: "leerlingen", label: "Leerlingen" },
+                 { key: "roostertype", label: "Roostertype" },
+                 { key: "bron", label: "Bron" },
+                 { key: "gemeente", label: "Gemeente" },
+                 { key: "schooltijden", label: "Schooltijden" },
+                 { key: "email", label: "E-mail" },
+                 { key: "telefoon", label: "Telefoon" },
+                 { key: "website", label: "Website" },
+                 { key: "contactpersonen", label: "Contactpersonen" },
               ], rows, fmt);
             }}>
               <Download className="h-4 w-4" /> {fmt.toUpperCase()}
@@ -935,7 +951,7 @@ export default function ScholenPage() {
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
                   Upload een Excel (.xlsx/.xls) of CSV-bestand. Zorg dat er minimaal een kolom <strong>Naam</strong> is.
-                  Optionele kolommen: Adres, Email, Telefoon, Leerlingen, Schooltijd begin, Schooltijd eind, Rooster (traditioneel/continu), Bron.
+                  Optionele kolommen: Adres, Email, Telefoon, Leerlingen, Schooltijd begin, Schooltijd eind, Rooster (traditioneel/continu), Bron, Gemeente.
                 </p>
                 <div className="flex items-center justify-center rounded-lg border-2 border-dashed border-border p-8">
                   <label className="flex cursor-pointer flex-col items-center gap-2 text-center">
@@ -1017,6 +1033,10 @@ export default function ScholenPage() {
                     </Select>
                   </div>
                   <div><Label>Bron</Label><Input name="source" placeholder="bijv. DUO, handmatig" /></div>
+                </div>
+                <div>
+                  <Label>Gemeente</Label>
+                  <Input name="municipality" placeholder="Leeg = Rotterdam" />
                 </div>
                 <Button type="submit" className="w-full">Opslaan</Button>
               </form>
@@ -1117,6 +1137,11 @@ export default function ScholenPage() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-card-foreground">{school.name}</p>
+                        {school.municipality && (
+                          <span className="inline-flex items-center rounded-md bg-secondary/60 px-1.5 py-0.5 text-[10px] font-medium text-secondary-foreground">
+                            {school.municipality}
+                          </span>
+                        )}
                         {school.address && (
                           <p className="flex items-center gap-1 text-xs text-muted-foreground">
                             <MapPin className="h-3 w-3" /> {school.address}
@@ -1497,6 +1522,10 @@ export default function ScholenPage() {
                 <Label>Bron</Label>
                 <Input value={editForm.source ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, source: e.target.value }))} placeholder="bijv. DUO, handmatig" />
               </div>
+            </div>
+            <div>
+              <Label>Gemeente</Label>
+              <Input value={editForm.municipality ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, municipality: e.target.value }))} placeholder="Leeg = Rotterdam" />
             </div>
             <Button type="submit" className="w-full" disabled={editSaving}>
               {editSaving ? "Opslaan..." : "Opslaan"}
