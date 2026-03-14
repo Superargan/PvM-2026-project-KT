@@ -308,13 +308,13 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
                                 >
                                   <span className="flex items-center gap-1.5">
                                     {intakeCount > 0 && (
-                                      <span className="text-blue-700">{intakeCount}i</span>
+                                      <span className="text-info-foreground">{intakeCount}i</span>
                                     )}
                                     {intakeCount > 0 && wachtlijstCount > 0 && (
                                       <span className="text-muted-foreground">+</span>
                                     )}
                                     {wachtlijstCount > 0 && (
-                                      <span className="text-orange-700">{wachtlijstCount}w</span>
+                                      <span className="text-warning-foreground">{wachtlijstCount}w</span>
                                     )}
                                     {ready && <ArrowRight className="h-3 w-3" />}
                                   </span>
