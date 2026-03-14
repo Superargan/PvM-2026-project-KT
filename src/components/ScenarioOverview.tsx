@@ -204,6 +204,8 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                     )}
                   </td>
                   <td className="px-3 py-2">
+                    <span className="text-xs font-mono text-muted-foreground">{(scenario as any).proforma_number ?? "—"}</span>
+                  </td>
                     <Badge variant="outline" className={`text-[10px] ${statusColors[scenario.status] ?? ""}`}>
                       {statusLabels[scenario.status] ?? scenario.status}
                     </Badge>
