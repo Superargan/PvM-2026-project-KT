@@ -280,6 +280,8 @@ export default function ScholenPage() {
       contact_phone: school.contact_phone ?? "",
       website_url: school.website_url ?? "",
       student_count: school.student_count ?? 0,
+      school_start_time: dbTimeToInput(school.school_start_time),
+      school_end_time: dbTimeToInput(school.school_end_time),
     });
     setSelectedSchool(school);
     setEditOpen(true);
