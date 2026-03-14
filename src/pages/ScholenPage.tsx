@@ -1886,7 +1886,7 @@ export default function ScholenPage() {
             {/* Overig upload */}
             <div className="space-y-2">
               <p className="text-sm font-medium text-card-foreground">Overig</p>
-              {(schoolDocs as any[]).filter((d: any) => d.category === "overig").map((doc: any) => (
+              {schoolDocs.filter((d) => d.category === "overig").map((doc) => (
                 <div key={doc.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-2">
                   <button
                     type="button"
