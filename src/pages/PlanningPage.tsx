@@ -905,7 +905,7 @@ export default function PlanningPage() {
                         </div>
                       )}
                       {intakeCount > 0 && (
-                        <div className="rounded bg-amber-100 px-1 py-0.5 text-[9px] font-medium text-amber-800">
+                        <div className="rounded bg-warning-muted px-1 py-0.5 text-[9px] font-medium text-warning-foreground">
                           {intakeCount}× intake
                         </div>
                       )}
