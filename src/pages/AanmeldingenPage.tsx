@@ -707,7 +707,7 @@ export default function AanmeldingenPage() {
                         {trainers.length > 0 && (
                           <>
                             <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Trainers</p>
-                            {trainers.map((s: any) => (
+                            {trainers.map((s) => (
                               <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                             ))}
                           </>
