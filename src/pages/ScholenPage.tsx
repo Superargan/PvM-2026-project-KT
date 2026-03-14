@@ -583,6 +583,7 @@ export default function ScholenPage() {
         updated: updatedCount,
         timesSet: timesSetCount,
         invalidTimes: invalidTimeCount,
+        municipalitySet: municipalitySetCount,
       };
     },
     onSuccess: (result) => {
@@ -591,6 +592,7 @@ export default function ScholenPage() {
       if (result.skipped > 0) parts.push(`${result.skipped} duplicaten overgeslagen`);
       if (result.updated > 0) parts.push(`${result.updated} scholen bijgewerkt`);
       if (result.timesSet > 0) parts.push(`${result.timesSet} schooltijden ingesteld`);
+      if (result.municipalitySet > 0) parts.push(`${result.municipalitySet} gemeenten ingesteld`);
       if (result.invalidTimes > 0) parts.push(`${result.invalidTimes} ongeldige tijdwaarden`);
       toast({ title: parts.join(", ") || "Import voltooid" });
       setUploadOpen(false);
