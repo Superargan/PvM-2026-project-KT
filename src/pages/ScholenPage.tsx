@@ -153,7 +153,7 @@ export default function ScholenPage() {
   const [selectedArea, setSelectedArea] = useState<string>("");
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
   const [docUploading, setDocUploading] = useState(false);
-  const [editForm, setEditForm] = useState<any>({});
+  const [editForm, setEditForm] = useState<SchoolEditForm>({ name: "", address: "", contact_email: "", contact_phone: "", website_url: "", student_count: 0, school_start_time: "", school_end_time: "", schedule_type: "", source: "", municipality: "" });
   const [addScheduleType, setAddScheduleType] = useState<string>("");
   const [addSchoolName, setAddSchoolName] = useState<string>("");
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
