@@ -454,15 +454,25 @@ export default function ClientDetailPage() {
                   onValueChange={(v) => updateField("school_id", v)}
                 />
               </Field>
-              {/* Schooltijden — read-only, derived from linked school (SSOT) */}
+              {/* Schooltijden & Gemeente — read-only, derived from linked school (SSOT) */}
               {(() => {
                 const linkedSchool = schools.find((s: any) => s.id === form.school_id);
                 const range = linkedSchool ? formatSchoolTimeRange(linkedSchool.school_start_time, linkedSchool.school_end_time) : "—";
-                return range !== "—" ? (
-                  <Field label="Schooltijden">
-                    <p className="text-sm text-card-foreground py-2">{range}</p>
-                  </Field>
-                ) : null;
+                const municipality = linkedSchool ? getEffectiveMunicipality((linkedSchool as any).municipality) : null;
+                return (
+                  <>
+                    {range !== "—" && (
+                      <Field label="Schooltijden">
+                        <p className="text-sm text-card-foreground py-2">{range}</p>
+                      </Field>
+                    )}
+                    {municipality && municipality !== "Rotterdam" && (
+                      <Field label="Gemeente">
+                        <p className="text-sm text-card-foreground py-2">{municipality}</p>
+                      </Field>
+                    )}
+                  </>
+                );
               })()}
               <Field label="Gebied">
                 <Select value={form.waitlist_area_id ?? ""} onValueChange={(v) => updateField("waitlist_area_id", v)}>
