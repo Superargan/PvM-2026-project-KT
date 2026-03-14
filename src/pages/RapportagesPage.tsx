@@ -257,7 +257,8 @@ export default function RapportagesPage() {
     });
 
     // Extract postcode from address (e.g. "Gordelweg 216, 3039 GA" -> "3039 GA")
-    const addressStr = program.schools?.address ?? "";
+    const prog = programMap.get(programId) as RapportageProgramRow | undefined;
+    const addressStr = prog?.schools?.address ?? "";
     const postcodeMatch = addressStr.match(/\b(\d{4}\s?[A-Z]{2})\b/);
     const postcode = postcodeMatch ? postcodeMatch[1] : addressStr;
 
