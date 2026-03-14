@@ -779,7 +779,7 @@ export default function AanmeldingenPage() {
               <div className="rounded-lg border border-accent/30 bg-accent/10 p-3 space-y-3">
                 <p className="text-xs font-semibold text-accent-foreground">Wachtlijst-instellingen</p>
                 <FieldWrapper label="Wachtlijst-gebied">
-                  <Select value={(editClient as any)?.waitlist_area_id ?? ""} onValueChange={(v) => {
+                  <Select value={editClient?.waitlist_area_id ?? ""} onValueChange={(v) => {
                     handleWaitlist(editClient.id, "waiting", v);
                   }}>
                     <SelectTrigger><SelectValue placeholder="Selecteer gebied" /></SelectTrigger>
