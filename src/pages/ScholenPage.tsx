@@ -976,7 +976,7 @@ export default function ScholenPage() {
           </Dialog>
 
           {/* Add school dialog */}
-          <Dialog open={addOpen} onOpenChange={setAddOpen}>
+          <Dialog open={addOpen} onOpenChange={(open) => { setAddOpen(open); if (!open) { setAddSchoolName(""); setAddScheduleType(""); } }}>
             <DialogTrigger asChild>
               <Button><Plus className="h-4 w-4" /> School Toevoegen</Button>
             </DialogTrigger>
