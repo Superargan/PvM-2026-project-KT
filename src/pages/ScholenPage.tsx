@@ -480,6 +480,11 @@ export default function ScholenPage() {
           invalidTimeCount++;
         }
 
+        // Parse schedule type and source
+        const rawScheduleType = scheduleTypeCol ? String(r[scheduleTypeCol] ?? "").trim().toLowerCase() : "";
+        const schedule_type = rawScheduleType === "traditioneel" || rawScheduleType === "continu" ? rawScheduleType : null;
+        const source = sourceCol ? String(r[sourceCol] ?? "").trim() || null : null;
+
         return {
           name: r["naam"] || r["Naam"] || r["name"] || r["School"] || r["school"] || r["VESTIGINGSNAAM"] || "",
           address,
@@ -490,6 +495,8 @@ export default function ScholenPage() {
           neighborhood_id: neighborhoodId,
           school_start_time,
           school_end_time,
+          schedule_type,
+          source,
         };
       }).filter((s) => s.name);
 
