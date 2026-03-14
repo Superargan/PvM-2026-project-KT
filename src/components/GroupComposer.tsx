@@ -1092,7 +1092,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                 {client.first_name} {client.last_name}
               </span>
               {isAssignedElsewhere && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 border-amber-300 text-amber-700 gap-0.5">
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 border-warning-border text-warning-foreground gap-0.5">
                   <AlertTriangle className="h-2.5 w-2.5" />
                   Al in {assignedGroupLabel}
                 </Badge>
