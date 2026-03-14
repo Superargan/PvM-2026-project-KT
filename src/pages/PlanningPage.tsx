@@ -505,20 +505,20 @@ export default function PlanningPage() {
   }, [intakeAssignments]);
 
   const agendaByDay = useMemo(() => {
-    const map: Record<string, { intakes: any[]; sessions: any[] }> = {};
+    const map: Record<string, { intakes: typeof intakes; sessions: SessionWithProgram[] }> = {};
     days.forEach((day) => {
       const key = format(day, "yyyy-MM-dd");
       map[key] = { intakes: [], sessions: [] };
     });
-    intakes.forEach((intake: any) => {
+    intakes.forEach((intake) => {
       if (intake.intake_date && map[intake.intake_date]) {
         if (filterArea !== "alle" && resolveAreaId(intake) !== filterArea) return;
         map[intake.intake_date].intakes.push(intake);
       }
     });
-    sessions.forEach((session: any) => {
+    (sessions as SessionWithProgram[]).forEach((session) => {
       if (session.session_date && map[session.session_date]) {
-        const prog = (session as any).programs;
+        const prog = session.programs;
         if (filterArea !== "alle" && prog?.area_id !== filterArea) return;
         if (filterAge !== "alle") {
           if (filterAge.startsWith("exact-")) {
@@ -532,8 +532,9 @@ export default function PlanningPage() {
   }, [days, intakes, sessions, filterArea, filterAge]);
 
   const getStaffForSession = (programId: string, sessionId: string) => {
-    const vaste = programStaff.filter((ps: any) => ps.program_id === programId && ps.session_id === null);
-    const invallers = programStaff.filter((ps: any) => ps.program_id === programId && ps.session_id === sessionId);
+    const typed = programStaff as ProgramStaffRow[];
+    const vaste = typed.filter((ps) => ps.program_id === programId && ps.session_id === null);
+    const invallers = typed.filter((ps) => ps.program_id === programId && ps.session_id === sessionId);
     return { vaste, invallers };
   };
 
