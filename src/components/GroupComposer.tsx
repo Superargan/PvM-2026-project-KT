@@ -1143,7 +1143,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                               disabled={isDirty || converting}
                               className="gap-1.5"
                             >
-                              <Upload className="h-3 w-3" /> {converting ? "Omzetten..." : "Omzetten naar planning"}
+                              <Upload className="h-3 w-3" /> {converting ? "Omzetten..." : "Omzetten naar definitieve planning"}
                             </Button>
                           </span>
                         </TooltipTrigger>
