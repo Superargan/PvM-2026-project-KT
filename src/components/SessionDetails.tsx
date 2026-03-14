@@ -115,7 +115,7 @@ export default function SessionDetails({ session, programId, isBackoffice = true
       if (error) throw error;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["program_sessions", programId] });
+      qc.invalidateQueries({ queryKey: programKeys.sessions(programId) });
       toast({ title: "Sessie opgeslagen" });
     },
     onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
