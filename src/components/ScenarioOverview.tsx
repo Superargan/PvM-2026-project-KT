@@ -226,7 +226,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                               {validationLabels[scenario.validation_status] ?? scenario.validation_status}
                             </Badge>
                             {isStale && (
-                              <Badge variant="outline" className="text-[9px] border-amber-300 text-amber-700 gap-0.5">
+                              <Badge variant="outline" className="text-[9px] border-warning-border text-warning-foreground gap-0.5">
                                 <AlertTriangle className="h-2.5 w-2.5" />
                                 &gt;24u
                               </Badge>
