@@ -60,7 +60,7 @@ export default function ProgramAttendance({
         program_id: programId,
         session_number: i + 1,
       }));
-      const { error } = await supabase.from("program_sessions").insert(rows as any);
+      const { error } = await supabase.from("program_sessions").insert(rows);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: programKeys.sessions(programId) }),
