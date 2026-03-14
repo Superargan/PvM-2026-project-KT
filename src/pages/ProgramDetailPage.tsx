@@ -325,7 +325,7 @@ export default function ProgramDetailPage() {
                 const areaId = selectedSchool?.neighborhoods?.area_id ?? null;
                 const { error } = await supabase
                   .from("programs")
-                  .update({ school_id: schoolId, training_location_id: schoolId ? null : (program as any).training_location_id, neighborhood_id: neighborhoodId, area_id: areaId })
+                  .update({ school_id: schoolId, training_location_id: schoolId ? null : program.training_location_id, neighborhood_id: neighborhoodId, area_id: areaId })
                   .eq("id", id!);
                 if (error) {
                   toast({ title: "Fout", description: error.message, variant: "destructive" });
