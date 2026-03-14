@@ -1124,8 +1124,8 @@ export default function ScholenPage() {
       setDeleteConfirmOpen(false);
       setSchoolsToDelete([]);
       invalidateAllSchoolQueries(queryClient);
-    } catch (err: any) {
-      toast({ title: "Fout bij verwijderen", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Fout bij verwijderen", description: err instanceof Error ? err.message : "Onbekende fout", variant: "destructive" });
     } finally {
       setDeleting(false);
     }
