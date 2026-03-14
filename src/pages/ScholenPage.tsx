@@ -520,20 +520,30 @@ export default function ScholenPage() {
           // New school — insert with times
           newSchools.push(s);
           if (s.school_start_time) timesSetCount++;
-        } else if (s.school_start_time && s.school_end_time) {
-          // Existing school — enrich with times only when valid pair provided
-          // Follow overwrite policy: only update when import has valid non-empty values
-          const updateFn = async () => {
-            const { error } = await supabase.from("schools").update({
-              school_start_time: s.school_start_time as any,
-              school_end_time: s.school_end_time as any,
-            }).eq("id", existing.id);
-            if (!error) {
-              updatedCount++;
-              timesSetCount++;
-            }
-          };
-          updatePromises.push(updateFn());
+        } else {
+          // Existing school — enrich with times, schedule_type, source when valid values provided
+          const hasTimeUpdate = s.school_start_time && s.school_end_time;
+          const hasScheduleTypeUpdate = s.schedule_type && !existing.schedule_type;
+          const hasSourceUpdate = s.source && !existing.source;
+
+          if (hasTimeUpdate || hasScheduleTypeUpdate || hasSourceUpdate) {
+            const updateFn = async () => {
+              const updatePayload: Record<string, any> = {};
+              if (hasTimeUpdate) {
+                updatePayload.school_start_time = s.school_start_time;
+                updatePayload.school_end_time = s.school_end_time;
+              }
+              if (hasScheduleTypeUpdate) updatePayload.schedule_type = s.schedule_type;
+              if (hasSourceUpdate) updatePayload.source = s.source;
+
+              const { error } = await supabase.from("schools").update(updatePayload).eq("id", existing.id);
+              if (!error) {
+                updatedCount++;
+                if (hasTimeUpdate) timesSetCount++;
+              }
+            };
+            updatePromises.push(updateFn());
+          }
         }
       }
 
