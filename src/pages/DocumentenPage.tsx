@@ -169,7 +169,7 @@ function TemplatesTab() {
     },
     onSuccess: () => {
       toast({ title: "Template verwijderd" });
-      queryClient.invalidateQueries({ queryKey: ["document-templates"] });
+      queryClient.invalidateQueries({ queryKey: documentKeys.templates });
     },
     onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
