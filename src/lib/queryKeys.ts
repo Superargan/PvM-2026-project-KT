@@ -29,6 +29,12 @@ export const clientKeys = {
   overrideLogs: ["clients", "override-logs"] as const,
   /** All client availability (unpaginated) — single source of truth */
   allAvailability: ["clients", "all-availability"] as const,
+  /** Programs linked to a specific client */
+  programs: (clientId: string) => ["clients", "programs", clientId] as const,
+  /** Generated docs for a specific client */
+  generatedDocs: (clientId: string) => ["clients", "generated-docs", clientId] as const,
+  /** Assignments for a specific client */
+  assignments: (clientId?: string) => ["clients", "assignments", clientId] as const,
 };
 
 /** Shared area query key — use everywhere */
