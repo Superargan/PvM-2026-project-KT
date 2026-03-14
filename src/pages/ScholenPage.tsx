@@ -1686,7 +1686,7 @@ export default function ScholenPage() {
             variant="destructive"
             size="sm"
             onClick={() => {
-              const toDelete = (schools as any[]).filter((s) => selectedSchoolIds.has(s.id));
+              const toDelete = schools.filter((s) => selectedSchoolIds.has(s.id));
               initiateDelete(toDelete);
             }}
           >
