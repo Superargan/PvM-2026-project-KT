@@ -206,7 +206,7 @@ function TemplatesTab() {
         template={editingTemplate}
         onClose={() => {
           setEditingTemplate(null);
-          queryClient.invalidateQueries({ queryKey: ["document-templates"] });
+          queryClient.invalidateQueries({ queryKey: documentKeys.templates });
         }}
       />
     );
