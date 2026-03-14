@@ -82,7 +82,7 @@ export default function ClientDetailPage() {
 
   // Fetch referrers
   const { data: referrers = [] } = useQuery({
-    queryKey: ["referrers-list"],
+    queryKey: referrerKeys.dropdown,
     queryFn: async () => {
       const { data } = await supabase.from("referrers").select("id, name, function_title, school_id").order("name");
       return data ?? [];
