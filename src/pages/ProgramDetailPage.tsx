@@ -369,7 +369,7 @@ export default function ProgramDetailPage() {
               </SelectTrigger>
               <SelectContent className="bg-popover">
                 <SelectItem value="geen">Geen trainingslocatie</SelectItem>
-                {trainingLocations.map((t: any) => (
+                {trainingLocations.map((t) => (
                   <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                 ))}
               </SelectContent>
