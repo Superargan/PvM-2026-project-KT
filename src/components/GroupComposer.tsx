@@ -249,7 +249,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
 
   // Fetch non-archived programs for linking
   const { data: linkablePrograms = [] } = useQuery({
-    queryKey: ["linkable-programs"],
+    queryKey: programKeys.linkable,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("programs")
