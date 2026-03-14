@@ -1235,7 +1235,6 @@ export default function ScholenPage() {
                   <td className="px-5 py-4 text-right">
                     <span className="font-display text-sm font-bold text-card-foreground">{school.student_count ?? 0}</span>
                   </td>
-                  <td className="px-5 py-4 text-right">
                 </tr>
               ))}
             </tbody>
