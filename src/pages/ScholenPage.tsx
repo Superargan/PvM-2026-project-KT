@@ -230,7 +230,7 @@ export default function ScholenPage() {
   });
 
   // Build lookup maps
-  const schoolClientCounts = clientsBySchool.reduce((acc: Record<string, Record<string, number>>, c: any) => {
+  const schoolClientCounts = clientsBySchool.reduce((acc: Record<string, Record<string, number>>, c) => {
     if (!c.school_id) return acc;
     if (!acc[c.school_id]) acc[c.school_id] = {};
     const status = c.intake_status ?? "nieuw";
