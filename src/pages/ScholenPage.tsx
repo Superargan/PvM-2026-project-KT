@@ -290,6 +290,14 @@ export default function ScholenPage() {
   const handleEditSchool = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedSchool) return;
+
+    // Validate time pair before submit
+    const timeValidation = validateSchoolTimePair(editForm.school_start_time, editForm.school_end_time);
+    if (!timeValidation.valid) {
+      toast({ title: "Ongeldige schooltijden", description: timeValidation.error, variant: "destructive" });
+      return;
+    }
+
     setEditSaving(true);
 
     let neighborhoodId = selectedNeighborhood || null;
@@ -311,6 +319,8 @@ export default function ScholenPage() {
       website_url: editForm.website_url || null,
       student_count: Number(editForm.student_count) || 0,
       neighborhood_id: neighborhoodId,
+      school_start_time: inputTimeToDb(editForm.school_start_time ?? "") as any,
+      school_end_time: inputTimeToDb(editForm.school_end_time ?? "") as any,
     }).eq("id", selectedSchool.id);
 
     setEditSaving(false);
@@ -320,7 +330,7 @@ export default function ScholenPage() {
       toast({ title: "School bijgewerkt" });
       setEditOpen(false);
       setSelectedSchool(null);
-      refetch();
+      invalidateAllSchoolQueries(queryClient);
     }
   };
 
