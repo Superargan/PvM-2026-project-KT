@@ -267,7 +267,7 @@ export default function PlanningPage() {
   });
 
   const { data: sessions = [] } = useQuery({
-    queryKey: ["planning-sessions", dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryKey: planningKeys.sessions(dateRange.start.toISOString(), dateRange.end.toISOString()),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("program_sessions")
