@@ -1824,7 +1824,7 @@ export default function ScholenPage() {
                     <Select value={selectedSchoolTemplateId} onValueChange={setSelectedSchoolTemplateId}>
                       <SelectTrigger><SelectValue placeholder="Selecteer een template" /></SelectTrigger>
                       <SelectContent className="bg-popover">
-                        {schoolDocTemplates.map((t: any) => (
+                        {schoolDocTemplates.map((t) => (
                           <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                         ))}
                       </SelectContent>
