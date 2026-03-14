@@ -287,7 +287,7 @@ export default function MedewerkersPage() {
     setTrainerDialogOpen(true);
   };
 
-  const handleOpenDocs = (trainer: any) => {
+  const handleOpenDocs = (trainer: typeof trainers[number]) => {
     setDocTrainerId(trainer.id);
     setDocTrainerName(trainer.name ?? "Trainer");
     setSelectedTemplateId("");
