@@ -298,6 +298,27 @@ export async function readFileAsRows(file: File): Promise<Record<string, any>[]>
   return XLSX.utils.sheet_to_json(ws, { raw: true, defval: null });
 }
 
+/** Parse a time value from Excel (numeric fraction, string HH:MM, HH.MM, or plain hour) */
+export function parseTime(val: any): string | null {
+  if (!val) return null;
+  if (typeof val === "number") {
+    const totalMinutes = Math.round(val * 24 * 60);
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  }
+  const s = String(val).trim();
+  const match = s.match(/^(\d{1,2})[:\.](\d{2})/);
+  if (match) return `${match[1].padStart(2, "0")}:${match[2]}`;
+  // Just an hour number like "14" or "9"
+  const hourOnly = s.match(/^(\d{1,2})$/);
+  if (hourOnly) {
+    const h = parseInt(hourOnly[1]);
+    if (h >= 0 && h <= 23) return `${String(h).padStart(2, "0")}:00`;
+  }
+  return null;
+}
+
 /** Parse an Excel date value (serial number, various string formats) */
 export function parseExcelDate(val: any, format: "mdy" | "dmy" = "dmy"): string | null {
   if (!val) return null;

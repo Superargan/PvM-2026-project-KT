@@ -82,6 +82,12 @@ export const locationKeys = {
   list: (search?: string) => ["training-locations", "list", search] as const,
 };
 
+/** Referrer query keys */
+export const referrerKeys = {
+  all: ["referrers"] as const,
+  list: ["referrers", "list"] as const,
+};
+
 /** Invoice query keys */
 export const invoiceKeys = {
   all: ["invoices"] as const,
