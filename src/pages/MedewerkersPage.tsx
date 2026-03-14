@@ -719,7 +719,7 @@ function DossierDocumentSection({ trainerId, trainerName, onRefresh, trainer }: 
               <p className="text-sm font-medium text-card-foreground">{doc.label}</p>
               {doc.path && doc.date ? (
                 <p className="text-xs text-muted-foreground">
-                  Geüpload op {format(new Date(doc.date), "d MMM yyyy", { locale: nl })}
+                  Geüpload op {format(new Date(doc.date as string), "d MMM yyyy", { locale: nl })}
                 </p>
               ) : (
                 <p className="text-xs text-muted-foreground">Nog niet geüpload</p>
