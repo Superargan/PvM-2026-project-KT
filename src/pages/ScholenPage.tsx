@@ -1499,8 +1499,8 @@ export default function ScholenPage() {
                   <input
                     type="checkbox"
                     className="h-4 w-4 rounded border-border"
-                    checked={sorted.length > 0 && sorted.every((s: any) => selectedSchoolIds.has(s.id))}
-                    onChange={() => toggleAllSchools(sorted.map((s: any) => s.id))}
+                    checked={sorted.length > 0 && sorted.every((s) => selectedSchoolIds.has(s.id))}
+                    onChange={() => toggleAllSchools(sorted.map((s) => s.id))}
                   />
                 </th>
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">School</th>
