@@ -170,7 +170,7 @@ export default function SessionDetails({ session, programId, isBackoffice = true
       } as any);
       if (insertErr) throw insertErr;
 
-      qc.invalidateQueries({ queryKey: ["session_documents", session.id] });
+      qc.invalidateQueries({ queryKey: programKeys.sessionDocs(session.id) });
       toast({ title: "Document geüpload" });
     } catch (err: any) {
       toast({ title: "Fout", description: err.message, variant: "destructive" });
