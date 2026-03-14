@@ -29,12 +29,12 @@ const statusColors: Record<string, string> = {
 };
 
 const statusLabels: Record<string, string> = {
-  concept: "Concept",
-  vastgezet: "Vastgezet",
-  in_uitwerking: "In uitwerking",
-  gecontroleerd: "Gecontroleerd",
+  concept: "Proforma concept",
+  vastgezet: "Proforma vastgezet",
+  in_uitwerking: "Proforma in uitwerking",
+  gecontroleerd: "Proforma gecontroleerd",
   gedeeltelijk_omgezet: "Gedeeltelijk omgezet",
-  definitief: "Definitief",
+  definitief: "Definitief (omgezet)",
 };
 
 const validationColors: Record<string, string> = {
