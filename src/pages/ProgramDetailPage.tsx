@@ -291,7 +291,7 @@ export default function ProgramDetailPage() {
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1"><Users className="h-3.5 w-3.5" /> Deelnemers</div>
           <p className="text-2xl font-bold text-foreground">{activeEnrolled.length}<span className="text-sm font-normal text-muted-foreground">/{program.max_participants ?? 14}</span></p>
           {program.min_participants && activeEnrolled.length < program.min_participants && (
-            <p className="text-xs text-amber-600 mt-1">Minimum ({program.min_participants}) niet bereikt</p>
+            <p className="text-xs text-warning mt-1">Minimum ({program.min_participants}) niet bereikt</p>
           )}
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
