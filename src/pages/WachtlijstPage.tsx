@@ -61,7 +61,7 @@ export default function WachtlijstPage() {
   });
 
   const { data: programs = [] } = useQuery({
-    queryKey: ["active-programs"],
+    queryKey: programKeys.available,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("programs")

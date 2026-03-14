@@ -17,7 +17,7 @@ interface DuplicateWarningProps {
 
 export default function DuplicateWarning({ firstName, lastName, excludeId, clients: clientsProp, onNavigate }: DuplicateWarningProps) {
   const { data: fetchedClients } = useQuery({
-    queryKey: ["clients", "duplicate-check"],
+    queryKey: clientKeys.duplicateCheck,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")

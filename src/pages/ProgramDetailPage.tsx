@@ -600,7 +600,7 @@ function ProgramDocumentGenerator({ programId }: { programId: string }) {
   });
 
   const { data: trainers = [] } = useQuery({
-    queryKey: ["program_staff_for_docs", programId],
+    queryKey: programKeys.staffForDocs(programId),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("program_staff")

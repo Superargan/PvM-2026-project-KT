@@ -238,7 +238,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
                   if (!error) fixed++;
                 }
                 toast({ title: `${fixed} aanmelder(s) gebied toegewezen` });
-                queryClient.invalidateQueries({ queryKey: ["clients"] });
+                queryClient.invalidateQueries({ queryKey: clientKeys.all });
                 setFixingAreas(false);
               }}
             >

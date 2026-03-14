@@ -1172,7 +1172,7 @@ function DuplicateScan({ clients, isLoading, onNavigate, onEdit }: {
       const { error } = await supabase.from("clients").delete().eq("id", client.id);
       if (error) throw error;
       toast({ title: `${client.first_name} ${client.last_name} verwijderd` });
-      queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: clientKeys.all });
     } catch (err: any) {
       toast({ title: "Fout bij verwijderen", description: err.message, variant: "destructive" });
     } finally {

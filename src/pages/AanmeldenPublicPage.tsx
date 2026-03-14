@@ -46,7 +46,7 @@ export default function AanmeldenPublicPage() {
   });
 
   const { data: areas = [] } = useQuery({
-    queryKey: ["public-areas"],
+    queryKey: areaKeys.all,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("areas")
