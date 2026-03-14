@@ -561,8 +561,6 @@ export default function ScholenPage() {
                 if (hasTimeUpdate) timesSetCount++;
                 if (hasMunicipalityUpdate) municipalitySetCount++;
               }
-                if (hasTimeUpdate) timesSetCount++;
-              }
             };
             updatePromises.push(updateFn());
           }
