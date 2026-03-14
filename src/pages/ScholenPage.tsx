@@ -522,7 +522,7 @@ export default function ScholenPage() {
         existingMap.set(normalizeSchoolName(s.name), s);
       }
 
-      const newSchools: any[] = [];
+      const newSchools: Record<string, any>[] = [];
       const addedNames: string[] = [];
       const updatedNames: string[] = [];
       const updatePromises: Promise<any>[] = [];
