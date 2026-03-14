@@ -975,11 +975,10 @@ export default function PlanningPage() {
           ) : (
             <>
               <Button variant="ghost" size="sm" onClick={() => {
-                const dirty = groupComposerRef.current?.isDirty;
-                if (dirty) {
-                  if (!window.confirm("Je hebt niet-opgeslagen wijzigingen. Weet je zeker dat je terug wilt?")) {
-                    return;
-                  }
+                if (hasUnsavedWork) {
+                  setDirtyDialogAction("back");
+                  setDirtyDialogOpen(true);
+                  return;
                 }
                 setShowGroupComposer(false);
                 setActiveScenarioId(null);
