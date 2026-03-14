@@ -398,7 +398,7 @@ export default function ProgramDetailPage() {
                   <SelectValue placeholder="Selecteer een deelnemer" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover">
-                  {availableClients.map((c: any) => (
+                  {availableClients.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.first_name} {c.last_name}
                     </SelectItem>
