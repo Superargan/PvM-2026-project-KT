@@ -157,8 +157,8 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
       <Card className="border-dashed">
         <CardContent className="py-6 text-center">
           <FileText className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
-          <p className="text-sm text-muted-foreground">Nog geen opgeslagen scenario's.</p>
-          <p className="text-xs text-muted-foreground mt-1">Stel een groep samen en sla op als scenario.</p>
+          <p className="text-sm text-muted-foreground">Nog geen proforma planningen.</p>
+          <p className="text-xs text-muted-foreground mt-1">Stel een groep samen en sla op als proforma planning.</p>
         </CardContent>
       </Card>
     );
