@@ -226,7 +226,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                               {validationLabels[scenario.validation_status] ?? scenario.validation_status}
                             </Badge>
                             {isStale && (
-                              <Badge variant="outline" className="text-[9px] border-amber-300 text-amber-700 gap-0.5">
+                              <Badge variant="outline" className="text-[9px] border-warning-border text-warning-foreground gap-0.5">
                                 <AlertTriangle className="h-2.5 w-2.5" />
                                 &gt;24u
                               </Badge>
@@ -249,12 +249,12 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                     <div className="flex items-center gap-1">
                       <span className="text-sm text-foreground">{slots.length}</span>
                       {slots.some((s: any) => s.conversion_status === "gelukt") && (
-                        <Badge variant="outline" className="text-[9px] border-emerald-300 text-emerald-700">
+                        <Badge variant="outline" className="text-[9px] border-success-border text-success-foreground">
                           {slots.filter((s: any) => s.conversion_status === "gelukt").length}✓
                         </Badge>
                       )}
                       {slots.some((s: any) => s.conversion_status === "mislukt") && (
-                        <Badge variant="outline" className="text-[9px] border-red-300 text-red-700">
+                        <Badge variant="outline" className="text-[9px] border-destructive/30 text-destructive">
                           {slots.filter((s: any) => s.conversion_status === "mislukt").length}✗
                         </Badge>
                       )}
@@ -315,7 +315,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                                 </Badge>
                               </div>
                               {(sr.slotIssues ?? []).length > 0 && (
-                                <ul className="list-disc list-inside text-red-700 mb-1">
+                                <ul className="list-disc list-inside text-destructive mb-1">
                                   {sr.slotIssues.map((issue: string, j: number) => (
                                     <li key={j}>{issue}</li>
                                   ))}
@@ -325,7 +325,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                                 <div key={mr.clientId} className="flex items-start gap-1.5 ml-3 mt-0.5">
                                   <span className="text-muted-foreground">•</span>
                                   <span className="text-foreground font-medium">{mr.clientId.slice(0, 8)}…</span>
-                                  <span className={mr.status === "ongeldig" ? "text-red-700" : "text-amber-700"}>
+                                  <span className={mr.status === "ongeldig" ? "text-destructive" : "text-warning-foreground"}>
                                     {mr.issues.join("; ")}
                                   </span>
                                 </div>

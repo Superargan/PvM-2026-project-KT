@@ -1092,7 +1092,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                 {client.first_name} {client.last_name}
               </span>
               {isAssignedElsewhere && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 border-amber-300 text-amber-700 gap-0.5">
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 border-warning-border text-warning-foreground gap-0.5">
                   <AlertTriangle className="h-2.5 w-2.5" />
                   Al in {assignedGroupLabel}
                 </Badge>
@@ -1158,17 +1158,17 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
           <Users className="h-3 w-3 mr-1" />
           {waitlistClients.length} aanmelders
         </Badge>
-        <Badge variant="outline" className="border-blue-300 text-blue-700">
+        <Badge variant="outline" className="border-info-border text-info-foreground">
           {waitlistClients.filter((c: any) => c.intake_status === "intake_afgerond").length} intake afgerond
         </Badge>
-        <Badge variant="outline" className="border-orange-300 text-orange-700">
+        <Badge variant="outline" className="border-warning-border text-warning-foreground">
           {waitlistClients.filter((c: any) => c.intake_status === "wachtlijst").length} wachtlijst
         </Badge>
-        <Badge variant="outline" className="border-emerald-300 text-emerald-700">
+        <Badge variant="outline" className="border-success-border text-success-foreground">
           {groups.filter(g => g.clients.length >= 7).length} groep(en) gereed
         </Badge>
         {unassigned.length > 0 && (
-          <Badge variant="outline" className="border-amber-300 text-amber-700">
+          <Badge variant="outline" className="border-warning-border text-warning-foreground">
             {unassigned.length} zonder gebied/leeftijd
           </Badge>
         )}
@@ -1213,7 +1213,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                   </Badge>
                 )}
                 {isDirty && (
-                  <Badge variant="outline" className="text-[10px] border-amber-300 text-amber-700 gap-0.5">
+                  <Badge variant="outline" className="text-[10px] border-warning-border text-warning-foreground gap-0.5">
                     <AlertTriangle className="h-2.5 w-2.5" />
                     Wijzigingen niet opgeslagen
                   </Badge>
@@ -1329,12 +1329,12 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                       </Button>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      <span className="text-blue-700">{intakeClients.length} intake afgerond</span>
+                      <span className="text-info-foreground">{intakeClients.length} intake afgerond</span>
                       {wachtlijstClients_.length > 0 && (
-                        <span className="text-orange-700 ml-1">· {wachtlijstClients_.length} wachtlijst</span>
+                        <span className="text-warning-foreground ml-1">· {wachtlijstClients_.length} wachtlijst</span>
                       )}
                       {selectedReserves.length > 0 && (
-                        <span className="text-purple-700 ml-1">· {selectedReserves.length} uit reserve</span>
+                        <span className="text-role-foreground ml-1">· {selectedReserves.length} uit reserve</span>
                       )}
                     </p>
                   </div>
@@ -1358,7 +1358,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                   <div className="max-h-72 overflow-y-auto space-y-0.5 pr-1">
                     {intakeClients.length > 0 && (
                       <>
-                        <div className="text-[10px] font-semibold text-blue-700 uppercase tracking-wider px-2 pt-1 pb-0.5">
+                        <div className="text-[10px] font-semibold text-info-foreground uppercase tracking-wider px-2 pt-1 pb-0.5">
                           Intake afgerond ({intakeClients.length})
                         </div>
                         {intakeClients.map(cm => renderClientRow(cm, group, selected))}
@@ -1366,7 +1366,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                     )}
                     {wachtlijstClients_.length > 0 && (
                       <>
-                        <div className="text-[10px] font-semibold text-orange-700 uppercase tracking-wider px-2 pt-2 pb-0.5">
+                        <div className="text-[10px] font-semibold text-warning-foreground uppercase tracking-wider px-2 pt-2 pb-0.5">
                           Wachtlijst ({wachtlijstClients_.length})
                         </div>
                         {wachtlijstClients_.map(cm => renderClientRow(cm, group, selected))}
@@ -1374,7 +1374,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                     )}
                     {selectedReserves.length > 0 && (
                       <>
-                        <div className="text-[10px] font-semibold text-purple-700 uppercase tracking-wider px-2 pt-2 pb-0.5 flex items-center gap-1">
+                        <div className="text-[10px] font-semibold text-role-foreground uppercase tracking-wider px-2 pt-2 pb-0.5 flex items-center gap-1">
                           <Search className="h-2.5 w-2.5" />
                           Uit reservegebied ({selectedReserves.length})
                         </div>
@@ -1497,7 +1497,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                     )}
                   </div>
                   {linkedPrograms[key] && (
-                    <p className="text-[10px] text-blue-700 flex items-center gap-1">
+                    <p className="text-[10px] text-info-foreground flex items-center gap-1">
                       <Link2 className="h-3 w-3" />
                       Deelnemers worden bij omzetting <strong>toegevoegd</strong> aan dit programma
                     </p>
@@ -1611,7 +1611,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                                 </Button>
                               </div>
                               <div className="flex items-center gap-3 pl-6">
-                                <Badge variant="outline" className={`text-xs capitalize ${isThisSimulated ? "border-primary/30 text-primary" : idx === 0 ? "border-emerald-300 text-emerald-700" : "border-border text-foreground"}`}>
+                                <Badge variant="outline" className={`text-xs capitalize ${isThisSimulated ? "border-primary/30 text-primary" : idx === 0 ? "border-success-border text-success-foreground" : "border-border text-foreground"}`}>
                                   {suggestion.dayName}
                                 </Badge>
                                 <span className="text-sm font-medium text-foreground">
@@ -1622,7 +1622,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                                 </span>
                                 {suggestion.alternativesOnDay > 0 && (
                                   <button
-                                    className="text-xs text-blue-600 font-medium hover:underline cursor-pointer"
+                                    className="text-xs text-info font-medium hover:underline cursor-pointer"
                                     onClick={() => setExpandedAlternatives(prev => {
                                       const next = new Set(prev);
                                       if (next.has(altKey)) next.delete(altKey); else next.add(altKey);
@@ -1940,7 +1940,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                   </Button>
                 )}
                 {result.error && (
-                  <p className="text-xs text-red-700 mt-1">{result.error}</p>
+                  <p className="text-xs text-destructive mt-1">{result.error}</p>
                 )}
               </div>
             ))}

@@ -174,14 +174,14 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
             <Users className="h-3.5 w-3.5 mr-1.5" />
             {clients.length} totaal
           </Badge>
-          <Badge variant="outline" className="text-sm px-3 py-1 border-blue-300 text-blue-700">
+          <Badge variant="outline" className="text-sm px-3 py-1 border-info-border text-info-foreground">
             {totalIntake} intake afgerond
           </Badge>
-          <Badge variant="outline" className="text-sm px-3 py-1 border-orange-300 text-orange-700">
+          <Badge variant="outline" className="text-sm px-3 py-1 border-warning-border text-warning-foreground">
             {totalWachtlijst} wachtlijst
           </Badge>
           {matrix.noArea > 0 && (
-            <Badge variant="outline" className="text-sm px-3 py-1 border-amber-400 text-amber-700">
+            <Badge variant="outline" className="text-sm px-3 py-1 border-warning-border text-warning-foreground">
               {matrix.noArea} zonder gebied
             </Badge>
           )}
@@ -191,7 +191,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
             </Badge>
           )}
           {matrix.outsideRange > 0 && (
-            <Badge variant="outline" className="text-sm px-3 py-1 border-purple-400 text-purple-700">
+            <Badge variant="outline" className="text-sm px-3 py-1 border-role-border text-role-foreground">
               {matrix.outsideRange} buiten leeftijdsbereik (5-12)
             </Badge>
           )}
@@ -308,13 +308,13 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
                                 >
                                   <span className="flex items-center gap-1.5">
                                     {intakeCount > 0 && (
-                                      <span className="text-blue-700">{intakeCount}i</span>
+                                      <span className="text-info-foreground">{intakeCount}i</span>
                                     )}
                                     {intakeCount > 0 && wachtlijstCount > 0 && (
                                       <span className="text-muted-foreground">+</span>
                                     )}
                                     {wachtlijstCount > 0 && (
-                                      <span className="text-orange-700">{wachtlijstCount}w</span>
+                                      <span className="text-warning-foreground">{wachtlijstCount}w</span>
                                     )}
                                     {ready && <ArrowRight className="h-3 w-3" />}
                                   </span>
@@ -329,7 +329,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
                               <TooltipContent>
                                 <p className="font-medium">{intakeCount} intake afgerond, {wachtlijstCount} wachtlijst</p>
                                 {reserveTotal > 0 && <p>{reserveTotal} reserve/flexibel</p>}
-                                {ready && <p className="font-semibold text-emerald-600">Groep mogelijk!</p>}
+                                {ready && <p className="font-semibold text-success">Groep mogelijk!</p>}
                               </TooltipContent>
                             </Tooltip>
                           ) : (
@@ -369,9 +369,9 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
                   <td className="px-4 py-2 text-xs font-semibold uppercase text-muted-foreground">Totaal</td>
                   {ageCategories.map(age => (
                     <td key={age} className="px-4 py-2 text-center text-sm font-bold text-foreground">
-                      <span className="text-blue-700">{totals[age].intake}i</span>
+                      <span className="text-info-foreground">{totals[age].intake}i</span>
                       <span className="text-muted-foreground mx-0.5">+</span>
-                      <span className="text-orange-700">{totals[age].wachtlijst}w</span>
+                      <span className="text-warning-foreground">{totals[age].wachtlijst}w</span>
                       {totals[age].reserve > 0 && (
                         <span className="text-xs font-normal text-muted-foreground ml-1">+{totals[age].reserve}</span>
                       )}
