@@ -60,7 +60,7 @@ function parseCsv(text: string): Record<string, string>[] {
 }
 
 /** Read uploaded file as parsed rows (Excel or CSV). */
-async function readFileAsRows(file: File): Promise<Record<string, any>[]> {
+async function readFileAsRows(file: File): Promise<Record<string, string | number | null>[]> {
   const ext = file.name.split(".").pop()?.toLowerCase();
   if (ext === "csv") {
     // Try UTF-8 first, fall back to Windows-1252
