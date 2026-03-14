@@ -94,7 +94,7 @@ export default function AvailabilityManager({ type, fixedPersonId }: Availabilit
 
   // Fetch people
   const { data: trainers = [] } = useQuery({
-    queryKey: ["avail-trainers"],
+    queryKey: staffKeys.trainers,
     enabled: type === "trainer",
     queryFn: async () => {
       const { data, error } = await supabase
