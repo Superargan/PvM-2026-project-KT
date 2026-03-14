@@ -1137,6 +1137,9 @@ export default function ScholenPage() {
                           </button>
                         </div>
                       </div>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 mt-1" onClick={() => openEditSchool(school)} title="School bewerken">
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
                   </td>
                   <td className="hidden px-5 py-4 md:table-cell">
