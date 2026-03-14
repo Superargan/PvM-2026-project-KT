@@ -206,7 +206,7 @@ export default function MedewerkersPage() {
       setTrainerDialogOpen(false);
       setTrainerForm(emptyTrainerForm);
       setEditingTrainerId(null);
-      queryClient.invalidateQueries({ queryKey: ["trainers"] });
+      queryClient.invalidateQueries({ queryKey: staffKeys.trainers });
     },
     onError: (err: Error) => {
       toast.error(err.message);
