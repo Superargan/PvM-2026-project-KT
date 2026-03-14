@@ -544,6 +544,19 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
 
   const toggleClient = (g: GroupedClients, clientId: string) => {
     const key = getGroupKey(g);
+    const existingGroup = clientGroupAssignment.get(clientId);
+    if (existingGroup && existingGroup !== key) {
+      // Client is already selected in another group — block
+      const parts = existingGroup.split("__");
+      const areaName = areaMap[parts[0]] ?? "Onbekend";
+      const subLabel = parts[2] !== undefined ? ` ${SUB_GROUP_LABELS[parseInt(parts[2])] ?? ""}` : "";
+      toast({
+        title: "Cliënt al geselecteerd",
+        description: `Deze cliënt is al aangevinkt in groep ${areaName} ${parts[1]}${subLabel}. Verwijder eerst de selectie daar.`,
+        variant: "destructive",
+      });
+      return;
+    }
     const current = getSelectedForGroup(g);
     const next = new Set(current);
     if (next.has(clientId)) next.delete(clientId);
