@@ -85,7 +85,7 @@ export default function ProgramAttendance({
     },
   });
 
-  const sessionIds = sessions.map((s: any) => s.id);
+  const sessionIds = sessions.map((s) => s.id);
   const { data: attendance = [], isLoading: attLoading } = useQuery({
     queryKey: [...attendanceKeys.all, programId, sessionIds],
     enabled: open && sessionIds.length > 0,
