@@ -82,7 +82,7 @@ export default function ProgramDetailPage() {
 
   // Fetch schools for linking
   const { data: schools = [] } = useQuery({
-    queryKey: ["all-schools-for-program"],
+    queryKey: schoolKeys.dropdown,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("schools")
