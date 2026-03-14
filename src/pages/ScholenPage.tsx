@@ -1106,7 +1106,7 @@ export default function ScholenPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {sorted.length === 0 && (
-                <tr><td colSpan={8} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen scholen gevonden</td></tr>
+                <tr><td colSpan={10} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen scholen gevonden</td></tr>
               )}
               {sorted.map((school: any) => (
                 <tr key={school.id} className="transition-colors hover:bg-muted/30">
