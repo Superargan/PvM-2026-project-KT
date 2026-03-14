@@ -112,7 +112,7 @@ export default function TrainingslocatiesPage() {
       toast({ title: "Trainingslocatie toegevoegd" });
       setAddOpen(false);
       resetForm();
-      queryClient.invalidateQueries({ queryKey: ["training-locations"] });
+      queryClient.invalidateQueries({ queryKey: locationKeys.all });
     }
   };
 
