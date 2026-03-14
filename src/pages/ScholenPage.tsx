@@ -1922,7 +1922,24 @@ export default function ScholenPage() {
                 </div>
               )}
 
-              {importResult.added.length === 0 && importResult.updated.length === 0 && (
+              {/* Unmatched schools */}
+              {importResult.unmatched.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-card-foreground flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                    Niet gevonden in systeem ({importResult.unmatched.length})
+                  </p>
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 max-h-48 overflow-y-auto">
+                    <ul className="space-y-1">
+                      {importResult.unmatched.map((name, i) => (
+                        <li key={i} className="text-sm text-card-foreground">{name}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {importResult.added.length === 0 && importResult.updated.length === 0 && importResult.unmatched.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">Geen wijzigingen — alle scholen bestonden al.</p>
               )}
             </div>
