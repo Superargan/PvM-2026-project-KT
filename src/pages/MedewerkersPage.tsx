@@ -149,7 +149,7 @@ export default function MedewerkersPage() {
 
   // Fetch generated docs for selected trainer
   const { data: trainerDocs = [] } = useQuery({
-    queryKey: ["trainer-generated-docs", docTrainerId],
+    queryKey: staffKeys.trainerDocs(docTrainerId),
     queryFn: async () => {
       if (!docTrainerId) return [];
       const { data } = await supabase
