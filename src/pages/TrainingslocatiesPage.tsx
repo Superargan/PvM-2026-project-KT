@@ -211,7 +211,7 @@ export default function TrainingslocatiesPage() {
         <Label>Plaats</Label>
         <Input
           name="city"
-          defaultValue={isEdit ? form.city : "Rotterdam"}
+          defaultValue={isEdit ? form.city : DEFAULT_CITY}
           onChange={isEdit ? (e) => setForm({ ...form, city: e.target.value }) : undefined}
         />
       </div>

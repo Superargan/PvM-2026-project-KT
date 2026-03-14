@@ -17,7 +17,13 @@ import {
   findAreaMatch,
   findReferrerMatch,
   type EntityRef,
-} from "@/lib/importUtils";
+  parseAvailabilityCell,
+  generateDatesForDay,
+  splitName,
+  normalizeGender,
+  isNonPersonReferralSource,
+  detectDateFormat,
+} from "@/lib/ImportEngine";
 
 interface ParsedRow {
   [key: string]: any;
