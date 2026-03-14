@@ -249,14 +249,14 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-1">
                       <span className="text-sm text-foreground">{slots.length}</span>
-                      {slots.some((s: any) => s.conversion_status === "gelukt") && (
+                      {slots.some((s) => s.conversion_status === "gelukt") && (
                         <Badge variant="outline" className="text-[9px] border-success-border text-success-foreground">
-                          {slots.filter((s: any) => s.conversion_status === "gelukt").length}✓
+                          {slots.filter((s) => s.conversion_status === "gelukt").length}✓
                         </Badge>
                       )}
-                      {slots.some((s: any) => s.conversion_status === "mislukt") && (
+                      {slots.some((s) => s.conversion_status === "mislukt") && (
                         <Badge variant="outline" className="text-[9px] border-destructive/30 text-destructive">
-                          {slots.filter((s: any) => s.conversion_status === "mislukt").length}✗
+                          {slots.filter((s) => s.conversion_status === "mislukt").length}✗
                         </Badge>
                       )}
                     </div>
