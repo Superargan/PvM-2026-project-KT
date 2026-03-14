@@ -229,7 +229,7 @@ export default function InvoiceManager({ staffId, staffName }: { staffId?: strin
               <Select value={selectedProgramId} onValueChange={setSelectedProgramId}>
                 <SelectTrigger><SelectValue placeholder="Kies training" /></SelectTrigger>
                 <SelectContent className="bg-popover">
-                  {trainerPrograms.map((ps: any) => (
+                  {trainerPrograms.map((ps) => (
                     <SelectItem key={ps.program_id} value={ps.program_id}>
                       {ps.programs?.name ?? "Programma"}
                     </SelectItem>

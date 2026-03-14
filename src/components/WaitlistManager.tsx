@@ -88,7 +88,7 @@ export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => 
       toast.success("Deelnemer toegewezen aan programma");
       qc.invalidateQueries({ queryKey: clientKeys.all });
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: Error) => toast.error(err.message),
   });
 
   const [assigningClient, setAssigningClient] = useState<string | null>(null);

@@ -776,13 +776,13 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
 
   const rows = useMemo(() => {
     return programs
-      .filter((p: any) => statusFilter === "alle" ? true : (p.status ?? "te_plannen") === statusFilter)
-      .map((prog: any) => {
+      .filter((p) => statusFilter === "alle" ? true : (p.status ?? "te_plannen") === statusFilter)
+      .map((prog) => {
         const trainers = programStaff
-          .filter((ps: any) => ps.program_id === prog.id && ps.role !== "invaller")
-          .map((ps: any) => {
-            const name = (ps.staff as any)?.name ?? "Onbekend";
-            const tradeName = (ps.staff as any)?.trade_name ?? "";
+          .filter((ps) => ps.program_id === prog.id && ps.role !== "invaller")
+          .map((ps) => {
+            const name = (ps.staff as { name?: string | null; trade_name?: string | null } | null)?.name ?? "Onbekend";
+            const tradeName = (ps.staff as { name?: string | null; trade_name?: string | null } | null)?.trade_name ?? "";
             const exempt = checkExempt(name, tradeName);
             return {
               staffId: ps.staff_id, name, tradeName, role: ps.role ?? "trainer", exempt,
@@ -793,7 +793,7 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
             };
           });
         return {
-          id: prog.id, name: prog.name, trainingNumber: (prog as any).training_number ?? "",
+          id: prog.id, name: prog.name, trainingNumber: prog.training_number ?? "",
           status: prog.status ?? "te_plannen", area: areaMap.get(prog.area_id) ?? "", trainers,
         };
       })
