@@ -542,8 +542,9 @@ export default function ScholenPage() {
           const hasTimeUpdate = s.school_start_time && s.school_end_time;
           const hasScheduleTypeUpdate = s.schedule_type && !existing.schedule_type;
           const hasSourceUpdate = s.source && !existing.source;
+          const hasMunicipalityUpdate = s.municipality && !existing.municipality;
 
-          if (hasTimeUpdate || hasScheduleTypeUpdate || hasSourceUpdate) {
+          if (hasTimeUpdate || hasScheduleTypeUpdate || hasSourceUpdate || hasMunicipalityUpdate) {
             const updateFn = async () => {
               const updatePayload: Record<string, any> = {};
               if (hasTimeUpdate) {
