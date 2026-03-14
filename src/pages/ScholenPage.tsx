@@ -1063,7 +1063,7 @@ export default function ScholenPage() {
     }
   };
 
-  const handleDocDownload = async (doc: any) => {
+  const handleDocDownload = async (doc: SchoolDocumentRow) => {
     const { data } = await supabase.storage.from("school-documents").createSignedUrl(doc.file_path, 60);
     if (data?.signedUrl) window.open(data.signedUrl, "_blank");
   };
