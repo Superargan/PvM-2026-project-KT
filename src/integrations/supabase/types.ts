@@ -1291,6 +1291,7 @@ export type Database = {
           id: string
           last_validated_at: string | null
           name: string
+          proforma_number: string | null
           status: string
           updated_at: string
           updated_by: string | null
@@ -1304,6 +1305,7 @@ export type Database = {
           id?: string
           last_validated_at?: string | null
           name: string
+          proforma_number?: string | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -1317,6 +1319,7 @@ export type Database = {
           id?: string
           last_validated_at?: string | null
           name?: string
+          proforma_number?: string | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -1524,6 +1527,7 @@ export type Database = {
         Args: { p_scenario_id: string }
         Returns: Json
       }
+      generate_proforma_number: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

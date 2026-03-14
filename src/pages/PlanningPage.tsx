@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval, parseISO, startOfMonth, endOfMonth, addMonths, subMonths, getDay } from "date-fns";
@@ -191,10 +191,33 @@ export default function PlanningPage() {
   const [warningFilter, setWarningFilter] = useState<string | null>(null);
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
   const groupComposerRef = useRef<GroupComposerHandle>(null);
+  const [hasUnsavedWork, setHasUnsavedWork] = useState(false);
+  const [pendingTabSwitch, setPendingTabSwitch] = useState<string | null>(null);
+  const [dirtyDialogOpen, setDirtyDialogOpen] = useState(false);
+  const [dirtyDialogAction, setDirtyDialogAction] = useState<"tab" | "back">("tab");
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { session } = useAuth();
+
+  // Sync parent-level dirty state from ref
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const current = groupComposerRef.current?.hasUnsavedWork ?? false;
+      setHasUnsavedWork(current);
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
+
+  // beforeunload guard
+  useEffect(() => {
+    if (!hasUnsavedWork || !showGroupComposer) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [hasUnsavedWork, showGroupComposer]);
 
   const dateRange = useMemo(() => {
     if (viewMode === "week") {
@@ -685,7 +708,15 @@ export default function PlanningPage() {
         )}
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs value={activeTab} onValueChange={(val) => {
+        if (hasUnsavedWork && showGroupComposer && val !== activeTab) {
+          setPendingTabSwitch(val);
+          setDirtyDialogAction("tab");
+          setDirtyDialogOpen(true);
+          return;
+        }
+        setActiveTab(val);
+      }} className="space-y-4">
         <TabsList>
           <TabsTrigger value="groepen">
             <Users className="h-4 w-4 mr-1.5" />
@@ -944,11 +975,10 @@ export default function PlanningPage() {
           ) : (
             <>
               <Button variant="ghost" size="sm" onClick={() => {
-                const dirty = groupComposerRef.current?.isDirty;
-                if (dirty) {
-                  if (!window.confirm("Je hebt niet-opgeslagen wijzigingen. Weet je zeker dat je terug wilt?")) {
-                    return;
-                  }
+                if (hasUnsavedWork) {
+                  setDirtyDialogAction("back");
+                  setDirtyDialogOpen(true);
+                  return;
                 }
                 setShowGroupComposer(false);
                 setActiveScenarioId(null);
@@ -1310,6 +1340,49 @@ export default function PlanningPage() {
       </Dialog>
 
       <PlanningImport open={importOpen} onOpenChange={setImportOpen} />
+
+      {/* Dirty-state 3-choice dialog */}
+      <Dialog open={dirtyDialogOpen} onOpenChange={(open) => { if (!open) { setDirtyDialogOpen(false); setPendingTabSwitch(null); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Niet-opgeslagen wijzigingen</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Er zijn niet-opgeslagen wijzigingen in de groepssamenstelling. Wat wil je doen?
+          </p>
+          <div className="flex flex-col gap-2">
+            <Button onClick={async () => {
+              const saved = await groupComposerRef.current?.triggerSave();
+              if (saved) {
+                setDirtyDialogOpen(false);
+                if (dirtyDialogAction === "tab" && pendingTabSwitch) {
+                  setActiveTab(pendingTabSwitch);
+                  setPendingTabSwitch(null);
+                } else {
+                  setShowGroupComposer(false);
+                  setActiveScenarioId(null);
+                }
+              }
+            }} className="w-full">
+              Opslaan als proforma planning
+            </Button>
+            <Button variant="outline" onClick={() => {
+              setDirtyDialogOpen(false);
+              if (dirtyDialogAction === "tab" && pendingTabSwitch) {
+                setActiveTab(pendingTabSwitch);
+                setPendingTabSwitch(null);
+              }
+              setShowGroupComposer(false);
+              setActiveScenarioId(null);
+            }} className="w-full">
+              Verwerpen
+            </Button>
+            <Button variant="ghost" onClick={() => { setDirtyDialogOpen(false); setPendingTabSwitch(null); }} className="w-full">
+              Annuleren
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

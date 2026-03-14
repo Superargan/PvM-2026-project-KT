@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -58,6 +59,7 @@ export interface GroupComposerHandle {
   triggerSave: () => Promise<boolean>;
   hasActiveSimulation: boolean;
   isDirty: boolean;
+  hasUnsavedWork: boolean;
 }
 
 interface GroupComposerProps {
@@ -137,6 +139,9 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
   const [convertResultDialog, setConvertResultDialog] = useState<any[] | null>(null);
   const [lastSavedSnapshot, setLastSavedSnapshot] = useState<string | null>(null);
   const [loadedScenarioName, setLoadedScenarioName] = useState<string | null>(null);
+  const [loadedProformaNumber, setLoadedProformaNumber] = useState<string | null>(null);
+  const [confirmCreateOpen, setConfirmCreateOpen] = useState(false);
+  const [confirmCreateGroup, setConfirmCreateGroup] = useState<GroupedClients | null>(null);
 
   // Fetch waitlist clients
   const { data: waitlistClients = [] } = useQuery({
@@ -283,6 +288,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     return current !== lastSavedSnapshot;
   }, [activeScenarioId, getCurrentSnapshot, lastSavedSnapshot, simulatedGroups.size]);
 
+
   // Load scenario from DB
   useEffect(() => {
     if (!activeScenarioId) return;
@@ -291,7 +297,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
       const { data: scenario, error } = await supabase
         .from("simulation_scenarios")
         .select(`
-          id, name, description, status,
+          id, name, description, status, proforma_number,
           simulation_scenario_slots (
             id, area_id, age_category, label, mode, proposal_idx,
             day_name, start_time, end_time, confirmed, notes, linked_program_id,
@@ -307,6 +313,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
       }
 
       setLoadedScenarioName(scenario.name);
+      setLoadedProformaNumber((scenario as any).proforma_number ?? null);
       setScenarioName(scenario.name);
       setScenarioDescription(scenario.description ?? "");
       setScenarioStatus(scenario.status);
@@ -365,6 +372,23 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
   }, [simulatedGroups, selectedClients]);
 
   const isSimulating = simulatedGroups.size > 0;
+
+  // Broad guard: blocks ALL definitive writes from non-definitive work states
+  const canCreateDefinitiveGroup = useMemo(() => {
+    if (isSimulating) return false; // active simulation
+    if (isDirty) return false; // unsaved changes
+    if (simulatedGroups.size > 0) return false; // non-saved proforma data
+    if (activeScenarioId !== null) return false; // working from proforma context
+    return true;
+  }, [isSimulating, isDirty, simulatedGroups.size, activeScenarioId]);
+
+  const getBlockReason = (): string => {
+    if (isSimulating) return "Actieve simulatie — sla eerst op als proforma planning";
+    if (isDirty) return "Onopgeslagen wijzigingen — sla eerst op";
+    if (simulatedGroups.size > 0) return "Niet-opgeslagen proforma-data aanwezig";
+    if (activeScenarioId !== null) return "Werkend vanuit proforma — gebruik 'Omzetten naar definitieve planning'";
+    return "";
+  };
 
   // Group clients by area + age category
   const groups: GroupedClients[] = useMemo(() => {
@@ -680,7 +704,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
       if (error) throw error;
 
       const savedId = data as string;
-      toast({ title: activeScenarioId ? "Scenario bijgewerkt" : "Scenario opgeslagen" });
+      toast({ title: activeScenarioId ? "Proforma planning bijgewerkt" : "Proforma planning opgeslagen" });
       queryClient.invalidateQueries({ queryKey: scenarioKeys.all });
 
       // Update snapshot
@@ -697,7 +721,9 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     }
   };
 
-  // Expose save + active simulation state to parent via ref (T07-T10)
+  const hasUnsavedWork = simulatedGroups.size > 0 || isDirty;
+
+  // Expose save + active simulation state to parent via ref
   useImperativeHandle(ref, () => ({
     triggerSave: async () => {
       if (scenarioName.trim()) {
@@ -708,7 +734,8 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     },
     hasActiveSimulation: isSimulating,
     isDirty,
-  }), [isSimulating, scenarioName, isDirty]);
+    hasUnsavedWork,
+  }), [isSimulating, scenarioName, isDirty, hasUnsavedWork]);
 
   // === SCENARIO CONVERT ===
   const handleConvert = async () => {
@@ -890,6 +917,23 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     });
   };
 
+  // Opens confirmation dialog before definitive group creation
+  const requestCreateGroup = (g: GroupedClients) => {
+    if (!canCreateDefinitiveGroup) {
+      toast({ title: "Blokkade", description: getBlockReason(), variant: "destructive" });
+      return;
+    }
+    const key = getGroupKey(g);
+    const selected = getSelectedForGroup(g);
+    if (selected.size === 0) {
+      toast({ title: "Selecteer minimaal 1 aanmelder", variant: "destructive" });
+      return;
+    }
+    setConfirmCreateGroup(g);
+    setConfirmCreateOpen(true);
+  };
+
+  // DEFINITIEVE WRITE — creates program, program_clients, sets clients.intake_status = 'actief'
   const createGroup = async (g: GroupedClients) => {
     const key = getGroupKey(g);
     const selected = getSelectedForGroup(g);
@@ -945,7 +989,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
         .in("id", Array.from(selected));
       if (updateErr) throw updateErr;
 
-      toast({ title: "Groep aangemaakt", description: `${programName} met ${selected.size} aanmelders` });
+      toast({ title: "Groep definitief aangemaakt", description: `${programName} met ${selected.size} deelnemers` });
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       navigate(`/programmas/${program.id}`);
     } catch (err: any) {
@@ -1035,7 +1079,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
         )}
       </div>
 
-      {/* Simulation / scenario banner */}
+      {/* Simulation / proforma banner */}
       {isSimulating && (() => {
         const affectedAreas = new Set<string>();
         simulatedGroups.forEach((val, simKey) => {
@@ -1063,11 +1107,16 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                 <FlaskConical className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium text-foreground">
                   {loadedScenarioName
-                    ? `Scenario: ${loadedScenarioName}`
-                    : "Losse simulatie"
+                    ? `Proforma planning: ${loadedScenarioName}`
+                    : "Simulatie (niet opgeslagen)"
                   }
                   {" — "}{simulatedGroups.size} voorstel(len), {simulatedClientIds.size} deelnemers
                 </span>
+                {loadedProformaNumber && (
+                  <Badge variant="outline" className="text-[10px] border-primary/40 text-primary font-mono">
+                    {loadedProformaNumber}
+                  </Badge>
+                )}
                 {isDirty && (
                   <Badge variant="outline" className="text-[10px] border-amber-300 text-amber-700 gap-0.5">
                     <AlertTriangle className="h-2.5 w-2.5" />
@@ -1077,7 +1126,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
               </div>
               <div className="flex items-center gap-1.5">
                 <Button variant="outline" size="sm" onClick={() => setSaveDialogOpen(true)} className="gap-1.5">
-                  <Save className="h-3 w-3" /> Opslaan
+                  <Save className="h-3 w-3" /> Opslaan als proforma
                 </Button>
                 {activeScenarioId && (
                   <>
@@ -1095,7 +1144,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                               disabled={isDirty || converting}
                               className="gap-1.5"
                             >
-                              <Upload className="h-3 w-3" /> {converting ? "Omzetten..." : "Omzetten naar planning"}
+                              <Upload className="h-3 w-3" /> {converting ? "Omzetten..." : "Omzetten naar definitieve planning"}
                             </Button>
                           </span>
                         </TooltipTrigger>
@@ -1529,13 +1578,26 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                   );
                 })()}
 
-                <Button
-                  className="w-full"
-                  onClick={() => createGroup(group)}
-                  disabled={isCreating || selected.size === 0}
-                >
-                  {isCreating ? "Aanmaken..." : `Groep aanmaken (${selected.size})`}
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="w-full">
+                        <Button
+                          className="w-full"
+                          onClick={() => requestCreateGroup(group)}
+                          disabled={isCreating || selected.size === 0 || !canCreateDefinitiveGroup}
+                        >
+                          {isCreating ? "Aanmaken..." : `Groep definitief aanmaken (${selected.size})`}
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    {!canCreateDefinitiveGroup && (
+                      <TooltipContent>
+                        <p className="text-xs">{getBlockReason()}</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
               </CardContent>
             </Card>
           );
@@ -1656,13 +1718,45 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
         </DialogContent>
       </Dialog>
 
-      {/* Save scenario dialog */}
+      {/* Definitive create confirmation dialog */}
+      <AlertDialog open={confirmCreateOpen} onOpenChange={setConfirmCreateOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Definitief programma aanmaken?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Dit maakt direct een <strong>definitief programma</strong> aan.</p>
+              <ul className="list-disc list-inside text-sm space-y-1">
+                <li>Geselecteerde deelnemers worden gekoppeld en op <strong>'actief'</strong> gezet</li>
+                <li>Dit beïnvloedt direct het deelnemersoverzicht, export en rapportage</li>
+                <li>Deze actie kan <strong>niet ongedaan</strong> worden gemaakt</li>
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setConfirmCreateOpen(false); setConfirmCreateGroup(null); }}>
+              Annuleren
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmCreateOpen(false);
+                if (confirmCreateGroup) createGroup(confirmCreateGroup);
+                setConfirmCreateGroup(null);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Definitief aanmaken
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Save proforma dialog */}
       <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{activeScenarioId ? "Scenario bijwerken" : "Opslaan als scenario"}</DialogTitle>
+            <DialogTitle>{activeScenarioId ? "Proforma planning bijwerken" : "Opslaan als proforma planning"}</DialogTitle>
             <DialogDescription>
-              Geef het scenario een naam en optioneel een beschrijving.
+              Geef de proforma planning een naam en optioneel een beschrijving.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -1688,10 +1782,10 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
               <Select value={scenarioStatus} onValueChange={setScenarioStatus}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent className="bg-popover">
-                  <SelectItem value="concept">Concept</SelectItem>
-                  <SelectItem value="vastgezet">Vastgezet</SelectItem>
-                  <SelectItem value="in_uitwerking">In uitwerking</SelectItem>
-                  <SelectItem value="gecontroleerd">Gecontroleerd</SelectItem>
+                  <SelectItem value="concept">Proforma concept</SelectItem>
+                  <SelectItem value="vastgezet">Proforma vastgezet</SelectItem>
+                  <SelectItem value="in_uitwerking">Proforma in uitwerking</SelectItem>
+                  <SelectItem value="gecontroleerd">Proforma gecontroleerd</SelectItem>
                 </SelectContent>
               </Select>
             </div>

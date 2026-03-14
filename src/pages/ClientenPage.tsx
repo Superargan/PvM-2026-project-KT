@@ -36,7 +36,7 @@ export default function ClientenPage() {
     queryFn: async () => {
       let query = supabase
         .from("clients")
-        .select("*, neighborhoods:neighborhood_id(id, area_id, areas(id, name)), schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name)))")
+        .select("*, neighborhoods:neighborhood_id(id, area_id, areas(id, name)), schools(id, name, neighborhood_id, neighborhoods(id, area_id, areas(id, name))), program_clients(program_id, programs(id, name, training_number, status, archived))")
         .eq("archived", false)
         .in("intake_status", ["actief", "training_afgerond", "tussentijds_gestopt"])
         .order("created_at", { ascending: false });
@@ -106,21 +106,35 @@ export default function ClientenPage() {
         <div className="flex gap-2">
           {(["csv", "xlsx"] as const).map((fmt) => (
             <Button key={fmt} variant="outline" size="sm" onClick={() => {
-              const rows = filteredClients.map((c: any) => ({
-                voornaam: c.first_name,
-                achternaam: c.last_name,
-                leeftijd: calculateAge(c.date_of_birth) ?? "",
-                school: c.schools?.name ?? "",
-                ouder: c.guardian_name ?? "",
-                telefoon: c.guardian_phone ?? "",
-                email: c.guardian_email ?? "",
-                status: statusLabels[c.intake_status ?? "nieuw"] ?? c.intake_status ?? "",
-              }));
+              const rows = filteredClients.map((c: any) => {
+                const programs = (c as any).program_clients
+                  ?.map((pc: any) => pc.programs)
+                  .filter((p: any) => p && !p.archived)
+                  .sort((a: any, b: any) => {
+                    const order: Record<string, number> = { gepland: 0, gestart: 1, afgerond: 2 };
+                    return (order[a.status] ?? 3) - (order[b.status] ?? 3);
+                  }) ?? [];
+                const trainingStr = programs.map((p: any) => 
+                  p.training_number ? `${p.training_number} - ${p.name}` : p.name
+                ).join(", ");
+                return {
+                  voornaam: c.first_name,
+                  achternaam: c.last_name,
+                  leeftijd: calculateAge(c.date_of_birth) ?? "",
+                  school: c.schools?.name ?? "",
+                  training: trainingStr,
+                  ouder: c.guardian_name ?? "",
+                  telefoon: c.guardian_phone ?? "",
+                  email: c.guardian_email ?? "",
+                  status: statusLabels[c.intake_status ?? "nieuw"] ?? c.intake_status ?? "",
+                };
+              });
               downloadExport(`deelnemers.${fmt}`, [
                 { key: "voornaam", label: "Voornaam" },
                 { key: "achternaam", label: "Achternaam" },
                 { key: "leeftijd", label: "Leeftijd" },
                 { key: "school", label: "School" },
+                { key: "training", label: "Training" },
                 { key: "ouder", label: "Ouder/Verzorger" },
                 { key: "telefoon", label: "Telefoon" },
                 { key: "email", label: "E-mail" },
@@ -177,6 +191,7 @@ export default function ClientenPage() {
         <ClientListTable
           clients={filteredClients}
           areas={areas}
+          showTraining
           onNavigate={(id) => navigate(`/clienten/${id}`)}
           emptyMessage="Geen deelnemers gevonden"
         />

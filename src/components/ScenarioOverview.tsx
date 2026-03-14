@@ -29,12 +29,12 @@ const statusColors: Record<string, string> = {
 };
 
 const statusLabels: Record<string, string> = {
-  concept: "Concept",
-  vastgezet: "Vastgezet",
-  in_uitwerking: "In uitwerking",
-  gecontroleerd: "Gecontroleerd",
+  concept: "Proforma concept",
+  vastgezet: "Proforma vastgezet",
+  in_uitwerking: "Proforma in uitwerking",
+  gecontroleerd: "Proforma gecontroleerd",
   gedeeltelijk_omgezet: "Gedeeltelijk omgezet",
-  definitief: "Definitief",
+  definitief: "Definitief (omgezet)",
 };
 
 const validationColors: Record<string, string> = {
@@ -77,7 +77,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
       const { data, error } = await supabase
         .from("simulation_scenarios")
         .select(`
-          id, name, description, status, validation_status, validation_details, last_validated_at, created_at, updated_at,
+          id, name, description, status, proforma_number, validation_status, validation_details, last_validated_at, created_at, updated_at,
           simulation_scenario_slots (
             id, conversion_status, converted_program_id, conversion_error, label, confirmed
           )
@@ -157,8 +157,8 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
       <Card className="border-dashed">
         <CardContent className="py-6 text-center">
           <FileText className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
-          <p className="text-sm text-muted-foreground">Nog geen opgeslagen scenario's.</p>
-          <p className="text-xs text-muted-foreground mt-1">Stel een groep samen en sla op als scenario.</p>
+          <p className="text-sm text-muted-foreground">Nog geen proforma planningen.</p>
+          <p className="text-xs text-muted-foreground mt-1">Stel een groep samen en sla op als proforma planning.</p>
         </CardContent>
       </Card>
     );
@@ -169,7 +169,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
           <FileText className="h-4 w-4" />
-          Opgeslagen scenario's ({scenarios.length})
+          Proforma planningen ({scenarios.length})
         </h3>
       </div>
 
@@ -178,6 +178,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
           <thead>
             <tr className="border-b border-border bg-muted/50">
               <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Naam</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">PF-nr.</th>
               <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
               <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Validatie</th>
               <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Slots</th>
@@ -201,6 +202,9 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                     {scenario.description && (
                       <p className="text-xs text-muted-foreground truncate max-w-xs">{scenario.description}</p>
                     )}
+                  </td>
+                  <td className="px-3 py-2">
+                    <span className="text-xs font-mono text-muted-foreground">{(scenario as any).proforma_number ?? "—"}</span>
                   </td>
                   <td className="px-3 py-2">
                     <Badge variant="outline" className={`text-[10px] ${statusColors[scenario.status] ?? ""}`}>
@@ -356,7 +360,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
         </DialogContent>
       </Dialog>
 
-      {/* Workstate protection dialog (T07-T10) */}
+      {/* Workstate protection dialog */}
       <Dialog open={workstateDialogScenarioId !== null} onOpenChange={(open) => { if (!open) setWorkstateDialogScenarioId(null); }}>
         <DialogContent>
           <DialogHeader>
@@ -367,10 +371,10 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
           </DialogHeader>
           <div className="flex flex-col gap-2">
             <Button onClick={() => handleWorkstateChoice("save")} className="w-full">
-              Opslaan als scenario en doorgaan
+              Opslaan als proforma planning en doorgaan
             </Button>
             <Button variant="outline" onClick={() => handleWorkstateChoice("discard")} className="w-full">
-              Verwerpen en scenario laden
+              Verwerpen en proforma laden
             </Button>
             <Button variant="ghost" onClick={() => handleWorkstateChoice("cancel")} className="w-full">
               Annuleren
