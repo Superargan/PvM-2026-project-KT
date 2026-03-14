@@ -191,10 +191,33 @@ export default function PlanningPage() {
   const [warningFilter, setWarningFilter] = useState<string | null>(null);
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
   const groupComposerRef = useRef<GroupComposerHandle>(null);
+  const [hasUnsavedWork, setHasUnsavedWork] = useState(false);
+  const [pendingTabSwitch, setPendingTabSwitch] = useState<string | null>(null);
+  const [dirtyDialogOpen, setDirtyDialogOpen] = useState(false);
+  const [dirtyDialogAction, setDirtyDialogAction] = useState<"tab" | "back">("tab");
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { session } = useAuth();
+
+  // Sync parent-level dirty state from ref
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const current = groupComposerRef.current?.hasUnsavedWork ?? false;
+      setHasUnsavedWork(current);
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
+
+  // beforeunload guard
+  useEffect(() => {
+    if (!hasUnsavedWork || !showGroupComposer) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [hasUnsavedWork, showGroupComposer]);
 
   const dateRange = useMemo(() => {
     if (viewMode === "week") {
