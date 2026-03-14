@@ -75,7 +75,7 @@ export default function ClientDetailPage() {
   const { data: schools = [] } = useQuery({
     queryKey: schoolKeys.dropdown,
     queryFn: async () => {
-      const { data } = await supabase.from("schools").select("id, name, neighborhood_id, school_start_time, school_end_time, neighborhoods(area_id)").order("name");
+      const { data } = await supabase.from("schools").select("id, name, neighborhood_id, school_start_time, school_end_time, municipality, neighborhoods(area_id)").order("name");
       return data ?? [];
     },
   });
