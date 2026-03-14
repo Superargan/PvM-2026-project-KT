@@ -943,6 +943,10 @@ export default function ScholenPage() {
             </DialogContent>
           </Dialog>
 
+          <Button variant="outline" onClick={() => setDuplicateDialogOpen(true)}>
+            <AlertTriangle className="h-4 w-4" /> Check Duplicaten
+          </Button>
+
           {/* School upload dialog */}
           <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
             <DialogTrigger asChild>
