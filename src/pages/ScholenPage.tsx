@@ -663,7 +663,7 @@ export default function ScholenPage() {
     }
 
     // Exact match
-    const exact = (schools as any[]).find((s) => s.name.toLowerCase().trim() === norm);
+    const exact = schools.find((s) => s.name.toLowerCase().trim() === norm);
     if (exact) return { id: exact.id, name: exact.name };
 
     // Contains: school name contains search or search contains school name
