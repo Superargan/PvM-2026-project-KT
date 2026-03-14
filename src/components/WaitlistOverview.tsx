@@ -62,14 +62,14 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
 
   // Build matrix: area × age → { intake: client[], wachtlijst: client[], reserveIntake: client[], reserveWachtlijst: client[] }
   const matrix = useMemo(() => {
-    const m: Record<string, Record<string, { intake: any[]; wachtlijst: any[]; reserveIntake: any[]; reserveWachtlijst: any[] }>> = {};
+    const m: Record<string, Record<string, { intake: typeof clients; wachtlijst: typeof clients; reserveIntake: typeof clients; reserveWachtlijst: typeof clients }>> = {};
     let noArea = 0;
     let noDob = 0;
     let outsideRange = 0;
     let estimatedDob = 0;
-    const estimatedDobClients: any[] = [];
+    const estimatedDobClients: typeof clients = [];
 
-    areas.forEach((a: any) => {
+    areas.forEach((a) => {
       m[a.id] = {
         "4-7 jaar": { intake: [], wachtlijst: [], reserveIntake: [], reserveWachtlijst: [] },
         "8-12 jaar": { intake: [], wachtlijst: [], reserveIntake: [], reserveWachtlijst: [] },
