@@ -636,7 +636,7 @@ export default function ClientDetailPage() {
                 </div>
                 <div>
                   <span className="text-muted-foreground">Flexibel:</span>{" "}
-                  <span className="font-medium text-card-foreground">{(client as any).all_areas_flexible ? "Ja (alle gebieden)" : "Nee"}</span>
+                  <span className="font-medium text-card-foreground">{client.all_areas_flexible ? "Ja (alle gebieden)" : "Nee"}</span>
                 </div>
                 {areaPrefs.length > 0 && (
                   <div className="col-span-2">
