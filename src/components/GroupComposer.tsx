@@ -916,6 +916,23 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     });
   };
 
+  // Opens confirmation dialog before definitive group creation
+  const requestCreateGroup = (g: GroupedClients) => {
+    if (!canCreateDefinitiveGroup) {
+      toast({ title: "Blokkade", description: getBlockReason(), variant: "destructive" });
+      return;
+    }
+    const key = getGroupKey(g);
+    const selected = getSelectedForGroup(g);
+    if (selected.size === 0) {
+      toast({ title: "Selecteer minimaal 1 aanmelder", variant: "destructive" });
+      return;
+    }
+    setConfirmCreateGroup(g);
+    setConfirmCreateOpen(true);
+  };
+
+  // DEFINITIEVE WRITE — creates program, program_clients, sets clients.intake_status = 'actief'
   const createGroup = async (g: GroupedClients) => {
     const key = getGroupKey(g);
     const selected = getSelectedForGroup(g);
@@ -971,7 +988,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
         .in("id", Array.from(selected));
       if (updateErr) throw updateErr;
 
-      toast({ title: "Groep aangemaakt", description: `${programName} met ${selected.size} aanmelders` });
+      toast({ title: "Groep definitief aangemaakt", description: `${programName} met ${selected.size} deelnemers` });
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       navigate(`/programmas/${program.id}`);
     } catch (err: any) {
