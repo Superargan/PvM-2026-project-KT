@@ -18,6 +18,7 @@ import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { getAreaFromAddress, statusLabels, statusStyles } from "@/lib/DomainResolver";
 import { downloadExport, ExportColumn } from "@/lib/csvExport";
+import type { SchoolListRow, SchoolEditForm, SchoolDocumentRow } from "@/lib/queryShapes";
 
 // ── CSV / Outlook helpers ──────────────────────────────────────────────
 
@@ -148,12 +149,12 @@ export default function ScholenPage() {
   const [contactDialogOpen, setContactDialogOpen] = useState(false);
   const [docsDialogOpen, setDocsDialogOpen] = useState(false);
   const [statsDialogOpen, setStatsDialogOpen] = useState(false);
-  const [selectedSchool, setSelectedSchool] = useState<any>(null);
-  const [editingReferrer, setEditingReferrer] = useState<any>(null);
+  const [selectedSchool, setSelectedSchool] = useState<SchoolListRow | null>(null);
+  const [editingReferrer, setEditingReferrer] = useState<{ id: string; name: string; function_title: string | null; email: string | null; phone: string | null } | null>(null);
   const [selectedArea, setSelectedArea] = useState<string>("");
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
   const [docUploading, setDocUploading] = useState(false);
-  const [editForm, setEditForm] = useState<any>({});
+  const [editForm, setEditForm] = useState<SchoolEditForm>({ name: "", address: "", contact_email: "", contact_phone: "", website_url: "", student_count: 0, school_start_time: "", school_end_time: "", schedule_type: "", source: "", municipality: "" });
   const [addScheduleType, setAddScheduleType] = useState<string>("");
   const [addSchoolName, setAddSchoolName] = useState<string>("");
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
@@ -163,7 +164,7 @@ export default function ScholenPage() {
   const [editSaving, setEditSaving] = useState(false);
   const [selectedSchoolIds, setSelectedSchoolIds] = useState<Set<string>>(new Set());
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [schoolsToDelete, setSchoolsToDelete] = useState<any[]>([]);
+  const [schoolsToDelete, setSchoolsToDelete] = useState<SchoolListRow[]>([]);
   const [deleteBlockers, setDeleteBlockers] = useState<Record<string, { clients: number; programs: number }>>({});
   const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
@@ -230,7 +231,7 @@ export default function ScholenPage() {
   });
 
   // Build lookup maps
-  const schoolClientCounts = clientsBySchool.reduce((acc: Record<string, Record<string, number>>, c: any) => {
+  const schoolClientCounts = clientsBySchool.reduce((acc: Record<string, Record<string, number>>, c) => {
     if (!c.school_id) return acc;
     if (!acc[c.school_id]) acc[c.school_id] = {};
     const status = c.intake_status ?? "nieuw";
@@ -238,18 +239,18 @@ export default function ScholenPage() {
     return acc;
   }, {});
 
-  const schoolProgramCounts = programsBySchool.reduce((acc: Record<string, number>, p: any) => {
+  const schoolProgramCounts = programsBySchool.reduce((acc: Record<string, number>, p) => {
     if (!p.school_id) return acc;
     acc[p.school_id] = (acc[p.school_id] || 0) + 1;
     return acc;
   }, {});
 
-  const schoolPrograms = programsBySchool.reduce((acc: Record<string, any[]>, p: any) => {
+  const schoolPrograms = programsBySchool.reduce((acc: Record<string, typeof programsBySchool>, p) => {
     if (!p.school_id) return acc;
     if (!acc[p.school_id]) acc[p.school_id] = [];
     acc[p.school_id].push(p);
     return acc;
-  }, {});
+  }, {} as Record<string, typeof programsBySchool>);
 
   const getTotalClients = (schoolId: string) => {
     const counts = schoolClientCounts[schoolId];
@@ -260,7 +261,7 @@ export default function ScholenPage() {
   const autoDetectNeighborhood = (address: string) => {
     const areaName = getAreaFromAddress(address);
     if (!areaName) return;
-    const area = areas.find((a: any) => a.name === areaName);
+    const area = areas.find((a) => a.name === areaName);
     if (area) {
       setSelectedArea(area.id);
       if (area.neighborhoods?.length > 0) {
@@ -273,15 +274,15 @@ export default function ScholenPage() {
 
   // Neighborhoods filtered by selected area
   const filteredNeighborhoods = selectedArea
-    ? (areas.find((a: any) => a.id === selectedArea) as any)?.neighborhoods ?? []
+    ? areas.find((a) => a.id === selectedArea)?.neighborhoods ?? []
     : [];
 
-  const openEditSchool = (school: any) => {
+  const openEditSchool = (school: SchoolListRow) => {
     // Find the area from the neighborhood
     const neighborhoodId = school.neighborhood_id ?? "";
     let areaId = "";
     if (neighborhoodId) {
-      const area = areas.find((a: any) => (a.neighborhoods ?? []).some((n: any) => n.id === neighborhoodId));
+      const area = areas.find((a) => (a.neighborhoods ?? []).some((n) => n.id === neighborhoodId));
       if (area) areaId = area.id;
     }
     setSelectedArea(areaId);
@@ -320,7 +321,7 @@ export default function ScholenPage() {
     if (!neighborhoodId && editForm.address) {
       const areaName = getAreaFromAddress(editForm.address);
       if (areaName) {
-        const area = areas.find((a: any) => a.name === areaName);
+        const area = areas.find((a) => a.name === areaName);
         if (area && area.neighborhoods?.length > 0) {
           neighborhoodId = area.neighborhoods[0].id;
         }
@@ -335,8 +336,8 @@ export default function ScholenPage() {
       website_url: editForm.website_url || null,
       student_count: Number(editForm.student_count) || 0,
       neighborhood_id: neighborhoodId,
-      school_start_time: inputTimeToDb(editForm.school_start_time ?? "") as any,
-      school_end_time: inputTimeToDb(editForm.school_end_time ?? "") as any,
+      school_start_time: inputTimeToDb(editForm.school_start_time ?? ""),
+      school_end_time: inputTimeToDb(editForm.school_end_time ?? ""),
       schedule_type: editForm.schedule_type || null,
       source: editForm.source || null,
       municipality: editForm.municipality?.trim() || null,
@@ -372,7 +373,7 @@ export default function ScholenPage() {
     if (!neighborhoodId && address) {
       const areaName = getAreaFromAddress(address);
       if (areaName) {
-        const area = areas.find((a: any) => a.name === areaName);
+        const area = areas.find((a) => a.name === areaName);
         if (area && area.neighborhoods?.length > 0) {
           neighborhoodId = area.neighborhoods[0].id;
         }
@@ -387,12 +388,12 @@ export default function ScholenPage() {
       website_url: (formData.get("website_url") as string) || null,
       student_count: Number(formData.get("student_count")) || 0,
       neighborhood_id: neighborhoodId,
-      school_start_time: inputTimeToDb(startTime) as any,
-      school_end_time: inputTimeToDb(endTime) as any,
+      school_start_time: inputTimeToDb(startTime),
+      school_end_time: inputTimeToDb(endTime),
       schedule_type: addScheduleType || null,
       source: (formData.get("source") as string) || null,
       municipality: ((formData.get("municipality") as string) ?? "").trim() || null,
-    } as any);
+    });
 
     if (error) {
       toast({ title: "Fout", description: error.message, variant: "destructive" });
@@ -409,11 +410,11 @@ export default function ScholenPage() {
   const bulkAssignMutation = useMutation({
     mutationFn: async () => {
       let assigned = 0;
-      for (const school of schools as any[]) {
+      for (const school of schools) {
         if (!school.address) continue;
         const areaName = getAreaFromAddress(school.address);
         if (!areaName) continue;
-        const area = areas.find((a: any) => a.name === areaName);
+        const area = areas.find((a) => a.name === areaName);
         if (!area || !area.neighborhoods?.length) continue;
         const neighborhoodId = area.neighborhoods[0].id;
         const { error } = await supabase
@@ -428,7 +429,7 @@ export default function ScholenPage() {
       toast({ title: `${count} scholen gekoppeld aan een gebied` });
       invalidateAllSchoolQueries(queryClient);
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast({ title: "Fout bij koppelen", description: err.message, variant: "destructive" });
     },
   });
@@ -445,7 +446,7 @@ export default function ScholenPage() {
       for (const a of areas) {
         areaLookup.set(a.name.toLowerCase(), {
           areaId: a.id,
-          neighborhoods: (a as any).neighborhoods ?? [],
+          neighborhoods: a.neighborhoods ?? [],
         });
       }
 
@@ -521,10 +522,10 @@ export default function ScholenPage() {
         existingMap.set(normalizeSchoolName(s.name), s);
       }
 
-      const newSchools: any[] = [];
+      const newSchools: Record<string, any>[] = [];
       const addedNames: string[] = [];
       const updatedNames: string[] = [];
-      const updatePromises: Promise<any>[] = [];
+      const updatePromises: Promise<void>[] = [];
 
       for (const s of mapped) {
         const normalized = normalizeSchoolName(s.name);
@@ -571,7 +572,7 @@ export default function ScholenPage() {
       // Batch insert new schools
       for (let i = 0; i < newSchools.length; i += 50) {
         const chunk = newSchools.slice(i, i + 50);
-        const { error } = await supabase.from("schools").insert(chunk);
+        const { error } = await supabase.from("schools").insert(chunk as any);
         if (error) throw error;
       }
 
@@ -610,7 +611,7 @@ export default function ScholenPage() {
       setImportResultOpen(true);
       invalidateAllSchoolQueries(queryClient);
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast({ title: "Import mislukt", description: err.message, variant: "destructive" });
     },
   });
@@ -657,16 +658,16 @@ export default function ScholenPage() {
 
     // Check user resolutions first
     if (resolutions && resolutions[norm]) {
-      const s = (schools as any[]).find((s) => s.id === resolutions[norm]);
+      const s = schools.find((s) => s.id === resolutions[norm]);
       return s ? { id: s.id, name: s.name } : null;
     }
 
     // Exact match
-    const exact = (schools as any[]).find((s) => s.name.toLowerCase().trim() === norm);
+    const exact = schools.find((s) => s.name.toLowerCase().trim() === norm);
     if (exact) return { id: exact.id, name: exact.name };
 
     // Contains: school name contains search or search contains school name
-    const contains = (schools as any[]).find((s) => {
+    const contains = schools.find((s) => {
       const sNorm = s.name.toLowerCase().trim();
       return sNorm.includes(norm) || norm.includes(sNorm);
     });
@@ -675,7 +676,7 @@ export default function ScholenPage() {
     // Prefix-stripped matching: strip known prefixes and compare core names
     const strippedInput = stripSchoolPrefix(name);
     if (strippedInput.length >= 3) {
-      const prefixMatch = (schools as any[]).find((s) => {
+      const prefixMatch = schools.find((s) => {
         const strippedExisting = stripSchoolPrefix(s.name);
         return strippedExisting === strippedInput
           || strippedExisting.includes(strippedInput)
@@ -687,7 +688,7 @@ export default function ScholenPage() {
     // Starts-with match (first significant word)
     const firstWord = norm.split(/\s+/)[0];
     if (firstWord.length >= 3) {
-      const startsWith = (schools as any[]).find((s) => s.name.toLowerCase().trim().startsWith(firstWord));
+      const startsWith = schools.find((s) => s.name.toLowerCase().trim().startsWith(firstWord));
       if (startsWith) return { id: startsWith.id, name: startsWith.name };
     }
 
@@ -719,8 +720,8 @@ export default function ScholenPage() {
         // Auto-import if all matched
         runTimesImport(rows, {});
       }
-    } catch (err: any) {
-      toast({ title: "Fout bij lezen", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Fout bij lezen", description: err instanceof Error ? err.message : "Onbekende fout", variant: "destructive" });
     }
   };
 
@@ -736,7 +737,7 @@ export default function ScholenPage() {
 
       // Fetch existing school data for enrichment policy
       const { data: existingSchools } = await supabase.from("schools").select("id, name, school_start_time, school_end_time, schedule_type, source, municipality");
-      const existingById = new Map<string, any>();
+      const existingById = new Map<string, { id: string; school_start_time: string | null; school_end_time: string | null; schedule_type: string | null; source: string | null; municipality: string | null }>();
       for (const s of existingSchools ?? []) {
         existingById.set(s.id, s);
       }
@@ -819,8 +820,8 @@ export default function ScholenPage() {
       });
       setImportResultOpen(true);
       invalidateAllSchoolQueries(queryClient);
-    } catch (err: any) {
-      toast({ title: "Import mislukt", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Import mislukt", description: err instanceof Error ? err.message : "Onbekende fout", variant: "destructive" });
     } finally {
       setTimesImporting(false);
     }
@@ -835,11 +836,11 @@ export default function ScholenPage() {
 
       // Build school lookup (case-insensitive)
       const schoolLookup = new Map<string, string>();
-      schools.forEach((s: any) => {
+      schools.forEach((s) => {
         schoolLookup.set(s.name.toLowerCase(), s.id);
       });
 
-      const toInsert: any[] = [];
+      const toInsert: { name: string; email: string | null; phone: string | null; function_title: string | null; school_id: string | null }[] = [];
       const unmatched: string[] = [];
 
       for (const row of rows) {
@@ -882,7 +883,7 @@ export default function ScholenPage() {
       setContactUploadOpen(false);
       queryClient.invalidateQueries({ queryKey: schoolKeys.all });
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast({ title: "Import mislukt", description: err.message, variant: "destructive" });
     },
   });
@@ -929,8 +930,8 @@ export default function ScholenPage() {
   };
 
   // Flatten areas → neighborhoods for select
-  const neighborhoodOptions = areas.flatMap((area: any) =>
-    (area.neighborhoods ?? []).map((n: any) => ({
+  const neighborhoodOptions = areas.flatMap((area) =>
+    (area.neighborhoods ?? []).map((n) => ({
       id: n.id,
       label: `${area.name} – ${n.name}`,
     }))
@@ -938,7 +939,7 @@ export default function ScholenPage() {
 
   // Get current referrers for selected school
   const selectedSchoolReferrers = selectedSchool
-    ? (schools.find((s: any) => s.id === selectedSchool.id) as any)?.referrers ?? []
+    ? schools.find((s) => s.id === selectedSchool.id)?.referrers ?? []
     : [];
 
   // Document generation state for schools
@@ -959,7 +960,7 @@ export default function ScholenPage() {
     queryFn: async () => {
       if (!selectedSchool?.id) return [];
       const { data, error } = await supabase
-        .from("school_documents" as any)
+        .from("school_documents")
         .select("*")
         .eq("school_id", selectedSchool.id)
         .order("created_at", { ascending: false });
@@ -1000,13 +1001,13 @@ export default function ScholenPage() {
       setSelectedSchoolTemplateId("");
       refetchSchoolGenDocs();
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast({ title: "Fout", description: err.message, variant: "destructive" });
     },
   });
 
   // Download generated school document
-  const handleGenDocDownload = async (doc: any) => {
+  const handleGenDocDownload = async (doc: { file_path: string; file_name: string }) => {
     const { data, error } = await supabase.storage.from("generated-documents").download(doc.file_path);
     if (error || !data) {
       toast({ title: "Download mislukt", variant: "destructive" });
@@ -1032,28 +1033,28 @@ export default function ScholenPage() {
       if (uploadError) throw uploadError;
 
       const { data: { user } } = await supabase.auth.getUser();
-      const { error: dbError } = await supabase.from("school_documents" as any).insert({
+      const { error: dbError } = await supabase.from("school_documents").insert({
         school_id: selectedSchool.id,
         category,
         file_name: file.name,
         file_path: filePath,
-        uploaded_by: user?.id,
-      } as any);
+        uploaded_by: user?.id ?? "",
+      });
       if (dbError) throw dbError;
 
       toast({ title: "Document geüpload" });
       refetchDocs();
-    } catch (err: any) {
-      toast({ title: "Upload mislukt", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Upload mislukt", description: err instanceof Error ? err.message : "Onbekende fout", variant: "destructive" });
     } finally {
       setDocUploading(false);
       e.target.value = "";
     }
   };
 
-  const handleDocDelete = async (doc: any) => {
+  const handleDocDelete = async (doc: SchoolDocumentRow) => {
     await supabase.storage.from("school-documents").remove([doc.file_path]);
-    const { error } = await supabase.from("school_documents" as any).delete().eq("id", doc.id);
+    const { error } = await supabase.from("school_documents").delete().eq("id", doc.id);
     if (error) {
       toast({ title: "Fout", description: error.message, variant: "destructive" });
     } else {
@@ -1062,7 +1063,7 @@ export default function ScholenPage() {
     }
   };
 
-  const handleDocDownload = async (doc: any) => {
+  const handleDocDownload = async (doc: SchoolDocumentRow) => {
     const { data } = await supabase.storage.from("school-documents").createSignedUrl(doc.file_path, 60);
     if (data?.signedUrl) window.open(data.signedUrl, "_blank");
   };
@@ -1081,7 +1082,7 @@ export default function ScholenPage() {
     return blockers;
   };
 
-  const initiateDelete = async (schoolList: any[]) => {
+  const initiateDelete = async (schoolList: SchoolListRow[]) => {
     const blockers = await checkDeleteBlockers(schoolList.map((s) => s.id));
     setDeleteBlockers(blockers);
     setSchoolsToDelete(schoolList);
@@ -1107,7 +1108,7 @@ export default function ScholenPage() {
       for (const id of deletableIds) {
         await Promise.all([
           supabase.from("referrers").delete().eq("school_id", id),
-          supabase.from("school_documents" as any).delete().eq("school_id", id),
+          supabase.from("school_documents").delete().eq("school_id", id),
         ]);
       }
 
@@ -1123,8 +1124,8 @@ export default function ScholenPage() {
       setDeleteConfirmOpen(false);
       setSchoolsToDelete([]);
       invalidateAllSchoolQueries(queryClient);
-    } catch (err: any) {
-      toast({ title: "Fout bij verwijderen", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Fout bij verwijderen", description: err instanceof Error ? err.message : "Onbekende fout", variant: "destructive" });
     } finally {
       setDeleting(false);
     }
@@ -1156,7 +1157,7 @@ export default function ScholenPage() {
         <div className="flex flex-wrap gap-2">
           {(["csv", "xlsx"] as const).map((fmt) => (
             <Button key={fmt} variant="outline" size="sm" onClick={() => {
-              const rows = schools.map((s: any) => ({
+              const rows = schools.map((s) => ({
                 naam: s.name,
                 adres: s.address ?? "",
                 gebied: s.neighborhoods?.areas?.name ?? "",
@@ -1169,7 +1170,7 @@ export default function ScholenPage() {
                  email: s.contact_email ?? "",
                  telefoon: s.contact_phone ?? "",
                  website: s.website_url ?? "",
-                 contactpersonen: (s.referrers ?? []).map((r: any) => r.name).join(", "),
+                 contactpersonen: (s.referrers ?? []).map((r) => r.name).join(", "),
                }));
                downloadExport(`scholen.${fmt}`, [
                  { key: "naam", label: "Naam" },
@@ -1330,7 +1331,7 @@ export default function ScholenPage() {
                           onChange={(e) => setTimesResolutions((prev) => ({ ...prev, [name]: e.target.value }))}
                         >
                           <option value="">— Overslaan —</option>
-                          {(schools as any[]).map((s) => (
+                          {schools.map((s) => (
                             <option key={s.id} value={s.id}>{s.name}</option>
                           ))}
                         </select>
@@ -1374,7 +1375,7 @@ export default function ScholenPage() {
                       <SelectValue placeholder="Selecteer een gebied..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {areas.map((a: any) => (
+                      {areas.map((a) => (
                         <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -1387,7 +1388,7 @@ export default function ScholenPage() {
                       <SelectValue placeholder={selectedArea ? "Selecteer een wijk..." : "Kies eerst een gebied"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {filteredNeighborhoods.map((n: any) => (
+                      {filteredNeighborhoods.map((n) => (
                         <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -1443,14 +1444,14 @@ export default function ScholenPage() {
           <SelectTrigger className="w-[180px]"><SelectValue placeholder="Gebied" /></SelectTrigger>
           <SelectContent className="bg-popover">
             <SelectItem value="all">Alle gebieden</SelectItem>
-            {areas.map((a: any) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+            {areas.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={filterNeighborhoodId} onValueChange={setFilterNeighborhoodId} disabled={filterAreaId === "all"}>
           <SelectTrigger className="w-[180px]"><SelectValue placeholder="Wijk" /></SelectTrigger>
           <SelectContent className="bg-popover">
             <SelectItem value="all">Alle wijken</SelectItem>
-            {(filterAreaId !== "all" ? (areas.find((a: any) => a.id === filterAreaId) as any)?.neighborhoods ?? [] : []).map((n: any) => (
+            {(filterAreaId !== "all" ? areas.find((a) => a.id === filterAreaId)?.neighborhoods ?? [] : []).map((n) => (
               <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>
             ))}
           </SelectContent>
@@ -1473,7 +1474,7 @@ export default function ScholenPage() {
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
       ) : (() => {
-        const filtered = schools.filter((school: any) => {
+        const filtered = schools.filter((school) => {
           if (filterAreaId !== "all") {
             const schoolAreaId = school.neighborhoods?.area_id;
             if (schoolAreaId !== filterAreaId) return false;
@@ -1483,7 +1484,7 @@ export default function ScholenPage() {
           }
           return true;
         });
-        const sorted = [...filtered].sort((a: any, b: any) => {
+        const sorted = [...filtered].sort((a, b) => {
           if (sortBy === "aanmeldingen") return (getTotalClients(b.id)) - (getTotalClients(a.id));
           if (sortBy === "naam-az") return (a.name ?? "").localeCompare(b.name ?? "", "nl");
           if (sortBy === "naam-za") return (b.name ?? "").localeCompare(a.name ?? "", "nl");
@@ -1498,8 +1499,8 @@ export default function ScholenPage() {
                   <input
                     type="checkbox"
                     className="h-4 w-4 rounded border-border"
-                    checked={sorted.length > 0 && sorted.every((s: any) => selectedSchoolIds.has(s.id))}
-                    onChange={() => toggleAllSchools(sorted.map((s: any) => s.id))}
+                    checked={sorted.length > 0 && sorted.every((s) => selectedSchoolIds.has(s.id))}
+                    onChange={() => toggleAllSchools(sorted.map((s) => s.id))}
                   />
                 </th>
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">School</th>
@@ -1518,7 +1519,7 @@ export default function ScholenPage() {
               {sorted.length === 0 && (
                 <tr><td colSpan={11} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen scholen gevonden</td></tr>
               )}
-              {sorted.map((school: any) => (
+              {sorted.map((school) => (
                 <tr key={school.id} className={`transition-colors hover:bg-muted/30 ${selectedSchoolIds.has(school.id) ? "bg-primary/5" : ""}`}>
                   <td className="px-3 py-4 text-center">
                     <input
@@ -1546,8 +1547,8 @@ export default function ScholenPage() {
                           </p>
                         )}
                         <div className="flex items-center gap-2 mt-0.5">
-                          {(school as any).website_url && (
-                            <a href={(school as any).website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary hover:underline">
+                          {school.website_url && (
+                            <a href={school.website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary hover:underline">
                               <Globe className="h-3 w-3" /> Website
                             </a>
                           )}
@@ -1620,7 +1621,7 @@ export default function ScholenPage() {
                     <div className="flex items-center gap-2">
                       {school.referrers && school.referrers.length > 0 ? (
                         <div className="space-y-1 flex-1">
-                          {school.referrers.slice(0, 2).map((ref: any) => (
+                          {school.referrers.slice(0, 2).map((ref) => (
                             <div key={ref.id} className="text-xs">
                               <span className="font-medium text-card-foreground">{ref.name}</span>
                               {ref.function_title && (
@@ -1650,10 +1651,10 @@ export default function ScholenPage() {
                     </div>
                   </td>
                   <td className="hidden px-5 py-4 lg:table-cell text-center">
-                    <span className="text-xs text-card-foreground">{(school as any).schedule_type ? ((school as any).schedule_type === "continu" ? "Continu" : "Traditioneel") : "—"}</span>
+                    <span className="text-xs text-card-foreground">{school.schedule_type ? (school.schedule_type === "continu" ? "Continu" : "Traditioneel") : "—"}</span>
                   </td>
                   <td className="hidden px-5 py-4 lg:table-cell text-center">
-                    <span className="text-xs text-card-foreground">{formatSchoolTimeRange((school as any).school_start_time, (school as any).school_end_time)}</span>
+                    <span className="text-xs text-card-foreground">{formatSchoolTimeRange(school.school_start_time, school.school_end_time)}</span>
                   </td>
                   <td className="px-5 py-4 text-right">
                     <span className="font-display text-sm font-bold text-card-foreground">{school.student_count ?? 0}</span>
@@ -1685,7 +1686,7 @@ export default function ScholenPage() {
             variant="destructive"
             size="sm"
             onClick={() => {
-              const toDelete = (schools as any[]).filter((s) => selectedSchoolIds.has(s.id));
+              const toDelete = schools.filter((s) => selectedSchoolIds.has(s.id));
               initiateDelete(toDelete);
             }}
           >
@@ -1757,7 +1758,7 @@ export default function ScholenPage() {
             {/* Existing referrers */}
             {selectedSchoolReferrers.length > 0 ? (
               <div className="space-y-2">
-                {selectedSchoolReferrers.map((ref: any) => (
+                {selectedSchoolReferrers.map((ref) => (
                   <div key={ref.id} className="flex items-start justify-between gap-2 rounded-lg border border-border p-3">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-card-foreground">{ref.name}</p>
@@ -1823,7 +1824,7 @@ export default function ScholenPage() {
                     <Select value={selectedSchoolTemplateId} onValueChange={setSelectedSchoolTemplateId}>
                       <SelectTrigger><SelectValue placeholder="Selecteer een template" /></SelectTrigger>
                       <SelectContent className="bg-popover">
-                        {schoolDocTemplates.map((t: any) => (
+                        {schoolDocTemplates.map((t) => (
                           <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                         ))}
                       </SelectContent>
@@ -1835,9 +1836,9 @@ export default function ScholenPage() {
                   </Button>
                 </div>
               )}
-              {(schoolGeneratedDocs as any[]).length > 0 && (
+              {schoolGeneratedDocs.length > 0 && (
                 <div className="space-y-1 mt-2">
-                  {(schoolGeneratedDocs as any[]).map((doc: any) => (
+                  {schoolGeneratedDocs.map((doc) => (
                     <div key={doc.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-2">
                       <div className="min-w-0">
                         <p className="text-xs font-medium text-card-foreground truncate">{doc.file_name}</p>
@@ -1855,7 +1856,7 @@ export default function ScholenPage() {
             {/* Schoolgids upload */}
             <div className="space-y-2">
               <p className="text-sm font-medium text-card-foreground">Schoolgids</p>
-              {(schoolDocs as any[]).filter((d: any) => d.category === "schoolgids").map((doc: any) => (
+              {schoolDocs.filter((d) => d.category === "schoolgids").map((doc) => (
                 <div key={doc.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-2">
                   <button
                     type="button"
@@ -1885,7 +1886,7 @@ export default function ScholenPage() {
             {/* Overig upload */}
             <div className="space-y-2">
               <p className="text-sm font-medium text-card-foreground">Overig</p>
-              {(schoolDocs as any[]).filter((d: any) => d.category === "overig").map((doc: any) => (
+              {schoolDocs.filter((d) => d.category === "overig").map((doc) => (
                 <div key={doc.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-2">
                   <button
                     type="button"
@@ -1927,19 +1928,19 @@ export default function ScholenPage() {
           <form onSubmit={handleEditSchool} className="space-y-4">
             <div>
               <Label>Naam *</Label>
-              <Input value={editForm.name ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, name: e.target.value }))} required />
+              <Input value={editForm.name ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} required />
             </div>
             <SchoolDuplicateWarning name={editForm.name ?? ""} excludeId={selectedSchool?.id} schools={schools} />
             <div>
               <Label>Adres</Label>
-              <Input value={editForm.address ?? ""} onChange={(e) => { setEditForm((f: any) => ({ ...f, address: e.target.value })); }} onBlur={(e) => autoDetectNeighborhood(e.target.value)} />
+              <Input value={editForm.address ?? ""} onChange={(e) => { setEditForm((f) => ({ ...f, address: e.target.value })); }} onBlur={(e) => autoDetectNeighborhood(e.target.value)} />
             </div>
             <div>
               <Label>Gebied</Label>
               <Select value={selectedArea} onValueChange={(val) => { setSelectedArea(val); setSelectedNeighborhood(""); }}>
                 <SelectTrigger><SelectValue placeholder="Selecteer een gebied..." /></SelectTrigger>
                 <SelectContent className="bg-popover">
-                  {areas.map((a: any) => (
+                  {areas.map((a) => (
                     <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -1950,7 +1951,7 @@ export default function ScholenPage() {
               <Select value={selectedNeighborhood} onValueChange={setSelectedNeighborhood} disabled={!selectedArea}>
                 <SelectTrigger><SelectValue placeholder={selectedArea ? "Selecteer een wijk..." : "Kies eerst een gebied"} /></SelectTrigger>
                 <SelectContent className="bg-popover">
-                  {filteredNeighborhoods.map((n: any) => (
+                  {filteredNeighborhoods.map((n) => (
                     <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -1959,35 +1960,35 @@ export default function ScholenPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>E-mail</Label>
-                <Input type="email" value={editForm.contact_email ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, contact_email: e.target.value }))} />
+                <Input type="email" value={editForm.contact_email ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, contact_email: e.target.value }))} />
               </div>
               <div>
                 <Label>Telefoon</Label>
-                <Input type="tel" value={editForm.contact_phone ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, contact_phone: e.target.value }))} />
+                <Input type="tel" value={editForm.contact_phone ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, contact_phone: e.target.value }))} />
               </div>
             </div>
             <div>
               <Label>Website</Label>
-              <Input type="url" placeholder="https://..." value={editForm.website_url ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, website_url: e.target.value }))} />
+              <Input type="url" placeholder="https://..." value={editForm.website_url ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, website_url: e.target.value }))} />
             </div>
             <div>
               <Label>Aantal leerlingen</Label>
-              <Input type="number" min="0" value={editForm.student_count ?? 0} onChange={(e) => setEditForm((f: any) => ({ ...f, student_count: e.target.value }))} />
+              <Input type="number" min="0" value={editForm.student_count ?? 0} onChange={(e) => setEditForm((f) => ({ ...f, student_count: Number(e.target.value) }))} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Schooltijd begin</Label>
-                <Input type="time" value={editForm.school_start_time ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, school_start_time: e.target.value }))} />
+                <Input type="time" value={editForm.school_start_time ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, school_start_time: e.target.value }))} />
               </div>
               <div>
                 <Label>Schooltijd eind</Label>
-                <Input type="time" value={editForm.school_end_time ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, school_end_time: e.target.value }))} />
+                <Input type="time" value={editForm.school_end_time ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, school_end_time: e.target.value }))} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Roostertype</Label>
-                <Select value={editForm.schedule_type ?? ""} onValueChange={(val) => setEditForm((f: any) => ({ ...f, schedule_type: val }))}>
+                <Select value={editForm.schedule_type ?? ""} onValueChange={(val) => setEditForm((f) => ({ ...f, schedule_type: val }))}>
                   <SelectTrigger><SelectValue placeholder="Selecteer..." /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="traditioneel">Traditioneel</SelectItem>
@@ -1997,12 +1998,12 @@ export default function ScholenPage() {
               </div>
               <div>
                 <Label>Bron</Label>
-                <Input value={editForm.source ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, source: e.target.value }))} placeholder="bijv. DUO, handmatig" />
+                <Input value={editForm.source ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, source: e.target.value }))} placeholder="bijv. DUO, handmatig" />
               </div>
             </div>
             <div>
               <Label>Gemeente</Label>
-              <Input value={editForm.municipality ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, municipality: e.target.value }))} placeholder="Leeg = Rotterdam" />
+              <Input value={editForm.municipality ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, municipality: e.target.value }))} placeholder="Leeg = Rotterdam" />
             </div>
             <Button type="submit" className="w-full" disabled={editSaving}>
               {editSaving ? "Opslaan..." : "Opslaan"}

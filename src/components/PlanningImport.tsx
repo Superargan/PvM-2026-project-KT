@@ -618,7 +618,7 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
             available_date: entry.date,
             start_time: entry.startTime,
             end_time: entry.endTime,
-          } as any, { onConflict: "staff_id,available_date" });
+          }, { onConflict: "staff_id,available_date" });
           if (error) { errors.push(`${entry.name} ${entry.date}: ${error.message}`); continue; }
           success++;
         }
@@ -682,7 +682,7 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
             available_date: entry.date,
             start_time: entry.startTime,
             end_time: entry.endTime,
-          } as any, { onConflict: "client_id,available_date" });
+          }, { onConflict: "client_id,available_date" });
           if (error) { errors.push(`${entry.name} ${entry.date}: ${error.message}`); continue; }
           success++;
         }

@@ -721,15 +721,15 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
   const queryClient = useQueryClient();
 
   // Find template by category
-  const voorovereenkomstTemplate = useMemo(() => docTemplates.find((t: any) => t.category === "voorovereenkomst"), [docTemplates]);
-  const overeenkomstTemplate = useMemo(() => docTemplates.find((t: any) => t.category === "overeenkomst"), [docTemplates]);
+  const voorovereenkomstTemplate = useMemo(() => docTemplates.find((t) => t.category === "voorovereenkomst"), [docTemplates]);
+  const overeenkomstTemplate = useMemo(() => docTemplates.find((t) => t.category === "overeenkomst"), [docTemplates]);
 
   // Only count as "done" when the document has a signed version
   const staffHasVoorovereenkomst = useMemo(() => {
     const set = new Set<string>();
-    generatedDocs.forEach((doc: any) => {
+    generatedDocs.forEach((doc) => {
       if (!doc.staff_id) return;
-      const cat = (doc.document_templates as any)?.category?.toLowerCase() ?? "";
+      const cat = (doc.document_templates as { category: string } | null)?.category?.toLowerCase() ?? "";
       if (cat === "voorovereenkomst" && doc.signed_file_path) set.add(doc.staff_id);
     });
     return set;
@@ -737,9 +737,9 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
 
   const programStaffHasOvereenkomst = useMemo(() => {
     const set = new Set<string>();
-    generatedDocs.forEach((doc: any) => {
+    generatedDocs.forEach((doc) => {
       if (!doc.staff_id) return;
-      const cat = (doc.document_templates as any)?.category?.toLowerCase() ?? "";
+      const cat = (doc.document_templates as { category: string } | null)?.category?.toLowerCase() ?? "";
       if (cat === "overeenkomst" && doc.program_id && doc.signed_file_path) {
         set.add(`${doc.program_id}_${doc.staff_id}`);
       }
@@ -750,9 +750,9 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
   // Track whether a document has been generated (but not yet signed)
   const staffHasVoorovereenkomstGenerated = useMemo(() => {
     const set = new Set<string>();
-    generatedDocs.forEach((doc: any) => {
+    generatedDocs.forEach((doc) => {
       if (!doc.staff_id) return;
-      const cat = (doc.document_templates as any)?.category?.toLowerCase() ?? "";
+      const cat = (doc.document_templates as { category: string } | null)?.category?.toLowerCase() ?? "";
       if (cat === "voorovereenkomst") set.add(doc.staff_id);
     });
     return set;
@@ -760,9 +760,9 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
 
   const programStaffHasOvereenkomstGenerated = useMemo(() => {
     const set = new Set<string>();
-    generatedDocs.forEach((doc: any) => {
+    generatedDocs.forEach((doc) => {
       if (!doc.staff_id) return;
-      const cat = (doc.document_templates as any)?.category?.toLowerCase() ?? "";
+      const cat = (doc.document_templates as { category: string } | null)?.category?.toLowerCase() ?? "";
       if (cat === "overeenkomst" && doc.program_id) {
         set.add(`${doc.program_id}_${doc.staff_id}`);
       }
@@ -776,13 +776,13 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
 
   const rows = useMemo(() => {
     return programs
-      .filter((p: any) => statusFilter === "alle" ? true : (p.status ?? "te_plannen") === statusFilter)
-      .map((prog: any) => {
+      .filter((p) => statusFilter === "alle" ? true : (p.status ?? "te_plannen") === statusFilter)
+      .map((prog) => {
         const trainers = programStaff
-          .filter((ps: any) => ps.program_id === prog.id && ps.role !== "invaller")
-          .map((ps: any) => {
-            const name = (ps.staff as any)?.name ?? "Onbekend";
-            const tradeName = (ps.staff as any)?.trade_name ?? "";
+          .filter((ps) => ps.program_id === prog.id && ps.role !== "invaller")
+          .map((ps) => {
+            const name = (ps.staff as { name?: string | null; trade_name?: string | null } | null)?.name ?? "Onbekend";
+            const tradeName = (ps.staff as { name?: string | null; trade_name?: string | null } | null)?.trade_name ?? "";
             const exempt = checkExempt(name, tradeName);
             return {
               staffId: ps.staff_id, name, tradeName, role: ps.role ?? "trainer", exempt,
@@ -793,7 +793,7 @@ function ContractenOverzicht({ programs, programStaff, generatedDocs, areas, doc
             };
           });
         return {
-          id: prog.id, name: prog.name, trainingNumber: (prog as any).training_number ?? "",
+          id: prog.id, name: prog.name, trainingNumber: prog.training_number ?? "",
           status: prog.status ?? "te_plannen", area: areaMap.get(prog.area_id) ?? "", trainers,
         };
       })

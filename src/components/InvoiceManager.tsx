@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { invoiceKeys, staffKeys } from "@/lib/queryKeys";
 import { toast } from "sonner";
+import type { InvoiceRow, TrainerProgramRef } from "@/lib/queryShapes";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -57,7 +58,7 @@ export default function InvoiceManager({ staffId, staffName }: { staffId?: strin
       if (error) throw error;
       // Unique programs
       const seen = new Set<string>();
-      return (data ?? []).filter((ps: any) => {
+      return (data ?? []).filter((ps) => {
         if (seen.has(ps.program_id)) return false;
         seen.add(ps.program_id);
         return true;
@@ -87,7 +88,7 @@ export default function InvoiceManager({ staffId, staffName }: { staffId?: strin
         file_path: path,
         amount: amount ? parseFloat(amount) : null,
         notes: notes || null,
-      } as any);
+      });
       if (dbError) throw dbError;
 
       toast.success("Factuur geüpload");
@@ -96,8 +97,8 @@ export default function InvoiceManager({ staffId, staffName }: { staffId?: strin
       setAmount("");
       setNotes("");
       qc.invalidateQueries({ queryKey: invoiceKeys.all });
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Onbekende fout");
     } finally {
       setUploading(false);
     }
@@ -107,7 +108,7 @@ export default function InvoiceManager({ staffId, staffName }: { staffId?: strin
     mutationFn: async ({ invoiceId, status }: { invoiceId: string; status: string }) => {
       const { error } = await supabase
         .from("invoices")
-        .update({ status, reviewed_at: new Date().toISOString() } as any)
+        .update({ status, reviewed_at: new Date().toISOString() })
         .eq("id", invoiceId);
       if (error) throw error;
     },
@@ -115,10 +116,10 @@ export default function InvoiceManager({ staffId, staffName }: { staffId?: strin
       toast.success("Status bijgewerkt");
       qc.invalidateQueries({ queryKey: invoiceKeys.all });
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: Error) => toast.error(err.message),
   });
 
-  const handleDownload = async (inv: any) => {
+  const handleDownload = async (inv: InvoiceRow) => {
     const { data, error } = await supabase.storage.from("invoices").download(inv.file_path);
     if (error || !data) { toast.error("Download mislukt"); return; }
     const url = URL.createObjectURL(data);
@@ -161,7 +162,7 @@ export default function InvoiceManager({ staffId, staffName }: { staffId?: strin
               </TableRow>
             </TableHeader>
             <TableBody>
-              {invoices.map((inv: any) => (
+              {invoices.map((inv) => (
                 <TableRow key={inv.id}>
                   {!staffId && <TableCell>{inv.staff?.name ?? "—"}</TableCell>}
                   <TableCell>{inv.programs?.name ?? "—"}</TableCell>
@@ -225,7 +226,7 @@ export default function InvoiceManager({ staffId, staffName }: { staffId?: strin
               <Select value={selectedProgramId} onValueChange={setSelectedProgramId}>
                 <SelectTrigger><SelectValue placeholder="Kies training" /></SelectTrigger>
                 <SelectContent className="bg-popover">
-                  {trainerPrograms.map((ps: any) => (
+                  {trainerPrograms.map((ps) => (
                     <SelectItem key={ps.program_id} value={ps.program_id}>
                       {ps.programs?.name ?? "Programma"}
                     </SelectItem>

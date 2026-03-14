@@ -74,13 +74,13 @@ export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => 
       const { error: enrollError } = await supabase.from("program_clients").insert({
         program_id: programId,
         client_id: clientId,
-      } as any);
+      });
       if (enrollError) throw enrollError;
 
       // Remove from waitlist
       const { error: updateError } = await supabase
         .from("clients")
-        .update({ waitlist_status: null, waitlist_area_id: null, intake_status: "actief" } as any)
+        .update({ waitlist_status: null, waitlist_area_id: null, intake_status: "actief" })
         .eq("id", clientId);
       if (updateError) throw updateError;
     },
@@ -88,7 +88,7 @@ export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => 
       toast.success("Deelnemer toegewezen aan programma");
       qc.invalidateQueries({ queryKey: clientKeys.all });
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: Error) => toast.error(err.message),
   });
 
   const [assigningClient, setAssigningClient] = useState<string | null>(null);

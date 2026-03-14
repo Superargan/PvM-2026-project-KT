@@ -500,3 +500,100 @@ export interface TrainingLocationForm {
   notes: string;
   active: boolean;
 }
+
+// ─── Invoice shapes ─────────────────────────────────────────────────
+
+/** Invoice row with staff + program joins */
+export interface InvoiceRow {
+  id: string;
+  staff_id: string;
+  program_id: string;
+  file_name: string;
+  file_path: string;
+  amount: number | null;
+  notes: string | null;
+  status: string;
+  created_at: string;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  staff: { name: string | null } | null;
+  programs: { name: string } | null;
+}
+
+/** Typed insert payload for invoices */
+export type InvoiceInsert = TablesInsert<"invoices">;
+
+/** Typed update payload for invoices */
+export type InvoiceUpdate = TablesUpdate<"invoices">;
+
+/** Typed insert payload for program_clients */
+export type ProgramClientInsert = TablesInsert<"program_clients">;
+
+/** Typed update payload for program_clients */
+export type ProgramClientUpdate = TablesUpdate<"program_clients">;
+
+/** Typed insert payload for schools */
+export type SchoolInsert = TablesInsert<"schools">;
+
+/** Typed update payload for schools */
+export type SchoolUpdate = TablesUpdate<"schools">;
+
+// ─── School page shapes ─────────────────────────────────────────────
+
+/** School row with full joins as returned by ScholenPage query */
+export interface SchoolListRow {
+  id: string;
+  name: string;
+  address: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  website_url: string | null;
+  student_count: number | null;
+  neighborhood_id: string | null;
+  school_start_time: string | null;
+  school_end_time: string | null;
+  schedule_type: string | null;
+  source: string | null;
+  municipality: string | null;
+  neighborhoods: { name: string; area_id: string; areas: { name: string } | null } | null;
+  referrers: Array<{ id: string; name: string; function_title: string | null; email: string | null; phone: string | null }>;
+}
+
+/** School edit form state */
+export interface SchoolEditForm {
+  name: string;
+  address: string;
+  contact_email: string;
+  contact_phone: string;
+  website_url: string;
+  student_count: number;
+  school_start_time: string;
+  school_end_time: string;
+  schedule_type: string;
+  source: string;
+  municipality: string;
+}
+
+/** Program staff row with trade_name for document generation */
+export interface ProgramStaffWithTradeName {
+  staff_id: string;
+  role: string | null;
+  staff: { id: string; name: string | null; trade_name: string | null } | null;
+}
+
+/** Trainer program row for invoice dropdown */
+export interface TrainerProgramRef {
+  program_id: string;
+  programs: { id: string; name: string; status: string | null } | null;
+}
+
+/** School document row */
+export interface SchoolDocumentRow {
+  id: string;
+  school_id: string;
+  category: string;
+  file_name: string;
+  file_path: string;
+  uploaded_by: string;
+  created_at: string;
+}

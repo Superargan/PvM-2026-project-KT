@@ -20,6 +20,7 @@ import { getResolvedLocationName } from "@/lib/DomainResolver";
 import ProgramTrainers from "@/components/ProgramTrainers";
 import ProgramAttendance from "@/components/ProgramAttendance";
 import GroupComposer from "@/components/GroupComposer";
+import type { EnrolledClientRow, SchoolDropdownRow, ProgramStaffWithTradeName } from "@/lib/queryShapes";
 
 const statusMap: Record<string, { css: string; label: string }> = {
   te_plannen: { css: "status-rood", label: "Te plannen" },
@@ -35,7 +36,7 @@ export default function ProgramDetailPage() {
   const qc = useQueryClient();
   const [selectedClientId, setSelectedClientId] = useState("");
   const [dropoutOpen, setDropoutOpen] = useState(false);
-  const [dropoutTarget, setDropoutTarget] = useState<any>(null);
+  const [dropoutTarget, setDropoutTarget] = useState<EnrolledClientRow | null>(null);
   const [dropoutReason, setDropoutReason] = useState("");
   const [dropoutAction, setDropoutAction] = useState("");
   // Fetch program
@@ -107,9 +108,9 @@ export default function ProgramDetailPage() {
     },
   });
 
-  const enrolledIds = enrolledClients.map((ec: any) => ec.client_id);
-  const activeEnrolled = enrolledClients.filter((ec: any) => !ec.early_dropout);
-  const availableClients = allClients.filter((c: any) => !enrolledIds.includes(c.id));
+  const enrolledIds = enrolledClients.map((ec) => ec.client_id);
+  const activeEnrolled = enrolledClients.filter((ec) => !ec.early_dropout);
+  const availableClients = allClients.filter((c) => !enrolledIds.includes(c.id));
 
   // Fetch sessions for overlap check
   const { data: programSessions = [] } = useQuery({
@@ -145,7 +146,7 @@ export default function ProgramDetailPage() {
           .neq("program_id", id!);
 
         if (otherEnrollments && otherEnrollments.length > 0) {
-          const otherProgramIds = otherEnrollments.map((e: any) => e.program_id);
+          const otherProgramIds = otherEnrollments.map((e) => e.program_id);
           const { data: otherSessions } = await supabase
             .from("program_sessions")
             .select("session_date, start_time, end_time, program_id")
@@ -154,15 +155,16 @@ export default function ProgramDetailPage() {
 
           if (otherSessions) {
             for (const ps of programSessions) {
-              const overlap = otherSessions.find((os: any) =>
+              const overlap = otherSessions.find((os) =>
                 os.session_date === ps.session_date &&
                 os.start_time && ps.start_time &&
                 os.start_time < (ps.end_time ?? "23:59") &&
                 (os.end_time ?? "23:59") > ps.start_time
               );
               if (overlap) {
-                const prog = otherEnrollments.find((e: any) => e.program_id === overlap.program_id);
-                throw new Error(`Overlap op ${ps.session_date} met programma ${(prog as any)?.programs?.name ?? overlap.program_id}`);
+                const prog = otherEnrollments.find((e) => e.program_id === overlap.program_id);
+                const progName = (prog as { programs?: { name?: string } | null } | undefined)?.programs?.name ?? overlap.program_id;
+                throw new Error(`Overlap op ${ps.session_date} met programma ${progName}`);
               }
             }
           }
@@ -172,7 +174,7 @@ export default function ProgramDetailPage() {
       const { error } = await supabase.from("program_clients").insert({
         program_id: id!,
         client_id: selectedClientId,
-      } as any);
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -181,7 +183,7 @@ export default function ProgramDetailPage() {
       qc.invalidateQueries({ queryKey: programKeys.all });
       toast({ title: "Deelnemer toegevoegd" });
     },
-    onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
+    onError: (err: Error) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
 
   // Remove participant
@@ -195,7 +197,7 @@ export default function ProgramDetailPage() {
       qc.invalidateQueries({ queryKey: programKeys.all });
       toast({ title: "Deelnemer verwijderd" });
     },
-    onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
+    onError: (err: Error) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
 
   // Mark dropout
@@ -203,7 +205,7 @@ export default function ProgramDetailPage() {
     mutationFn: async ({ enrollmentId, reason, action }: { enrollmentId: string; reason: string; action: string }) => {
       const { error } = await supabase
         .from("program_clients")
-        .update({ early_dropout: true, dropout_reason: reason || null, dropout_action: action || null } as any)
+        .update({ early_dropout: true, dropout_reason: reason || null, dropout_action: action || null })
         .eq("id", enrollmentId);
       if (error) throw error;
     },
@@ -216,7 +218,7 @@ export default function ProgramDetailPage() {
       setDropoutReason("");
       setDropoutAction("");
     },
-    onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
+    onError: (err: Error) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
 
   // Undo dropout
@@ -224,7 +226,7 @@ export default function ProgramDetailPage() {
     mutationFn: async (enrollmentId: string) => {
       const { error } = await supabase
         .from("program_clients")
-        .update({ early_dropout: false, dropout_reason: null, dropout_action: null } as any)
+        .update({ early_dropout: false, dropout_reason: null, dropout_action: null })
         .eq("id", enrollmentId);
       if (error) throw error;
     },
@@ -233,7 +235,7 @@ export default function ProgramDetailPage() {
       qc.invalidateQueries({ queryKey: programKeys.all });
       toast({ title: "Uitval ongedaan gemaakt" });
     },
-    onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
+    onError: (err: Error) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
 
   if (isLoading) {
@@ -320,7 +322,7 @@ export default function ProgramDetailPage() {
               value={program.school_id ?? "geen"}
               onValueChange={async (v) => {
                 const schoolId = v === "geen" ? null : v;
-                const selectedSchool = schools.find((s: any) => s.id === schoolId);
+                const selectedSchool = schools.find((s) => s.id === schoolId);
                 const neighborhoodId = selectedSchool?.neighborhood_id ?? null;
                 const areaId = selectedSchool?.neighborhoods?.area_id ?? null;
                 const { error } = await supabase
@@ -342,7 +344,7 @@ export default function ProgramDetailPage() {
               value={program.training_location_id ?? "geen"}
               onValueChange={async (v) => {
                 const tlId = v === "geen" ? null : v;
-                const tl = trainingLocations.find((t: any) => t.id === tlId);
+                const tl = trainingLocations.find((t) => t.id === tlId);
                 const neighborhoodId = tl?.neighborhood_id ?? null;
                 const areaId = tl?.area_id ?? tl?.neighborhoods?.area_id ?? null;
                 const { error } = await supabase
@@ -367,7 +369,7 @@ export default function ProgramDetailPage() {
               </SelectTrigger>
               <SelectContent className="bg-popover">
                 <SelectItem value="geen">Geen trainingslocatie</SelectItem>
-                {trainingLocations.map((t: any) => (
+                {trainingLocations.map((t) => (
                   <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                 ))}
               </SelectContent>
@@ -396,7 +398,7 @@ export default function ProgramDetailPage() {
                   <SelectValue placeholder="Selecteer een deelnemer" />
                 </SelectTrigger>
                 <SelectContent className="bg-popover">
-                  {availableClients.map((c: any) => (
+                  {availableClients.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.first_name} {c.last_name}
                     </SelectItem>
@@ -418,7 +420,7 @@ export default function ProgramDetailPage() {
               </div>
             ) : (
               <div className="divide-y divide-border">
-                {enrolledClients.map((ec: any) => {
+                {enrolledClients.map((ec) => {
                   const c = ec.clients;
                   if (!c) return null;
                   const isDropout = ec.early_dropout === true;
@@ -625,9 +627,8 @@ function ProgramDocumentGenerator({ programId }: { programId: string }) {
         (tradeName || "").toLowerCase().replace(/\s/g, "").includes("praktijk4kids") ||
         (name || "").toLowerCase().replace(/\s/g, "").includes("praktijk4kids");
 
-      const eligibleTrainers = trainers.filter((t: any) => {
-        const staff = t.staff as any;
-        return !isPraktijk4Kids(staff?.name ?? "", staff?.trade_name ?? "");
+      const eligibleTrainers = trainers.filter((t) => {
+        return !isPraktijk4Kids(t.staff?.name ?? "", t.staff?.trade_name ?? "");
       });
 
       if (eligibleTrainers.length === 0) {
@@ -656,8 +657,8 @@ function ProgramDocumentGenerator({ programId }: { programId: string }) {
         }
       }
       toast({ title: `${eligibleTrainers.length} overeenkomst(en) gegenereerd en gedownload` });
-    } catch (err: any) {
-      toast({ title: "Fout bij genereren", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Fout bij genereren", description: err instanceof Error ? err.message : "Onbekende fout", variant: "destructive" });
     } finally {
       setGenerating(false);
     }
@@ -674,7 +675,7 @@ function ProgramDocumentGenerator({ programId }: { programId: string }) {
             <SelectValue placeholder="Kies een template..." />
           </SelectTrigger>
           <SelectContent className="bg-popover">
-            {templates.map((t: any) => (
+            {templates.map((t) => (
               <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
             ))}
           </SelectContent>
