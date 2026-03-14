@@ -183,7 +183,7 @@ export default function InvoiceManager({ staffId, staffName }: { staffId?: strin
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="text-green-600 hover:text-green-700"
+                          className="text-success hover:text-success/80"
                           onClick={() => statusMutation.mutate({ invoiceId: inv.id, status: "approved" })}
                           title="Goedkeuren"
                         >
