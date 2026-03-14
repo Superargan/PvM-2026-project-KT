@@ -224,7 +224,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
   const queryClient = useQueryClient();
 
   const { data: schools = [] } = useQuery({
-    queryKey: ["schools-import"],
+    queryKey: schoolKeys.all,
     queryFn: async () => {
       const { data } = await supabase.from("schools").select("id, name, neighborhood_id, neighborhoods(area_id)").order("name");
       return data ?? [];
@@ -242,7 +242,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
   });
 
   const { data: referrers = [] } = useQuery({
-    queryKey: ["referrers-import"],
+    queryKey: referrerKeys.all,
     queryFn: async () => {
       const { data } = await supabase.from("referrers").select("id, name, school_id").order("name");
       return data ?? [];
