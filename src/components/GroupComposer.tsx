@@ -371,6 +371,17 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     return ids;
   }, [simulatedGroups, selectedClients]);
 
+  // Track which group each client is assigned to (for exclusive selection)
+  const clientGroupAssignment = useMemo(() => {
+    const map = new Map<string, string>();
+    Object.entries(selectedClients).forEach(([groupKey, clientSet]) => {
+      clientSet.forEach(clientId => {
+        map.set(clientId, groupKey);
+      });
+    });
+    return map;
+  }, [selectedClients]);
+
   const isSimulating = simulatedGroups.size > 0;
 
   // Broad guard: blocks ALL definitive writes from non-definitive work states
