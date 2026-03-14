@@ -631,6 +631,126 @@ export default function ScholenPage() {
     if (file) uploadMutation.mutate(file);
   };
 
+  // ── School TIMES ONLY upload (never creates new schools) ──
+
+  const timesUploadMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const rows = await readFileAsRows(file);
+      if (rows.length === 0) throw new Error("Bestand is leeg");
+
+      const headers = Object.keys(rows[0] ?? {});
+      const startTimeCol = findMatchingColumn(headers, SCHOOL_START_TIME_COLUMNS);
+      const endTimeCol = findMatchingColumn(headers, SCHOOL_END_TIME_COLUMNS);
+      const scheduleTypeCol = findMatchingColumn(headers, SCHEDULE_TYPE_COLUMNS);
+      const sourceCol = findMatchingColumn(headers, SOURCE_COLUMNS);
+      const municipalityCol = findMatchingColumn(headers, MUNICIPALITY_COLUMNS);
+
+      // Fetch all existing schools for matching
+      const { data: existingSchools } = await supabase.from("schools").select("id, name, school_start_time, school_end_time, schedule_type, source, municipality");
+      const existingMap = new Map<string, { id: string; school_start_time: string | null; school_end_time: string | null; schedule_type: string | null; source: string | null; municipality: string | null }>();
+      for (const s of existingSchools ?? []) {
+        existingMap.set(normalizeSchoolName(s.name), s);
+      }
+
+      let invalidTimeCount = 0;
+      let timesSetCount = 0;
+      let municipalitySetCount = 0;
+      const updatedNames: string[] = [];
+      const unmatchedNames: string[] = [];
+
+      for (const r of rows) {
+        const name = r["naam"] || r["Naam"] || r["name"] || r["School"] || r["school"] || r["VESTIGINGSNAAM"] || "";
+        if (!name) continue;
+
+        const normalized = normalizeSchoolName(name);
+        const existing = existingMap.get(normalized);
+
+        if (!existing) {
+          unmatchedNames.push(name);
+          continue;
+        }
+
+        // Parse times
+        const rawStart = startTimeCol ? r[startTimeCol] : null;
+        const rawEnd = endTimeCol ? r[endTimeCol] : null;
+        const parsedStart = parseImportedSchoolTime(rawStart);
+        const parsedEnd = parseImportedSchoolTime(rawEnd);
+
+        if (rawStart && !parsedStart) invalidTimeCount++;
+        if (rawEnd && !parsedEnd) invalidTimeCount++;
+
+        let school_start_time: string | null = null;
+        let school_end_time: string | null = null;
+        const pairValidation = validateSchoolTimePair(parsedStart, parsedEnd);
+        if (pairValidation.valid && parsedStart && parsedEnd) {
+          school_start_time = parsedStart;
+          school_end_time = parsedEnd;
+        } else if (parsedStart || parsedEnd) {
+          invalidTimeCount++;
+        }
+
+        const rawScheduleType = scheduleTypeCol ? String(r[scheduleTypeCol] ?? "").trim().toLowerCase() : "";
+        const schedule_type = rawScheduleType === "traditioneel" || rawScheduleType === "continu" ? rawScheduleType : null;
+        const source = sourceCol ? String(r[sourceCol] ?? "").trim() || null : null;
+        const rawMunicipality = municipalityCol ? String(r[municipalityCol] ?? "").trim() : "";
+        const municipality = rawMunicipality || null;
+
+        const hasTimeUpdate = school_start_time && school_end_time;
+        const hasScheduleTypeUpdate = schedule_type && !existing.schedule_type;
+        const hasSourceUpdate = source && !existing.source;
+        const hasMunicipalityUpdate = municipality && !existing.municipality;
+
+        if (hasTimeUpdate || hasScheduleTypeUpdate || hasSourceUpdate || hasMunicipalityUpdate) {
+          const updatePayload: Record<string, any> = {};
+          if (hasTimeUpdate) {
+            updatePayload.school_start_time = school_start_time;
+            updatePayload.school_end_time = school_end_time;
+          }
+          if (hasScheduleTypeUpdate) updatePayload.schedule_type = schedule_type;
+          if (hasSourceUpdate) updatePayload.source = source;
+          if (hasMunicipalityUpdate) updatePayload.municipality = municipality;
+
+          const { error } = await supabase.from("schools").update(updatePayload).eq("id", existing.id);
+          if (!error) {
+            updatedNames.push(name);
+            if (hasTimeUpdate) timesSetCount++;
+            if (hasMunicipalityUpdate) municipalitySetCount++;
+          }
+        }
+      }
+
+      return { updatedNames, unmatchedNames, timesSet: timesSetCount, invalidTimes: invalidTimeCount, municipalitySet: municipalitySetCount };
+    },
+    onSuccess: (result) => {
+      const parts: string[] = [];
+      if (result.updatedNames.length > 0) parts.push(`${result.updatedNames.length} scholen bijgewerkt`);
+      if (result.timesSet > 0) parts.push(`${result.timesSet} schooltijden ingesteld`);
+      if (result.municipalitySet > 0) parts.push(`${result.municipalitySet} gemeenten ingesteld`);
+      if (result.unmatchedNames.length > 0) parts.push(`${result.unmatchedNames.length} niet gevonden`);
+      if (result.invalidTimes > 0) parts.push(`${result.invalidTimes} ongeldige tijdwaarden`);
+      toast({ title: parts.join(", ") || "Import voltooid — geen wijzigingen" });
+      setTimesUploadOpen(false);
+      setImportResult({
+        added: [],
+        updated: result.updatedNames,
+        unmatched: result.unmatchedNames,
+        timesSet: result.timesSet,
+        invalidTimes: result.invalidTimes,
+        municipalitySet: result.municipalitySet,
+      });
+      setImportResultOpen(true);
+      invalidateAllSchoolQueries(queryClient);
+    },
+    onError: (err: any) => {
+      toast({ title: "Import mislukt", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const handleTimesFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) timesUploadMutation.mutate(file);
+  };
+
   // ── Contact person file upload (Excel + CSV + Outlook) ──
 
   const contactUploadMutation = useMutation({
