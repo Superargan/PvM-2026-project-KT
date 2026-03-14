@@ -611,7 +611,7 @@ export default function ScholenPage() {
       setImportResultOpen(true);
       invalidateAllSchoolQueries(queryClient);
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast({ title: "Import mislukt", description: err.message, variant: "destructive" });
     },
   });
