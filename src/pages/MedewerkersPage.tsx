@@ -563,7 +563,7 @@ export default function MedewerkersPage() {
             <DossierDocumentSection
               trainerId={docTrainerId}
               trainerName={docTrainerName}
-              onRefresh={() => queryClient.invalidateQueries({ queryKey: ["trainers"] })}
+              onRefresh={() => queryClient.invalidateQueries({ queryKey: staffKeys.trainers })}
               trainer={trainers.find((t: any) => t.id === docTrainerId)}
             />
 
