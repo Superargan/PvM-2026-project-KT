@@ -283,7 +283,7 @@ export default function AanmeldingenPage() {
     setSaving(false);
     toast({ title: "Aanmelding bijgewerkt" });
     setEditOpen(false);
-    queryClient.invalidateQueries({ queryKey: ["clients"] });
+    queryClient.invalidateQueries({ queryKey: clientKeys.all });
     queryClient.invalidateQueries({ queryKey: clientKeys.assignments() });
   };
 
