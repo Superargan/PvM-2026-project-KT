@@ -109,7 +109,7 @@ export default function RapportagesPage() {
   });
 
   const { data: programStaff = [] } = useQuery({
-    queryKey: ["rpt_program_staff"],
+    queryKey: rapportageKeys.programStaff,
     queryFn: async () => {
       const { data, error } = await supabase.from("program_staff").select("program_id, staff_id, role, staff:staff!program_staff_staff_id_fkey(name, trade_name)");
       if (error) throw error;
