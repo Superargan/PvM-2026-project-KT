@@ -708,7 +708,15 @@ export default function PlanningPage() {
         )}
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs value={activeTab} onValueChange={(val) => {
+        if (hasUnsavedWork && showGroupComposer && val !== activeTab) {
+          setPendingTabSwitch(val);
+          setDirtyDialogAction("tab");
+          setDirtyDialogOpen(true);
+          return;
+        }
+        setActiveTab(val);
+      }} className="space-y-4">
         <TabsList>
           <TabsTrigger value="groepen">
             <Users className="h-4 w-4 mr-1.5" />
