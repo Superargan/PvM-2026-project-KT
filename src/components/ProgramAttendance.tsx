@@ -100,8 +100,8 @@ export default function ProgramAttendance({
   });
 
   const attMap = useMemo(() => {
-    const map = new Map<string, any>();
-    attendance.forEach((a: any) => map.set(`${a.session_id}_${a.client_id}`, a));
+    const map = new Map<string, typeof attendance[number]>();
+    attendance.forEach((a) => map.set(`${a.session_id}_${a.client_id}`, a));
     return map;
   }, [attendance]);
 
