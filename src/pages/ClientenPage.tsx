@@ -106,21 +106,34 @@ export default function ClientenPage() {
         <div className="flex gap-2">
           {(["csv", "xlsx"] as const).map((fmt) => (
             <Button key={fmt} variant="outline" size="sm" onClick={() => {
-              const rows = filteredClients.map((c: any) => ({
+              const programs = (c as any).program_clients
+                ?.map((pc: any) => pc.programs)
+                .filter((p: any) => p && !p.archived)
+                .sort((a: any, b: any) => {
+                  const order: Record<string, number> = { gepland: 0, gestart: 1, afgerond: 2 };
+                  return (order[a.status] ?? 3) - (order[b.status] ?? 3);
+                }) ?? [];
+              const trainingStr = programs.map((p: any) => 
+                p.training_number ? `${p.training_number} - ${p.name}` : p.name
+              ).join(", ");
+              return {
                 voornaam: c.first_name,
                 achternaam: c.last_name,
                 leeftijd: calculateAge(c.date_of_birth) ?? "",
                 school: c.schools?.name ?? "",
+                training: trainingStr,
                 ouder: c.guardian_name ?? "",
                 telefoon: c.guardian_phone ?? "",
                 email: c.guardian_email ?? "",
                 status: statusLabels[c.intake_status ?? "nieuw"] ?? c.intake_status ?? "",
-              }));
+              };
+            });
               downloadExport(`deelnemers.${fmt}`, [
                 { key: "voornaam", label: "Voornaam" },
                 { key: "achternaam", label: "Achternaam" },
                 { key: "leeftijd", label: "Leeftijd" },
                 { key: "school", label: "School" },
+                { key: "training", label: "Training" },
                 { key: "ouder", label: "Ouder/Verzorger" },
                 { key: "telefoon", label: "Telefoon" },
                 { key: "email", label: "E-mail" },
