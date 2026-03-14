@@ -57,7 +57,7 @@ export function resolveAreaId(client: ClientLike): string | null {
 }
 
 export function getMatchType(
-  client: Pick<ClientAreaFields, "id" | "waitlist_area_id" | "neighborhoods" | "schools" | "all_areas_flexible">,
+  client: ClientLike & { id: string },
   targetAreaId: string,
   prefsByClient: Record<string, Record<string, number>>
 ): MatchType | null {
