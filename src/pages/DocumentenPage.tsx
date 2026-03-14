@@ -829,7 +829,7 @@ function GenerateTab() {
   });
 
   const { data: clients = [] } = useQuery({
-    queryKey: ["clients-list"],
+    queryKey: clientKeys.forProgram,
     queryFn: async () => {
       const { data, error } = await supabase.from("clients").select("id, first_name, last_name").eq("archived", false).order("first_name");
       if (error) throw error;
