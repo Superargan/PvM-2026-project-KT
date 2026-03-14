@@ -147,6 +147,23 @@ export const SCHOOL_END_TIME_COLUMNS = [
   "einde",
 ];
 
+export const SCHEDULE_TYPE_COLUMNS = [
+  "rooster",
+  "roostertype",
+  "type rooster",
+  "schedule_type",
+  "rooster type",
+  "schooltype",
+  "type",
+];
+
+export const SOURCE_COLUMNS = [
+  "bron",
+  "source",
+  "herkomst",
+  "databron",
+];
+
 /**
  * Find the first header that matches any of the candidate names (case-insensitive, trimmed).
  * Returns the original header string or null.

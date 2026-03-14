@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { schoolKeys, invalidateAllSchoolQueries } from "@/lib/queryKeys";
-import { formatSchoolTimeRange, validateSchoolTimePair, parseImportedSchoolTime, findMatchingColumn, normalizeSchoolName, dbTimeToInput, inputTimeToDb, SCHOOL_START_TIME_COLUMNS, SCHOOL_END_TIME_COLUMNS } from "@/lib/schoolTimes";
+import { formatSchoolTimeRange, validateSchoolTimePair, parseImportedSchoolTime, findMatchingColumn, normalizeSchoolName, dbTimeToInput, inputTimeToDb, SCHOOL_START_TIME_COLUMNS, SCHOOL_END_TIME_COLUMNS, SCHEDULE_TYPE_COLUMNS, SOURCE_COLUMNS } from "@/lib/schoolTimes";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -152,6 +152,7 @@ export default function ScholenPage() {
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
   const [docUploading, setDocUploading] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
+  const [addScheduleType, setAddScheduleType] = useState<string>("");
   const [editSaving, setEditSaving] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -282,6 +283,8 @@ export default function ScholenPage() {
       student_count: school.student_count ?? 0,
       school_start_time: dbTimeToInput(school.school_start_time),
       school_end_time: dbTimeToInput(school.school_end_time),
+      schedule_type: school.schedule_type ?? "",
+      source: school.source ?? "",
     });
     setSelectedSchool(school);
     setEditOpen(true);
@@ -321,6 +324,8 @@ export default function ScholenPage() {
       neighborhood_id: neighborhoodId,
       school_start_time: inputTimeToDb(editForm.school_start_time ?? "") as any,
       school_end_time: inputTimeToDb(editForm.school_end_time ?? "") as any,
+      schedule_type: editForm.schedule_type || null,
+      source: editForm.source || null,
     }).eq("id", selectedSchool.id);
 
     setEditSaving(false);
@@ -370,6 +375,8 @@ export default function ScholenPage() {
       neighborhood_id: neighborhoodId,
       school_start_time: inputTimeToDb(startTime) as any,
       school_end_time: inputTimeToDb(endTime) as any,
+      schedule_type: addScheduleType || null,
+      source: (formData.get("source") as string) || null,
     } as any);
 
     if (error) {
@@ -378,6 +385,7 @@ export default function ScholenPage() {
       toast({ title: "School toegevoegd" });
       setSelectedArea("");
       setSelectedNeighborhood("");
+      setAddScheduleType("");
       invalidateAllSchoolQueries(queryClient);
     }
   };
@@ -430,6 +438,8 @@ export default function ScholenPage() {
       const headers = Object.keys(rows[0] ?? {});
       const startTimeCol = findMatchingColumn(headers, SCHOOL_START_TIME_COLUMNS);
       const endTimeCol = findMatchingColumn(headers, SCHOOL_END_TIME_COLUMNS);
+      const scheduleTypeCol = findMatchingColumn(headers, SCHEDULE_TYPE_COLUMNS);
+      const sourceCol = findMatchingColumn(headers, SOURCE_COLUMNS);
 
       let invalidTimeCount = 0;
       let timesSetCount = 0;
@@ -478,6 +488,11 @@ export default function ScholenPage() {
           invalidTimeCount++;
         }
 
+        // Parse schedule type and source
+        const rawScheduleType = scheduleTypeCol ? String(r[scheduleTypeCol] ?? "").trim().toLowerCase() : "";
+        const schedule_type = rawScheduleType === "traditioneel" || rawScheduleType === "continu" ? rawScheduleType : null;
+        const source = sourceCol ? String(r[sourceCol] ?? "").trim() || null : null;
+
         return {
           name: r["naam"] || r["Naam"] || r["name"] || r["School"] || r["school"] || r["VESTIGINGSNAAM"] || "",
           address,
@@ -488,14 +503,16 @@ export default function ScholenPage() {
           neighborhood_id: neighborhoodId,
           school_start_time,
           school_end_time,
+          schedule_type,
+          source,
         };
       }).filter((s) => s.name);
 
       if (mapped.length === 0) throw new Error("Geen geldige scholen gevonden. Zorg dat er een kolom 'Naam' is.");
 
       // Fetch existing schools for deduplication (include times for enrichment policy)
-      const { data: existingSchools } = await supabase.from("schools").select("id, name, school_start_time, school_end_time");
-      const existingMap = new Map<string, { id: string; school_start_time: string | null; school_end_time: string | null }>();
+      const { data: existingSchools } = await supabase.from("schools").select("id, name, school_start_time, school_end_time, schedule_type, source");
+      const existingMap = new Map<string, { id: string; school_start_time: string | null; school_end_time: string | null; schedule_type: string | null; source: string | null }>();
       for (const s of existingSchools ?? []) {
         existingMap.set(normalizeSchoolName(s.name), s);
       }
@@ -511,20 +528,30 @@ export default function ScholenPage() {
           // New school — insert with times
           newSchools.push(s);
           if (s.school_start_time) timesSetCount++;
-        } else if (s.school_start_time && s.school_end_time) {
-          // Existing school — enrich with times only when valid pair provided
-          // Follow overwrite policy: only update when import has valid non-empty values
-          const updateFn = async () => {
-            const { error } = await supabase.from("schools").update({
-              school_start_time: s.school_start_time as any,
-              school_end_time: s.school_end_time as any,
-            }).eq("id", existing.id);
-            if (!error) {
-              updatedCount++;
-              timesSetCount++;
-            }
-          };
-          updatePromises.push(updateFn());
+        } else {
+          // Existing school — enrich with times, schedule_type, source when valid values provided
+          const hasTimeUpdate = s.school_start_time && s.school_end_time;
+          const hasScheduleTypeUpdate = s.schedule_type && !existing.schedule_type;
+          const hasSourceUpdate = s.source && !existing.source;
+
+          if (hasTimeUpdate || hasScheduleTypeUpdate || hasSourceUpdate) {
+            const updateFn = async () => {
+              const updatePayload: Record<string, any> = {};
+              if (hasTimeUpdate) {
+                updatePayload.school_start_time = s.school_start_time;
+                updatePayload.school_end_time = s.school_end_time;
+              }
+              if (hasScheduleTypeUpdate) updatePayload.schedule_type = s.schedule_type;
+              if (hasSourceUpdate) updatePayload.source = s.source;
+
+              const { error } = await supabase.from("schools").update(updatePayload).eq("id", existing.id);
+              if (!error) {
+                updatedCount++;
+                if (hasTimeUpdate) timesSetCount++;
+              }
+            };
+            updatePromises.push(updateFn());
+          }
         }
       }
 
@@ -824,6 +851,8 @@ export default function ScholenPage() {
                 gebied: s.neighborhoods?.areas?.name ?? "",
                 wijk: s.neighborhoods?.name ?? "",
                 leerlingen: s.student_count ?? 0,
+                roostertype: s.schedule_type ?? "",
+                bron: s.source ?? "",
                 schooltijden: formatSchoolTimeRange(s.school_start_time, s.school_end_time),
                 email: s.contact_email ?? "",
                 telefoon: s.contact_phone ?? "",
@@ -836,6 +865,8 @@ export default function ScholenPage() {
                 { key: "gebied", label: "Gebied" },
                 { key: "wijk", label: "Wijk" },
                 { key: "leerlingen", label: "Leerlingen" },
+                { key: "roostertype", label: "Roostertype" },
+                { key: "bron", label: "Bron" },
                 { key: "schooltijden", label: "Schooltijden" },
                 { key: "email", label: "E-mail" },
                 { key: "telefoon", label: "Telefoon" },
@@ -904,7 +935,7 @@ export default function ScholenPage() {
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
                   Upload een Excel (.xlsx/.xls) of CSV-bestand. Zorg dat er minimaal een kolom <strong>Naam</strong> is.
-                  Optionele kolommen: Adres, Email, Telefoon, Leerlingen, Schooltijd begin, Schooltijd eind.
+                  Optionele kolommen: Adres, Email, Telefoon, Leerlingen, Schooltijd begin, Schooltijd eind, Rooster (traditioneel/continu), Bron.
                 </p>
                 <div className="flex items-center justify-center rounded-lg border-2 border-dashed border-border p-8">
                   <label className="flex cursor-pointer flex-col items-center gap-2 text-center">
@@ -973,6 +1004,19 @@ export default function ScholenPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div><Label>Schooltijd begin</Label><Input name="school_start_time" type="time" /></div>
                   <div><Label>Schooltijd eind</Label><Input name="school_end_time" type="time" /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Roostertype</Label>
+                    <Select value={addScheduleType} onValueChange={setAddScheduleType}>
+                      <SelectTrigger><SelectValue placeholder="Selecteer..." /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="traditioneel">Traditioneel</SelectItem>
+                        <SelectItem value="continu">Continu</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>Bron</Label><Input name="source" placeholder="bijv. DUO, handmatig" /></div>
                 </div>
                 <Button type="submit" className="w-full">Opslaan</Button>
               </form>
@@ -1054,6 +1098,7 @@ export default function ScholenPage() {
                 <th className="hidden px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Aanmeldingen</th>
                 <th className="hidden px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Trainingen</th>
                 <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground xl:table-cell">Contactpersonen</th>
+                <th className="hidden px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Rooster</th>
                 <th className="hidden px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Schooltijden</th>
                 <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Leerlingen</th>
                 <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actie</th>
@@ -1061,7 +1106,7 @@ export default function ScholenPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {sorted.length === 0 && (
-                <tr><td colSpan={8} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen scholen gevonden</td></tr>
+                <tr><td colSpan={10} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen scholen gevonden</td></tr>
               )}
               {sorted.map((school: any) => (
                 <tr key={school.id} className="transition-colors hover:bg-muted/30">
@@ -1177,6 +1222,9 @@ export default function ScholenPage() {
                         <UserPlus className="h-3.5 w-3.5" />
                       </Button>
                     </div>
+                  </td>
+                  <td className="hidden px-5 py-4 lg:table-cell text-center">
+                    <span className="text-xs text-card-foreground">{(school as any).schedule_type ? ((school as any).schedule_type === "continu" ? "Continu" : "Traditioneel") : "—"}</span>
                   </td>
                   <td className="hidden px-5 py-4 lg:table-cell text-center">
                     <span className="text-xs text-card-foreground">{formatSchoolTimeRange((school as any).school_start_time, (school as any).school_end_time)}</span>
@@ -1434,6 +1482,22 @@ export default function ScholenPage() {
               <div>
                 <Label>Schooltijd eind</Label>
                 <Input type="time" value={editForm.school_end_time ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, school_end_time: e.target.value }))} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Roostertype</Label>
+                <Select value={editForm.schedule_type ?? ""} onValueChange={(val) => setEditForm((f: any) => ({ ...f, schedule_type: val }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecteer..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="traditioneel">Traditioneel</SelectItem>
+                    <SelectItem value="continu">Continu</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Bron</Label>
+                <Input value={editForm.source ?? ""} onChange={(e) => setEditForm((f: any) => ({ ...f, source: e.target.value }))} placeholder="bijv. DUO, handmatig" />
               </div>
             </div>
             <Button type="submit" className="w-full" disabled={editSaving}>
