@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { areaKeys, clientKeys, schoolKeys } from "@/lib/queryKeys";
-import { formatSchoolTimeRange } from "@/lib/schoolTimes";
+import { formatSchoolTimeRange, getEffectiveMunicipality } from "@/lib/schoolTimes";
 import { getResolvedAreaName } from "@/lib/clientUtils";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, Save, User, ClipboardList, BookOpen, Shield, FileText, Download, CalendarDays, Trash2 } from "lucide-react";
