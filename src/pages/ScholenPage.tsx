@@ -203,7 +203,7 @@ export default function ScholenPage() {
 
   // Fetch client counts per school
   const { data: clientsBySchool = [] } = useQuery({
-    queryKey: ["clients", "by-school"],
+    queryKey: clientKeys.bySchool,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
