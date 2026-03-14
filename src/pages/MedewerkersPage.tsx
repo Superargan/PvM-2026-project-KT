@@ -76,7 +76,7 @@ export default function MedewerkersPage() {
 
   // Fetch medewerkers (users with accounts)
   const { data: medewerkers = [], isLoading: loadingMedewerkers } = useQuery({
-    queryKey: ["medewerkers"],
+    queryKey: staffKeys.medewerkers,
     queryFn: async () => {
       const { data: profiles, error: pErr } = await supabase
         .from("profiles")
