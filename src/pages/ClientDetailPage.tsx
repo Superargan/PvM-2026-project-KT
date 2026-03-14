@@ -716,7 +716,7 @@ export default function ClientDetailPage() {
                   <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
                     <SelectTrigger><SelectValue placeholder="Selecteer een template" /></SelectTrigger>
                     <SelectContent className="bg-popover">
-                      {docTemplates.map((t: any) => (
+                      {docTemplates.map((t) => (
                         <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                       ))}
                     </SelectContent>
