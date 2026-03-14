@@ -1032,6 +1032,10 @@ export default function ScholenPage() {
                   </div>
                   <div><Label>Bron</Label><Input name="source" placeholder="bijv. DUO, handmatig" /></div>
                 </div>
+                <div>
+                  <Label>Gemeente</Label>
+                  <Input name="municipality" placeholder="Leeg = Rotterdam" />
+                </div>
                 <Button type="submit" className="w-full">Opslaan</Button>
               </form>
             </DialogContent>
