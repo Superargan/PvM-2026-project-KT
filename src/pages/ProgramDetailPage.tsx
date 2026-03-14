@@ -218,7 +218,7 @@ export default function ProgramDetailPage() {
       setDropoutReason("");
       setDropoutAction("");
     },
-    onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
+    onError: (err: Error) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
 
   // Undo dropout
