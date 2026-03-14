@@ -3,7 +3,7 @@ import StatCard from "@/components/StatCard";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { schoolKeys } from "@/lib/queryKeys";
+import { schoolKeys, clientKeys, programKeys, staffKeys } from "@/lib/queryKeys";
 
 export default function Dashboard() {
   const { data: clientCount = 0 } = useQuery({
