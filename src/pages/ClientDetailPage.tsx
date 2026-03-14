@@ -318,7 +318,7 @@ export default function ClientDetailPage() {
       queryClient.invalidateQueries({ queryKey: programKeys.all });
       navigate("/clienten");
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast({ title: "Fout bij verwijderen", description: err.message, variant: "destructive" });
     },
   });
