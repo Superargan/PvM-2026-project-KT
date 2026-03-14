@@ -21,11 +21,11 @@ interface ScenarioOverviewProps {
 
 const statusColors: Record<string, string> = {
   concept: "bg-muted text-muted-foreground border-border",
-  vastgezet: "bg-blue-100 text-blue-800 border-blue-300",
-  in_uitwerking: "bg-amber-100 text-amber-800 border-amber-300",
-  gecontroleerd: "bg-emerald-100 text-emerald-800 border-emerald-300",
-  gedeeltelijk_omgezet: "bg-orange-100 text-orange-800 border-orange-300",
-  definitief: "bg-emerald-200 text-emerald-900 border-emerald-400",
+  vastgezet: "bg-info-muted text-info-foreground border-info-border",
+  in_uitwerking: "bg-warning-muted text-warning-foreground border-warning-border",
+  gecontroleerd: "bg-success-muted text-success-foreground border-success-border",
+  gedeeltelijk_omgezet: "bg-warning-muted text-warning-foreground border-warning-border",
+  definitief: "bg-success-muted text-success-foreground border-success-border",
 };
 
 const statusLabels: Record<string, string> = {
