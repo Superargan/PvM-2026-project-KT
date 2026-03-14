@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ProgramStaffInsert } from "@/lib/queryShapes";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { programKeys, staffKeys } from "@/lib/queryKeys";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,17 +58,17 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
   });
 
   const mainTrainers = assignments.filter((a: any) => a.role === "trainer" || a.role === "oudertrainer" || a.role === "kindtrainer");
-  const invallers = assignments.filter((a: any) => a.role === "invaller");
+  const invallers = assignments.filter((a) => a.role === "invaller");
 
   // For invallers, don't filter out already assigned staff (they can sub on different sessions)
   const availableStaffForRole = addRole === "trainer"
-    ? allStaff.filter((s: any) => !assignments.filter((a: any) => a.role === "trainer").map((a: any) => a.staff_id).includes(s.id))
+    ? allStaff.filter((s) => !assignments.filter((a) => a.role === "trainer").map((a) => a.staff_id).includes(s.id))
     : allStaff;
 
   const addMutation = useMutation({
     mutationFn: async () => {
       if (!selectedStaffId) return;
-      const insertData: any = {
+      const insertData: ProgramStaffInsert = {
         program_id: programId,
         staff_id: selectedStaffId,
         role: addRole,
@@ -78,7 +79,7 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
         insertData.session_id = selectedSessionId;
         insertData.replaces_staff_id = replacesStaffId;
       }
-      const { error } = await supabase.from("program_staff").insert(insertData as any);
+      const { error } = await supabase.from("program_staff").insert(insertData);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -89,7 +90,7 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
       setShowAdd(false);
       toast({ title: "Trainer gekoppeld" });
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       const msg = err.message?.includes("unique") || err.message?.includes("duplicate")
         ? "Deze trainer is al gekoppeld aan dit programma"
         : err.message;

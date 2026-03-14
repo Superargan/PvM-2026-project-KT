@@ -60,7 +60,7 @@ export default function ProgramAttendance({
         program_id: programId,
         session_number: i + 1,
       }));
-      const { error } = await supabase.from("program_sessions").insert(rows as any);
+      const { error } = await supabase.from("program_sessions").insert(rows);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: programKeys.sessions(programId) }),
@@ -81,11 +81,11 @@ export default function ProgramAttendance({
         .select("client_id, clients(id, first_name, last_name)")
         .eq("program_id", programId);
       if (error) throw error;
-      return (data ?? []).map((pc: any) => pc.clients).filter(Boolean);
+      return (data ?? []).map((pc) => pc.clients).filter(Boolean);
     },
   });
 
-  const sessionIds = sessions.map((s: any) => s.id);
+  const sessionIds = sessions.map((s) => s.id);
   const { data: attendance = [], isLoading: attLoading } = useQuery({
     queryKey: [...attendanceKeys.all, programId, sessionIds],
     enabled: open && sessionIds.length > 0,
@@ -100,14 +100,14 @@ export default function ProgramAttendance({
   });
 
   const attMap = useMemo(() => {
-    const map = new Map<string, any>();
-    attendance.forEach((a: any) => map.set(`${a.session_id}_${a.client_id}`, a));
+    const map = new Map<string, typeof attendance[number]>();
+    attendance.forEach((a) => map.set(`${a.session_id}_${a.client_id}`, a));
     return map;
   }, [attendance]);
 
   // Derive effective status per session (persisted status + capacity check)
   const sessionsWithEffectiveStatus = useMemo(() => {
-    return sessions.map((s: any) => {
+    return sessions.map((s) => {
       const persisted = (s.status ?? "beschikbaar") as SessionStatus;
       const effective = getCapacityStatus(persisted, enrolledCount || enrolledClients.length, minParticipants ?? null, maxParticipants ?? null);
       return { ...s, effectiveStatus: effective };
@@ -117,7 +117,7 @@ export default function ProgramAttendance({
   // Filter sessions
   const filteredSessions = useMemo(() => {
     if (statusFilter === "alle") return sessionsWithEffectiveStatus;
-    return sessionsWithEffectiveStatus.filter((s: any) => s.effectiveStatus === statusFilter);
+    return sessionsWithEffectiveStatus.filter((s) => s.effectiveStatus === statusFilter);
   }, [sessionsWithEffectiveStatus, statusFilter]);
 
   const toggleAttendance = useMutation({
@@ -125,15 +125,15 @@ export default function ProgramAttendance({
       const key = `${sessionId}_${clientId}`;
       const existing = attMap.get(key);
       if (existing) {
-        const { error } = await supabase.from("attendance").update({ present } as any).eq("id", existing.id);
+        const { error } = await supabase.from("attendance").update({ present }).eq("id", existing.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("attendance").insert({ session_id: sessionId, client_id: clientId, present } as any);
+        const { error } = await supabase.from("attendance").insert({ session_id: sessionId, client_id: clientId, present });
         if (error) throw error;
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: attendanceKeys.all }),
-    onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
+    onError: (err: Error) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
 
   const loading = sessionsLoading || attLoading || createSessionsMut.isPending;

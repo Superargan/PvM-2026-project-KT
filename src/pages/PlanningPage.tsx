@@ -547,7 +547,7 @@ export default function PlanningPage() {
         available_date: availDate,
         start_time: availStart,
         end_time: availEnd,
-      } as any, { onConflict: "staff_id,available_date" });
+      }, { onConflict: "staff_id,available_date" });
       if (error) {
         toast({ title: "Fout", description: error.message, variant: "destructive" });
       } else {
@@ -562,7 +562,7 @@ export default function PlanningPage() {
         available_date: availDate,
         start_time: availStart,
         end_time: availEnd,
-      } as any, { onConflict: "client_id,available_date" });
+      }, { onConflict: "client_id,available_date" });
       if (error) {
         toast({ title: "Fout", description: error.message, variant: "destructive" });
       } else {

@@ -76,7 +76,7 @@ export default function SessionDetails({ session, programId, isBackoffice = true
       .update({
         session_date: pendingDate,
         status: "handmatig_vrijgegeven",
-      } as any)
+      })
       .eq("id", session.id);
 
     if (error) {
@@ -90,10 +90,10 @@ export default function SessionDetails({ session, programId, isBackoffice = true
 
     await supabase.from("session_override_logs").insert({
       session_id: session.id,
-      overridden_by: userData.user?.id,
+      overridden_by: userData.user?.id ?? "",
       override_type: overrideType,
       reason: overrideReason.trim(),
-    } as any);
+    });
 
     setSessionDate(pendingDate);
     setOverrideOpen(false);
@@ -110,7 +110,7 @@ export default function SessionDetails({ session, programId, isBackoffice = true
           session_date: sessionDate || null,
           start_time: sessionStartTime || null,
           end_time: sessionEndTime || null,
-        } as any)
+        })
         .eq("id", session.id);
       if (error) throw error;
     },
@@ -118,14 +118,14 @@ export default function SessionDetails({ session, programId, isBackoffice = true
       qc.invalidateQueries({ queryKey: programKeys.sessions(programId) });
       toast({ title: "Sessie opgeslagen" });
     },
-    onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
+    onError: (err: Error) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
 
   const updateLocation = useMutation({
     mutationFn: async () => {
       const { error } = await supabase
         .from("program_sessions")
-        .update({ location } as any)
+        .update({ location })
         .eq("id", session.id);
       if (error) throw error;
     },
@@ -133,7 +133,7 @@ export default function SessionDetails({ session, programId, isBackoffice = true
       qc.invalidateQueries({ queryKey: programKeys.sessions(programId) });
       toast({ title: "Locatie opgeslagen" });
     },
-    onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
+    onError: (err: Error) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
 
   // Fetch documents for this session
@@ -166,14 +166,15 @@ export default function SessionDetails({ session, programId, isBackoffice = true
         session_id: session.id,
         file_name: file.name,
         file_path: path,
-        uploaded_by: userData.user?.id,
-      } as any);
+        uploaded_by: userData.user?.id ?? "",
+      });
       if (insertErr) throw insertErr;
 
       qc.invalidateQueries({ queryKey: programKeys.sessionDocs(session.id) });
       toast({ title: "Document geüpload" });
-    } catch (err: any) {
-      toast({ title: "Fout", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Onbekende fout";
+      toast({ title: "Fout", description: message, variant: "destructive" });
     } finally {
       setUploading(false);
       e.target.value = "";
