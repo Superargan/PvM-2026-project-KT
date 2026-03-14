@@ -617,8 +617,8 @@ export default function ScheduleGenerator({ programId, programName, programStart
 
           {/* Availability warnings */}
           {Object.keys(availabilityWarnings).length > 0 && (
-            <div className="rounded-lg border border-amber-300/50 bg-amber-50 dark:bg-amber-950/20 p-3 space-y-2">
-              <div className="flex items-center gap-2 text-sm font-medium text-amber-800 dark:text-amber-300">
+            <div className="rounded-lg border border-warning-border/50 bg-warning-muted p-3 space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-warning-foreground">
                 <Users className="h-4 w-4" />
                 Beschikbaarheidswaarschuwingen
               </div>
