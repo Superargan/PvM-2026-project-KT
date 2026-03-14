@@ -276,7 +276,7 @@ export default function ScholenPage() {
     ? areas.find((a) => a.id === selectedArea)?.neighborhoods ?? []
     : [];
 
-  const openEditSchool = (school: any) => {
+  const openEditSchool = (school: SchoolListRow) => {
     // Find the area from the neighborhood
     const neighborhoodId = school.neighborhood_id ?? "";
     let areaId = "";
