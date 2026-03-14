@@ -1484,7 +1484,7 @@ export default function ScholenPage() {
           }
           return true;
         });
-        const sorted = [...filtered].sort((a: any, b: any) => {
+        const sorted = [...filtered].sort((a, b) => {
           if (sortBy === "aanmeldingen") return (getTotalClients(b.id)) - (getTotalClients(a.id));
           if (sortBy === "naam-az") return (a.name ?? "").localeCompare(b.name ?? "", "nl");
           if (sortBy === "naam-za") return (b.name ?? "").localeCompare(a.name ?? "", "nl");
