@@ -116,6 +116,26 @@
     --sidebar-accent-foreground: 210 10% 80%;
     --sidebar-border: 210 22% 14%;
     --sidebar-ring: 16 82% 55%;
+
+    --warning: 45 80% 50%;
+    --warning-foreground: 48 80% 80%;
+    --warning-muted: 45 40% 15%;
+    --warning-border: 45 50% 30%;
+
+    --success: 152 50% 38%;
+    --success-foreground: 148 60% 80%;
+    --success-muted: 150 30% 14%;
+    --success-border: 150 35% 28%;
+
+    --info: 205 65% 48%;
+    --info-foreground: 206 70% 82%;
+    --info-muted: 205 35% 14%;
+    --info-border: 205 40% 28%;
+
+    --purple: 270 45% 55%;
+    --purple-foreground: 270 50% 82%;
+    --purple-muted: 270 30% 15%;
+    --purple-border: 270 35% 30%;
   }
 }
 
