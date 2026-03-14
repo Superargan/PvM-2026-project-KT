@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { calculateAge, getAgeGroup, getResolvedAreaName, statusLabels, statusStyles } from "@/lib/DomainResolver";
+import type { ClientListRow, ProgramRef } from "@/lib/queryShapes";
 
 interface ClientListTableProps {
   clients: any[];
