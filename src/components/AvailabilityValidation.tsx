@@ -367,7 +367,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
                       <TableCell className="text-right text-sm">
                         {v.usableRecords}
                         {v.totalRecords > 0 && v.usableRecords < v.totalRecords && (
-                          <span className="ml-1 text-amber-600 text-xs">({v.totalRecords - v.usableRecords} onbruikbaar)</span>
+                          <span className="ml-1 text-warning text-xs">({v.totalRecords - v.usableRecords} onbruikbaar)</span>
                         )}
                       </TableCell>
                       <TableCell className="text-right text-sm">{v.futureDays}</TableCell>
