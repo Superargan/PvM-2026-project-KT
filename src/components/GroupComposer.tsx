@@ -1158,17 +1158,17 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
           <Users className="h-3 w-3 mr-1" />
           {waitlistClients.length} aanmelders
         </Badge>
-        <Badge variant="outline" className="border-blue-300 text-blue-700">
+        <Badge variant="outline" className="border-info-border text-info-foreground">
           {waitlistClients.filter((c: any) => c.intake_status === "intake_afgerond").length} intake afgerond
         </Badge>
-        <Badge variant="outline" className="border-orange-300 text-orange-700">
+        <Badge variant="outline" className="border-warning-border text-warning-foreground">
           {waitlistClients.filter((c: any) => c.intake_status === "wachtlijst").length} wachtlijst
         </Badge>
-        <Badge variant="outline" className="border-emerald-300 text-emerald-700">
+        <Badge variant="outline" className="border-success-border text-success-foreground">
           {groups.filter(g => g.clients.length >= 7).length} groep(en) gereed
         </Badge>
         {unassigned.length > 0 && (
-          <Badge variant="outline" className="border-amber-300 text-amber-700">
+          <Badge variant="outline" className="border-warning-border text-warning-foreground">
             {unassigned.length} zonder gebied/leeftijd
           </Badge>
         )}
