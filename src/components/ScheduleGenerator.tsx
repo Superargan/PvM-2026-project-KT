@@ -585,7 +585,7 @@ export default function ScheduleGenerator({ programId, programName, programStart
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-6 w-6 p-0 text-amber-600"
+                              className="h-6 w-6 p-0 text-warning"
                               title="Override (alleen admin)"
                               onClick={() => {
                                 const overrideType: OverrideType = session.status === "feestdag" ? "feestdag" : "schoolvakantie";
@@ -625,7 +625,7 @@ export default function ScheduleGenerator({ programId, programName, programStart
               {Object.entries(availabilityWarnings).map(([idx, warnings]) => {
                 const session = generated[parseInt(idx)];
                 return (
-                  <div key={idx} className="text-xs text-amber-700 dark:text-amber-400">
+                  <div key={idx} className="text-xs text-warning-foreground">
                     <strong>Sessie {session.session_number} ({format(new Date(session.date), "d MMM", { locale: nl })})</strong>:
                     <ul className="ml-4 mt-0.5 space-y-0.5">
                       {warnings.map((w: any) => (
@@ -658,7 +658,7 @@ export default function ScheduleGenerator({ programId, programName, programStart
               Bevestig planning
             </Button>
             {blockedSessions.length > 0 && (
-              <span className="text-xs text-amber-600">
+              <span className="text-xs text-warning">
                 {blockedSessions.length} sessie(s) geblokkeerd (feestdag/vakantie)
               </span>
             )}
@@ -679,7 +679,7 @@ export default function ScheduleGenerator({ programId, programName, programStart
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <ShieldAlert className="h-5 w-5 text-amber-600" />
+              <ShieldAlert className="h-5 w-5 text-warning" />
               Override bevestigen
             </AlertDialogTitle>
             <AlertDialogDescription asChild>

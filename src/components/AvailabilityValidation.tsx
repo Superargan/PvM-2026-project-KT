@@ -303,11 +303,11 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
 
       {/* Stats badges */}
       <div className="flex flex-wrap gap-3">
-        <Badge variant="outline" className="gap-1.5 text-sm px-3 py-1 border-emerald-400 text-emerald-700">
+        <Badge variant="outline" className="gap-1.5 text-sm px-3 py-1 border-success-border text-success-foreground">
           <CheckCircle2 className="h-3.5 w-3.5" />
           <span className="font-bold">{counts.voldoende}</span> voldoende dekking
         </Badge>
-        <Badge variant="outline" className="gap-1.5 text-sm px-3 py-1 border-amber-400 text-amber-700">
+        <Badge variant="outline" className="gap-1.5 text-sm px-3 py-1 border-warning-border text-warning-foreground">
           <AlertTriangle className="h-3.5 w-3.5" />
           <span className="font-bold">{counts.onvolledig}</span> onvolledig
         </Badge>
@@ -367,7 +367,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
                       <TableCell className="text-right text-sm">
                         {v.usableRecords}
                         {v.totalRecords > 0 && v.usableRecords < v.totalRecords && (
-                          <span className="ml-1 text-amber-600 text-xs">({v.totalRecords - v.usableRecords} onbruikbaar)</span>
+                          <span className="ml-1 text-warning text-xs">({v.totalRecords - v.usableRecords} onbruikbaar)</span>
                         )}
                       </TableCell>
                       <TableCell className="text-right text-sm">{v.futureDays}</TableCell>
@@ -376,12 +376,12 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
                       </TableCell>
                       <TableCell>
                         {v.result === "voldoende" && (
-                          <Badge variant="outline" className="text-[10px] border-emerald-400 text-emerald-700 gap-1">
+                          <Badge variant="outline" className="text-[10px] border-success-border text-success-foreground gap-1">
                             <CheckCircle2 className="h-3 w-3" /> Voldoende
                           </Badge>
                         )}
                         {v.result === "onvolledig" && (
-                          <Badge variant="outline" className="text-[10px] border-amber-400 text-amber-700 gap-1">
+                          <Badge variant="outline" className="text-[10px] border-warning-border text-warning-foreground gap-1">
                             <AlertTriangle className="h-3 w-3" /> Onvolledig
                           </Badge>
                         )}
@@ -400,7 +400,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
                             </TooltipContent>
                           </Tooltip>
                         ) : v.result === "voldoende" ? (
-                          <span className="text-emerald-600">✓ OK</span>
+                          <span className="text-success">✓ OK</span>
                         ) : null}
                       </TableCell>
                     </TableRow>

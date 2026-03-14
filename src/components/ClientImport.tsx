@@ -887,9 +887,9 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
                   <p className="text-xs text-warning-foreground/80">Koppel hieronder de juiste school, of laat leeg om zonder school te importeren.</p>
                   {unmatchedSchools.map((name) => (
                     <div key={name} className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-amber-900 min-w-[120px] truncate" title={name}>"{name}"</span>
+                      <span className="text-xs font-medium text-warning-foreground min-w-[120px] truncate" title={name}>"{name}"</span>
                       <select
-                        className="flex-1 rounded border border-amber-300 bg-white px-2 py-1 text-xs"
+                        className="flex-1 rounded border border-warning-border bg-white px-2 py-1 text-xs"
                         value={schoolResolutions[name] ?? ""}
                         onChange={(e) => setSchoolResolutions((prev) => ({ ...prev, [name]: e.target.value }))}
                       >
@@ -919,7 +919,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
           {result && (
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-2 text-sm">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <CheckCircle2 className="h-5 w-5 text-success" />
                 <span><strong>{result.added}</strong> toegevoegd</span>
                 {result.updated > 0 && (
                   <span className="text-muted-foreground">• {result.updated} bijgewerkt</span>

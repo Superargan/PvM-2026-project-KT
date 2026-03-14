@@ -1187,7 +1187,7 @@ function DuplicateScan({ clients, isLoading, onNavigate, onEdit }: {
   if (groups.length === 0) {
     return (
       <div className="rounded-xl border border-border bg-card p-6 text-center">
-        <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
+        <CheckCircle2 className="h-8 w-8 text-success mx-auto mb-2" />
         <p className="text-sm font-semibold text-foreground">Geen duplicaten gevonden</p>
         <p className="text-xs text-muted-foreground mt-1">Alle {clients.length} deelnemers hebben unieke namen.</p>
       </div>
@@ -1200,9 +1200,9 @@ function DuplicateScan({ clients, isLoading, onNavigate, onEdit }: {
         <span className="font-semibold text-foreground">{groups.length}</span> groep(en) met mogelijke duplicaten gevonden
       </p>
       {groups.map((group) => (
-        <div key={group.key} className="rounded-xl border border-amber-300 bg-card p-4 space-y-2">
+        <div key={group.key} className="rounded-xl border border-warning-border bg-card p-4 space-y-2">
           <p className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <Users className="h-4 w-4 text-amber-600" />
+            <Users className="h-4 w-4 text-warning" />
             {group.clients[0].first_name} {group.clients[0].last_name}
             <Badge variant="outline" className="text-[10px]">{group.clients.length}×</Badge>
           </p>

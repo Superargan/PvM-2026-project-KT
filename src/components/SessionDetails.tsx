@@ -332,7 +332,7 @@ export default function SessionDetails({ session, programId, isBackoffice = true
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <ShieldAlert className="h-5 w-5 text-amber-600" />
+              <ShieldAlert className="h-5 w-5 text-warning" />
               Override bevestigen
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
@@ -356,7 +356,7 @@ export default function SessionDetails({ session, programId, isBackoffice = true
             <AlertDialogAction
               onClick={handleOverrideConfirm}
               disabled={!overrideReason.trim()}
-              className="bg-amber-600 text-white hover:bg-amber-700"
+              className="bg-warning text-white hover:bg-warning/90"
             >
               Ja, toch vrijgeven
             </AlertDialogAction>

@@ -1315,17 +1315,17 @@ export default function ScholenPage() {
 
                 {/* School name resolution step */}
                 {timesShowResolution && timesUnmatched.length > 0 && (
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2">
-                    <p className="text-sm font-medium text-amber-900 flex items-center gap-1.5">
+                  <div className="rounded-lg border border-warning-border bg-warning-muted p-3 space-y-2">
+                    <p className="text-sm font-medium text-warning-foreground flex items-center gap-1.5">
                       <AlertTriangle className="h-4 w-4" />
                       {timesUnmatched.length} schoolna{timesUnmatched.length === 1 ? "am" : "men"} niet automatisch herkend
                     </p>
-                    <p className="text-xs text-amber-700">Koppel hieronder de juiste school, of laat op "Overslaan" om deze rij(en) te negeren.</p>
+                    <p className="text-xs text-warning-foreground/80">Koppel hieronder de juiste school, of laat op "Overslaan" om deze rij(en) te negeren.</p>
                     {timesUnmatched.map((name) => (
                       <div key={name} className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-amber-900 min-w-[120px] truncate" title={name}>"{name}"</span>
+                        <span className="text-xs font-medium text-warning-foreground min-w-[120px] truncate" title={name}>"{name}"</span>
                         <select
-                          className="flex-1 rounded border border-amber-300 bg-white px-2 py-1 text-xs"
+                          className="flex-1 rounded border border-warning-border bg-white px-2 py-1 text-xs"
                           value={timesResolutions[name] ?? ""}
                           onChange={(e) => setTimesResolutions((prev) => ({ ...prev, [name]: e.target.value }))}
                         >
@@ -2137,8 +2137,8 @@ export default function ScholenPage() {
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">{groups.length} groep{groups.length !== 1 ? "en" : ""} met mogelijke duplicaten gevonden.</p>
                 {groups.map((g, gi) => (
-                  <div key={gi} className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-700 p-3 space-y-2">
-                    <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300">
+                  <div key={gi} className="rounded-lg border border-warning-border bg-warning-muted p-3 space-y-2">
+                    <div className="flex items-center gap-2 text-warning-foreground">
                       <AlertTriangle className="h-4 w-4 shrink-0" />
                       <span className="text-sm font-semibold">{g.items.length} scholen met vergelijkbare naam</span>
                     </div>

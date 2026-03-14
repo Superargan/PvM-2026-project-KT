@@ -197,7 +197,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
           )}
           {matrix.estimatedDob > 0 && (
             <Popover>
-              <PopoverTrigger className="inline-flex items-center rounded-full border px-3 py-1 text-sm font-semibold border-amber-400 text-amber-700 cursor-pointer hover:bg-amber-50">
+              <PopoverTrigger className="inline-flex items-center rounded-full border px-3 py-1 text-sm font-semibold border-warning-border text-warning-foreground cursor-pointer hover:bg-warning-muted">
                   ⚠ {matrix.estimatedDob} geschatte geboortedatum
               </PopoverTrigger>
               <PopoverContent className="w-72 max-h-64 overflow-y-auto p-2" align="start">
@@ -300,10 +300,10 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
                                   onClick={() => onSelectGroup?.(area.id, age)}
                                   className={`inline-flex flex-col items-center rounded-lg px-3 py-1.5 text-sm font-bold transition-colors min-w-[80px] ${
                                     ready
-                                      ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300"
+                                      ? "bg-success-muted text-success-foreground hover:bg-success-muted/80 border border-success-border"
                                       : partial
-                                      ? "bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300"
-                                      : "bg-red-100 text-red-800 hover:bg-red-200 border border-red-300"
+                                      ? "bg-warning-muted text-warning-foreground hover:bg-warning-muted/80 border border-warning-border"
+                                      : "bg-destructive/10 text-destructive hover:bg-destructive/15 border border-destructive/30"
                                   }`}
                                 >
                                   <span className="flex items-center gap-1.5">
@@ -387,10 +387,10 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
         </div>
 
         <p className="text-xs text-muted-foreground">
-          <span className="inline-block w-3 h-3 rounded bg-emerald-200 border border-emerald-300 mr-1 align-middle" /> ≥7 (gereed)
-          <span className="inline-block w-3 h-3 rounded bg-amber-200 border border-amber-300 mr-1 ml-3 align-middle" /> 5-6 (bijna)
-          <span className="inline-block w-3 h-3 rounded bg-red-200 border border-red-300 mr-1 ml-3 align-middle" /> &lt;5
-          <span className="ml-3"><span className="text-blue-700 font-semibold">i</span>=intake afgerond <span className="text-orange-700 font-semibold">w</span>=wachtlijst</span>
+          <span className="inline-block w-3 h-3 rounded bg-success-muted border border-success-border mr-1 align-middle" /> ≥7 (gereed)
+          <span className="inline-block w-3 h-3 rounded bg-warning-muted border border-warning-border mr-1 ml-3 align-middle" /> 5-6 (bijna)
+          <span className="inline-block w-3 h-3 rounded bg-destructive/10 border border-destructive/30 mr-1 ml-3 align-middle" /> &lt;5
+          <span className="ml-3"><span className="text-info-foreground font-semibold">i</span>=intake afgerond <span className="text-warning-foreground font-semibold">w</span>=wachtlijst</span>
         </p>
       </div>
     </TooltipProvider>

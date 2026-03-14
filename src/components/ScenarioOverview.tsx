@@ -21,11 +21,11 @@ interface ScenarioOverviewProps {
 
 const statusColors: Record<string, string> = {
   concept: "bg-muted text-muted-foreground border-border",
-  vastgezet: "bg-blue-100 text-blue-800 border-blue-300",
-  in_uitwerking: "bg-amber-100 text-amber-800 border-amber-300",
-  gecontroleerd: "bg-emerald-100 text-emerald-800 border-emerald-300",
-  gedeeltelijk_omgezet: "bg-orange-100 text-orange-800 border-orange-300",
-  definitief: "bg-emerald-200 text-emerald-900 border-emerald-400",
+  vastgezet: "bg-info-muted text-info-foreground border-info-border",
+  in_uitwerking: "bg-warning-muted text-warning-foreground border-warning-border",
+  gecontroleerd: "bg-success-muted text-success-foreground border-success-border",
+  gedeeltelijk_omgezet: "bg-warning-muted text-warning-foreground border-warning-border",
+  definitief: "bg-success-muted text-success-foreground border-success-border",
 };
 
 const statusLabels: Record<string, string> = {
@@ -38,9 +38,9 @@ const statusLabels: Record<string, string> = {
 };
 
 const validationColors: Record<string, string> = {
-  geldig: "bg-emerald-100 text-emerald-800 border-emerald-300",
-  aandacht_vereist: "bg-amber-100 text-amber-800 border-amber-300",
-  ongeldig: "bg-red-100 text-red-800 border-red-300",
+  geldig: "bg-success-muted text-success-foreground border-success-border",
+  aandacht_vereist: "bg-warning-muted text-warning-foreground border-warning-border",
+  ongeldig: "bg-destructive/10 text-destructive border-destructive/30",
   niet_gevalideerd: "bg-muted text-muted-foreground border-border",
 };
 
@@ -304,9 +304,9 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                         <div className="space-y-2">
                           {slotResults.map((sr: any, i: number) => (
                             <div key={sr.slotId ?? i} className={`rounded-lg border p-2 text-xs ${
-                              sr.status === "geldig" ? "border-emerald-200 bg-emerald-50/50" :
-                              sr.status === "aandacht_vereist" ? "border-amber-200 bg-amber-50/50" :
-                              "border-red-200 bg-red-50/50"
+                              sr.status === "geldig" ? "border-success-border bg-success-muted/50" :
+                              sr.status === "aandacht_vereist" ? "border-warning-border bg-warning-muted/50" :
+                              "border-destructive/30 bg-destructive/5"
                             }`}>
                               <div className="flex items-center gap-2 mb-1">
                                 <span className="font-semibold text-foreground">Slot {i + 1}</span>

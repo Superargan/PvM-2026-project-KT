@@ -1575,9 +1575,9 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                   
                   if (suggestions.length === 0) {
                     return (
-                      <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 flex items-center gap-2">
-                        <CalendarClock className="h-4 w-4 text-amber-600 shrink-0" />
-                        <p className="text-xs text-amber-800">Geen overlappend moment gevonden. {clientsWithAvail}/{selected.size} aanmelders hebben beschikbaarheid.</p>
+                      <div className="rounded-lg border border-warning-border bg-warning-muted/50 p-3 flex items-center gap-2">
+                        <CalendarClock className="h-4 w-4 text-warning shrink-0" />
+                        <p className="text-xs text-warning-foreground">Geen overlappend moment gevonden. {clientsWithAvail}/{selected.size} aanmelders hebben beschikbaarheid.</p>
                       </div>
                     );
                   }
@@ -1590,11 +1590,11 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                         const showAlts = expandedAlternatives.has(altKey);
                         return (
                           <div key={idx} className="space-y-1">
-                            <div className={`rounded-lg border p-3 space-y-1 ${isThisSimulated ? "border-primary ring-1 ring-primary/30 bg-primary/5" : idx === 0 ? "border-emerald-200 bg-emerald-50/50" : "border-border bg-muted/20"}`}>
+                            <div className={`rounded-lg border p-3 space-y-1 ${isThisSimulated ? "border-primary ring-1 ring-primary/30 bg-primary/5" : idx === 0 ? "border-success-border bg-success-muted/50" : "border-border bg-muted/20"}`}>
                               <div className="flex items-center gap-2 justify-between">
                                 <div className="flex items-center gap-2">
-                                  <CalendarClock className={`h-4 w-4 shrink-0 ${isThisSimulated ? "text-primary" : idx === 0 ? "text-emerald-600" : "text-muted-foreground"}`} />
-                                  <p className={`text-xs font-semibold ${isThisSimulated ? "text-primary" : idx === 0 ? "text-emerald-800" : "text-foreground"}`}>Voorstel {idx + 1}</p>
+                                  <CalendarClock className={`h-4 w-4 shrink-0 ${isThisSimulated ? "text-primary" : idx === 0 ? "text-success" : "text-muted-foreground"}`} />
+                                  <p className={`text-xs font-semibold ${isThisSimulated ? "text-primary" : idx === 0 ? "text-success-foreground" : "text-foreground"}`}>Voorstel {idx + 1}</p>
                                 </div>
                                 <Button
                                   variant={isThisSimulated ? "secondary" : "ghost"}
@@ -1724,9 +1724,9 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
         return (
           <>
             {noArea.length > 0 && (
-              <Card className="border-amber-200 bg-amber-50/50">
+              <Card className="border-warning-border bg-warning-muted/50">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-semibold text-amber-800">
+                  <CardTitle className="text-sm font-semibold text-warning-foreground">
                     <AlertTriangle className="h-4 w-4 inline mr-1" />
                     Aanmelders zonder gebied ({noArea.length})
                   </CardTitle>
@@ -1734,7 +1734,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                 <CardContent>
                   <div className="flex flex-wrap gap-1">
                     {noArea.map((c: any) => (
-                      <Badge key={c.id} variant="outline" className="text-xs border-amber-300 text-amber-700 cursor-pointer hover:bg-amber-100" onClick={() => navigate(`/clienten/${c.id}`)}>
+                      <Badge key={c.id} variant="outline" className="text-xs border-warning-border text-warning-foreground cursor-pointer hover:bg-warning-muted" onClick={() => navigate(`/clienten/${c.id}`)}>
                         {c.first_name} {c.last_name}
                       </Badge>
                     ))}
@@ -1743,9 +1743,9 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
               </Card>
             )}
             {noAge.length > 0 && (
-              <Card className="border-red-200 bg-red-50/50">
+              <Card className="border-destructive/30 bg-destructive/5">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-semibold text-red-800">
+                  <CardTitle className="text-sm font-semibold text-destructive">
                     <AlertTriangle className="h-4 w-4 inline mr-1" />
                     Aanmelders zonder geboortedatum ({noAge.length})
                   </CardTitle>
@@ -1753,7 +1753,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                 <CardContent>
                   <div className="flex flex-wrap gap-1">
                     {noAge.map((c: any) => (
-                      <Badge key={c.id} variant="outline" className="text-xs border-red-300 text-red-700 cursor-pointer hover:bg-red-100" onClick={() => navigate(`/clienten/${c.id}`)}>
+                      <Badge key={c.id} variant="outline" className="text-xs border-destructive/30 text-destructive cursor-pointer hover:bg-destructive/10" onClick={() => navigate(`/clienten/${c.id}`)}>
                         {c.first_name} {c.last_name}
                       </Badge>
                     ))}
@@ -1920,12 +1920,12 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
           </DialogHeader>
           <div className="space-y-2">
             {(convertResultDialog ?? []).map((result: any, idx: number) => (
-              <div key={idx} className={`rounded-lg border p-3 ${result.status === "gelukt" ? "border-emerald-300 bg-emerald-50" : "border-red-300 bg-red-50"}`}>
+              <div key={idx} className={`rounded-lg border p-3 ${result.status === "gelukt" ? "border-success-border bg-success-muted" : "border-destructive/30 bg-destructive/5"}`}>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold">
                     Slot {result.label ?? idx + 1}
                   </span>
-                  <Badge variant="outline" className={result.status === "gelukt" ? "border-emerald-300 text-emerald-700" : "border-red-300 text-red-700"}>
+                  <Badge variant="outline" className={result.status === "gelukt" ? "border-success-border text-success-foreground" : "border-destructive/30 text-destructive"}>
                     {result.status === "gelukt" ? (result.linked ? "✓ Gekoppeld" : "✓ Omgezet") : "✗ Mislukt"}
                   </Badge>
                 </div>
