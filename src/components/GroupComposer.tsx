@@ -703,7 +703,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
       if (error) throw error;
 
       const savedId = data as string;
-      toast({ title: activeScenarioId ? "Scenario bijgewerkt" : "Scenario opgeslagen" });
+      toast({ title: activeScenarioId ? "Proforma planning bijgewerkt" : "Proforma planning opgeslagen" });
       queryClient.invalidateQueries({ queryKey: scenarioKeys.all });
 
       // Update snapshot
