@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
-import { normalizeKey, findCol, parseExcelDate, parseTime } from "@/lib/importUtils";
+import { normalizeKey, findCol, parseExcelDate, parseTime, parseAvailabilityCell as importParseAvailabilityCell, expandWeekdayToDates as importExpandWeekdayToDates } from "@/lib/ImportEngine";
 import { staffKeys, clientKeys, programKeys, planningKeys } from "@/lib/queryKeys";
 
 type ImportType = "trainer_beschikbaarheid" | "deelnemer_beschikbaarheid" | "sessies";

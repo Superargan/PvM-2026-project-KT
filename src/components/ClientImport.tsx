@@ -17,180 +17,26 @@ import {
   findAreaMatch,
   findReferrerMatch,
   type EntityRef,
-} from "@/lib/importUtils";
+  parseAvailabilityCell,
+  generateDatesForDay,
+  splitName,
+  normalizeGender,
+  isNonPersonReferralSource,
+  detectDateFormat,
+} from "@/lib/ImportEngine";
 
 interface ParsedRow {
   [key: string]: any;
 }
 
-// normalizeKey, findCol, parseExcelDate imported from @/lib/importUtils
-
-/**
- * Detect whether dates in the dataset are in MM/DD (US) or DD/MM (EU) format.
- * Scans all string-like date values: if any first-part > 12, it must be DD/MM;
- * if any second-part > 12, it must be MM/DD. Default: DD/MM (Dutch).
- */
-function detectDateFormat(rows: ParsedRow[]): "mdy" | "dmy" {
-  const dateColCandidates = ["Datum inschrijving", "Inschrijfdatum", "datum inschrijving",
-    "Datum Intake", "Intake datum", "datum intake", "intake_date",
-    "Geboortedatum", "geboortedatum", "date_of_birth", "Geboorte datum"];
-
-  for (const row of rows) {
-    for (const key of Object.keys(row)) {
-      const nk = normalizeKey(key);
-      const isDateCol = dateColCandidates.some(c => normalizeKey(c) === nk || nk.includes(normalizeKey(c)));
-      if (!isDateCol) continue;
-      const s = String(row[key]).trim();
-      const m = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})$/);
-      if (!m) continue;
-      const p1 = parseInt(m[1]);
-      const p2 = parseInt(m[2]);
-      // If first part > 12, it can't be a month → must be day-first (DD/MM)
-      if (p1 > 12) return "dmy";
-      // If second part > 12, it can't be a month → must be month-first (MM/DD)
-      if (p2 > 12) return "mdy";
-    }
-  }
-  return "dmy"; // Default Dutch
-}
-
-// parseExcelDate imported from @/lib/importUtils
-
-function splitName(fullName: string): { first_name: string; last_name: string } {
-  const parts = fullName.trim().split(/\s+/);
-  if (parts.length === 1) return { first_name: parts[0], last_name: "" };
-  const first_name = parts[0];
-  const last_name = parts.slice(1).join(" ");
-  return { first_name, last_name };
-}
-
-function mapGender(val: string | undefined): string | null {
-  if (!val) return null;
-  const lower = val.toLowerCase().trim();
-  if (["jongen", "j", "m", "man", "male", "boy"].includes(lower)) return "Jongen";
-  if (["meisje", "meid", "v", "vrouw", "female", "girl"].includes(lower)) return "Meisje";
-  if (["anders", "x", "overig", "other"].includes(lower)) return "Anders";
-  return val;
-}
-
-/** Known non-person referral sources — stored as referral_reason, not as referrer_id */
-const NON_PERSON_REFERRAL_SOURCES = [
-  "flyer", "folder", "internet", "website", "social media", "facebook", "instagram",
-  "whatsapp", "mond-tot-mond", "mond tot mond", "via via", "buurthuis", "wijkteam",
-  "huisarts", "ggd", "school", "leerkracht", "juf", "meester", "intern",
-  "poster", "krant", "buurtwerk", "wijkcentrum", "speeltuin", "ouder",
-  "buren", "kennissen", "familie", "vrienden", "tv", "radio", "kerk", "moskee",
-  "sportvereniging", "club", "bibliotheek", "consultatiebureau", "jeugdzorg",
-  "zelfstandig", "eigen initiatief", "onbekend", "anders", "overig",
-];
-
 const DAY_COLUMNS = ["Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag", "Zondag"];
 const DAY_INDICES = [1, 2, 3, 4, 5, 6, 0]; // JS day indices (0=Sun)
 
-interface ParsedAvailability {
+interface ParsedAvailabilityLocal {
   dayIndex: number; // 0=Sun, 1=Mon, ...
   startTime: string;
   endTime: string;
   notes: string | null;
-}
-
-/** Parse a cell value into availability start/end times */
-function parseAvailabilityCell(val: string | undefined): { available: boolean; startTime: string; endTime: string; notes: string | null } | null {
-  if (!val || !val.trim()) return null;
-  const s = val.trim();
-  const lower = s.toLowerCase();
-
-  // Skip empty-like values
-  if (lower === "-" || lower === "nee" || lower === "n" || lower === "nee" || lower === "n.v.t.") return null;
-
-  // Pure text that indicates "we'll figure it out" — store as notes
-  if (lower === "in overleg" || lower.startsWith("vanaf ") && lower.match(/[a-z]{3,}/)) {
-    // "vanaf april" etc — text-only
-    if (lower.startsWith("vanaf ") && !lower.match(/\d/)) {
-      return { available: true, startTime: "09:00", endTime: "17:00", notes: s };
-    }
-    return { available: true, startTime: "09:00", endTime: "17:00", notes: s };
-  }
-
-  // "Ochtend"
-  if (lower === "ochtend" || lower === "voormiddag") {
-    return { available: true, startTime: "09:00", endTime: "12:00", notes: null };
-  }
-  // "Middag"
-  if (lower === "middag" || lower === "namiddag") {
-    return { available: true, startTime: "12:00", endTime: "17:00", notes: null };
-  }
-  // "Onder schooltijd"
-  if (lower.includes("schooltijd") || lower.includes("school tijd")) {
-    return { available: true, startTime: "08:30", endTime: "15:00", notes: s };
-  }
-  // "Voorkeur" — available, default times
-  if (lower === "voorkeur") {
-    return { available: true, startTime: "09:00", endTime: "17:00", notes: "Voorkeur" };
-  }
-
-  // Extract time pattern: "15.00", "14:45", "1545", "15.00 uur"
-  const extractTime = (text: string): string | null => {
-    // HH:MM or HH.MM
-    const hm = text.match(/(\d{1,2})[:\.](\d{2})/);
-    if (hm) return `${hm[1].padStart(2, "0")}:${hm[2]}`;
-    // HHMM (4 digits)
-    const hhmm = text.match(/\b(\d{2})(\d{2})\b/);
-    if (hhmm && parseInt(hhmm[1]) < 24 && parseInt(hhmm[2]) < 60) return `${hhmm[1]}:${hhmm[2]}`;
-    return null;
-  };
-
-  // "Tot XXXX" or "tot XXXX"
-  if (lower.startsWith("tot ")) {
-    const endTime = extractTime(s);
-    if (endTime) return { available: true, startTime: "09:00", endTime, notes: s.includes("ivm") || s.includes("i.v.m") ? s : null };
-  }
-
-  // "vanaf XX:XX" or "na XX:XX"
-  if (lower.startsWith("vanaf ") || lower.startsWith("na ")) {
-    const startTime = extractTime(s);
-    if (startTime) return { available: true, startTime, endTime: "17:00", notes: null };
-  }
-
-  // "X (15.00 uur)" or "x (13.00 uur)"
-  if (lower.startsWith("x")) {
-    const time = extractTime(s);
-    if (time) return { available: true, startTime: time, endTime: "17:00", notes: null };
-    return { available: true, startTime: "09:00", endTime: "17:00", notes: null };
-  }
-
-  // Pure time like "15.00 uur"
-  const pureTime = extractTime(s);
-  if (pureTime) {
-    // If it contains "of" (e.g., "8.30 of 12.15"), take earliest as start
-    if (lower.includes(" of ")) {
-      const parts = s.split(/\s+of\s+/i);
-      const times = parts.map(p => extractTime(p)).filter(Boolean) as string[];
-      if (times.length >= 2) {
-        times.sort();
-        return { available: true, startTime: times[0], endTime: "17:00", notes: s };
-      }
-    }
-    return { available: true, startTime: pureTime, endTime: "17:00", notes: null };
-  }
-
-  // Any other non-empty value — treat as available with notes
-  return { available: true, startTime: "09:00", endTime: "17:00", notes: s };
-}
-
-/** Generate dates for a specific day of week over the next N days */
-function generateDatesForDay(dayIndex: number, days: number = 122): string[] {
-  const dates: string[] = [];
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  for (let i = 0; i < days; i++) {
-    const d = new Date(start);
-    d.setDate(d.getDate() + i);
-    if (d.getDay() === dayIndex) {
-      dates.push(d.toISOString().split("T")[0]);
-    }
-  }
-  return dates;
 }
 
 type ImportMode = "default" | "waitlist" | "intake_afgerond" | "aanvulling";
@@ -347,7 +193,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     console.log(`Import: detected date format = ${dateFormat}`);
 
     const inserts: any[] = [];
-    const updates: { id: string; data: any; reserves?: { area_id: string; order: number }[]; availability?: ParsedAvailability[] }[] = [];
+    const updates: { id: string; data: any; reserves?: { area_id: string; order: number }[]; availability?: ParsedAvailabilityLocal[] }[] = [];
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const rowNum = i + 2; // Excel row (header = 1)
@@ -494,7 +340,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       const postal_code = pcCijfers ? `${pcCijfers}${pcLetters ? " " + pcLetters : ""}`.trim() : null;
 
       // Gender
-      const gender = mapGender(findCol(row, "Geslacht", "geslacht", "Gender"));
+      const gender = normalizeGender(findCol(row, "Geslacht", "geslacht", "Gender"));
 
       // Class/group — avoid matching "leeftijdsgroep" which is age category
       const classGroupRaw = findCol(row, "Klas", "klas", "Class");
@@ -533,10 +379,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       let referrer_id: string | null = null;
 
       if (referralRaw) {
-        const normalizedRef = referralRaw.toLowerCase().trim();
-        const isNonPerson = NON_PERSON_REFERRAL_SOURCES.some(
-          (src) => normalizedRef === src || normalizedRef.includes(src)
-        );
+        const isNonPerson = isNonPersonReferralSource(referralRaw);
 
         if (isNonPerson) {
           // It's a generic source like "flyer", "internet" — store as reason only
@@ -602,7 +445,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       };
 
       // Parse availability from day columns (Maandag-Zondag)
-      const parsedAvail: ParsedAvailability[] = [];
+      const parsedAvail: ParsedAvailabilityLocal[] = [];
       for (let di = 0; di < DAY_COLUMNS.length; di++) {
         const dayName = DAY_COLUMNS[di];
         const cellValue = findCol(row, dayName, dayName.toLowerCase());
@@ -696,7 +539,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       const availMap = chunk.map((r: any) => {
         const avail = r.__availability ?? [];
         delete r.__availability;
-        return avail as ParsedAvailability[];
+        return avail as ParsedAvailabilityLocal[];
       });
       const { data: insertedRows, error } = await supabase.from("clients").insert(chunk).select("id");
       if (error) {
