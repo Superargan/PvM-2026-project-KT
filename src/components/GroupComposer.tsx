@@ -1000,10 +1000,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
 
       {/* Clients without area/age */}
       {(() => {
-        const noArea = unassigned.filter((c) => {
-          const { resolveAreaId } = require("@/lib/clientUtils");
-          return !resolveAreaId(c);
-        });
+        const noArea = unassigned.filter((c) => !resolveAreaId(c));
         const noAge = unassigned.filter((c) => !getAgeCategoryPlanning(c.date_of_birth));
         return (
           <>
