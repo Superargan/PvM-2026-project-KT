@@ -833,14 +833,14 @@ export default function PlanningPage() {
                         return (
                           <div
                             key={session.id}
-                            className="flex items-center gap-2 rounded-md bg-sky-50 border border-sky-200 px-2.5 py-1.5 cursor-pointer hover:bg-sky-100 transition-colors"
+                            className="flex items-center gap-2 rounded-md bg-info-muted border border-info-border px-2.5 py-1.5 cursor-pointer hover:bg-info-muted/80 transition-colors"
                             onClick={() => navigate(`/programmas/${session.program_id}`)}
                           >
-                            <CalendarDays className="h-3.5 w-3.5 text-sky-700 shrink-0" />
-                            <span className="text-xs font-semibold text-sky-900 truncate">
+                            <CalendarDays className="h-3.5 w-3.5 text-info-foreground shrink-0" />
+                            <span className="text-xs font-semibold text-info-foreground truncate">
                               {prog?.name ?? "Training"} — S{session.session_number}
                             </span>
-                            <span className="text-[10px] text-sky-700 truncate">
+                            <span className="text-[10px] text-info-foreground/70 truncate">
                               {prog?.age_category ?? ""} {prog?.areas?.name ? `· ${prog.areas.name}` : ""}
                             </span>
                             <div className="flex gap-0.5 ml-auto shrink-0">
