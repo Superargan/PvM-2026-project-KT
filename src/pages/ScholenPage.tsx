@@ -320,7 +320,7 @@ export default function ScholenPage() {
     if (!neighborhoodId && editForm.address) {
       const areaName = getAreaFromAddress(editForm.address);
       if (areaName) {
-        const area = areas.find((a: any) => a.name === areaName);
+        const area = areas.find((a) => a.name === areaName);
         if (area && area.neighborhoods?.length > 0) {
           neighborhoodId = area.neighborhoods[0].id;
         }
