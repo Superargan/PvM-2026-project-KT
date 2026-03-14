@@ -7,7 +7,7 @@ import { schoolKeys, clientKeys, programKeys, staffKeys } from "@/lib/queryKeys"
 
 export default function Dashboard() {
   const { data: clientCount = 0 } = useQuery({
-    queryKey: ["clients", "dashboard", "participants"],
+    queryKey: clientKeys.dashboard("participants"),
     queryFn: async () => {
       const { count } = await supabase
         .from("clients")
