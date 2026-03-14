@@ -1881,7 +1881,7 @@ export default function ScholenPage() {
             <div className="space-y-4">
               {/* Summary stats */}
               <div className="flex flex-wrap gap-3">
-                <Badge variant="default" className="text-sm">{importResult.added.length} toegevoegd</Badge>
+                {importResult.added.length > 0 && <Badge variant="default" className="text-sm">{importResult.added.length} toegevoegd</Badge>}
                 <Badge variant="secondary" className="text-sm">{importResult.updated.length} bijgewerkt</Badge>
                 {importResult.timesSet > 0 && <Badge variant="outline" className="text-sm">{importResult.timesSet} tijden ingesteld</Badge>}
                 {importResult.municipalitySet > 0 && <Badge variant="outline" className="text-sm">{importResult.municipalitySet} gemeenten ingesteld</Badge>}
