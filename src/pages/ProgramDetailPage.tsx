@@ -95,7 +95,7 @@ export default function ProgramDetailPage() {
 
   // Fetch training locations for linking
   const { data: trainingLocations = [] } = useQuery({
-    queryKey: ["all-training-locations-for-program"],
+    queryKey: locationKeys.dropdown,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("training_locations")
