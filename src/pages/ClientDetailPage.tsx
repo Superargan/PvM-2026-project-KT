@@ -291,8 +291,8 @@ export default function ClientDetailPage() {
     onSuccess: () => {
       toast({ title: "Opgeslagen" });
       setDirty(false);
-      queryClient.invalidateQueries({ queryKey: ["clients"] });
-      queryClient.invalidateQueries({ queryKey: ["client-audit", id] });
+      queryClient.invalidateQueries({ queryKey: clientKeys.all });
+      queryClient.invalidateQueries({ queryKey: auditKeys.forClient(id!) });
     },
     onError: (err: any) => {
       toast({ title: "Fout", description: err.message, variant: "destructive" });
