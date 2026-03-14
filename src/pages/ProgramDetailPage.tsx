@@ -420,7 +420,7 @@ export default function ProgramDetailPage() {
               </div>
             ) : (
               <div className="divide-y divide-border">
-                {enrolledClients.map((ec: any) => {
+                {enrolledClients.map((ec) => {
                   const c = ec.clients;
                   if (!c) return null;
                   const isDropout = ec.early_dropout === true;
