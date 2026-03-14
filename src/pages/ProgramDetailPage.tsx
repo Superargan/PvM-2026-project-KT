@@ -197,7 +197,7 @@ export default function ProgramDetailPage() {
       qc.invalidateQueries({ queryKey: programKeys.all });
       toast({ title: "Deelnemer verwijderd" });
     },
-    onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
+    onError: (err: Error) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
 
   // Mark dropout
