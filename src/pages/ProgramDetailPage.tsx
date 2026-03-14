@@ -155,15 +155,16 @@ export default function ProgramDetailPage() {
 
           if (otherSessions) {
             for (const ps of programSessions) {
-              const overlap = otherSessions.find((os: any) =>
+              const overlap = otherSessions.find((os) =>
                 os.session_date === ps.session_date &&
                 os.start_time && ps.start_time &&
                 os.start_time < (ps.end_time ?? "23:59") &&
                 (os.end_time ?? "23:59") > ps.start_time
               );
               if (overlap) {
-                const prog = otherEnrollments.find((e: any) => e.program_id === overlap.program_id);
-                throw new Error(`Overlap op ${ps.session_date} met programma ${(prog as any)?.programs?.name ?? overlap.program_id}`);
+                const prog = otherEnrollments.find((e) => e.program_id === overlap.program_id);
+                const progName = (prog as { programs?: { name?: string } | null } | undefined)?.programs?.name ?? overlap.program_id;
+                throw new Error(`Overlap op ${ps.session_date} met programma ${progName}`);
               }
             }
           }
