@@ -1387,7 +1387,7 @@ function GeneratedDocsTab() {
                   <div className="flex gap-1 justify-end">
                     <Button variant="ghost" size="icon" onClick={() => handleDownload(doc.file_path, doc.file_name)} title="Download DOCX"><Download className="h-4 w-4" /></Button>
                     {doc.signed_file_path && (
-                      <Button variant="ghost" size="icon" onClick={() => handleDownload(doc.signed_file_path, doc.signed_file_name || "ondertekend.pdf")} title="Download ondertekend PDF"><File className="h-4 w-4 text-green-600" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDownload(doc.signed_file_path, doc.signed_file_name || "ondertekend.pdf")} title="Download ondertekend PDF"><File className="h-4 w-4 text-success" /></Button>
                     )}
                     <Button variant="ghost" size="icon" onClick={() => { if (confirm("Document verwijderen?")) deleteMutation.mutate(doc); }}>
                       <Trash2 className="h-4 w-4 text-destructive" />

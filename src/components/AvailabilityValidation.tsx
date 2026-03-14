@@ -400,7 +400,7 @@ export default function AvailabilityValidation({ onNavigate }: { onNavigate: (id
                             </TooltipContent>
                           </Tooltip>
                         ) : v.result === "voldoende" ? (
-                          <span className="text-emerald-600">✓ OK</span>
+                          <span className="text-success">✓ OK</span>
                         ) : null}
                       </TableCell>
                     </TableRow>

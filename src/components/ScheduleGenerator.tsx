@@ -679,7 +679,7 @@ export default function ScheduleGenerator({ programId, programName, programStart
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <ShieldAlert className="h-5 w-5 text-amber-600" />
+              <ShieldAlert className="h-5 w-5 text-warning" />
               Override bevestigen
             </AlertDialogTitle>
             <AlertDialogDescription asChild>

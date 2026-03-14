@@ -349,7 +349,7 @@ export default function TrainingslocatiesPage() {
                     <td className="px-4 py-3 text-sm text-foreground">{areaName}</td>
                     <td className="px-4 py-3 text-sm text-foreground">{neighborhoodName}</td>
                     <td className="px-4 py-3">
-                      <Badge variant="outline" className={loc.active ? "border-emerald-300 text-emerald-700" : "border-border text-muted-foreground"}>
+                      <Badge variant="outline" className={loc.active ? "border-success-border text-success-foreground" : "border-border text-muted-foreground"}>
                         {loc.active ? "Actief" : "Inactief"}
                       </Badge>
                     </td>

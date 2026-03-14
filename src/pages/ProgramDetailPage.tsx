@@ -498,7 +498,7 @@ export default function ProgramDetailPage() {
             />
           ) : (
             <div className="rounded-xl border border-border bg-card p-6 text-center text-muted-foreground">
-              <AlertTriangle className="h-5 w-5 mx-auto mb-2 text-amber-500" />
+              <AlertTriangle className="h-5 w-5 mx-auto mb-2 text-warning" />
               <p className="text-sm font-medium">Koppel eerst een school of trainingslocatie aan dit programma om het gebied te bepalen.</p>
             </div>
           )}
