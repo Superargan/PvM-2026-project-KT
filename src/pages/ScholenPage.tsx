@@ -161,6 +161,11 @@ export default function ScholenPage() {
   const [importResultOpen, setImportResultOpen] = useState(false);
   const [importResult, setImportResult] = useState<{ added: string[]; updated: string[]; unmatched: string[]; timesSet: number; invalidTimes: number; municipalitySet: number } | null>(null);
   const [editSaving, setEditSaving] = useState(false);
+  const [selectedSchoolIds, setSelectedSchoolIds] = useState<Set<string>>(new Set());
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [schoolsToDelete, setSchoolsToDelete] = useState<any[]>([]);
+  const [deleteBlockers, setDeleteBlockers] = useState<Record<string, { clients: number; programs: number }>>({});
+  const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
