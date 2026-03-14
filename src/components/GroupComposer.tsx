@@ -547,17 +547,35 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     const current = getSelectedForGroup(g);
     const isCurrentlySelected = current.has(clientId);
 
-    // Only block adding to a new group, never block unchecking
     if (!isCurrentlySelected) {
       const existingGroup = clientGroupAssignment.get(clientId);
       if (existingGroup && existingGroup !== key) {
+        // Auto-remove from the other group and show info toast
         const parts = existingGroup.split("__");
         const areaName = areaMap[parts[0]] ?? "Onbekend";
         const subLabel = parts[2] !== undefined ? ` ${SUB_GROUP_LABELS[parseInt(parts[2])] ?? ""}` : "";
+        const oldGroupSelected = selectedClients[existingGroup]
+          ? new Set(selectedClients[existingGroup])
+          : null;
+
+        const newCurrent = new Set(current);
+        newCurrent.add(clientId);
+
+        if (oldGroupSelected) {
+          oldGroupSelected.delete(clientId);
+          setSelectedClients(prev => ({
+            ...prev,
+            [existingGroup]: oldGroupSelected,
+            [key]: newCurrent,
+          }));
+        } else {
+          setSelectedClients(prev => ({ ...prev, [key]: newCurrent }));
+        }
+
+        const oldCount = oldGroupSelected ? oldGroupSelected.size : "?";
         toast({
-          title: "Cliënt al geselecteerd",
-          description: `Deze cliënt is al aangevinkt in groep ${areaName} ${parts[1]}${subLabel}. Verwijder eerst de selectie daar.`,
-          variant: "destructive",
+          title: "Cliënt verplaatst",
+          description: `Verwijderd uit ${areaName} ${parts[1]}${subLabel} (nu ${oldCount}) en toegevoegd aan huidige groep (nu ${newCurrent.size}).`,
         });
         return;
       }
