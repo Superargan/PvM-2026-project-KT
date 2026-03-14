@@ -553,6 +553,7 @@ export default function ScholenPage() {
               }
               if (hasScheduleTypeUpdate) updatePayload.schedule_type = s.schedule_type;
               if (hasSourceUpdate) updatePayload.source = s.source;
+              if (hasMunicipalityUpdate) updatePayload.municipality = s.municipality;
 
               const { error } = await supabase.from("schools").update(updatePayload).eq("id", existing.id);
               if (!error) {
