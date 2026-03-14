@@ -163,7 +163,7 @@ export default function ScheduleGenerator({ programId, programName, programStart
 
   // Fetch enrolled clients for availability check
   const { data: enrolledClients = [] } = useQuery({
-    queryKey: ["program_clients_detail", programId],
+    queryKey: programKeys.clients(programId),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("program_clients")
