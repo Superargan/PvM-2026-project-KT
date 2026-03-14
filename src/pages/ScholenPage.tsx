@@ -1988,7 +1988,7 @@ export default function ScholenPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Roostertype</Label>
-                <Select value={editForm.schedule_type ?? ""} onValueChange={(val) => setEditForm((f: any) => ({ ...f, schedule_type: val }))}>
+                <Select value={editForm.schedule_type ?? ""} onValueChange={(val) => setEditForm((f) => ({ ...f, schedule_type: val }))}>
                   <SelectTrigger><SelectValue placeholder="Selecteer..." /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="traditioneel">Traditioneel</SelectItem>
