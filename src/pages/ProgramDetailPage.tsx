@@ -329,8 +329,7 @@ export default function ProgramDetailPage() {
                   toast({ title: "Fout", description: error.message, variant: "destructive" });
                 } else {
                   toast({ title: "School gekoppeld" });
-                  qc.invalidateQueries({ queryKey: ["program", id] });
-                  qc.invalidateQueries({ queryKey: ["programs"] });
+                  qc.invalidateQueries({ queryKey: programKeys.all });
                 }
               }}
               emptyOption={{ value: "geen", label: "Geen school" }}
