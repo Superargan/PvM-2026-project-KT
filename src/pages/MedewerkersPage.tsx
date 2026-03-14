@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { UserCog, Plus, Search, Mail, Phone, Loader2, Building2, Edit, FileText, Download, Upload, CheckCircle2, XCircle, ShieldCheck, Trash2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { staffKeys, documentKeys } from "@/lib/queryKeys";
 import { toast } from "sonner";
 import {
   Dialog,
