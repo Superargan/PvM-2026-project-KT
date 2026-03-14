@@ -69,6 +69,7 @@ export default function Dashboard() {
       const { count } = await supabase
         .from("clients")
         .select("*", { count: "exact", head: true })
+        .eq("archived", false)
         .not("waitlist_status", "is", null);
       return count ?? 0;
     },
