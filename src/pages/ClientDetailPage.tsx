@@ -654,10 +654,10 @@ export default function ClientDetailPage() {
                     </span>
                   </div>
                 )}
-                {(client as any).area_notes && (
+                {client.area_notes && (
                   <div className="col-span-2">
                     <span className="text-muted-foreground">Gebiedsnotities:</span>{" "}
-                    <span className="font-medium text-card-foreground whitespace-pre-line">{(client as any).area_notes}</span>
+                    <span className="font-medium text-card-foreground whitespace-pre-line">{client.area_notes}</span>
                   </div>
                 )}
               </div>
