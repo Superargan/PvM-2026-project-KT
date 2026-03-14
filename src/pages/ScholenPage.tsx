@@ -428,7 +428,7 @@ export default function ScholenPage() {
       toast({ title: `${count} scholen gekoppeld aan een gebied` });
       invalidateAllSchoolQueries(queryClient);
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast({ title: "Fout bij koppelen", description: err.message, variant: "destructive" });
     },
   });
