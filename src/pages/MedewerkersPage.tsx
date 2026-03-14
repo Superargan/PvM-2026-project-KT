@@ -728,7 +728,7 @@ function DossierDocumentSection({ trainerId, trainerName, onRefresh, trainer }: 
           </div>
           <div className="flex gap-1">
             {doc.path && (
-              <Button variant="ghost" size="icon" onClick={() => handleDownload(doc.path!, `${doc.label} - ${trainerName}.pdf`)}>
+              <Button variant="ghost" size="icon" onClick={() => handleDownload(doc.path as string, `${doc.label} - ${trainerName}.pdf`)}>
                 <Download className="h-4 w-4" />
               </Button>
             )}

@@ -151,7 +151,7 @@ export default function TrainingslocatiesPage() {
       area_id: selectedArea || null,
       notes: form.notes || null,
       active: form.active,
-    }).eq("id", selectedLocation.id);
+    }).eq("id", (selectedLocation as { id: string }).id);
 
     setSaving(false);
     if (error) {
