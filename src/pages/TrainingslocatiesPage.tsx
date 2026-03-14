@@ -74,7 +74,7 @@ export default function TrainingslocatiesPage() {
     if (area) {
       setSelectedArea(area.id);
       if ((area as { neighborhoods?: { id: string }[] }).neighborhoods?.length ?? 0 > 0) {
-        setSelectedNeighborhood(area.neighborhoods[0].id);
+        setSelectedNeighborhood(((area as { neighborhoods?: { id: string }[] }).neighborhoods ?? [])[0]?.id ?? "");
       } else {
         setSelectedNeighborhood("");
       }
