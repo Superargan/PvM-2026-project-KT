@@ -100,8 +100,8 @@ export default function InvoiceManager({ staffId, staffName }: { staffId?: strin
       setAmount("");
       setNotes("");
       qc.invalidateQueries({ queryKey: invoiceKeys.all });
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Onbekende fout");
     } finally {
       setUploading(false);
     }
