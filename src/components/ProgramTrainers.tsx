@@ -48,7 +48,7 @@ export default function ProgramTrainers({ programId }: ProgramTrainersProps) {
   });
 
   const { data: allStaff = [] } = useQuery({
-    queryKey: ["staff-list"],
+    queryKey: staffKeys.all,
     queryFn: async () => {
       const { data, error } = await supabase.from("staff").select("id, name, email").order("name");
       if (error) throw error;
