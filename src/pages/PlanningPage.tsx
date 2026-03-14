@@ -309,7 +309,7 @@ export default function PlanningPage() {
   });
 
   const { data: availability = [], refetch: refetchAvailability } = useQuery({
-    queryKey: ["planning-availability", dateRange.start.toISOString(), dateRange.end.toISOString()],
+    queryKey: planningKeys.staffAvailability(dateRange.start.toISOString(), dateRange.end.toISOString()),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("staff_availability")
