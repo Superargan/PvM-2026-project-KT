@@ -203,7 +203,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
               <PopoverContent className="w-72 max-h-64 overflow-y-auto p-2" align="start">
                 <p className="text-xs font-semibold text-muted-foreground mb-2">Geschatte geboortedatum (uit import)</p>
                 <div className="space-y-1">
-                  {matrix.estimatedDobClients.map((c: any) => (
+                  {matrix.estimatedDobClients.map((c) => (
                     <button
                       key={c.id}
                       className="w-full text-left text-sm px-2 py-1.5 rounded hover:bg-muted/50 transition-colors text-primary hover:underline"
