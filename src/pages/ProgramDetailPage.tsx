@@ -69,7 +69,7 @@ export default function ProgramDetailPage() {
 
   // Fetch all clients for adding
   const { data: allClients = [] } = useQuery({
-    queryKey: ["clients", "for-program"],
+    queryKey: clientKeys.forProgram,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
