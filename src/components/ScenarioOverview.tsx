@@ -359,7 +359,7 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
         </DialogContent>
       </Dialog>
 
-      {/* Workstate protection dialog (T07-T10) */}
+      {/* Workstate protection dialog */}
       <Dialog open={workstateDialogScenarioId !== null} onOpenChange={(open) => { if (!open) setWorkstateDialogScenarioId(null); }}>
         <DialogContent>
           <DialogHeader>
@@ -370,10 +370,10 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
           </DialogHeader>
           <div className="flex flex-col gap-2">
             <Button onClick={() => handleWorkstateChoice("save")} className="w-full">
-              Opslaan als scenario en doorgaan
+              Opslaan als proforma planning en doorgaan
             </Button>
             <Button variant="outline" onClick={() => handleWorkstateChoice("discard")} className="w-full">
-              Verwerpen en scenario laden
+              Verwerpen en proforma laden
             </Button>
             <Button variant="ghost" onClick={() => handleWorkstateChoice("cancel")} className="w-full">
               Annuleren
