@@ -166,14 +166,15 @@ export default function SessionDetails({ session, programId, isBackoffice = true
         session_id: session.id,
         file_name: file.name,
         file_path: path,
-        uploaded_by: userData.user?.id,
-      } as any);
+        uploaded_by: userData.user?.id ?? "",
+      });
       if (insertErr) throw insertErr;
 
       qc.invalidateQueries({ queryKey: programKeys.sessionDocs(session.id) });
       toast({ title: "Document geüpload" });
-    } catch (err: any) {
-      toast({ title: "Fout", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Onbekende fout";
+      toast({ title: "Fout", description: message, variant: "destructive" });
     } finally {
       setUploading(false);
       e.target.value = "";

@@ -125,15 +125,15 @@ export default function ProgramAttendance({
       const key = `${sessionId}_${clientId}`;
       const existing = attMap.get(key);
       if (existing) {
-        const { error } = await supabase.from("attendance").update({ present } as any).eq("id", existing.id);
+        const { error } = await supabase.from("attendance").update({ present }).eq("id", existing.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("attendance").insert({ session_id: sessionId, client_id: clientId, present } as any);
+        const { error } = await supabase.from("attendance").insert({ session_id: sessionId, client_id: clientId, present });
         if (error) throw error;
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: attendanceKeys.all }),
-    onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
+    onError: (err: Error) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
 
   const loading = sessionsLoading || attLoading || createSessionsMut.isPending;

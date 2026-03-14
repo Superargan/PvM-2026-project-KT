@@ -1248,7 +1248,7 @@ function GeneratedDocsTab() {
           signed_file_path: signedPath,
           signed_file_name: signedName,
           signed_at: new Date().toISOString(),
-        } as any)
+        })
         .eq("id", docId);
       if (updateErr) throw updateErr;
     },
@@ -1257,13 +1257,13 @@ function GeneratedDocsTab() {
       setUploadingId(null);
       queryClient.invalidateQueries({ queryKey: documentKeys.generated });
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast({ title: "Upload mislukt", description: err.message, variant: "destructive" });
       setUploadingId(null);
     },
   });
 
-  const handleSignedUpload = (doc: any) => {
+  const handleSignedUpload = (doc: GeneratedDocumentRow) => {
     setUploadingId(doc.id);
     signedFileRef.current?.click();
   };
@@ -1271,20 +1271,20 @@ function GeneratedDocsTab() {
   const handleSignedFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !uploadingId) { setUploadingId(null); return; }
-    const doc = documents.find((d: any) => d.id === uploadingId);
+    const doc = documents.find((d) => d.id === uploadingId);
     if (!doc) return;
     uploadSignedMutation.mutate({ docId: uploadingId, file, doc });
     e.target.value = "";
   };
 
   const removeSignedMutation = useMutation({
-    mutationFn: async (doc: any) => {
+    mutationFn: async (doc: GeneratedDocumentRow) => {
       if (doc.signed_file_path) {
         await supabase.storage.from("generated-documents").remove([doc.signed_file_path]);
       }
       const { error } = await supabase
         .from("generated_documents")
-        .update({ signed_file_path: null, signed_file_name: null, signed_at: null } as any)
+        .update({ signed_file_path: null, signed_file_name: null, signed_at: null })
         .eq("id", doc.id);
       if (error) throw error;
     },
@@ -1292,7 +1292,7 @@ function GeneratedDocsTab() {
       toast({ title: "Ondertekend document verwijderd" });
       queryClient.invalidateQueries({ queryKey: documentKeys.generated });
     },
-    onError: (err: any) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
+    onError: (err: Error) => toast({ title: "Fout", description: err.message, variant: "destructive" }),
   });
 
   const getEntityLabel = (doc: any) => {

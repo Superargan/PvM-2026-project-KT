@@ -340,7 +340,7 @@ export default function ScheduleGenerator({ programId, programName, programStart
 
       const { data: insertedSessions, error } = await supabase
         .from("program_sessions")
-        .insert(rows as any)
+        .insert(rows)
         .select("id, session_number");
       if (error) throw error;
 
@@ -348,7 +348,7 @@ export default function ScheduleGenerator({ programId, programName, programStart
       const overrideSessions = generated.filter((s) => s.status === "handmatig_vrijgegeven" && s.overrideReason);
       if (overrideSessions.length > 0 && insertedSessions && userId) {
         const overrideLogs = overrideSessions.map((s) => {
-          const inserted = insertedSessions.find((is: any) => is.session_number === s.session_number);
+          const inserted = insertedSessions.find((is) => is.session_number === s.session_number);
           if (!inserted) return null;
           // Determine original override type from skipped/conflict info
           const special = isSpecialDay(s.date);
@@ -362,10 +362,10 @@ export default function ScheduleGenerator({ programId, programName, programStart
             override_type: overrideType,
             reason: s.overrideReason!,
           };
-        }).filter(Boolean);
+        }).filter(Boolean) as Array<{ session_id: string; overridden_by: string; override_type: string; reason: string }>;
 
         if (overrideLogs.length > 0) {
-          await supabase.from("session_override_logs").insert(overrideLogs as any);
+          await supabase.from("session_override_logs").insert(overrideLogs);
         }
       }
 
