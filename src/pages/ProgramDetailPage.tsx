@@ -36,7 +36,7 @@ export default function ProgramDetailPage() {
   const qc = useQueryClient();
   const [selectedClientId, setSelectedClientId] = useState("");
   const [dropoutOpen, setDropoutOpen] = useState(false);
-  const [dropoutTarget, setDropoutTarget] = useState<any>(null);
+  const [dropoutTarget, setDropoutTarget] = useState<EnrolledClientRow | null>(null);
   const [dropoutReason, setDropoutReason] = useState("");
   const [dropoutAction, setDropoutAction] = useState("");
   // Fetch program
