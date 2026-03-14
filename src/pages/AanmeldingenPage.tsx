@@ -214,7 +214,7 @@ export default function AanmeldingenPage() {
     const { error } = await supabase.from("client_assignments").insert({
       client_id: editClient.id,
       staff_id: staffId,
-    } as any);
+    });
     if (error) {
       if (error.code === "23505") {
         toast({ title: "Al toegewezen", variant: "destructive" });
