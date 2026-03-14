@@ -288,6 +288,23 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     return current !== lastSavedSnapshot;
   }, [activeScenarioId, getCurrentSnapshot, lastSavedSnapshot, simulatedGroups.size]);
 
+  // Broad guard: blocks ALL definitive writes from non-definitive work states
+  const canCreateDefinitiveGroup = useMemo(() => {
+    if (isSimulating) return false; // active simulation
+    if (isDirty) return false; // unsaved changes
+    if (simulatedGroups.size > 0) return false; // non-saved proforma data
+    if (activeScenarioId !== null) return false; // working from proforma context
+    return true;
+  }, [isSimulating, isDirty, simulatedGroups.size, activeScenarioId]);
+
+  const getBlockReason = (): string => {
+    if (isSimulating) return "Actieve simulatie — sla eerst op als proforma planning";
+    if (isDirty) return "Onopgeslagen wijzigingen — sla eerst op";
+    if (simulatedGroups.size > 0) return "Niet-opgeslagen proforma-data aanwezig";
+    if (activeScenarioId !== null) return "Werkend vanuit proforma — gebruik 'Omzetten naar definitieve planning'";
+    return "";
+  };
+
   // Load scenario from DB
   useEffect(() => {
     if (!activeScenarioId) return;
