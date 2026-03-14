@@ -1044,8 +1044,8 @@ export default function ScholenPage() {
 
       toast({ title: "Document geüpload" });
       refetchDocs();
-    } catch (err: any) {
-      toast({ title: "Upload mislukt", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({ title: "Upload mislukt", description: err instanceof Error ? err.message : "Onbekende fout", variant: "destructive" });
     } finally {
       setDocUploading(false);
       e.target.value = "";
