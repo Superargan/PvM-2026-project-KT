@@ -646,7 +646,7 @@ export default function MedewerkersPage() {
   );
 }
 
-function DossierDocumentSection({ trainerId, trainerName, onRefresh, trainer }: { trainerId: string | null; trainerName: string; onRefresh: () => void; trainer: typeof import("@/integrations/supabase/client").supabase extends never ? never : Record<string, unknown> | undefined }) {
+function DossierDocumentSection({ trainerId, trainerName, onRefresh, trainer }: { trainerId: string | null; trainerName: string; onRefresh: () => void; trainer: { kvk_uittreksel_path: string | null; kvk_uittreksel_uploaded_at: string | null; vog_path: string | null; vog_uploaded_at: string | null } | undefined }) {
   const kvkInputRef = useRef<HTMLInputElement>(null);
   const vogInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState<string | null>(null);
