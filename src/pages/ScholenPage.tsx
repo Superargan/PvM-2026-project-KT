@@ -1096,6 +1096,7 @@ export default function ScholenPage() {
                 <th className="hidden px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Aanmeldingen</th>
                 <th className="hidden px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Trainingen</th>
                 <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground xl:table-cell">Contactpersonen</th>
+                <th className="hidden px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Rooster</th>
                 <th className="hidden px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">Schooltijden</th>
                 <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Leerlingen</th>
                 <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actie</th>
