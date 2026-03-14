@@ -1358,7 +1358,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                   <div className="max-h-72 overflow-y-auto space-y-0.5 pr-1">
                     {intakeClients.length > 0 && (
                       <>
-                        <div className="text-[10px] font-semibold text-blue-700 uppercase tracking-wider px-2 pt-1 pb-0.5">
+                        <div className="text-[10px] font-semibold text-info-foreground uppercase tracking-wider px-2 pt-1 pb-0.5">
                           Intake afgerond ({intakeClients.length})
                         </div>
                         {intakeClients.map(cm => renderClientRow(cm, group, selected))}
