@@ -985,7 +985,8 @@ export default function ScholenPage() {
                 <DialogTitle>Nieuwe School</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleAddSchool} className="space-y-4">
-                <div><Label>Naam *</Label><Input name="name" required /></div>
+                <div><Label>Naam *</Label><Input name="name" required value={addSchoolName} onChange={(e) => setAddSchoolName(e.target.value)} /></div>
+                <SchoolDuplicateWarning name={addSchoolName} schools={schools} />
                 <div><Label>Adres</Label><Input name="address" onBlur={(e) => autoDetectNeighborhood(e.target.value)} /></div>
                 <div>
                   <Label>Gebied</Label>
