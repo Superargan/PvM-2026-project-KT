@@ -339,7 +339,7 @@ export default function ProgramDetailPage() {
             />
             {/* Training location selector */}
             <Select
-              value={(program as any).training_location_id ?? "geen"}
+              value={program.training_location_id ?? "geen"}
               onValueChange={async (v) => {
                 const tlId = v === "geen" ? null : v;
                 const tl = trainingLocations.find((t: any) => t.id === tlId);
