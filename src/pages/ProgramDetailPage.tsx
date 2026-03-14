@@ -174,7 +174,7 @@ export default function ProgramDetailPage() {
       const { error } = await supabase.from("program_clients").insert({
         program_id: id!,
         client_id: selectedClientId,
-      } as any);
+      });
       if (error) throw error;
     },
     onSuccess: () => {
