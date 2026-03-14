@@ -1451,7 +1451,7 @@ export default function ScholenPage() {
           <SelectTrigger className="w-[180px]"><SelectValue placeholder="Wijk" /></SelectTrigger>
           <SelectContent className="bg-popover">
             <SelectItem value="all">Alle wijken</SelectItem>
-            {(filterAreaId !== "all" ? (areas.find((a: any) => a.id === filterAreaId) as any)?.neighborhoods ?? [] : []).map((n: any) => (
+            {(filterAreaId !== "all" ? areas.find((a) => a.id === filterAreaId)?.neighborhoods ?? [] : []).map((n) => (
               <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>
             ))}
           </SelectContent>
