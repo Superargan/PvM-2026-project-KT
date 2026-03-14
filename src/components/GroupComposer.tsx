@@ -1577,13 +1577,26 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                   );
                 })()}
 
-                <Button
-                  className="w-full"
-                  onClick={() => createGroup(group)}
-                  disabled={isCreating || selected.size === 0}
-                >
-                  {isCreating ? "Aanmaken..." : `Groep aanmaken (${selected.size})`}
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="w-full">
+                        <Button
+                          className="w-full"
+                          onClick={() => requestCreateGroup(group)}
+                          disabled={isCreating || selected.size === 0 || !canCreateDefinitiveGroup}
+                        >
+                          {isCreating ? "Aanmaken..." : `Groep definitief aanmaken (${selected.size})`}
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    {!canCreateDefinitiveGroup && (
+                      <TooltipContent>
+                        <p className="text-xs">{getBlockReason()}</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
               </CardContent>
             </Card>
           );
