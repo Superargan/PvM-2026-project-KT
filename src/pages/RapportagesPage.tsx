@@ -170,7 +170,7 @@ export default function RapportagesPage() {
   // === 1. Aanmeldingen per periode ===
   const aanmeldData = useMemo(() => {
     const map = new Map<string, Map<string, number>>();
-    clients.forEach((c: any) => {
+    clients.forEach((c) => {
       const pk = periodKey(new Date(c.registration_date ?? c.created_at), gran);
       const bk = breakdownKey(c.id);
       if (!map.has(pk)) map.set(pk, new Map());
