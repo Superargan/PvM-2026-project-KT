@@ -74,7 +74,7 @@ export default function WaitlistManager({ onEdit }: { onEdit?: (client: any) => 
       const { error: enrollError } = await supabase.from("program_clients").insert({
         program_id: programId,
         client_id: clientId,
-      } as any);
+      });
       if (enrollError) throw enrollError;
 
       // Remove from waitlist
