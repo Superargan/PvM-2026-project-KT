@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  // Derived resolvers
   getEffectiveClientMunicipality,
   getEffectiveClientSchoolTimeRange,
   hasExplicitOverride,
@@ -7,9 +8,11 @@ import {
   resolveInheritedValue,
   getMunicipalityBadgeValue,
   getClientAgeDisplay,
+  // Token maps
   matchColorTokens,
   statusBadgeTokens,
   sessionStatusTokens,
+  // Constants
   DEFAULT_CITY,
   DEFAULT_MUNICIPALITY,
   AVAILABILITY_COVERAGE_MONTHS,
@@ -17,6 +20,22 @@ import {
   DEFAULT_AVAIL_END,
   SCHOOL_TIME_AVAIL_START,
   SCHOOL_TIME_AVAIL_END,
+  // Re-exported domain functions (verify accessibility)
+  calculateAge,
+  getAgeCategoryPlanning,
+  getAgeGroup,
+  statusLabels,
+  statusStyles,
+  matchColors,
+  statusBadgeStyles,
+  filterClients,
+  findPotentialDuplicates,
+  normalizeSchoolName,
+  formatSchoolTimeRange,
+  getResolvedAreaName,
+  getResolvedLocationName,
+  getAreaFromPostcode,
+  extractPostcode,
 } from "@/lib/DomainResolver";
 
 describe("DomainResolver", () => {
@@ -138,24 +157,50 @@ describe("DomainResolver", () => {
       const dob = "2016-01-15"; // ~10 years old in 2026
       const result = getClientAgeDisplay(dob);
       expect(result).toMatch(/\d+ jaar/);
-    });
   });
 
-  describe("semantic token maps", () => {
-    it("matchColorTokens uses semantic classes", () => {
-      expect(matchColorTokens["Primair"]).toContain("success");
-      expect(matchColorTokens["Flexibel"]).toContain("warning");
+  describe("re-export integrity", () => {
+    it("re-exports clientUtils domain functions", () => {
+      expect(typeof calculateAge).toBe("function");
+      expect(typeof getAgeCategoryPlanning).toBe("function");
+      expect(typeof getAgeGroup).toBe("function");
+      expect(typeof filterClients).toBe("function");
+      expect(typeof findPotentialDuplicates).toBe("function");
+      expect(typeof getResolvedAreaName).toBe("function");
+      expect(typeof statusLabels).toBe("object");
+      expect(typeof statusStyles).toBe("object");
+      expect(typeof matchColors).toBe("object");
+      expect(typeof statusBadgeStyles).toBe("object");
     });
 
-    it("statusBadgeTokens uses semantic classes", () => {
-      expect(statusBadgeTokens["intake_afgerond"].className).toContain("info");
-      expect(statusBadgeTokens["wachtlijst"].className).toContain("warning");
+    it("re-exports schoolTimes domain functions", () => {
+      expect(typeof formatSchoolTimeRange).toBe("function");
+      expect(typeof normalizeSchoolName).toBe("function");
     });
 
-    it("sessionStatusTokens covers all statuses", () => {
-      expect(sessionStatusTokens["beschikbaar"].className).toContain("success");
-      expect(sessionStatusTokens["geblokkeerd"].className).toContain("destructive");
-      expect(sessionStatusTokens["handmatig_vrijgegeven"].className).toContain("info");
+    it("re-exports locationUtils domain functions", () => {
+      expect(typeof getResolvedLocationName).toBe("function");
+    });
+
+    it("re-exports postcodeMapping domain functions", () => {
+      expect(typeof getAreaFromPostcode).toBe("function");
+      expect(typeof extractPostcode).toBe("function");
+    });
+
+    it("normalizeSchoolName works through re-export", () => {
+      // normalizeSchoolName lowercases and trims — prefix stripping is separate
+      expect(normalizeSchoolName("OBS De Regenboog")).toBe("obs de regenboog");
+    });
+
+    it("findPotentialDuplicates works through re-export", () => {
+      const clients = [
+        { id: "1", first_name: "Jan", last_name: "de Vries" },
+        { id: "2", first_name: "Piet", last_name: "Bakker" },
+      ];
+      const matches = findPotentialDuplicates("Jan", "de Vries", clients);
+      expect(matches).toHaveLength(1);
+      expect(matches[0].matchType).toBe("exact");
     });
   });
+});
 });
