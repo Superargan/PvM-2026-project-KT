@@ -1717,11 +1717,43 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
         </DialogContent>
       </Dialog>
 
-      {/* Save scenario dialog */}
+      {/* Definitive create confirmation dialog */}
+      <AlertDialog open={confirmCreateOpen} onOpenChange={setConfirmCreateOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Definitief programma aanmaken?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Dit maakt direct een <strong>definitief programma</strong> aan.</p>
+              <ul className="list-disc list-inside text-sm space-y-1">
+                <li>Geselecteerde deelnemers worden gekoppeld en op <strong>'actief'</strong> gezet</li>
+                <li>Dit beïnvloedt direct het deelnemersoverzicht, export en rapportage</li>
+                <li>Deze actie kan <strong>niet ongedaan</strong> worden gemaakt</li>
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setConfirmCreateOpen(false); setConfirmCreateGroup(null); }}>
+              Annuleren
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmCreateOpen(false);
+                if (confirmCreateGroup) createGroup(confirmCreateGroup);
+                setConfirmCreateGroup(null);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Definitief aanmaken
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Save proforma dialog */}
       <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{activeScenarioId ? "Scenario bijwerken" : "Opslaan als scenario"}</DialogTitle>
+            <DialogTitle>{activeScenarioId ? "Proforma planning bijwerken" : "Opslaan als proforma planning"}</DialogTitle>
             <DialogDescription>
               Geef het scenario een naam en optioneel een beschrijving.
             </DialogDescription>
