@@ -202,7 +202,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
 
   // Fetch program_clients for "al ingepland" check (AC-2)
   const { data: programClients = [] } = useQuery({
-    queryKey: ["program-clients-active"],
+    queryKey: programKeys.clientsActive,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("program_clients")
