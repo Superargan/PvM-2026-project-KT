@@ -1590,11 +1590,11 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                         const showAlts = expandedAlternatives.has(altKey);
                         return (
                           <div key={idx} className="space-y-1">
-                            <div className={`rounded-lg border p-3 space-y-1 ${isThisSimulated ? "border-primary ring-1 ring-primary/30 bg-primary/5" : idx === 0 ? "border-emerald-200 bg-emerald-50/50" : "border-border bg-muted/20"}`}>
+                            <div className={`rounded-lg border p-3 space-y-1 ${isThisSimulated ? "border-primary ring-1 ring-primary/30 bg-primary/5" : idx === 0 ? "border-success-border bg-success-muted/50" : "border-border bg-muted/20"}`}>
                               <div className="flex items-center gap-2 justify-between">
                                 <div className="flex items-center gap-2">
-                                  <CalendarClock className={`h-4 w-4 shrink-0 ${isThisSimulated ? "text-primary" : idx === 0 ? "text-emerald-600" : "text-muted-foreground"}`} />
-                                  <p className={`text-xs font-semibold ${isThisSimulated ? "text-primary" : idx === 0 ? "text-emerald-800" : "text-foreground"}`}>Voorstel {idx + 1}</p>
+                                  <CalendarClock className={`h-4 w-4 shrink-0 ${isThisSimulated ? "text-primary" : idx === 0 ? "text-success" : "text-muted-foreground"}`} />
+                                  <p className={`text-xs font-semibold ${isThisSimulated ? "text-primary" : idx === 0 ? "text-success-foreground" : "text-foreground"}`}>Voorstel {idx + 1}</p>
                                 </div>
                                 <Button
                                   variant={isThisSimulated ? "secondary" : "ghost"}
