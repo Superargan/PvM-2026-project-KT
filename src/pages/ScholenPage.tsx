@@ -840,7 +840,7 @@ export default function ScholenPage() {
         schoolLookup.set(s.name.toLowerCase(), s.id);
       });
 
-      const toInsert: any[] = [];
+      const toInsert: Array<{ name: string; email: string | null; phone: string | null; function_title: string | null; school_id: string | null }>[] = [];
       const unmatched: string[] = [];
 
       for (const row of rows) {
