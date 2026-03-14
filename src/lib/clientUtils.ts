@@ -16,9 +16,15 @@ export const CLIENT_AREA_SELECT = `id, first_name, last_name, date_of_birth, wai
  */
 /**
  * Client-like object with optional area resolution fields.
- * Uses Partial to accept incomplete objects from tests and varied select() shapes.
+ * Record<string, unknown> base allows partial objects from tests and varied select() shapes.
  */
-type ClientLike = Partial<ClientAreaFields> & { [key: string]: unknown };
+export type ClientLike = Record<string, unknown> & {
+  id?: string;
+  waitlist_area_id?: string | null;
+  all_areas_flexible?: boolean;
+  neighborhoods?: { area_id?: string; areas?: { id?: string; name?: string } } | null;
+  schools?: { neighborhoods?: { area_id?: string; areas?: { id?: string; name?: string } } | null } | null;
+};
 
 export function getResolvedAreaName(client: ClientLike, areas?: AreaRef[]): string {
   if (client.waitlist_area_id && areas) {
