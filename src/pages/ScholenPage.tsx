@@ -154,6 +154,7 @@ export default function ScholenPage() {
   const [docUploading, setDocUploading] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
   const [addScheduleType, setAddScheduleType] = useState<string>("");
+  const [addSchoolName, setAddSchoolName] = useState<string>("");
   const [editSaving, setEditSaving] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
