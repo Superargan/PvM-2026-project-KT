@@ -1015,6 +1015,8 @@ export type Database = {
       schools: {
         Row: {
           address: string | null
+          break_end_time: string | null
+          break_start_time: string | null
           contact_email: string | null
           contact_phone: string | null
           created_at: string
@@ -1032,6 +1034,8 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          break_end_time?: string | null
+          break_start_time?: string | null
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
@@ -1049,6 +1053,8 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          break_end_time?: string | null
+          break_start_time?: string | null
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
