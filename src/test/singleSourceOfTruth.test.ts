@@ -204,7 +204,7 @@ describe("getMissingFields — consistent across pages", () => {
   });
 
   it("does not flag gebied for nieuw status", () => {
-    const missing = getMissingFields({ intake_status: "nieuw" });
+    const missing = getMissingFields({ id: "t2", first_name: "Test", last_name: "User", intake_status: "nieuw" });
     expect(missing).not.toContain("Gebied");
   });
 
