@@ -530,7 +530,7 @@ export interface DuplicateMatch {
 export function findPotentialDuplicates(
   firstName: string,
   lastName: string,
-  existingClients: any[],
+  existingClients: ClientCheckFields[],
   excludeId?: string
 ): DuplicateMatch[] {
   if (!firstName.trim() || !lastName.trim()) return [];
