@@ -61,6 +61,7 @@ import {
   serializeSnapshot,
   getBlockReason,
   buildAssignedGroupLabel,
+  computeSlotFit,
 } from "./group-composer/utils";
 
 // Re-export handle type for consumers
@@ -126,7 +127,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
   const [confirmCreateGroup, setConfirmCreateGroup] = useState<GroupedClients | null>(null);
 
   // ─── Derived data ───────────────────────────────────────────────
-  const getSuggestions = (clientIds: Set<string>) => getTopAvailabilityOverlaps(clientIds, availByClient, 3, 90) as AvailabilitySuggestion[];
+  const getSuggestions = (clientIds: Set<string>): AvailabilitySuggestion[] => getTopAvailabilityOverlaps(clientIds, availByClient, 3, 90);
 
   const oudertrainers = useMemo(() => filterTrainersByType(allTrainers, "oudertrainer"), [allTrainers]);
   const kindtrainers = useMemo(() => filterTrainersByType(allTrainers, "kindtrainer"), [allTrainers]);
@@ -253,6 +254,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
             endTime: slot.end_time ?? "",
             overlap: 0,
             total: 0,
+            clientIds: [],
           } : null,
         });
 
@@ -673,7 +675,6 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
         {filteredGroups.map((group) => {
           const key = getGroupKey(group);
           const selected = getSelectedForGroup(group);
-          const status = getStatusInfo(selected.size);
           const isCreating = creating === key;
           const intakeClients = group.clients.filter(cm => cm.client.intake_status === "intake_afgerond");
           const wachtlijstClients_ = group.clients.filter(cm => cm.client.intake_status !== "intake_afgerond");
@@ -683,6 +684,16 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
           const selectedReserves = allReserveCandidates.filter(cm => selected.has(cm.client.id) && !primaryClientIds.has(cm.client.id));
           const unselectedReserves = allReserveCandidates.filter(cm => !selected.has(cm.client.id));
           const isGroupSimulated = simulatedGroups.has(key);
+          
+          // Compute slot-fit when a suggestion is active
+          const simulated = simulatedGroups.get(key);
+          const activeSuggestion = simulated?.suggestion ?? null;
+          const slotFit = computeSlotFit(selected, activeSuggestion);
+          const hasSlotFit = activeSuggestion !== null && slotFit.optimalGroupSize > 0;
+          
+          // Status is based on slot-fit when simulated, otherwise on selected count
+          const effectiveSize = hasSlotFit ? slotFit.optimalGroupSize : selected.size;
+          const status = getStatusInfo(effectiveSize);
           const StatusIcon = status.iconType === "check" ? Check : AlertTriangle;
 
           return (
@@ -707,10 +718,20 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                       {selectedReserves.length > 0 && <span className="text-role-foreground ml-1">· {selectedReserves.length} uit reserve</span>}
                     </p>
                   </div>
-                  <Badge className={`${status.color} gap-1`}>
-                    <StatusIcon className="h-4 w-4" />
-                    {selected.size >= 7 ? `${selected.size} geselecteerd ✓` : status.label}
-                  </Badge>
+                  <div className="flex flex-col items-end gap-1">
+                    <Badge className={`${status.color} gap-1`}>
+                      <StatusIcon className="h-4 w-4" />
+                      {hasSlotFit
+                        ? `${slotFit.optimalGroupSize} op slot ✓`
+                        : selected.size >= 7 ? `${selected.size} geselecteerd ✓` : status.label
+                      }
+                    </Badge>
+                    {hasSlotFit && slotFit.excludedClients.length > 0 && (
+                      <span className="text-[10px] text-warning-foreground">
+                        {slotFit.excludedClients.length} niet beschikbaar op dit slot
+                      </span>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -875,7 +896,6 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                 {(() => {
                   const suggestions = getSuggestions(selected);
                   const clientsWithAvail = Array.from(selected).filter(id => availByClient[id]?.length > 0).length;
-                  const simulated = simulatedGroups.get(key);
                   
                   if (clientsWithAvail === 0) {
                     return (
@@ -901,6 +921,8 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                         const isThisSimulated = simulated?.proposalIdx === idx;
                         const altKey = `${key}__${idx}`;
                         const showAlts = expandedAlternatives.has(altKey);
+                        const suggestionFit = computeSlotFit(selected, suggestion);
+                        const excludedCount = suggestionFit.excludedClients.length;
                         return (
                           <div key={idx} className="space-y-1">
                             <div className={`rounded-lg border p-3 space-y-1 ${isThisSimulated ? "border-primary ring-1 ring-primary/30 bg-primary/5" : idx === 0 ? "border-success-border bg-success-muted/50" : "border-border bg-muted/20"}`}>
@@ -913,7 +935,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                                   variant={isThisSimulated ? "secondary" : "ghost"}
                                   size="sm"
                                   className={`h-7 text-xs gap-1 ${isThisSimulated ? "border-primary/30" : ""}`}
-                                  onClick={() => toggleSimulation(key, group, idx, suggestion as AvailabilitySuggestion)}
+                                  onClick={() => toggleSimulation(key, group, idx, suggestion)}
                                   disabled={selected.size === 0}
                                 >
                                   {isThisSimulated ? <><CheckCircle2 className="h-3 w-3" /> Gesimuleerd</> : <><FlaskConical className="h-3 w-3" /> Simuleer</>}
@@ -926,9 +948,14 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                                 <span className="text-sm font-medium text-foreground">
                                   {suggestion.startTime.slice(0, 5)} – {suggestion.endTime.slice(0, 5)}
                                 </span>
-                                <span className="text-xs text-muted-foreground">
-                                  ({suggestion.overlap}/{suggestion.total} beschikbaar)
+                                <span className={`text-xs font-semibold ${isThisSimulated ? "text-primary" : idx === 0 ? "text-success-foreground" : "text-foreground"}`}>
+                                  Optimale groep: {suggestionFit.optimalGroupSize}
                                 </span>
+                                {excludedCount > 0 && (
+                                  <span className="text-xs text-warning-foreground">
+                                    ({excludedCount} niet beschikbaar)
+                                  </span>
+                                )}
                                 {(suggestion.alternativesOnDay ?? 0) > 0 && (
                                   <button
                                     className="text-xs text-info font-medium hover:underline cursor-pointer"
@@ -949,13 +976,18 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                                 <div className="ml-6 space-y-1">
                                   {alts.map((alt, altIdx) => {
                                     const isAltSimulated = simulated?.suggestion?.dayName === alt.dayName && simulated?.suggestion?.startTime === alt.startTime;
+                                    const altFit = computeSlotFit(selected, alt);
+                                    const altExcluded = altFit.excludedClients.length;
                                     return (
                                       <div key={altIdx} className={`rounded-lg border p-2.5 flex items-center justify-between ${isAltSimulated ? "border-primary ring-1 ring-primary/30 bg-primary/5" : "border-border bg-muted/10"}`}>
                                         <div className="flex items-center gap-3">
                                           <CalendarClock className={`h-3.5 w-3.5 shrink-0 ${isAltSimulated ? "text-primary" : "text-muted-foreground"}`} />
                                           <Badge variant="outline" className="text-xs capitalize border-border text-foreground">{alt.dayName}</Badge>
                                           <span className="text-sm font-medium text-foreground">{alt.startTime.slice(0, 5)} – {alt.endTime.slice(0, 5)}</span>
-                                          <span className="text-xs text-muted-foreground">({alt.overlap}/{alt.total} beschikbaar)</span>
+                                          <span className="text-xs font-semibold text-foreground">Groep: {altFit.optimalGroupSize}</span>
+                                          {altExcluded > 0 && (
+                                            <span className="text-xs text-warning-foreground">({altExcluded} niet beschikbaar)</span>
+                                          )}
                                         </div>
                                         <Button
                                           variant={isAltSimulated ? "secondary" : "ghost"}

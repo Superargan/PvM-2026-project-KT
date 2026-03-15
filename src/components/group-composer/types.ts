@@ -42,7 +42,31 @@ export interface AvailabilitySuggestion {
   endTime: string;
   overlap: number;
   total: number;
+  clientIds: string[];
   alternativesOnDay?: number;
+}
+
+// ─── Slot-fit analysis ──────────────────────────────────────────────
+
+/** Why a client doesn't fit a specific slot */
+export type ExclusionReason = "niet_beschikbaar";
+
+/** A client excluded from a slot with the reason */
+export interface ExcludedClient {
+  clientId: string;
+  reason: ExclusionReason;
+}
+
+/** Result of computing which clients fit a specific slot from a candidate pool */
+export interface SlotFitResult {
+  /** Clients that are available on this slot */
+  eligibleClientIds: string[];
+  /** Clients that are NOT available on this slot, with reasons */
+  excludedClients: ExcludedClient[];
+  /** The achievable group size for this slot */
+  optimalGroupSize: number;
+  /** Total candidate pool size */
+  candidatePoolSize: number;
 }
 
 // ─── Simulation entry ───────────────────────────────────────────────
