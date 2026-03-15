@@ -577,19 +577,24 @@ export default function ScholenPage() {
           if (s.school_start_time) timesSetCount++;
           if (s.municipality) municipalitySetCount++;
         } else {
-          // Existing school — enrich with times, schedule_type, source when valid values provided
+          // Existing school — enrich with times, break times, schedule_type, source when valid values provided
           const hasTimeUpdate = s.school_start_time && s.school_end_time;
+          const hasBreakTimeUpdate = s.break_start_time && s.break_end_time && !existing.break_start_time && !existing.break_end_time;
           const hasScheduleTypeUpdate = s.schedule_type && !existing.schedule_type;
           const hasSourceUpdate = s.source && !existing.source;
           const hasMunicipalityUpdate = s.municipality && !existing.municipality;
 
-          if (hasTimeUpdate || hasScheduleTypeUpdate || hasSourceUpdate || hasMunicipalityUpdate) {
+          if (hasTimeUpdate || hasBreakTimeUpdate || hasScheduleTypeUpdate || hasSourceUpdate || hasMunicipalityUpdate) {
             const schoolName = s.name;
             const updateFn = async () => {
-              const updatePayload: Record<string, any> = {};
+              const updatePayload: Record<string, string | null> = {};
               if (hasTimeUpdate) {
                 updatePayload.school_start_time = s.school_start_time;
                 updatePayload.school_end_time = s.school_end_time;
+              }
+              if (hasBreakTimeUpdate) {
+                updatePayload.break_start_time = s.break_start_time;
+                updatePayload.break_end_time = s.break_end_time;
               }
               if (hasScheduleTypeUpdate) updatePayload.schedule_type = s.schedule_type;
               if (hasSourceUpdate) updatePayload.source = s.source;
