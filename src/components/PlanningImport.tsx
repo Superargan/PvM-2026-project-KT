@@ -135,7 +135,7 @@ function parseDateFromHeader(header: string, referenceYear?: number): string | n
 }
 
 /** Check if a cell value represents availability: "x", "X", "✓", "ja", or a time */
-function parseCellAvailability(val: any): { available: boolean; startTime: string; endTime: string } | null {
+function parseCellAvailability(val: unknown): { available: boolean; startTime: string; endTime: string } | null {
   if (val === undefined || val === null || val === "") return null;
   const s = String(val).trim();
   if (!s) return null;
