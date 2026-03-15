@@ -15,6 +15,7 @@ import { areaKeys, schoolKeys, clientKeys } from "@/lib/queryKeys";
 import ClientFilters from "@/components/ClientFilters";
 import ClientListTable from "@/components/ClientListTable";
 import DuplicateWarning from "@/components/DuplicateWarning";
+import type { ClientenPageRow } from "@/lib/queryShapes";
 
 export default function ClientenPage() {
   const [searchParams] = useSearchParams();
