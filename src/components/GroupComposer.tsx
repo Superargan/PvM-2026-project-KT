@@ -685,6 +685,16 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
           const selectedReserves = allReserveCandidates.filter(cm => selected.has(cm.client.id) && !primaryClientIds.has(cm.client.id));
           const unselectedReserves = allReserveCandidates.filter(cm => !selected.has(cm.client.id));
           const isGroupSimulated = simulatedGroups.has(key);
+          
+          // Compute slot-fit when a suggestion is active
+          const simulated = simulatedGroups.get(key);
+          const activeSuggestion = simulated?.suggestion ?? null;
+          const slotFit = computeSlotFit(selected, activeSuggestion);
+          const hasSlotFit = activeSuggestion !== null && slotFit.optimalGroupSize > 0;
+          
+          // Status is based on slot-fit when simulated, otherwise on selected count
+          const effectiveSize = hasSlotFit ? slotFit.optimalGroupSize : selected.size;
+          const status = getStatusInfo(effectiveSize);
           const StatusIcon = status.iconType === "check" ? Check : AlertTriangle;
 
           return (
@@ -709,10 +719,20 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                       {selectedReserves.length > 0 && <span className="text-role-foreground ml-1">· {selectedReserves.length} uit reserve</span>}
                     </p>
                   </div>
-                  <Badge className={`${status.color} gap-1`}>
-                    <StatusIcon className="h-4 w-4" />
-                    {selected.size >= 7 ? `${selected.size} geselecteerd ✓` : status.label}
-                  </Badge>
+                  <div className="flex flex-col items-end gap-1">
+                    <Badge className={`${status.color} gap-1`}>
+                      <StatusIcon className="h-4 w-4" />
+                      {hasSlotFit
+                        ? `${slotFit.optimalGroupSize} op slot ✓`
+                        : selected.size >= 7 ? `${selected.size} geselecteerd ✓` : status.label
+                      }
+                    </Badge>
+                    {hasSlotFit && slotFit.excludedClients.length > 0 && (
+                      <span className="text-[10px] text-warning-foreground">
+                        {slotFit.excludedClients.length} niet beschikbaar op dit slot
+                      </span>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
