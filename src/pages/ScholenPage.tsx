@@ -483,6 +483,8 @@ export default function ScholenPage() {
       const headers = Object.keys(rows[0] ?? {});
       const startTimeCol = findMatchingColumn(headers, SCHOOL_START_TIME_COLUMNS);
       const endTimeCol = findMatchingColumn(headers, SCHOOL_END_TIME_COLUMNS);
+      const breakStartCol = findMatchingColumn(headers, BREAK_START_TIME_COLUMNS);
+      const breakEndCol = findMatchingColumn(headers, BREAK_END_TIME_COLUMNS);
       const scheduleTypeCol = findMatchingColumn(headers, SCHEDULE_TYPE_COLUMNS);
       const sourceCol = findMatchingColumn(headers, SOURCE_COLUMNS);
       const municipalityCol = findMatchingColumn(headers, MUNICIPALITY_COLUMNS);
