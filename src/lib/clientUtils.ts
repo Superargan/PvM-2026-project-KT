@@ -154,7 +154,7 @@ export const statusStyles: Record<string, string> = {
   niet_deelnemen: "status-rood",
 };
 
-export const REQUIRED_CLIENT_CHECKS: { key: string; label: string; check: (c: any) => boolean; onlyStatuses?: string[] }[] = [
+export const REQUIRED_CLIENT_CHECKS: { key: string; label: string; check: (c: ClientCheckFields) => boolean; onlyStatuses?: string[] }[] = [
   { key: "date_of_birth", label: "Geboortedatum", check: (c) => !c.date_of_birth },
   { key: "school_id", label: "School", check: (c) => !c.school_id },
   { key: "guardian_phone", label: "Telefoon ouder", check: (c) => !c.guardian_phone },
@@ -165,7 +165,7 @@ export const REQUIRED_CLIENT_CHECKS: { key: string; label: string; check: (c: an
   { key: "consent_data_processing", label: "AVG-toestemming", check: (c) => !c.consent_data_processing },
 ];
 
-export function getMissingFields(client: any): string[] {
+export function getMissingFields(client: ClientCheckFields): string[] {
   return REQUIRED_CLIENT_CHECKS
     .filter((ch) => {
       if (ch.onlyStatuses && !ch.onlyStatuses.includes(client.intake_status ?? "")) return false;
