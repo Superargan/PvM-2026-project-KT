@@ -557,6 +557,8 @@ export const SCHOOL_START_TIME_COLUMNS = [
   "starttime",
   "school start",
   "aanvang",
+  "ochtend begin",
+  "ochtend start",
 ];
 
 export const SCHOOL_END_TIME_COLUMNS = [
@@ -567,6 +569,26 @@ export const SCHOOL_END_TIME_COLUMNS = [
   "endtime",
   "school eind",
   "einde",
+  "middag eind",
+  "middag einde",
+];
+
+export const BREAK_START_TIME_COLUMNS = [
+  "pauze begin",
+  "pauze start",
+  "break_start_time",
+  "pauze begintijd",
+  "ochtend eind",
+  "ochtend einde",
+];
+
+export const BREAK_END_TIME_COLUMNS = [
+  "pauze eind",
+  "pauze einde",
+  "break_end_time",
+  "pauze eindtijd",
+  "middag begin",
+  "middag start",
 ];
 
 export const SCHEDULE_TYPE_COLUMNS = [
