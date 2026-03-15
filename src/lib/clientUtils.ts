@@ -558,9 +558,9 @@ export function findPotentialDuplicates(
 
 /** Find all groups of clients with duplicate names */
 export function findAllDuplicateGroups(
-  clients: any[]
-): { key: string; clients: any[] }[] {
-  const groups: Record<string, any[]> = {};
+  clients: ClientCheckFields[]
+): { key: string; clients: ClientCheckFields[] }[] {
+  const groups: Record<string, ClientCheckFields[]> = {};
   for (const c of clients) {
     const key = `${normalizeName(c.first_name ?? "")}|${normalizeName(c.last_name ?? "")}`;
     if (!key || key === "|") continue;
