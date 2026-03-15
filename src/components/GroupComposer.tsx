@@ -956,6 +956,21 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                                     ({excludedCount} niet beschikbaar)
                                   </span>
                                 )}
+                              </div>
+                              {excludedCount > 0 && (
+                                <div className="pl-6 flex flex-wrap gap-1 pt-1">
+                                  <span className="text-[10px] font-semibold text-warning-foreground uppercase tracking-wider">Niet beschikbaar:</span>
+                                  {suggestionFit.excludedClients.map(exc => {
+                                    const client = [...group.clients.map(cm => cm.client), ...getReserveCandidates(group, waitlistClients, prefsByClient).map(cm => cm.client)]
+                                      .find(c => c.id === exc.clientId);
+                                    return client ? (
+                                      <Badge key={exc.clientId} variant="outline" className="text-[10px] px-1.5 py-0 border-warning-border text-warning-foreground">
+                                        {client.first_name} {client.last_name}
+                                      </Badge>
+                                    ) : null;
+                                  })}
+                                </div>
+                              )}
                                 {(suggestion.alternativesOnDay ?? 0) > 0 && (
                                   <button
                                     className="text-xs text-info font-medium hover:underline cursor-pointer"
