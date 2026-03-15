@@ -440,8 +440,8 @@ export interface ClientDataCompleteness {
 
 /** Determine data completeness for a client */
 export function getClientDataCompleteness(
-  client: any,
-  availByClient: Record<string, any[]>,
+  client: ClientLike & { id: string; intake_status?: string | null; neighborhood_id?: string | null },
+  availByClient: Record<string, unknown[]>,
   prefsByClient: Record<string, Record<string, number>>,
   overriddenClientIds?: Set<string>
 ): ClientDataCompleteness {
