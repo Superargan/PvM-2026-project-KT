@@ -675,7 +675,6 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
         {filteredGroups.map((group) => {
           const key = getGroupKey(group);
           const selected = getSelectedForGroup(group);
-          const status = getStatusInfo(selected.size);
           const isCreating = creating === key;
           const intakeClients = group.clients.filter(cm => cm.client.intake_status === "intake_afgerond");
           const wachtlijstClients_ = group.clients.filter(cm => cm.client.intake_status !== "intake_afgerond");
