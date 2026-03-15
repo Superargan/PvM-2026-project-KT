@@ -572,7 +572,7 @@ export default function ScholenPage() {
       // Batch insert new schools
       for (let i = 0; i < newSchools.length; i += 50) {
         const chunk = newSchools.slice(i, i + 50);
-        const { error } = await supabase.from("schools").insert(chunk as any);
+        const { error } = await supabase.from("schools").insert(chunk);
         if (error) throw error;
       }
 

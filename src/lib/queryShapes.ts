@@ -597,3 +597,124 @@ export interface SchoolDocumentRow {
   uploaded_by: string;
   created_at: string;
 }
+
+// ─── Import staging shapes ──────────────────────────────────────────
+
+/** School row as returned by ClientImport school query */
+export interface ImportSchoolRef {
+  id: string;
+  name: string;
+  neighborhood_id: string | null;
+  neighborhoods: { area_id: string } | null;
+}
+
+/** Referrer row as returned by ClientImport referrer query */
+export interface ImportReferrerRef {
+  id: string;
+  name: string;
+  school_id: string | null;
+}
+
+/** Existing client fields fetched for deduplication during import */
+export interface ExistingClientForImport {
+  id: string;
+  first_name: string;
+  last_name: string;
+  date_of_birth: string | null;
+  school_id: string | null;
+  gender: string | null;
+  class_group: string | null;
+  guardian_phone: string | null;
+  guardian_phone_alt: string | null;
+  guardian_email: string | null;
+  guardian_name: string | null;
+  postal_code: string | null;
+  intake_status: string | null;
+  waitlist_area_id: string | null;
+  all_areas_flexible: boolean;
+  neighborhood_id: string | null;
+  referrer_id: string | null;
+  referral_reason: string | null;
+  intake_date: string | null;
+  registration_date: string | null;
+  dob_estimated: boolean;
+  area_notes: string | null;
+}
+
+/** Reserve area preference to be inserted for a client */
+export interface ReserveAreaEntry {
+  area_id: string;
+  order: number;
+}
+
+/** Parsed availability from an import row day column */
+export interface ParsedAvailabilityEntry {
+  dayIndex: number;
+  startTime: string;
+  endTime: string;
+  notes: string | null;
+}
+
+/** Client insert payload with staging metadata stripped before DB insert */
+export interface ImportClientRecord extends Omit<TablesInsert<"clients">, "first_name" | "last_name"> {
+  first_name: string;
+  last_name: string;
+  /** Internal staging: availability parsed from day columns */
+  __availability?: ParsedAvailabilityEntry[];
+  /** Internal staging: reserve area preferences */
+  __reserveAreas?: ReserveAreaEntry[];
+}
+
+/** Update entry for existing client during import */
+export interface ImportUpdateEntry {
+  id: string;
+  data: Partial<TablesUpdate<"clients">>;
+  reserves?: ReserveAreaEntry[];
+  availability?: ParsedAvailabilityEntry[];
+}
+
+/** Typed insert payload for client_area_preferences */
+export type ClientAreaPreferenceInsert = TablesInsert<"client_area_preferences">;
+
+/** Typed insert payload for programs */
+export type ProgramInsert = TablesInsert<"programs">;
+
+/** Typed update payload for programs */
+export type ProgramUpdate = TablesUpdate<"programs">;
+
+/** Program list row with joins (ProgrammasPage) */
+export interface ProgramListRow {
+  id: string;
+  name: string;
+  description: string | null;
+  status: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  max_participants: number | null;
+  area_id: string | null;
+  neighborhood_id: string | null;
+  age_category: string | null;
+  training_number: string | null;
+  archived: boolean;
+  schools: { name: string } | null;
+  training_locations: { name: string } | null;
+  program_clients: Array<{ count: number }>;
+  areas: { name: string } | null;
+  neighborhoods: { name: string } | null;
+}
+
+/** School import record shape (ScholenPage bulk import) */
+export interface SchoolImportRecord {
+  name: string;
+  address: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  website_url: string | null;
+  student_count: number;
+  neighborhood_id: string | null;
+  school_start_time: string | null;
+  school_end_time: string | null;
+  schedule_type: string | null;
+  source: string | null;
+  municipality: string | null;
+}
