@@ -552,6 +552,8 @@ export interface SchoolListRow {
   neighborhood_id: string | null;
   school_start_time: string | null;
   school_end_time: string | null;
+  break_start_time: string | null;
+  break_end_time: string | null;
   schedule_type: string | null;
   source: string | null;
   municipality: string | null;
@@ -569,6 +571,8 @@ export interface SchoolEditForm {
   student_count: number;
   school_start_time: string;
   school_end_time: string;
+  break_start_time: string;
+  break_end_time: string;
   schedule_type: string;
   source: string;
   municipality: string;
