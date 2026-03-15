@@ -122,8 +122,9 @@ describe("resolveSchedule", () => {
       break_end_time: "12:30:00",
     });
     expect(result.isTraditional).toBe(false);
-    if (result.isTraditional) return;
-    expect(result.range).toBe("08:30 – 14:00");
+    if (result.isTraditional === false) {
+      expect(result.range).toBe("08:30 – 14:00");
+    }
   });
 });
 
