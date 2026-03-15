@@ -773,16 +773,3 @@ export interface ClientCheckFields {
   schools?: { neighborhoods?: { area_id?: string; areas?: { id?: string; name?: string } } | null } | null;
   [key: string]: unknown;
 }
-  name: string;
-  address: string | null;
-  contact_email: string | null;
-  contact_phone: string | null;
-  website_url: string | null;
-  student_count: number;
-  neighborhood_id: string | null;
-  school_start_time: string | null;
-  school_end_time: string | null;
-  schedule_type: string | null;
-  source: string | null;
-  municipality: string | null;
-}
