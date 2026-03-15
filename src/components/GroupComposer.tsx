@@ -253,6 +253,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
             endTime: slot.end_time ?? "",
             overlap: 0,
             total: 0,
+            clientIds: [],
           } : null,
         });
 
