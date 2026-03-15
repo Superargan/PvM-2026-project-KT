@@ -457,13 +457,14 @@ export default function ClientDetailPage() {
               {/* Schooltijden & Gemeente — read-only, derived from linked school (SSOT) */}
               {(() => {
                 const linkedSchool = schools.find((s) => s.id === form.school_id);
-                const range = linkedSchool ? formatSchoolTimeRange(linkedSchool.school_start_time, linkedSchool.school_end_time) : "—";
+                const resolved = linkedSchool ? resolveSchedule(linkedSchool) : null;
+                const scheduleDisplay = resolved ? formatResolvedSchedule(resolved) : "—";
                 const municipality = linkedSchool ? getEffectiveMunicipality(linkedSchool.municipality) : null;
                 return (
                   <>
-                    {range !== "—" && (
+                    {scheduleDisplay !== "—" && (
                       <Field label="Schooltijden">
-                        <p className="text-sm text-card-foreground py-2">{range}</p>
+                        <p className="text-sm text-card-foreground py-2">{scheduleDisplay}</p>
                       </Field>
                     )}
                     {municipality && municipality !== DEFAULT_MUNICIPALITY && (

@@ -528,6 +528,13 @@ export default function ScholenPage() {
         const rawMunicipality = municipalityCol ? String(r[municipalityCol] ?? "").trim() : "";
         const municipality = rawMunicipality || null;
 
+        // Parse break times for traditional schedules
+        const { parseImportedSchoolTime } = await import("@/lib/schoolTimes");
+        const rawBreakStart = breakStartCol ? r[breakStartCol] : null;
+        const rawBreakEnd = breakEndCol ? r[breakEndCol] : null;
+        const break_start_time = rawBreakStart ? parseImportedSchoolTime(rawBreakStart) : null;
+        const break_end_time = rawBreakEnd ? parseImportedSchoolTime(rawBreakEnd) : null;
+
         return {
           name: r["naam"] || r["Naam"] || r["name"] || r["School"] || r["school"] || r["VESTIGINGSNAAM"] || "",
           address,
@@ -538,6 +545,8 @@ export default function ScholenPage() {
           neighborhood_id: neighborhoodId,
           school_start_time,
           school_end_time,
+          break_start_time,
+          break_end_time,
           schedule_type,
           source,
           municipality,
