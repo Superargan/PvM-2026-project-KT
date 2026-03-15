@@ -468,8 +468,8 @@ export function getPlannabilityStatus(c: ClientDataCompleteness): PlannabilitySt
   return "incompleet";
 }
 
-export function filterClients(
-  clients: any[],
+export function filterClients<T extends ClientCheckFields>(
+  clients: T[],
   filters: {
     search?: string;
     area?: string;
@@ -477,8 +477,8 @@ export function filterClients(
     age?: string;
     status?: string;
   }
-): any[] {
-  return clients.filter((c: any) => {
+): T[] {
+  return clients.filter((c) => {
     if (filters.search?.trim()) {
       const s = filters.search.toLowerCase();
       const name = `${c.first_name} ${c.last_name}`.toLowerCase();
