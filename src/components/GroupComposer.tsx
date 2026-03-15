@@ -1017,7 +1017,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                     <TooltipTrigger asChild>
                       <span className="w-full">
                         <Button className="w-full" onClick={() => requestCreateGroup(group)} disabled={isCreating || selected.size === 0 || !canCreateDefinitiveGroup}>
-                          {isCreating ? "Aanmaken..." : `Groep definitief aanmaken (${selected.size})`}
+                          {isCreating ? "Aanmaken..." : `Groep definitief aanmaken (${effectiveSize})`}
                         </Button>
                       </span>
                     </TooltipTrigger>
