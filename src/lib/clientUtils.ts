@@ -269,7 +269,7 @@ export function getTopAvailabilityOverlaps(
     const records = availByClient[clientId] ?? [];
 
     for (const record of records) {
-      const resolvedDayName = record.dayName ?? (record as any).dayOfWeek;
+      const resolvedDayName = record.dayName;
       if (!resolvedDayName || typeof resolvedDayName !== "string") continue;
 
       const startMinutes = timeToMinutes(record.startTime);
