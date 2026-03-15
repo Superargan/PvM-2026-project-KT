@@ -358,7 +358,7 @@ export function getAlternativeWindowsForDay(
   for (const clientId of clientIdList) {
     const records = availByClient[clientId] ?? [];
     for (const record of records) {
-      const resolvedDayName = record.dayName ?? (record as any).dayOfWeek;
+      const resolvedDayName = record.dayName;
       if (resolvedDayName !== dayName) continue;
       const startMinutes = timeToMinutes(record.startTime);
       const endMinutes = timeToMinutes(record.endTime);
