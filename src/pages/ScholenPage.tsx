@@ -1446,6 +1446,12 @@ export default function ScholenPage() {
                   </div>
                   <div><Label>Bron</Label><Input name="source" placeholder="bijv. DUO, handmatig" /></div>
                 </div>
+                {addScheduleType === "traditioneel" && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><Label>Pauze begin</Label><Input name="break_start_time" type="time" /></div>
+                    <div><Label>Pauze eind</Label><Input name="break_end_time" type="time" /></div>
+                  </div>
+                )}
                 <div>
                   <Label>Gemeente</Label>
                   <Input name="municipality" placeholder="Leeg = Rotterdam" />
