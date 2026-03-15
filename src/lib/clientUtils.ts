@@ -522,7 +522,7 @@ function normalizeName(name: string): string {
 }
 
 export interface DuplicateMatch {
-  client: any;
+  client: ClientCheckFields;
   matchType: "exact" | "fuzzy";
 }
 
