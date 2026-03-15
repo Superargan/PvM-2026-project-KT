@@ -1688,7 +1688,6 @@ export default function ScholenPage() {
                       return <span className="text-xs text-card-foreground">{formatScheduleCompact(resolved)}</span>;
                     })()}
                   </td>
-                  </td>
                   <td className="px-5 py-4 text-right">
                     <span className="font-display text-sm font-bold text-card-foreground">{school.student_count ?? 0}</span>
                   </td>
