@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { schoolKeys, invalidateAllSchoolQueries, areaKeys, programKeys, documentKeys, clientKeys } from "@/lib/queryKeys";
-import { formatSchoolTimeRange, validateSchoolTimePair, validateBreakTimePair, findMatchingColumn, dbTimeToInput, inputTimeToDb, SCHOOL_START_TIME_COLUMNS, SCHOOL_END_TIME_COLUMNS, BREAK_START_TIME_COLUMNS, BREAK_END_TIME_COLUMNS, SCHEDULE_TYPE_COLUMNS, SOURCE_COLUMNS, MUNICIPALITY_COLUMNS, resolveImportedSchoolTimePair, resolveSchedule, formatResolvedSchedule, formatScheduleCompact } from "@/lib/schoolTimes";
+import { formatSchoolTimeRange, validateSchoolTimePair, validateBreakTimePair, findMatchingColumn, dbTimeToInput, inputTimeToDb, parseImportedSchoolTime, SCHOOL_START_TIME_COLUMNS, SCHOOL_END_TIME_COLUMNS, BREAK_START_TIME_COLUMNS, BREAK_END_TIME_COLUMNS, SCHEDULE_TYPE_COLUMNS, SOURCE_COLUMNS, MUNICIPALITY_COLUMNS, resolveImportedSchoolTimePair, resolveSchedule, formatResolvedSchedule, formatScheduleCompact } from "@/lib/schoolTimes";
 import { normalizeSchoolName, getEffectiveMunicipality } from "@/lib/DomainResolver";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
