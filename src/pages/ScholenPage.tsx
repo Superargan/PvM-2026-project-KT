@@ -2008,7 +2008,18 @@ export default function ScholenPage() {
               <Label>Aantal leerlingen</Label>
               <Input type="number" min="0" value={editForm.student_count ?? 0} onChange={(e) => setEditForm((f) => ({ ...f, student_count: Number(e.target.value) }))} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            {editForm.schedule_type === "traditioneel" && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Pauze begin</Label>
+                  <Input type="time" value={editForm.break_start_time ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, break_start_time: e.target.value }))} />
+                </div>
+                <div>
+                  <Label>Pauze eind</Label>
+                  <Input type="time" value={editForm.break_end_time ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, break_end_time: e.target.value }))} />
+                </div>
+              </div>
+            )}
               <div>
                 <Label>Schooltijd begin</Label>
                 <Input type="time" value={editForm.school_start_time ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, school_start_time: e.target.value }))} />
