@@ -506,6 +506,46 @@ export function validateSchoolTimePair(
   return { valid: true };
 }
 
+/**
+ * Validate break time pair for traditional schedules.
+ * Returns valid if:
+ * - Both null (break not set)
+ * - Both filled and break_start < break_end
+ * - Break falls within school_start..school_end when those are provided
+ */
+export function validateBreakTimePair(
+  breakStart: string | null | undefined,
+  breakEnd: string | null | undefined,
+  schoolStart?: string | null,
+  schoolEnd?: string | null,
+): SchoolTimeValidation {
+  const bs = (breakStart ?? "").trim();
+  const be = (breakEnd ?? "").trim();
+
+  if (!bs && !be) return { valid: true };
+
+  if ((!bs && be) || (bs && !be)) {
+    return { valid: false, error: "Pauze begin- en eindtijd moeten beide ingevuld zijn." };
+  }
+
+  if (bs >= be) {
+    return { valid: false, error: "Pauze eindtijd moet later zijn dan pauze begintijd." };
+  }
+
+  const ss = (schoolStart ?? "").trim();
+  const se = (schoolEnd ?? "").trim();
+
+  if (ss && bs <= ss) {
+    return { valid: false, error: "Pauze begintijd moet na schooltijd begin liggen." };
+  }
+
+  if (se && be >= se) {
+    return { valid: false, error: "Pauze eindtijd moet voor schooltijd einde liggen." };
+  }
+
+  return { valid: true };
+}
+
 // ── Import column matching ──────────────────────────────────────────
 
 export const SCHOOL_START_TIME_COLUMNS = [
