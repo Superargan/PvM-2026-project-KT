@@ -296,6 +296,8 @@ export default function ScholenPage() {
       student_count: school.student_count ?? 0,
       school_start_time: dbTimeToInput(school.school_start_time),
       school_end_time: dbTimeToInput(school.school_end_time),
+      break_start_time: dbTimeToInput(school.break_start_time),
+      break_end_time: dbTimeToInput(school.break_end_time),
       schedule_type: school.schedule_type ?? "",
       source: school.source ?? "",
       municipality: school.municipality ?? "",
