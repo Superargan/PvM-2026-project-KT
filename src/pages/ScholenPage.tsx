@@ -554,9 +554,9 @@ export default function ScholenPage() {
 
       if (mapped.length === 0) throw new Error("Geen geldige scholen gevonden. Zorg dat er een kolom 'Naam' is.");
 
-      // Fetch existing schools for deduplication (include times for enrichment policy)
-      const { data: existingSchools } = await supabase.from("schools").select("id, name, school_start_time, school_end_time, schedule_type, source, municipality");
-      const existingMap = new Map<string, { id: string; school_start_time: string | null; school_end_time: string | null; schedule_type: string | null; source: string | null; municipality: string | null }>();
+      // Fetch existing schools for deduplication (include times + break times for enrichment policy)
+      const { data: existingSchools } = await supabase.from("schools").select("id, name, school_start_time, school_end_time, break_start_time, break_end_time, schedule_type, source, municipality");
+      const existingMap = new Map<string, { id: string; school_start_time: string | null; school_end_time: string | null; break_start_time: string | null; break_end_time: string | null; schedule_type: string | null; source: string | null; municipality: string | null }>();
       for (const s of existingSchools ?? []) {
         existingMap.set(normalizeSchoolName(s.name), s);
       }
