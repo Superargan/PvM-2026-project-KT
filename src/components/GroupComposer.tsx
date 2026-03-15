@@ -364,11 +364,36 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
       const next = new Map(prev);
       const existing = next.get(key);
       if (existing && existing.proposalIdx === proposalIdx) {
+        // Deactivating simulation — restore all group clients to selection
         next.delete(key);
+        setSelectedClients(sc => ({
+          ...sc,
+          [key]: new Set(group.clients.map(cm => cm.client.id)),
+        }));
       } else {
-        if (!selectedClients[key]) {
+        // Activating simulation — auto-deselect clients that don't fit the slot
+        const currentSelected = selectedClients[key] ?? new Set(group.clients.map(cm => cm.client.id));
+        const slotFit = computeSlotFit(currentSelected, suggestion);
+
+        if (slotFit.excludedClients.length > 0) {
+          const eligibleSet = new Set(slotFit.eligibleClientIds);
+          setSelectedClients(sc => ({ ...sc, [key]: eligibleSet }));
+
+          const excludedNames = slotFit.excludedClients
+            .map(exc => {
+              const c = group.clients.find(cm => cm.client.id === exc.clientId)?.client;
+              return c ? `${c.first_name} ${c.last_name}` : null;
+            })
+            .filter(Boolean);
+
+          toast({
+            title: `${excludedNames.length} deelnemer(s) uitgevinkt`,
+            description: `Niet beschikbaar op dit slot: ${excludedNames.join(", ")}. Ze blijven zichtbaar en kunnen elders worden ingedeeld.`,
+          });
+        } else if (!selectedClients[key]) {
           setSelectedClients(sc => ({ ...sc, [key]: new Set(group.clients.map(cm => cm.client.id)) }));
         }
+
         next.set(key, { proposalIdx, suggestion });
       }
       return next;
