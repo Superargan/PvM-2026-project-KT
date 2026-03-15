@@ -12,6 +12,7 @@ import ClientImport from "@/components/ClientImport";
 import { filterClients, statusLabels, statusStyles } from "@/lib/DomainResolver";
 import ClientFilters from "@/components/ClientFilters";
 import ClientListTable from "@/components/ClientListTable";
+import type { IdNameRef } from "@/lib/queryShapes";
 
 export default function WachtlijstPage() {
   const [filterArea, setFilterArea] = useState<string>("all");
@@ -81,12 +82,12 @@ export default function WachtlijstPage() {
       const { error: enrollError } = await supabase.from("program_clients").insert({
         program_id: programId,
         client_id: clientId,
-      } as any);
+      });
       if (enrollError) throw enrollError;
 
       const { error: updateError } = await supabase
         .from("clients")
-        .update({ waitlist_status: null, waitlist_area_id: null, intake_status: "actief" } as any)
+        .update({ waitlist_status: null, waitlist_area_id: null, intake_status: "actief" })
         .eq("id", clientId);
       if (updateError) throw updateError;
     },
@@ -95,7 +96,7 @@ export default function WachtlijstPage() {
       qc.invalidateQueries({ queryKey: clientKeys.all });
       qc.invalidateQueries({ queryKey: programKeys.all });
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: Error) => toast.error(err.message),
   });
 
   const deleteMutation = useMutation({
@@ -113,7 +114,7 @@ export default function WachtlijstPage() {
       qc.invalidateQueries({ queryKey: clientKeys.all });
       qc.invalidateQueries({ queryKey: programKeys.all });
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err: Error) => toast.error(err.message),
   });
 
   const toggleSelect = (id: string) => {
@@ -129,7 +130,7 @@ export default function WachtlijstPage() {
     if (selected.size === filteredClients.length) {
       setSelected(new Set());
     } else {
-      setSelected(new Set(filteredClients.map((c: any) => c.id)));
+      setSelected(new Set(filteredClients.map(c => c.id)));
     }
   };
 
@@ -210,7 +211,7 @@ export default function WachtlijstPage() {
                     <SelectValue placeholder="Kies programma" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover">
-                    {programs.map((p: any) => (
+                    {programs.map(p => (
                       <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                     ))}
                   </SelectContent>

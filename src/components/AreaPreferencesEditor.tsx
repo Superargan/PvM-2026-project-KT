@@ -89,7 +89,7 @@ export default function AreaPreferencesEditor({
         client_id: clientId,
         area_id: areaId,
         preference_order: index + 1,
-      } as any);
+      });
     }
 
     queryClient.invalidateQueries({ queryKey: clientKeys.areaPreferences(clientId) });

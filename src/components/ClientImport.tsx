@@ -24,20 +24,23 @@ import {
   isNonPersonReferralSource,
   detectDateFormat,
 } from "@/lib/ImportEngine";
+import type {
+  ImportSchoolRef,
+  ImportReferrerRef,
+  ExistingClientForImport,
+  ReserveAreaEntry,
+  ParsedAvailabilityEntry,
+  ImportClientRecord,
+  ImportUpdateEntry,
+} from "@/lib/queryShapes";
 
+/** Raw parsed Excel row — keys are dynamic column headers */
 interface ParsedRow {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 const DAY_COLUMNS = ["Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag", "Zondag"];
 const DAY_INDICES = [1, 2, 3, 4, 5, 6, 0]; // JS day indices (0=Sun)
-
-interface ParsedAvailabilityLocal {
-  dayIndex: number; // 0=Sun, 1=Mon, ...
-  startTime: string;
-  endTime: string;
-  notes: string | null;
-}
 
 type ImportMode = "default" | "waitlist" | "intake_afgerond" | "aanvulling";
 
@@ -73,7 +76,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     queryKey: schoolKeys.all,
     queryFn: async () => {
       const { data } = await supabase.from("schools").select("id, name, neighborhood_id, neighborhoods(area_id)").order("name");
-      return data ?? [];
+      return (data ?? []) as ImportSchoolRef[];
     },
     enabled: open,
   });
@@ -91,7 +94,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     queryKey: referrerKeys.all,
     queryFn: async () => {
       const { data } = await supabase.from("referrers").select("id, name, school_id").order("name");
-      return data ?? [];
+      return (data ?? []) as ImportReferrerRef[];
     },
     enabled: open,
   });
@@ -158,7 +161,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
   /** Find referrer ID using shared matching logic */
   const findReferrerId = (name: string | undefined, schoolId: string | null): string | null => {
     if (!name) return null;
-    const match = findReferrerMatch(name, referrers as any[], schoolId);
+    const match = findReferrerMatch(name, referrers as EntityRef[], schoolId);
     return match?.id ?? null;
   };
 
@@ -174,10 +177,10 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       .from("clients")
       .select("id, first_name, last_name, date_of_birth, school_id, gender, class_group, guardian_phone, guardian_phone_alt, guardian_email, guardian_name, postal_code, intake_status, waitlist_area_id, all_areas_flexible, neighborhood_id, referrer_id, referral_reason, intake_date, registration_date, dob_estimated, area_notes");
 
-    // Build lookup maps: name-only key and name+dob key
-    const existingByName = new Map<string, any>();
-    const existingByNameDob = new Map<string, any>();
-    for (const c of existingClients ?? []) {
+    // Build lookup maps
+    const existingByName = new Map<string, ExistingClientForImport>();
+    const existingByNameDob = new Map<string, ExistingClientForImport>();
+    for (const c of (existingClients ?? []) as ExistingClientForImport[]) {
       const nameKey = `${c.first_name?.toLowerCase().trim()}|${c.last_name?.toLowerCase().trim()}`;
       existingByName.set(nameKey, c);
       if (c.date_of_birth) {
@@ -192,8 +195,8 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     const dateFormat = detectDateFormat(rows);
     console.log(`Import: detected date format = ${dateFormat}`);
 
-    const inserts: any[] = [];
-    const updates: { id: string; data: any; reserves?: { area_id: string; order: number }[]; availability?: ParsedAvailabilityLocal[] }[] = [];
+    const inserts: ImportClientRecord[] = [];
+    const updates: ImportUpdateEntry[] = [];
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const rowNum = i + 2; // Excel row (header = 1)
@@ -235,27 +238,22 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       const parsedAge = ageStr ? parseInt(ageStr, 10) : NaN;
 
       if (date_of_birth && !isNaN(parsedAge) && parsedAge > 0 && parsedAge < 100) {
-        // Cross-check: verify age matches DOB
         const birth = new Date(date_of_birth);
         const today = new Date();
         let calcAge = today.getFullYear() - birth.getFullYear();
         if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) calcAge--;
         if (Math.abs(calcAge - parsedAge) > 1) {
-          // Age and DOB don't match — trust DOB but log discrepancy
           console.warn(`Import: leeftijd (${parsedAge}) komt niet overeen met geboortedatum (${date_of_birth}, berekend ${calcAge}) voor ${first_name} ${last_name}`);
         }
       } else if (!date_of_birth && !isNaN(parsedAge) && parsedAge > 0 && parsedAge < 100) {
-        // No DOB, estimate from age
         const now = new Date();
         date_of_birth = `${now.getFullYear() - parsedAge}-06-15`;
         dobEstimated = true;
       }
 
-      // Deduplicate: check name+dob first, then name-only
+      // Deduplicate
       const nameKey = `${first_name.toLowerCase().trim()}|${last_name.toLowerCase().trim()}`;
       const nameDobKey = date_of_birth ? `${nameKey}|${date_of_birth}` : null;
-
-      // Check intra-batch duplicates
       const batchKey = nameDobKey ?? nameKey;
       if (batchKeys.has(batchKey)) {
         skipped++;
@@ -271,21 +269,19 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       const areaName = findCol(row, "Gebied", "gebied", "Area", "Primair gebied");
       let waitlist_area_id = findAreaId(areaName);
       
-      // Auto-derive area and neighborhood from school if not explicitly provided
+      // Auto-derive area and neighborhood from school
       let neighborhood_id: string | null = null;
       if (school_id) {
-        const school = schools.find((s: any) => s.id === school_id);
-        neighborhood_id = (school as any)?.neighborhood_id ?? null;
+        const school = schools.find(s => s.id === school_id);
+        neighborhood_id = school?.neighborhood_id ?? null;
         if (!waitlist_area_id) {
-          const derivedAreaId = (school as any)?.neighborhoods?.area_id;
+          const derivedAreaId = school?.neighborhoods?.area_id;
           if (derivedAreaId) waitlist_area_id = derivedAreaId;
         }
       }
 
-      // Reserve areas — look for columns like "Reserve gebied 1", "Reservegebied", etc.
-      const reserveAreaIds: { area_id: string; order: number }[] = [];
-      
-      // First try numbered columns (Reserve gebied 1, 2, 3)
+      // Reserve areas
+      const reserveAreaIds: ReserveAreaEntry[] = [];
       let foundNumberedReserve = false;
       for (let ri = 1; ri <= 3; ri++) {
         const reserveName = findCol(
@@ -300,18 +296,15 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         }
       }
 
-      // If no numbered columns found, try single "Reservegebied" column with comma/en-separated values
       if (!foundNumberedReserve) {
         const singleReserve = findCol(row, "Reservegebied", "Reserve gebied", "reservegebied", "reserve gebied");
         if (singleReserve) {
-          // Split on comma, " en ", " of ", semicolon — but NOT on " - " (that's area-neighborhood)
           const parts = singleReserve
             .split(/[,;]|\sen\s/)
             .map((p: string) => p.trim())
             .filter(Boolean);
           let order = 1;
           for (const part of parts) {
-            // Extract area name: strip neighborhood suffix after " - "
             const areaNamePart = part.split(/\s*-\s*/)[0].trim();
             const areaId = findAreaId(areaNamePart);
             if (areaId && !reserveAreaIds.some(r => r.area_id === areaId)) {
@@ -324,9 +317,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       // If no explicit "Gebied" column but we have reserve areas, use the first one as primary area
       if (!waitlist_area_id && reserveAreaIds.length > 0) {
         waitlist_area_id = reserveAreaIds[0].area_id;
-        // Remove it from reserves to avoid duplication
         reserveAreaIds.splice(0, 1);
-        // Re-number remaining reserves
         reserveAreaIds.forEach((r, i) => { r.order = i + 1; });
       }
 
@@ -342,9 +333,8 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       // Gender
       const gender = normalizeGender(findCol(row, "Geslacht", "geslacht", "Gender"));
 
-      // Class/group — avoid matching "leeftijdsgroep" which is age category
+      // Class/group
       const classGroupRaw = findCol(row, "Klas", "klas", "Class");
-      // Only use "Groep"/"groep" if the actual matching key does NOT contain "leeftijd"
       let class_group: string | null = classGroupRaw ?? null;
       if (!class_group) {
         const keys = Object.keys(row);
@@ -371,30 +361,24 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       const enrollDateRaw = findCol(row, "Datum inschrijving", "Inschrijfdatum", "datum inschrijving");
       const enrollDate = parseExcelDate(enrollDateRaw, dateFormat);
 
-      // Referral source (how they found the program) — check multiple column names
+      // Referral source
       const referralRaw = findCol(row, "Hoe aan de KT gekomen", "Verwezen door", "Verwijzing", "Verwijzer", "Hoe bij KT gekomen", "referral", "Bron") ?? null;
 
-      // Determine if this is a person-referrer or a generic source
       let referral_reason = referralRaw;
       let referrer_id: string | null = null;
 
       if (referralRaw) {
         const isNonPerson = isNonPersonReferralSource(referralRaw);
-
         if (isNonPerson) {
-          // It's a generic source like "flyer", "internet" — store as reason only
           referral_reason = referralRaw;
         } else {
-          // Could be a person's name — try to match to a referrer record
           referrer_id = findReferrerId(referralRaw, school_id);
           if (!referrer_id) {
-            // Couldn't match to a known referrer, keep as referral_reason text
             referral_reason = referralRaw;
           }
         }
       }
 
-      // Also check dedicated referrer-name column (separate from source)
       const referrerNameCol = findCol(row, "Verwijzer naam", "Naam verwijzer", "Verwijzende leerkracht") ?? null;
       if (referrerNameCol && !referrer_id) {
         referrer_id = findReferrerId(referrerNameCol, school_id);
@@ -419,7 +403,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       const availRemarkRaw = findCol(row, "Opmerking bij beschikbaarheid", "Opmerkingen beschikbaarheid", "Bijzonderheden beschikbaarheid", "Bijzonderheden");
       const area_notes = availRemarkRaw || null;
 
-      const recordData: any = {
+      const recordData: ImportClientRecord = {
         first_name,
         last_name,
         date_of_birth,
@@ -445,7 +429,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
       };
 
       // Parse availability from day columns (Maandag-Zondag)
-      const parsedAvail: ParsedAvailabilityLocal[] = [];
+      const parsedAvail: ParsedAvailabilityEntry[] = [];
       for (let di = 0; di < DAY_COLUMNS.length; di++) {
         const dayName = DAY_COLUMNS[di];
         const cellValue = findCol(row, dayName, dayName.toLowerCase());
@@ -460,49 +444,43 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         }
       }
 
-      // Stash availability for post-insert
-      (recordData as any).__availability = parsedAvail;
-
-      // Stash reserve area preferences for post-insert
-      (recordData as any).__reserveAreas = reserveAreaIds;
+      // Attach staging metadata
+      recordData.__availability = parsedAvail;
+      recordData.__reserveAreas = reserveAreaIds;
 
       // Check if record already exists
       const existingRecord = (nameDobKey && existingByNameDob.get(nameDobKey)) || existingByName.get(nameKey);
 
       if (existingRecord) {
         // Update existing record with non-null imported values
-        const updateData: any = {};
+        const updateData: Record<string, unknown> = {};
         for (const [key, value] of Object.entries(recordData)) {
           if (key === "created_at" || key === "__reserveAreas" || key === "__availability") continue;
           if (value !== null && value !== undefined && value !== "") {
-            // Only update if existing value is empty/null
-            if (!existingRecord[key] || existingRecord[key] === "") {
+            const existingValue = existingRecord[key as keyof ExistingClientForImport];
+            if (!existingValue || existingValue === "") {
               updateData[key] = value;
             }
           }
         }
-        // Always update these if provided (even if existing has value)
+        // Always update these if provided
         if (gender) updateData.gender = gender;
         if (school_id) {
           updateData.school_id = school_id;
-          // Also set neighborhood from school
-          const school = schools.find((s: any) => s.id === school_id);
-          updateData.neighborhood_id = (school as any)?.neighborhood_id ?? null;
-          // Also derive area from school if client has no area yet
+          const school = schools.find(s => s.id === school_id);
+          updateData.neighborhood_id = school?.neighborhood_id ?? null;
           if (!existingRecord.waitlist_area_id) {
-            const derivedAreaId = (school as any)?.neighborhoods?.area_id;
+            const derivedAreaId = school?.neighborhoods?.area_id;
             if (derivedAreaId) updateData.waitlist_area_id = derivedAreaId;
           }
         }
         if (class_group) updateData.class_group = class_group;
-        // Always overwrite DOB when imported value is a real (non-estimated) date,
-        // or when existing was estimated and import provides a value
         if (date_of_birth && !dobEstimated) {
           updateData.date_of_birth = date_of_birth;
           updateData.dob_estimated = false;
         }
 
-        // Append area_notes (don't overwrite existing)
+        // Append area_notes
         if (area_notes) {
           const existingNotes = existingRecord.area_notes;
           if (existingNotes && existingNotes.trim()) {
@@ -518,7 +496,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         delete updateData.__reserveAreas;
         delete updateData.__availability;
         if (Object.keys(updateData).length > 0 || reserveAreaIds.length > 0 || parsedAvail.length > 0) {
-          updates.push({ id: existingRecord.id, data: updateData, reserves: reserveAreaIds, availability: parsedAvail });
+          updates.push({ id: existingRecord.id, data: updateData as Partial<ExistingClientForImport>, reserves: reserveAreaIds, availability: parsedAvail });
         } else {
           skipped++;
         }
@@ -531,15 +509,15 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
     for (let i = 0; i < inserts.length; i += 50) {
       const chunk = inserts.slice(i, i + 50);
       // Extract and remove internal fields before inserting
-      const reserveMap = chunk.map((r: any) => {
+      const reserveMap = chunk.map(r => {
         const reserves = r.__reserveAreas ?? [];
         delete r.__reserveAreas;
         return reserves;
       });
-      const availMap = chunk.map((r: any) => {
+      const availMap = chunk.map(r => {
         const avail = r.__availability ?? [];
         delete r.__availability;
-        return avail as ParsedAvailabilityLocal[];
+        return avail;
       });
       const { data: insertedRows, error } = await supabase.from("clients").insert(chunk).select("id");
       if (error) {
@@ -549,7 +527,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         // Insert reserve area preferences for newly inserted clients
         const prefInserts: { client_id: string; area_id: string; preference_order: number }[] = [];
         const availInserts: { client_id: string; available_date: string; start_time: string; end_time: string; notes: string | null }[] = [];
-        (insertedRows ?? []).forEach((row: any, idx: number) => {
+        (insertedRows ?? []).forEach((row, idx) => {
           const reserves = reserveMap[idx] ?? [];
           for (const r of reserves) {
             prefInserts.push({ client_id: row.id, area_id: r.area_id, preference_order: r.order });
@@ -566,7 +544,6 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
           await supabase.from("client_area_preferences").insert(prefInserts);
         }
         if (availInserts.length > 0) {
-          // Insert in chunks of 200 to avoid payload limits
           for (let ai = 0; ai < availInserts.length; ai += 200) {
             await supabase.from("client_availability").upsert(availInserts.slice(ai, ai + 200), { onConflict: 'client_id,available_date' });
           }
@@ -591,7 +568,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         }));
         await supabase.from("client_area_preferences").insert(prefInserts);
       }
-      // Upsert availability — delete existing future records, then insert new ones
+      // Upsert availability
       if (upd.availability && upd.availability.length > 0) {
         const today = new Date().toISOString().split("T")[0];
         const { error: delErr } = await supabase.from("client_availability").delete().eq("client_id", upd.id).gte("available_date", today);

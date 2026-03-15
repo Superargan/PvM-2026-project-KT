@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import SchoolCombobox from "@/components/SchoolCombobox";
 import { CheckCircle2, Loader2, ArrowLeft } from "lucide-react";
 import DuplicateWarning from "@/components/DuplicateWarning";
+import type { ImportSchoolRef } from "@/lib/queryShapes";
+import type { TablesInsert } from "@/integrations/supabase/types";
 
 const aanmeldSchema = z.object({
   first_name: z.string().trim().min(1, "Voornaam is verplicht").max(100),
@@ -41,7 +43,7 @@ export default function AanmeldenPublicPage() {
         .select("id, name, neighborhood_id, neighborhoods(area_id)")
         .order("name");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as ImportSchoolRef[];
     },
   });
 
@@ -61,7 +63,7 @@ export default function AanmeldenPublicPage() {
   useEffect(() => {
     if (form.school_id && !form.waitlist_area_id) {
       const school = schools.find((s) => s.id === form.school_id);
-      const areaId = (school as any)?.neighborhoods?.area_id;
+      const areaId = school?.neighborhoods?.area_id;
       if (areaId) {
         setForm((prev) => ({ ...prev, waitlist_area_id: areaId }));
       }
@@ -89,9 +91,9 @@ export default function AanmeldenPublicPage() {
     }
 
     setSubmitting(true);
-    const school = schools.find((s: any) => s.id === result.data.school_id);
-    const neighborhoodId = (school as any)?.neighborhood_id ?? null;
-    const insertData: any = {
+    const school = schools.find(s => s.id === result.data.school_id);
+    const neighborhoodId = school?.neighborhood_id ?? null;
+    const insertData: TablesInsert<"clients"> = {
       first_name: result.data.first_name,
       last_name: result.data.last_name || "",
       date_of_birth: result.data.date_of_birth,

@@ -14,6 +14,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { downloadExport, ExportColumn } from "@/lib/csvExport";
+import type { ProgramListRow, IdNameRef } from "@/lib/queryShapes";
+import type { Tables } from "@/integrations/supabase/types";
+
+type NeighborhoodRow = Tables<"neighborhoods">;
 
 const statusMap: Record<string, { css: string; label: string }> = {
   te_plannen: { css: "status-rood", label: "Te plannen" },
@@ -63,12 +67,12 @@ export default function ProgrammasPage() {
     queryFn: async () => {
       const { data, error } = await supabase.from("neighborhoods").select("*").order("name");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as NeighborhoodRow[];
     },
   });
 
   const filteredNeighborhoods = selectedArea
-    ? neighborhoods.filter((n: any) => n.area_id === selectedArea)
+    ? neighborhoods.filter(n => n.area_id === selectedArea)
     : neighborhoods;
 
   const { data: programs = [], isLoading, refetch } = useQuery({
@@ -80,11 +84,11 @@ export default function ProgrammasPage() {
         .eq("archived", false)
         .order("training_number", { ascending: true });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as ProgramListRow[];
     },
   });
 
-  const filteredPrograms = programs.filter((p: any) => {
+  const filteredPrograms = programs.filter(p => {
     const s = p.status ?? "te_plannen";
     if (statusFilter === "alle") return true;
     if (statusFilter === "actief") return s !== "afgerond";
@@ -105,7 +109,7 @@ export default function ProgrammasPage() {
       neighborhood_id: selectedNeighborhood || null,
       age_category: selectedAgeCategory || null,
       status: "te_plannen",
-    } as any);
+    });
 
     if (error) {
       toast({ title: "Fout", description: error.message, variant: "destructive" });
@@ -119,10 +123,10 @@ export default function ProgrammasPage() {
     }
   };
 
-  const handleStatusChange = async (id: string, currentStatus: string, newStatus: string, enrolled: number, prog?: any) => {
+  const handleStatusChange = async (id: string, currentStatus: string, newStatus: string, enrolled: number, prog?: ProgramListRow) => {
     // For "Inplannen": open dialog to set period + area
     if (currentStatus === "te_plannen" && newStatus === "ingepland") {
-      setPlanTarget({ id, area_id: prog?.area_id, neighborhood_id: prog?.neighborhood_id, start_date: prog?.start_date, end_date: prog?.end_date });
+      setPlanTarget({ id, area_id: prog?.area_id ?? undefined, neighborhood_id: prog?.neighborhood_id ?? undefined, start_date: prog?.start_date ?? undefined, end_date: prog?.end_date ?? undefined });
       setPlanArea(prog?.area_id ?? "");
       setPlanNeighborhood(prog?.neighborhood_id ?? "");
       setPlanStart(prog?.start_date ?? "");
@@ -147,7 +151,7 @@ export default function ProgrammasPage() {
         return;
       }
     }
-    const { error } = await supabase.from("programs").update({ status: newStatus } as any).eq("id", id);
+    const { error } = await supabase.from("programs").update({ status: newStatus }).eq("id", id);
     if (error) {
       toast({ title: "Fout", description: error.message, variant: "destructive" });
     } else {
@@ -172,7 +176,7 @@ export default function ProgrammasPage() {
       end_date: planEnd,
       area_id: planArea,
       neighborhood_id: planNeighborhood || null,
-    } as any).eq("id", planTarget.id);
+    }).eq("id", planTarget.id);
     if (error) {
       toast({ title: "Fout", description: error.message, variant: "destructive" });
     } else {
@@ -184,7 +188,7 @@ export default function ProgrammasPage() {
   };
 
   const planFilteredNeighborhoods = planArea
-    ? neighborhoods.filter((n: any) => n.area_id === planArea)
+    ? neighborhoods.filter(n => n.area_id === planArea)
     : [];
 
   return (
@@ -210,7 +214,7 @@ export default function ProgrammasPage() {
           </Select>
           {(["csv", "xlsx"] as const).map((fmt) => (
             <Button key={fmt} variant="outline" size="sm" onClick={() => {
-              const rows = filteredPrograms.map((p: any) => ({
+              const rows = filteredPrograms.map(p => ({
                 naam: p.name,
                 beschrijving: p.description ?? "",
                 school: p.schools?.name ?? "",
@@ -269,7 +273,7 @@ export default function ProgrammasPage() {
                   <Select value={selectedArea} onValueChange={(v) => { setSelectedArea(v); setSelectedNeighborhood(""); }}>
                     <SelectTrigger><SelectValue placeholder="Selecteer gebied" /></SelectTrigger>
                     <SelectContent className="bg-popover">
-                      {areas.map((a: any) => (
+                      {areas.map(a => (
                         <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -280,7 +284,7 @@ export default function ProgrammasPage() {
                   <Select value={selectedNeighborhood} onValueChange={setSelectedNeighborhood} disabled={!selectedArea}>
                     <SelectTrigger><SelectValue placeholder="Selecteer wijk" /></SelectTrigger>
                     <SelectContent className="bg-popover">
-                      {filteredNeighborhoods.map((n: any) => (
+                      {filteredNeighborhoods.map(n => (
                         <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -303,7 +307,7 @@ export default function ProgrammasPage() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredPrograms.map((prog: any) => {
+          {filteredPrograms.map(prog => {
             const enrolled = prog.program_clients?.[0]?.count ?? 0;
             const max = prog.max_participants ?? 14;
             const status = prog.status ?? "te_plannen";
@@ -396,7 +400,7 @@ export default function ProgrammasPage() {
               <Select value={planArea} onValueChange={(v) => { setPlanArea(v); setPlanNeighborhood(""); }}>
                 <SelectTrigger><SelectValue placeholder="Selecteer gebied" /></SelectTrigger>
                 <SelectContent className="bg-popover">
-                  {areas.map((a: any) => (
+                  {areas.map(a => (
                     <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -407,7 +411,7 @@ export default function ProgrammasPage() {
               <Select value={planNeighborhood} onValueChange={setPlanNeighborhood} disabled={!planArea}>
                 <SelectTrigger><SelectValue placeholder="Selecteer wijk" /></SelectTrigger>
                 <SelectContent className="bg-popover">
-                  {planFilteredNeighborhoods.map((n: any) => (
+                  {planFilteredNeighborhoods.map(n => (
                     <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>
                   ))}
                 </SelectContent>
