@@ -61,7 +61,7 @@ export default function ClientDetailPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("*, schools(name, neighborhood_id, school_start_time, school_end_time, neighborhoods(id, area_id, areas:area_id(id, name))), referrers(name, function_title, email, phone), neighborhoods:neighborhood_id(id, area_id, areas:area_id(id, name))")
+        .select("*, schools(name, neighborhood_id, school_start_time, school_end_time, break_start_time, break_end_time, schedule_type, neighborhoods(id, area_id, areas:area_id(id, name))), referrers(name, function_title, email, phone), neighborhoods:neighborhood_id(id, area_id, areas:area_id(id, name))")
         .eq("id", id!)
         .single();
       if (error) throw error;
