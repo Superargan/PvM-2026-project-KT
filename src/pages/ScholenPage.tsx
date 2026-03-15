@@ -529,7 +529,6 @@ export default function ScholenPage() {
         const municipality = rawMunicipality || null;
 
         // Parse break times for traditional schedules
-        const { parseImportedSchoolTime } = await import("@/lib/schoolTimes");
         const rawBreakStart = breakStartCol ? r[breakStartCol] : null;
         const rawBreakEnd = breakEndCol ? r[breakEndCol] : null;
         const break_start_time = rawBreakStart ? parseImportedSchoolTime(rawBreakStart) : null;
