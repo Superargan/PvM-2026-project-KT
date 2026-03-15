@@ -199,17 +199,17 @@ describe("REQUIRED_CLIENT_CHECKS — centralized missing data checks", () => {
 
 describe("getMissingFields — consistent across pages", () => {
   it("flags missing date_of_birth for any status", () => {
-    const missing = getMissingFields({ intake_status: "nieuw" });
+    const missing = getMissingFields({ id: "t1", first_name: "Test", last_name: "User", intake_status: "nieuw" });
     expect(missing).toContain("Geboortedatum");
   });
 
   it("does not flag gebied for nieuw status", () => {
-    const missing = getMissingFields({ intake_status: "nieuw" });
+    const missing = getMissingFields({ id: "t2", first_name: "Test", last_name: "User", intake_status: "nieuw" });
     expect(missing).not.toContain("Gebied");
   });
 
   it("flags gebied for wachtlijst status", () => {
-    const missing = getMissingFields({ intake_status: "wachtlijst" });
+    const missing = getMissingFields({ id: "t3", first_name: "Test", last_name: "User", intake_status: "wachtlijst" });
     expect(missing).toContain("Gebied");
   });
 });

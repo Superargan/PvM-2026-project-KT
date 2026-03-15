@@ -718,3 +718,58 @@ export interface SchoolImportRecord {
   source: string | null;
   municipality: string | null;
 }
+
+// ─── ClientenPage export row ────────────────────────────────────────
+
+/** Row shape for the ClientenPage client list query (with program_clients join) */
+export interface ClientenPageRow {
+  id: string;
+  first_name: string;
+  last_name: string;
+  date_of_birth: string | null;
+  intake_status: string | null;
+  school_id: string | null;
+  guardian_name: string | null;
+  guardian_phone: string | null;
+  guardian_email: string | null;
+  waitlist_area_id: string | null;
+  neighborhood_id: string | null;
+  all_areas_flexible: boolean;
+  neighborhoods: NeighborhoodWithArea | null;
+  schools: SchoolWithNeighborhood | null;
+  program_clients: Array<{
+    program_id: string;
+    programs: {
+      id: string;
+      name: string;
+      training_number: string | null;
+      status: string | null;
+      archived: boolean;
+    } | null;
+  }> | null;
+  [key: string]: unknown;
+}
+
+// ─── Minimal client shape for clientUtils generic helpers ───────────
+
+/** Minimal client fields needed for REQUIRED_CLIENT_CHECKS and filterClients */
+export interface ClientCheckFields {
+  id: string;
+  first_name: string;
+  last_name: string;
+  date_of_birth?: string | null;
+  school_id?: string | null;
+  guardian_phone?: string | null;
+  guardian_name?: string | null;
+  guardian_email?: string | null;
+  gender?: string | null;
+  postal_code?: string | null;
+  consent_data_processing?: boolean | null;
+  intake_status?: string | null;
+  waitlist_area_id?: string | null;
+  neighborhood_id?: string | null;
+  all_areas_flexible?: boolean;
+  neighborhoods?: { area_id?: string; areas?: { id?: string; name?: string } } | null;
+  schools?: { name?: string; neighborhoods?: { area_id?: string; areas?: { id?: string; name?: string } } | null } | null;
+  [key: string]: unknown;
+}

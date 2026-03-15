@@ -15,7 +15,7 @@ import { staffKeys, clientKeys, programKeys, planningKeys } from "@/lib/queryKey
 type ImportType = "trainer_beschikbaarheid" | "deelnemer_beschikbaarheid" | "sessies";
 
 interface ParsedRow {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface AvailabilityEntry {
@@ -64,7 +64,7 @@ function parseDateFromHeader(header: string, referenceYear?: number): string | n
   // If it's a JS Date object (XLSX sometimes returns these)
   if (typeof header === "object" && header !== null) {
     try {
-      const d = new Date(header as any);
+      const d = new Date(header as string | number);
       if (!isNaN(d.getTime())) return d.toISOString().split("T")[0];
     } catch { /* ignore */ }
   }
@@ -135,7 +135,7 @@ function parseDateFromHeader(header: string, referenceYear?: number): string | n
 }
 
 /** Check if a cell value represents availability: "x", "X", "✓", "ja", or a time */
-function parseCellAvailability(val: any): { available: boolean; startTime: string; endTime: string } | null {
+function parseCellAvailability(val: unknown): { available: boolean; startTime: string; endTime: string } | null {
   if (val === undefined || val === null || val === "") return null;
   const s = String(val).trim();
   if (!s) return null;
@@ -718,8 +718,8 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
           success++;
         }
       }
-    } catch (err: any) {
-      errors.push(`Onverwachte fout: ${err.message}`);
+    } catch (err: unknown) {
+      errors.push(`Onverwachte fout: ${err instanceof Error ? err.message : String(err)}`);
     }
 
     setResult({ success, errors });

@@ -1,5 +1,5 @@
 import { differenceInYears, parseISO, addMonths, isAfter } from "date-fns";
-import type { ClientAreaFields, AreaRef, AreaPreferenceRow, ClientAvailabilityRow } from "@/lib/queryShapes";
+import type { ClientAreaFields, AreaRef, AreaPreferenceRow, ClientAvailabilityRow, ClientCheckFields } from "@/lib/queryShapes";
 
 /**
  * Standaard select-fragment voor alle client-queries die gebiedsresolutie nodig hebben.
@@ -154,7 +154,7 @@ export const statusStyles: Record<string, string> = {
   niet_deelnemen: "status-rood",
 };
 
-export const REQUIRED_CLIENT_CHECKS: { key: string; label: string; check: (c: any) => boolean; onlyStatuses?: string[] }[] = [
+export const REQUIRED_CLIENT_CHECKS: { key: string; label: string; check: (c: ClientCheckFields) => boolean; onlyStatuses?: string[] }[] = [
   { key: "date_of_birth", label: "Geboortedatum", check: (c) => !c.date_of_birth },
   { key: "school_id", label: "School", check: (c) => !c.school_id },
   { key: "guardian_phone", label: "Telefoon ouder", check: (c) => !c.guardian_phone },
@@ -165,7 +165,7 @@ export const REQUIRED_CLIENT_CHECKS: { key: string; label: string; check: (c: an
   { key: "consent_data_processing", label: "AVG-toestemming", check: (c) => !c.consent_data_processing },
 ];
 
-export function getMissingFields(client: any): string[] {
+export function getMissingFields(client: ClientCheckFields): string[] {
   return REQUIRED_CLIENT_CHECKS
     .filter((ch) => {
       if (ch.onlyStatuses && !ch.onlyStatuses.includes(client.intake_status ?? "")) return false;
@@ -269,7 +269,7 @@ export function getTopAvailabilityOverlaps(
     const records = availByClient[clientId] ?? [];
 
     for (const record of records) {
-      const resolvedDayName = record.dayName ?? (record as any).dayOfWeek;
+      const resolvedDayName = record.dayName;
       if (!resolvedDayName || typeof resolvedDayName !== "string") continue;
 
       const startMinutes = timeToMinutes(record.startTime);
@@ -358,7 +358,7 @@ export function getAlternativeWindowsForDay(
   for (const clientId of clientIdList) {
     const records = availByClient[clientId] ?? [];
     for (const record of records) {
-      const resolvedDayName = record.dayName ?? (record as any).dayOfWeek;
+      const resolvedDayName = record.dayName;
       if (resolvedDayName !== dayName) continue;
       const startMinutes = timeToMinutes(record.startTime);
       const endMinutes = timeToMinutes(record.endTime);
@@ -440,8 +440,8 @@ export interface ClientDataCompleteness {
 
 /** Determine data completeness for a client */
 export function getClientDataCompleteness(
-  client: any,
-  availByClient: Record<string, any[]>,
+  client: ClientLike & { id: string; intake_status?: string | null; neighborhood_id?: string | null },
+  availByClient: Record<string, unknown[]>,
   prefsByClient: Record<string, Record<string, number>>,
   overriddenClientIds?: Set<string>
 ): ClientDataCompleteness {
@@ -468,8 +468,8 @@ export function getPlannabilityStatus(c: ClientDataCompleteness): PlannabilitySt
   return "incompleet";
 }
 
-export function filterClients(
-  clients: any[],
+export function filterClients<T extends ClientCheckFields>(
+  clients: T[],
   filters: {
     search?: string;
     area?: string;
@@ -477,8 +477,8 @@ export function filterClients(
     age?: string;
     status?: string;
   }
-): any[] {
-  return clients.filter((c: any) => {
+): T[] {
+  return clients.filter((c) => {
     if (filters.search?.trim()) {
       const s = filters.search.toLowerCase();
       const name = `${c.first_name} ${c.last_name}`.toLowerCase();
@@ -522,7 +522,7 @@ function normalizeName(name: string): string {
 }
 
 export interface DuplicateMatch {
-  client: any;
+  client: ClientCheckFields;
   matchType: "exact" | "fuzzy";
 }
 
@@ -530,7 +530,7 @@ export interface DuplicateMatch {
 export function findPotentialDuplicates(
   firstName: string,
   lastName: string,
-  existingClients: any[],
+  existingClients: ClientCheckFields[],
   excludeId?: string
 ): DuplicateMatch[] {
   if (!firstName.trim() || !lastName.trim()) return [];
@@ -558,9 +558,9 @@ export function findPotentialDuplicates(
 
 /** Find all groups of clients with duplicate names */
 export function findAllDuplicateGroups(
-  clients: any[]
-): { key: string; clients: any[] }[] {
-  const groups: Record<string, any[]> = {};
+  clients: ClientCheckFields[]
+): { key: string; clients: ClientCheckFields[] }[] {
+  const groups: Record<string, ClientCheckFields[]> = {};
   for (const c of clients) {
     const key = `${normalizeName(c.first_name ?? "")}|${normalizeName(c.last_name ?? "")}`;
     if (!key || key === "|") continue;
@@ -616,7 +616,7 @@ export function validateScenarioSlot(
     end_time: string | null;
   },
   members: { client_id: string; has_override: boolean }[],
-  clients: Record<string, any>,
+  clients: Record<string, ClientLike & { id: string; intake_status?: string | null }>,
   availByClient: Record<string, { dayOfWeek: number; dayName: string; startTime: string; endTime: string; date: string }[]>,
   prefsByClient: Record<string, Record<string, number>>,
   programClientIds: Set<string>,
@@ -752,7 +752,7 @@ export function validateScenarioSlot(
 export function validateScenario(
   slots: { id: string; area_id: string; age_category: string | null; mode: string | null; proposal_idx: number | null; day_name: string | null; start_time: string | null; end_time: string | null }[],
   membersBySlot: Record<string, { client_id: string; has_override: boolean }[]>,
-  clients: Record<string, any>,
+  clients: Record<string, ClientLike & { id: string; intake_status?: string | null }>,
   availByClient: Record<string, { dayOfWeek: number; dayName: string; startTime: string; endTime: string; date: string }[]>,
   prefsByClient: Record<string, Record<string, number>>,
   programClientIds: Set<string>,
