@@ -174,7 +174,7 @@ export function formatResolvedSchedule(resolved: ResolvedSchedule): string {
  * Continuous: "08:30 – 15:00"
  */
 export function formatScheduleCompact(resolved: ResolvedSchedule): string {
-  if (!resolved.isTraditional) {
+  if (resolved.isTraditional === false) {
     return resolved.range;
   }
   if (resolved.segments.length === 0) return "—";
