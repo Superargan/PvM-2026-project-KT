@@ -23,6 +23,8 @@ import type {
   TrainerRef,
   AvailabilitySuggestion,
   ExportColumn,
+  SlotFitResult,
+  ExcludedClient,
 } from "./types";
 import { MAX_GROUP_SIZE, SUB_GROUP_LABELS, PLANNING_EXPORT_COLUMNS } from "./types";
 
