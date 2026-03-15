@@ -616,7 +616,7 @@ export function validateScenarioSlot(
     end_time: string | null;
   },
   members: { client_id: string; has_override: boolean }[],
-  clients: Record<string, any>,
+  clients: Record<string, ClientLike & { id: string; intake_status?: string | null }>,
   availByClient: Record<string, { dayOfWeek: number; dayName: string; startTime: string; endTime: string; date: string }[]>,
   prefsByClient: Record<string, Record<string, number>>,
   programClientIds: Set<string>,
