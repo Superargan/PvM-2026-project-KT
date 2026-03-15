@@ -1195,7 +1195,7 @@ export default function ScholenPage() {
                  roostertype: s.schedule_type ?? "",
                  bron: s.source ?? "",
                  gemeente: getEffectiveMunicipality(s.municipality),
-                 schooltijden: formatSchoolTimeRange(s.school_start_time, s.school_end_time),
+                 schooltijden: formatResolvedSchedule(resolveSchedule(s)),
                  email: s.contact_email ?? "",
                  telefoon: s.contact_phone ?? "",
                  website: s.website_url ?? "",
