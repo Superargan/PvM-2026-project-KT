@@ -971,7 +971,8 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                                   })}
                                 </div>
                               )}
-                                {(suggestion.alternativesOnDay ?? 0) > 0 && (
+                              {(suggestion.alternativesOnDay ?? 0) > 0 && (
+                                <div className="pl-6 pt-0.5">
                                   <button
                                     className="text-xs text-info font-medium hover:underline cursor-pointer"
                                     onClick={() => setExpandedAlternatives(prev => {
@@ -982,8 +983,8 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                                   >
                                     {showAlts ? "Verberg" : `+${suggestion.alternativesOnDay}`} {suggestion.alternativesOnDay === 1 ? "ander moment" : "andere momenten"} op {suggestion.dayName}
                                   </button>
-                                )}
-                              </div>
+                                </div>
+                              )}
                             </div>
                             {showAlts && (() => {
                               const alts = getAlternativeWindowsForDay(suggestion.dayName, suggestion.startTime, selected, availByClient, 90) as AvailabilitySuggestion[];
