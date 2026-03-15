@@ -770,6 +770,6 @@ export interface ClientCheckFields {
   neighborhood_id?: string | null;
   all_areas_flexible?: boolean;
   neighborhoods?: { area_id?: string; areas?: { id?: string; name?: string } } | null;
-  schools?: { neighborhoods?: { area_id?: string; areas?: { id?: string; name?: string } } | null } | null;
+  schools?: { name?: string; neighborhoods?: { area_id?: string; areas?: { id?: string; name?: string } } | null } | null;
   [key: string]: unknown;
 }

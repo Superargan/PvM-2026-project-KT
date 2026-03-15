@@ -62,9 +62,9 @@ function parseDateFromHeader(header: string, referenceYear?: number): string | n
   const h = String(header).trim();
 
   // If it's a JS Date object (XLSX sometimes returns these)
-  if (typeof header === "object" && header !== null && header instanceof Date) {
+  if (typeof header === "object" && header !== null) {
     try {
-      const d = header;
+      const d = new Date(header as string | number);
       if (!isNaN(d.getTime())) return d.toISOString().split("T")[0];
     } catch { /* ignore */ }
   }

@@ -209,7 +209,7 @@ describe("getMissingFields — consistent across pages", () => {
   });
 
   it("flags gebied for wachtlijst status", () => {
-    const missing = getMissingFields({ intake_status: "wachtlijst" });
+    const missing = getMissingFields({ id: "t3", first_name: "Test", last_name: "User", intake_status: "wachtlijst" });
     expect(missing).toContain("Gebied");
   });
 });
