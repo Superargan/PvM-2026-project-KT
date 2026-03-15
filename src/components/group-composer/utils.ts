@@ -297,3 +297,51 @@ export function buildAssignedGroupLabel(
   const subLabel = parts[2] !== undefined ? ` ${SUB_GROUP_LABELS[parseInt(parts[2])] ?? ""}` : "";
   return `${aName} ${parts[1]}${subLabel}`;
 }
+
+// ─── Slot-fit computation ───────────────────────────────────────────
+
+/**
+ * Compute which clients from a candidate pool fit a specific slot.
+ *
+ * This is the SSOT for determining achievable group size per slot.
+ * - eligibleClientIds: clients that ARE available on the slot
+ * - excludedClients: clients that are NOT available, with reasons
+ * - optimalGroupSize: the actual achievable group size
+ */
+export function computeSlotFit(
+  selectedClientIds: Set<string>,
+  suggestion: AvailabilitySuggestion | null,
+): SlotFitResult {
+  const candidatePoolSize = selectedClientIds.size;
+
+  if (!suggestion || candidatePoolSize === 0) {
+    return {
+      eligibleClientIds: [],
+      excludedClients: Array.from(selectedClientIds).map(id => ({
+        clientId: id,
+        reason: "niet_beschikbaar" as const,
+      })),
+      optimalGroupSize: 0,
+      candidatePoolSize,
+    };
+  }
+
+  const eligibleSet = new Set(suggestion.clientIds);
+  const eligibleClientIds: string[] = [];
+  const excludedClients: ExcludedClient[] = [];
+
+  for (const clientId of selectedClientIds) {
+    if (eligibleSet.has(clientId)) {
+      eligibleClientIds.push(clientId);
+    } else {
+      excludedClients.push({ clientId, reason: "niet_beschikbaar" });
+    }
+  }
+
+  return {
+    eligibleClientIds,
+    excludedClients,
+    optimalGroupSize: eligibleClientIds.length,
+    candidatePoolSize,
+  };
+}
