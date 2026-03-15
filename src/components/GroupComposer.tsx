@@ -61,6 +61,7 @@ import {
   serializeSnapshot,
   getBlockReason,
   buildAssignedGroupLabel,
+  computeSlotFit,
 } from "./group-composer/utils";
 
 // Re-export handle type for consumers
