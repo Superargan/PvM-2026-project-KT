@@ -718,6 +718,8 @@ export interface SchoolImportRecord {
   neighborhood_id: string | null;
   school_start_time: string | null;
   school_end_time: string | null;
+  break_start_time: string | null;
+  break_end_time: string | null;
   schedule_type: string | null;
   source: string | null;
   municipality: string | null;
