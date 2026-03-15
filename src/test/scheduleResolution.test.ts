@@ -102,10 +102,6 @@ describe("resolveSchedule", () => {
     expect(result.isTraditional).toBe(false);
     if (result.isTraditional) return;
     expect(result.range).toBe("08:30 – 14:00");
-  });
-
-  it("returns continuous range for null schedule_type", () => {
-    const result = resolveSchedule({
       school_start_time: "08:30:00",
       school_end_time: "15:00:00",
     });
