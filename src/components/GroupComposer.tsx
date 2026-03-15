@@ -126,7 +126,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
   const [confirmCreateGroup, setConfirmCreateGroup] = useState<GroupedClients | null>(null);
 
   // ─── Derived data ───────────────────────────────────────────────
-  const getSuggestions = (clientIds: Set<string>) => getTopAvailabilityOverlaps(clientIds, availByClient, 3, 90) as AvailabilitySuggestion[];
+  const getSuggestions = (clientIds: Set<string>): AvailabilitySuggestion[] => getTopAvailabilityOverlaps(clientIds, availByClient, 3, 90);
 
   const oudertrainers = useMemo(() => filterTrainersByType(allTrainers, "oudertrainer"), [allTrainers]);
   const kindtrainers = useMemo(() => filterTrainersByType(allTrainers, "kindtrainer"), [allTrainers]);
