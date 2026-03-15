@@ -15,7 +15,7 @@ import { staffKeys, clientKeys, programKeys, planningKeys } from "@/lib/queryKey
 type ImportType = "trainer_beschikbaarheid" | "deelnemer_beschikbaarheid" | "sessies";
 
 interface ParsedRow {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface AvailabilityEntry {
