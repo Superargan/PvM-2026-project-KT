@@ -2008,6 +2008,16 @@ export default function ScholenPage() {
               <Label>Aantal leerlingen</Label>
               <Input type="number" min="0" value={editForm.student_count ?? 0} onChange={(e) => setEditForm((f) => ({ ...f, student_count: Number(e.target.value) }))} />
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Schooltijd begin</Label>
+                <Input type="time" value={editForm.school_start_time ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, school_start_time: e.target.value }))} />
+              </div>
+              <div>
+                <Label>Schooltijd eind</Label>
+                <Input type="time" value={editForm.school_end_time ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, school_end_time: e.target.value }))} />
+              </div>
+            </div>
             {editForm.schedule_type === "traditioneel" && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -2020,15 +2030,6 @@ export default function ScholenPage() {
                 </div>
               </div>
             )}
-              <div>
-                <Label>Schooltijd begin</Label>
-                <Input type="time" value={editForm.school_start_time ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, school_start_time: e.target.value }))} />
-              </div>
-              <div>
-                <Label>Schooltijd eind</Label>
-                <Input type="time" value={editForm.school_end_time ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, school_end_time: e.target.value }))} />
-              </div>
-            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Roostertype</Label>
