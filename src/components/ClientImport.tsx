@@ -457,7 +457,7 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         for (const [key, value] of Object.entries(recordData)) {
           if (key === "created_at" || key === "__reserveAreas" || key === "__availability") continue;
           if (value !== null && value !== undefined && value !== "") {
-            const existingValue = (existingRecord as Record<string, unknown>)[key];
+            const existingValue = existingRecord[key as keyof ExistingClientForImport];
             if (!existingValue || existingValue === "") {
               updateData[key] = value;
             }
