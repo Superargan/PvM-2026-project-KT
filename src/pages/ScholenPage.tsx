@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { schoolKeys, invalidateAllSchoolQueries, areaKeys, programKeys, documentKeys, clientKeys } from "@/lib/queryKeys";
-import { formatSchoolTimeRange, validateSchoolTimePair, findMatchingColumn, dbTimeToInput, inputTimeToDb, SCHOOL_START_TIME_COLUMNS, SCHOOL_END_TIME_COLUMNS, SCHEDULE_TYPE_COLUMNS, SOURCE_COLUMNS, MUNICIPALITY_COLUMNS, resolveImportedSchoolTimePair } from "@/lib/schoolTimes";
+import { formatSchoolTimeRange, validateSchoolTimePair, validateBreakTimePair, findMatchingColumn, dbTimeToInput, inputTimeToDb, parseImportedSchoolTime, SCHOOL_START_TIME_COLUMNS, SCHOOL_END_TIME_COLUMNS, BREAK_START_TIME_COLUMNS, BREAK_END_TIME_COLUMNS, SCHEDULE_TYPE_COLUMNS, SOURCE_COLUMNS, MUNICIPALITY_COLUMNS, resolveImportedSchoolTimePair, resolveSchedule, formatResolvedSchedule, formatScheduleCompact } from "@/lib/schoolTimes";
 import { normalizeSchoolName, getEffectiveMunicipality } from "@/lib/DomainResolver";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -154,7 +154,7 @@ export default function ScholenPage() {
   const [selectedArea, setSelectedArea] = useState<string>("");
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
   const [docUploading, setDocUploading] = useState(false);
-  const [editForm, setEditForm] = useState<SchoolEditForm>({ name: "", address: "", contact_email: "", contact_phone: "", website_url: "", student_count: 0, school_start_time: "", school_end_time: "", schedule_type: "", source: "", municipality: "" });
+  const [editForm, setEditForm] = useState<SchoolEditForm>({ name: "", address: "", contact_email: "", contact_phone: "", website_url: "", student_count: 0, school_start_time: "", school_end_time: "", break_start_time: "", break_end_time: "", schedule_type: "", source: "", municipality: "" });
   const [addScheduleType, setAddScheduleType] = useState<string>("");
   const [addSchoolName, setAddSchoolName] = useState<string>("");
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
@@ -296,6 +296,8 @@ export default function ScholenPage() {
       student_count: school.student_count ?? 0,
       school_start_time: dbTimeToInput(school.school_start_time),
       school_end_time: dbTimeToInput(school.school_end_time),
+      break_start_time: dbTimeToInput(school.break_start_time),
+      break_end_time: dbTimeToInput(school.break_end_time),
       schedule_type: school.schedule_type ?? "",
       source: school.source ?? "",
       municipality: school.municipality ?? "",
@@ -313,6 +315,18 @@ export default function ScholenPage() {
     if (!timeValidation.valid) {
       toast({ title: "Ongeldige schooltijden", description: timeValidation.error, variant: "destructive" });
       return;
+    }
+
+    // Validate break times for traditional schedules
+    if (editForm.schedule_type === "traditioneel") {
+      const breakValidation = validateBreakTimePair(
+        editForm.break_start_time, editForm.break_end_time,
+        editForm.school_start_time, editForm.school_end_time,
+      );
+      if (!breakValidation.valid) {
+        toast({ title: "Ongeldige pauzetijden", description: breakValidation.error, variant: "destructive" });
+        return;
+      }
     }
 
     setEditSaving(true);
@@ -338,6 +352,8 @@ export default function ScholenPage() {
       neighborhood_id: neighborhoodId,
       school_start_time: inputTimeToDb(editForm.school_start_time ?? ""),
       school_end_time: inputTimeToDb(editForm.school_end_time ?? ""),
+      break_start_time: editForm.schedule_type === "traditioneel" ? inputTimeToDb(editForm.break_start_time ?? "") : null,
+      break_end_time: editForm.schedule_type === "traditioneel" ? inputTimeToDb(editForm.break_end_time ?? "") : null,
       schedule_type: editForm.schedule_type || null,
       source: editForm.source || null,
       municipality: editForm.municipality?.trim() || null,
@@ -360,12 +376,23 @@ export default function ScholenPage() {
     const address = (formData.get("address") as string) || "";
     const startTime = (formData.get("school_start_time") as string) || "";
     const endTime = (formData.get("school_end_time") as string) || "";
+    const breakStartTime = (formData.get("break_start_time") as string) || "";
+    const breakEndTime = (formData.get("break_end_time") as string) || "";
 
     // Validate time pair
     const timeValidation = validateSchoolTimePair(startTime, endTime);
     if (!timeValidation.valid) {
       toast({ title: "Ongeldige schooltijden", description: timeValidation.error, variant: "destructive" });
       return;
+    }
+
+    // Validate break times for traditional schedules
+    if (addScheduleType === "traditioneel") {
+      const breakValidation = validateBreakTimePair(breakStartTime, breakEndTime, startTime, endTime);
+      if (!breakValidation.valid) {
+        toast({ title: "Ongeldige pauzetijden", description: breakValidation.error, variant: "destructive" });
+        return;
+      }
     }
 
     // Auto-detect neighborhood if not manually selected
@@ -390,6 +417,8 @@ export default function ScholenPage() {
       neighborhood_id: neighborhoodId,
       school_start_time: inputTimeToDb(startTime),
       school_end_time: inputTimeToDb(endTime),
+      break_start_time: addScheduleType === "traditioneel" ? inputTimeToDb(breakStartTime) : null,
+      break_end_time: addScheduleType === "traditioneel" ? inputTimeToDb(breakEndTime) : null,
       schedule_type: addScheduleType || null,
       source: (formData.get("source") as string) || null,
       municipality: ((formData.get("municipality") as string) ?? "").trim() || null,
@@ -454,6 +483,8 @@ export default function ScholenPage() {
       const headers = Object.keys(rows[0] ?? {});
       const startTimeCol = findMatchingColumn(headers, SCHOOL_START_TIME_COLUMNS);
       const endTimeCol = findMatchingColumn(headers, SCHOOL_END_TIME_COLUMNS);
+      const breakStartCol = findMatchingColumn(headers, BREAK_START_TIME_COLUMNS);
+      const breakEndCol = findMatchingColumn(headers, BREAK_END_TIME_COLUMNS);
       const scheduleTypeCol = findMatchingColumn(headers, SCHEDULE_TYPE_COLUMNS);
       const sourceCol = findMatchingColumn(headers, SOURCE_COLUMNS);
       const municipalityCol = findMatchingColumn(headers, MUNICIPALITY_COLUMNS);
@@ -497,6 +528,12 @@ export default function ScholenPage() {
         const rawMunicipality = municipalityCol ? String(r[municipalityCol] ?? "").trim() : "";
         const municipality = rawMunicipality || null;
 
+        // Parse break times for traditional schedules
+        const rawBreakStart = breakStartCol ? r[breakStartCol] : null;
+        const rawBreakEnd = breakEndCol ? r[breakEndCol] : null;
+        const break_start_time = rawBreakStart ? parseImportedSchoolTime(rawBreakStart) : null;
+        const break_end_time = rawBreakEnd ? parseImportedSchoolTime(rawBreakEnd) : null;
+
         return {
           name: r["naam"] || r["Naam"] || r["name"] || r["School"] || r["school"] || r["VESTIGINGSNAAM"] || "",
           address,
@@ -507,6 +544,8 @@ export default function ScholenPage() {
           neighborhood_id: neighborhoodId,
           school_start_time,
           school_end_time,
+          break_start_time,
+          break_end_time,
           schedule_type,
           source,
           municipality,
@@ -1166,7 +1205,7 @@ export default function ScholenPage() {
                  roostertype: s.schedule_type ?? "",
                  bron: s.source ?? "",
                  gemeente: getEffectiveMunicipality(s.municipality),
-                 schooltijden: formatSchoolTimeRange(s.school_start_time, s.school_end_time),
+                 schooltijden: formatResolvedSchedule(resolveSchedule(s)),
                  email: s.contact_email ?? "",
                  telefoon: s.contact_phone ?? "",
                  website: s.website_url ?? "",
@@ -1417,6 +1456,12 @@ export default function ScholenPage() {
                   </div>
                   <div><Label>Bron</Label><Input name="source" placeholder="bijv. DUO, handmatig" /></div>
                 </div>
+                {addScheduleType === "traditioneel" && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><Label>Pauze begin</Label><Input name="break_start_time" type="time" /></div>
+                    <div><Label>Pauze eind</Label><Input name="break_end_time" type="time" /></div>
+                  </div>
+                )}
                 <div>
                   <Label>Gemeente</Label>
                   <Input name="municipality" placeholder="Leeg = Rotterdam" />
@@ -1654,7 +1699,10 @@ export default function ScholenPage() {
                     <span className="text-xs text-card-foreground">{school.schedule_type ? (school.schedule_type === "continu" ? "Continu" : "Traditioneel") : "—"}</span>
                   </td>
                   <td className="hidden px-5 py-4 lg:table-cell text-center">
-                    <span className="text-xs text-card-foreground">{formatSchoolTimeRange(school.school_start_time, school.school_end_time)}</span>
+                    {(() => {
+                      const resolved = resolveSchedule(school);
+                      return <span className="text-xs text-card-foreground">{formatScheduleCompact(resolved)}</span>;
+                    })()}
                   </td>
                   <td className="px-5 py-4 text-right">
                     <span className="font-display text-sm font-bold text-card-foreground">{school.student_count ?? 0}</span>
@@ -1985,6 +2033,18 @@ export default function ScholenPage() {
                 <Input type="time" value={editForm.school_end_time ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, school_end_time: e.target.value }))} />
               </div>
             </div>
+            {editForm.schedule_type === "traditioneel" && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Pauze begin</Label>
+                  <Input type="time" value={editForm.break_start_time ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, break_start_time: e.target.value }))} />
+                </div>
+                <div>
+                  <Label>Pauze eind</Label>
+                  <Input type="time" value={editForm.break_end_time ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, break_end_time: e.target.value }))} />
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Roostertype</Label>

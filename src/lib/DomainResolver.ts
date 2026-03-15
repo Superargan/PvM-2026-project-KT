@@ -17,8 +17,18 @@ export {
   formatSchoolTime,
   formatSchoolTimeRange,
   validateSchoolTimePair,
+  validateBreakTimePair,
   dbTimeToInput,
   inputTimeToDb,
+  resolveSchedule,
+  formatResolvedSchedule,
+  formatScheduleCompact,
+  SCHEDULE_SEGMENT_LABELS,
+  type ScheduleSegment,
+  type ResolvedTraditionalSchedule,
+  type ResolvedContinuousSchedule,
+  type ResolvedSchedule,
+  type SchoolScheduleInput,
 } from "@/lib/schoolTimes";
 
 export {

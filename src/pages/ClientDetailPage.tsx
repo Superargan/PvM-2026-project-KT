@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { areaKeys, clientKeys, schoolKeys, documentKeys, referrerKeys, auditKeys, programKeys } from "@/lib/queryKeys";
-import { formatSchoolTimeRange, getEffectiveMunicipality, DEFAULT_MUNICIPALITY, getResolvedAreaName, calculateAge, statusLabels, statusStyles } from "@/lib/DomainResolver";
+import { formatSchoolTimeRange, getEffectiveMunicipality, DEFAULT_MUNICIPALITY, getResolvedAreaName, calculateAge, statusLabels, statusStyles, resolveSchedule, formatResolvedSchedule } from "@/lib/DomainResolver";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, Save, User, ClipboardList, BookOpen, Shield, FileText, Download, CalendarDays, Trash2 } from "lucide-react";
 import AvailabilityManager from "@/components/AvailabilityManager";
@@ -61,7 +61,7 @@ export default function ClientDetailPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("*, schools(name, neighborhood_id, school_start_time, school_end_time, neighborhoods(id, area_id, areas:area_id(id, name))), referrers(name, function_title, email, phone), neighborhoods:neighborhood_id(id, area_id, areas:area_id(id, name))")
+        .select("*, schools(name, neighborhood_id, school_start_time, school_end_time, break_start_time, break_end_time, schedule_type, neighborhoods(id, area_id, areas:area_id(id, name))), referrers(name, function_title, email, phone), neighborhoods:neighborhood_id(id, area_id, areas:area_id(id, name))")
         .eq("id", id!)
         .single();
       if (error) throw error;
@@ -74,7 +74,7 @@ export default function ClientDetailPage() {
   const { data: schools = [] } = useQuery({
     queryKey: schoolKeys.dropdown,
     queryFn: async () => {
-      const { data } = await supabase.from("schools").select("id, name, neighborhood_id, school_start_time, school_end_time, municipality, neighborhoods(area_id)").order("name");
+      const { data } = await supabase.from("schools").select("id, name, neighborhood_id, school_start_time, school_end_time, break_start_time, break_end_time, schedule_type, municipality, neighborhoods(area_id)").order("name");
       return data ?? [];
     },
   });
@@ -457,13 +457,14 @@ export default function ClientDetailPage() {
               {/* Schooltijden & Gemeente — read-only, derived from linked school (SSOT) */}
               {(() => {
                 const linkedSchool = schools.find((s) => s.id === form.school_id);
-                const range = linkedSchool ? formatSchoolTimeRange(linkedSchool.school_start_time, linkedSchool.school_end_time) : "—";
+                const resolved = linkedSchool ? resolveSchedule(linkedSchool) : null;
+                const scheduleDisplay = resolved ? formatResolvedSchedule(resolved) : "—";
                 const municipality = linkedSchool ? getEffectiveMunicipality(linkedSchool.municipality) : null;
                 return (
                   <>
-                    {range !== "—" && (
+                    {scheduleDisplay !== "—" && (
                       <Field label="Schooltijden">
-                        <p className="text-sm text-card-foreground py-2">{range}</p>
+                        <p className="text-sm text-card-foreground py-2">{scheduleDisplay}</p>
                       </Field>
                     )}
                     {municipality && municipality !== DEFAULT_MUNICIPALITY && (

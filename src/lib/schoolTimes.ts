@@ -50,6 +50,144 @@ export function formatSchoolTimeRange(
   return "—";
 }
 
+// ── Traditional schedule resolution ─────────────────────────────────
+
+/** Segment labels for traditional schedule display */
+export const SCHEDULE_SEGMENT_LABELS = {
+  morning: "Ochtend",
+  break: "Pauze",
+  afternoon: "Middag",
+} as const;
+
+/** A single time segment in a resolved schedule */
+export interface ScheduleSegment {
+  label: string;
+  start: string;   // HH:mm
+  end: string;      // HH:mm
+  isBreak: boolean;
+}
+
+/** Resolved traditional schedule with morning / break / afternoon segments */
+export interface ResolvedTraditionalSchedule {
+  segments: ScheduleSegment[];
+  isTraditional: true;
+}
+
+/** Resolved continuous schedule (single block, no break) */
+export interface ResolvedContinuousSchedule {
+  range: string;     // formatted "HH:mm – HH:mm" or "—"
+  isTraditional: false;
+}
+
+export type ResolvedSchedule = ResolvedTraditionalSchedule | ResolvedContinuousSchedule;
+
+/**
+ * Input shape for schedule resolution — matches the school DB fields.
+ */
+export interface SchoolScheduleInput {
+  schedule_type?: string | null;
+  school_start_time?: string | null;
+  school_end_time?: string | null;
+  break_start_time?: string | null;
+  break_end_time?: string | null;
+}
+
+/**
+ * Resolve a school's schedule into a display-ready structure.
+ *
+ * For traditional schedules with break times:
+ *   → returns { segments: [Ochtend, Pauze, Middag], isTraditional: true }
+ *
+ * For traditional schedules WITHOUT break times:
+ *   → returns { segments: [Ochtend(full range)], isTraditional: true } with a note that
+ *     pauze is unknown. Callers can detect segments.length < 3.
+ *
+ * For continuous/unknown schedules:
+ *   → returns { range: "HH:mm – HH:mm", isTraditional: false }
+ */
+export function resolveSchedule(school: SchoolScheduleInput): ResolvedSchedule {
+  const isTraditional = school.schedule_type === "traditioneel";
+
+  if (!isTraditional) {
+    return {
+      range: formatSchoolTimeRange(school.school_start_time, school.school_end_time),
+      isTraditional: false,
+    };
+  }
+
+  const start = formatSchoolTime(school.school_start_time);
+  const end = formatSchoolTime(school.school_end_time);
+  const breakStart = formatSchoolTime(school.break_start_time);
+  const breakEnd = formatSchoolTime(school.break_end_time);
+
+  // Traditional with full break info → 3 segments
+  if (start && end && breakStart && breakEnd) {
+    return {
+      isTraditional: true,
+      segments: [
+        { label: SCHEDULE_SEGMENT_LABELS.morning, start, end: breakStart, isBreak: false },
+        { label: SCHEDULE_SEGMENT_LABELS.break, start: breakStart, end: breakEnd, isBreak: true },
+        { label: SCHEDULE_SEGMENT_LABELS.afternoon, start: breakEnd, end, isBreak: false },
+      ],
+    };
+  }
+
+  // Traditional with only start/end but no break → single segment (incomplete)
+  if (start && end) {
+    return {
+      isTraditional: true,
+      segments: [
+        { label: SCHEDULE_SEGMENT_LABELS.morning, start, end, isBreak: false },
+      ],
+    };
+  }
+
+  // Traditional but no times at all → empty segments
+  return {
+    isTraditional: true,
+    segments: [],
+  };
+}
+
+/**
+ * Format a resolved schedule for display as a single string.
+ *
+ * Traditional with 3 segments:
+ *   "Ochtend 08:30 – 11:45 | Pauze 11:45 – 12:30 | Middag 12:30 – 15:00"
+ *
+ * Continuous: "08:30 – 15:00"
+ */
+export function formatResolvedSchedule(resolved: ResolvedSchedule): string {
+  if (resolved.isTraditional === false) {
+    return resolved.range;
+  }
+  if (resolved.segments.length === 0) return "—";
+  return resolved.segments
+    .map((s) => `${s.label} ${s.start} – ${s.end}`)
+    .join(" | ");
+}
+
+/**
+ * Format a resolved schedule for compact display (list views).
+ * Traditional with 3 segments: "08:30–11:45 / 12:30–15:00"
+ * Traditional without break: "08:30 – 15:00 (pauze onbekend)"
+ * Continuous: "08:30 – 15:00"
+ */
+export function formatScheduleCompact(resolved: ResolvedSchedule): string {
+  if (resolved.isTraditional === false) {
+    return resolved.range;
+  }
+  if (resolved.segments.length === 0) return "—";
+  if (resolved.segments.length === 3) {
+    const morning = resolved.segments[0];
+    const afternoon = resolved.segments[2];
+    return `${morning.start}–${morning.end} / ${afternoon.start}–${afternoon.end}`;
+  }
+  // Incomplete traditional (no break times)
+  const seg = resolved.segments[0];
+  return `${seg.start} – ${seg.end} (pauze onbekend)`;
+}
+
 // ── Import parsing ──────────────────────────────────────────────────
 
 function normalizeImportColumnName(name: string): string {
@@ -368,6 +506,46 @@ export function validateSchoolTimePair(
   return { valid: true };
 }
 
+/**
+ * Validate break time pair for traditional schedules.
+ * Returns valid if:
+ * - Both null (break not set)
+ * - Both filled and break_start < break_end
+ * - Break falls within school_start..school_end when those are provided
+ */
+export function validateBreakTimePair(
+  breakStart: string | null | undefined,
+  breakEnd: string | null | undefined,
+  schoolStart?: string | null,
+  schoolEnd?: string | null,
+): SchoolTimeValidation {
+  const bs = (breakStart ?? "").trim();
+  const be = (breakEnd ?? "").trim();
+
+  if (!bs && !be) return { valid: true };
+
+  if ((!bs && be) || (bs && !be)) {
+    return { valid: false, error: "Pauze begin- en eindtijd moeten beide ingevuld zijn." };
+  }
+
+  if (bs >= be) {
+    return { valid: false, error: "Pauze eindtijd moet later zijn dan pauze begintijd." };
+  }
+
+  const ss = (schoolStart ?? "").trim();
+  const se = (schoolEnd ?? "").trim();
+
+  if (ss && bs <= ss) {
+    return { valid: false, error: "Pauze begintijd moet na schooltijd begin liggen." };
+  }
+
+  if (se && be >= se) {
+    return { valid: false, error: "Pauze eindtijd moet voor schooltijd einde liggen." };
+  }
+
+  return { valid: true };
+}
+
 // ── Import column matching ──────────────────────────────────────────
 
 export const SCHOOL_START_TIME_COLUMNS = [
@@ -379,6 +557,8 @@ export const SCHOOL_START_TIME_COLUMNS = [
   "starttime",
   "school start",
   "aanvang",
+  "ochtend begin",
+  "ochtend start",
 ];
 
 export const SCHOOL_END_TIME_COLUMNS = [
@@ -389,6 +569,26 @@ export const SCHOOL_END_TIME_COLUMNS = [
   "endtime",
   "school eind",
   "einde",
+  "middag eind",
+  "middag einde",
+];
+
+export const BREAK_START_TIME_COLUMNS = [
+  "pauze begin",
+  "pauze start",
+  "break_start_time",
+  "pauze begintijd",
+  "ochtend eind",
+  "ochtend einde",
+];
+
+export const BREAK_END_TIME_COLUMNS = [
+  "pauze eind",
+  "pauze einde",
+  "break_end_time",
+  "pauze eindtijd",
+  "middag begin",
+  "middag start",
 ];
 
 export const SCHEDULE_TYPE_COLUMNS = [
