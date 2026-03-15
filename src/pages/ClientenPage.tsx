@@ -32,7 +32,7 @@ export default function ClientenPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const { data: clients = [], isLoading, refetch } = useQuery({
+  const { data: clients = [], isLoading, refetch } = useQuery<ClientenPageRow[]>({
     queryKey: clientKeys.list(search),
     queryFn: async () => {
       let query = supabase
@@ -48,7 +48,7 @@ export default function ClientenPage() {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as unknown as ClientenPageRow[];
     },
   });
 
