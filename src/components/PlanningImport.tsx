@@ -718,8 +718,8 @@ export default function PlanningImport({ open, onOpenChange }: PlanningImportPro
           success++;
         }
       }
-    } catch (err: any) {
-      errors.push(`Onverwachte fout: ${err.message}`);
+    } catch (err: unknown) {
+      errors.push(`Onverwachte fout: ${err instanceof Error ? err.message : String(err)}`);
     }
 
     setResult({ success, errors });

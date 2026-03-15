@@ -752,7 +752,7 @@ export function validateScenarioSlot(
 export function validateScenario(
   slots: { id: string; area_id: string; age_category: string | null; mode: string | null; proposal_idx: number | null; day_name: string | null; start_time: string | null; end_time: string | null }[],
   membersBySlot: Record<string, { client_id: string; has_override: boolean }[]>,
-  clients: Record<string, any>,
+  clients: Record<string, ClientLike & { id: string; intake_status?: string | null }>,
   availByClient: Record<string, { dayOfWeek: number; dayName: string; startTime: string; endTime: string; date: string }[]>,
   prefsByClient: Record<string, Record<string, number>>,
   programClientIds: Set<string>,
