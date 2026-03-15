@@ -317,6 +317,18 @@ export default function ScholenPage() {
       return;
     }
 
+    // Validate break times for traditional schedules
+    if (editForm.schedule_type === "traditioneel") {
+      const breakValidation = validateBreakTimePair(
+        editForm.break_start_time, editForm.break_end_time,
+        editForm.school_start_time, editForm.school_end_time,
+      );
+      if (!breakValidation.valid) {
+        toast({ title: "Ongeldige pauzetijden", description: breakValidation.error, variant: "destructive" });
+        return;
+      }
+    }
+
     setEditSaving(true);
 
     let neighborhoodId = selectedNeighborhood || null;
@@ -340,6 +352,8 @@ export default function ScholenPage() {
       neighborhood_id: neighborhoodId,
       school_start_time: inputTimeToDb(editForm.school_start_time ?? ""),
       school_end_time: inputTimeToDb(editForm.school_end_time ?? ""),
+      break_start_time: editForm.schedule_type === "traditioneel" ? inputTimeToDb(editForm.break_start_time ?? "") : null,
+      break_end_time: editForm.schedule_type === "traditioneel" ? inputTimeToDb(editForm.break_end_time ?? "") : null,
       schedule_type: editForm.schedule_type || null,
       source: editForm.source || null,
       municipality: editForm.municipality?.trim() || null,
