@@ -107,15 +107,15 @@ export default function ClientenPage() {
         <div className="flex gap-2">
           {(["csv", "xlsx"] as const).map((fmt) => (
             <Button key={fmt} variant="outline" size="sm" onClick={() => {
-              const rows = filteredClients.map((c: any) => {
-                const programs = (c as any).program_clients
-                  ?.map((pc: any) => pc.programs)
-                  .filter((p: any) => p && !p.archived)
-                  .sort((a: any, b: any) => {
+              const rows = filteredClients.map((c) => {
+                const programs = (c.program_clients ?? [])
+                  .map((pc) => pc.programs)
+                  .filter((p): p is NonNullable<typeof p> => !!p && !p.archived)
+                  .sort((a, b) => {
                     const order: Record<string, number> = { gepland: 0, gestart: 1, afgerond: 2 };
-                    return (order[a.status] ?? 3) - (order[b.status] ?? 3);
-                  }) ?? [];
-                const trainingStr = programs.map((p: any) => 
+                    return (order[a.status ?? ""] ?? 3) - (order[b.status ?? ""] ?? 3);
+                  });
+                const trainingStr = programs.map((p) => 
                   p.training_number ? `${p.training_number} - ${p.name}` : p.name
                 ).join(", ");
                 return {
