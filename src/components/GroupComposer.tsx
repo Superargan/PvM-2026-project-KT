@@ -995,25 +995,41 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
                                     const altFit = computeSlotFit(selected, alt);
                                     const altExcluded = altFit.excludedClients.length;
                                     return (
-                                      <div key={altIdx} className={`rounded-lg border p-2.5 flex items-center justify-between ${isAltSimulated ? "border-primary ring-1 ring-primary/30 bg-primary/5" : "border-border bg-muted/10"}`}>
-                                        <div className="flex items-center gap-3">
-                                          <CalendarClock className={`h-3.5 w-3.5 shrink-0 ${isAltSimulated ? "text-primary" : "text-muted-foreground"}`} />
-                                          <Badge variant="outline" className="text-xs capitalize border-border text-foreground">{alt.dayName}</Badge>
-                                          <span className="text-sm font-medium text-foreground">{alt.startTime.slice(0, 5)} – {alt.endTime.slice(0, 5)}</span>
-                                          <span className="text-xs font-semibold text-foreground">Groep: {altFit.optimalGroupSize}</span>
-                                          {altExcluded > 0 && (
-                                            <span className="text-xs text-warning-foreground">({altExcluded} niet beschikbaar)</span>
-                                          )}
+                                      <div key={altIdx} className={`rounded-lg border p-2.5 space-y-1 ${isAltSimulated ? "border-primary ring-1 ring-primary/30 bg-primary/5" : "border-border bg-muted/10"}`}>
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-3">
+                                            <CalendarClock className={`h-3.5 w-3.5 shrink-0 ${isAltSimulated ? "text-primary" : "text-muted-foreground"}`} />
+                                            <Badge variant="outline" className="text-xs capitalize border-border text-foreground">{alt.dayName}</Badge>
+                                            <span className="text-sm font-medium text-foreground">{alt.startTime.slice(0, 5)} – {alt.endTime.slice(0, 5)}</span>
+                                            <span className="text-xs font-semibold text-foreground">Groep: {altFit.optimalGroupSize}</span>
+                                            {altExcluded > 0 && (
+                                              <span className="text-xs text-warning-foreground">({altExcluded} niet beschikbaar)</span>
+                                            )}
+                                          </div>
+                                          <Button
+                                            variant={isAltSimulated ? "secondary" : "ghost"}
+                                            size="sm"
+                                            className={`h-7 text-xs gap-1 ${isAltSimulated ? "border-primary/30" : ""}`}
+                                            onClick={() => toggleSimulation(key, group, idx, alt)}
+                                            disabled={selected.size === 0}
+                                          >
+                                            {isAltSimulated ? <><CheckCircle2 className="h-3 w-3" /> Gesimuleerd</> : <><FlaskConical className="h-3 w-3" /> Simuleer</>}
+                                          </Button>
                                         </div>
-                                        <Button
-                                          variant={isAltSimulated ? "secondary" : "ghost"}
-                                          size="sm"
-                                          className={`h-7 text-xs gap-1 ${isAltSimulated ? "border-primary/30" : ""}`}
-                                          onClick={() => toggleSimulation(key, group, idx, alt)}
-                                          disabled={selected.size === 0}
-                                        >
-                                          {isAltSimulated ? <><CheckCircle2 className="h-3 w-3" /> Gesimuleerd</> : <><FlaskConical className="h-3 w-3" /> Simuleer</>}
-                                        </Button>
+                                        {altExcluded > 0 && (
+                                          <div className="pl-5 flex flex-wrap gap-1">
+                                            <span className="text-[10px] font-semibold text-warning-foreground uppercase tracking-wider">Niet beschikbaar:</span>
+                                            {altFit.excludedClients.map(exc => {
+                                              const client = [...group.clients.map(cm => cm.client), ...getReserveCandidates(group, waitlistClients, prefsByClient).map(cm => cm.client)]
+                                                .find(c => c.id === exc.clientId);
+                                              return client ? (
+                                                <Badge key={exc.clientId} variant="outline" className="text-[10px] px-1.5 py-0 border-warning-border text-warning-foreground">
+                                                  {client.first_name} {client.last_name}
+                                                </Badge>
+                                              ) : null;
+                                            })}
+                                          </div>
+                                        )}
                                       </div>
                                     );
                                   })}
