@@ -1,4 +1,4 @@
-import { CheckCircle2, Loader2, ExternalLink, Clock, UserPlus, X, CalendarDays, Upload, Search, Pencil, AlertTriangle, Download, School, Users, Trash2, CalendarCheck } from "lucide-react";
+import { CheckCircle2, Loader2, ExternalLink, Clock, UserPlus, X, CalendarDays, Upload, Search, Pencil, AlertTriangle, Download, School, Users, Trash2, CalendarCheck, Phone } from "lucide-react";
 import AvailabilityValidation from "@/components/AvailabilityValidation";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -657,10 +657,16 @@ export default function AanmeldingenPage() {
             </FieldWrapper>
             <div className="grid grid-cols-2 gap-4">
               <FieldWrapper label="Telefoon" error={errors.guardian_phone}>
-                <Input type="tel" value={form.guardian_phone ?? ""} onChange={(e) => updateField("guardian_phone", e.target.value)} />
+                <div className="flex gap-2">
+                  <Input type="tel" value={form.guardian_phone ?? ""} onChange={(e) => updateField("guardian_phone", e.target.value)} />
+                  <CallButton phone={form.guardian_phone} />
+                </div>
               </FieldWrapper>
               <FieldWrapper label="Telefoon (alt)" error={errors.guardian_phone_alt}>
-                <Input type="tel" value={form.guardian_phone_alt ?? ""} onChange={(e) => updateField("guardian_phone_alt", e.target.value)} />
+                <div className="flex gap-2">
+                  <Input type="tel" value={form.guardian_phone_alt ?? ""} onChange={(e) => updateField("guardian_phone_alt", e.target.value)} />
+                  <CallButton phone={form.guardian_phone_alt} />
+                </div>
               </FieldWrapper>
             </div>
             <FieldWrapper label="E-mail" error={errors.guardian_email}>
