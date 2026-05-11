@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import SchoolCombobox from "@/components/SchoolCombobox";
 import { Checkbox } from "@/components/ui/checkbox";
+import CallButton from "@/components/CallButton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -514,10 +515,16 @@ export default function ClientDetailPage() {
             </Field>
             <div className="grid grid-cols-3 gap-4">
               <Field label="Telefoon">
-                <Input type="tel" value={form.guardian_phone ?? ""} onChange={(e) => updateField("guardian_phone", e.target.value)} />
+                <div className="flex gap-2">
+                  <Input type="tel" value={form.guardian_phone ?? ""} onChange={(e) => updateField("guardian_phone", e.target.value)} />
+                  <CallButton phone={form.guardian_phone} />
+                </div>
               </Field>
               <Field label="Telefoon (alt)">
-                <Input type="tel" value={form.guardian_phone_alt ?? ""} onChange={(e) => updateField("guardian_phone_alt", e.target.value)} />
+                <div className="flex gap-2">
+                  <Input type="tel" value={form.guardian_phone_alt ?? ""} onChange={(e) => updateField("guardian_phone_alt", e.target.value)} />
+                  <CallButton phone={form.guardian_phone_alt} />
+                </div>
               </Field>
               <Field label="E-mail">
                 <Input type="email" value={form.guardian_email ?? ""} onChange={(e) => updateField("guardian_email", e.target.value)} />
