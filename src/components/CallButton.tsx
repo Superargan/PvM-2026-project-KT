@@ -1,4 +1,4 @@
-import { Phone, Copy, MessageCircle, PhoneCall } from "lucide-react";
+import { Phone, Copy, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -61,12 +61,6 @@ export default function CallButton({ phone, className }: CallButtonProps) {
           >
             <MessageCircle className="h-4 w-4 mr-2" />
             WhatsApp openen
-          </a>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <a href={`tel:${normalized}`}>
-            <PhoneCall className="h-4 w-4 mr-2" />
-            Bellen (standaard app)
           </a>
         </DropdownMenuItem>
       </DropdownMenuContent>
