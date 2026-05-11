@@ -27,6 +27,7 @@ import { calculateAge, statusLabels, statusStyles, filterClients, REQUIRED_CLIEN
 import ClientFilters from "@/components/ClientFilters";
 import ClientListTable from "@/components/ClientListTable";
 import DuplicateWarning from "@/components/DuplicateWarning";
+import CallButton from "@/components/CallButton";
 
 const editSchema = z.object({
   first_name: z.string().trim().min(1, "Voornaam is verplicht").max(100),
