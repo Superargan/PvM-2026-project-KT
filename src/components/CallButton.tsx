@@ -55,7 +55,7 @@ export default function CallButton({ phone, className }: CallButtonProps) {
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <a
-            href={`https://wa.me/${waNumber}`}
+            href={`https://web.whatsapp.com/send?phone=${waNumber}`}
             target="_blank"
             rel="noopener noreferrer"
           >
