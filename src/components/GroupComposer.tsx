@@ -67,7 +67,7 @@ import {
 // Re-export handle type for consumers
 export type { GroupComposerHandle } from "./group-composer/types";
 
-const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(function GroupComposer({ activeScenarioId, onSaveScenario, onClearScenario, onLoadScenario, filterArea: externalFilterArea, onFilterAreaChange, filterAgeCategory, preLinkedProgramId }, ref) {
+const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(function GroupComposer({ activeScenarioId, onSaveScenario, onClearScenario, onLoadScenario, filterArea: externalFilterArea, onFilterAreaChange, filterAgeCategory, preLinkedProgramId, onDirtyChange }, ref) {
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -160,6 +160,11 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
 
   const isSimulating = simulatedGroups.size > 0;
   const hasUnsavedWork = isSimulating || isDirty;
+
+  // Push dirty-state changes to parent — replaces polling-based detection.
+  useEffect(() => {
+    onDirtyChange?.(hasUnsavedWork);
+  }, [hasUnsavedWork, onDirtyChange]);
 
   const canCreateDefinitiveGroup = useMemo(() => {
     if (isSimulating || isDirty || simulatedGroups.size > 0) return false;
