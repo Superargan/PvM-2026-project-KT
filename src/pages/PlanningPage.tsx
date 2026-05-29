@@ -996,6 +996,7 @@ export default function PlanningPage() {
                 onClearScenario={() => setActiveScenarioId(null)}
                 filterArea={filterArea}
                 onFilterAreaChange={setFilterArea}
+                onDirtyChange={setHasUnsavedWork}
               />
             </>
           )}
