@@ -29,6 +29,13 @@ export const clientKeys = {
   overrideLogs: ["clients", "override-logs"] as const,
   /** All client availability (unpaginated) — single source of truth */
   allAvailability: ["clients", "all-availability"] as const,
+  /**
+   * Planning-scoped availability for the warning counts. Keyed on a stable
+   * hash of the planning client ids so cache invalidates only when the
+   * planning cohort changes, not every render.
+   */
+  planningAvailability: (clientIdsHash: string) =>
+    ["clients", "planning-availability", clientIdsHash] as const,
   /** Programs linked to a specific client */
   programs: (clientId: string) => ["clients", "programs", clientId] as const,
   /** Generated docs for a specific client */
@@ -148,7 +155,11 @@ export const invoiceKeys = {
 /** Planning query keys */
 export const planningKeys = {
   availability: ["planning", "availability"] as const,
+  /** Base prefix for all per-window client availability queries (invalidation target). */
   clientAvailability: ["planning", "client-availability"] as const,
+  /** Per-window client availability — keyed on the visible date range. */
+  clientAvailabilityWindow: (start: string, end: string) =>
+    ["planning", "client-availability", start, end] as const,
   sessions: (start: string, end: string) => ["planning", "sessions", start, end] as const,
   programStaff: (ids: string[]) => ["planning", "program-staff", ids] as const,
   trainers: ["planning", "trainers"] as const,

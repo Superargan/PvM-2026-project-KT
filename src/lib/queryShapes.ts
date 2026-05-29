@@ -779,3 +779,34 @@ export interface ClientCheckFields {
   schools?: { name?: string; neighborhoods?: { area_id?: string; areas?: { id?: string; name?: string } } | null } | null;
   [key: string]: unknown;
 }
+
+// ─── Planning page shapes ───────────────────────────────────────────
+
+/**
+ * Client row used across the Planning page (warning counts, tables,
+ * dropdowns). Matches the .select() in PlanningPage.allClients and
+ * stays compatible with ClientLike / ClientAreaFields helpers.
+ */
+export interface PlanningClientRow {
+  id: string;
+  first_name: string;
+  last_name: string;
+  waitlist_area_id: string | null;
+  neighborhood_id: string | null;
+  date_of_birth: string | null;
+  intake_status: string | null;
+  school_id: string | null;
+  all_areas_flexible?: boolean;
+  neighborhoods: NeighborhoodWithArea | null;
+  schools: SchoolWithNeighborhood | null;
+  /** Index signature keeps it compatible with ClientLike helpers. */
+  [key: string]: unknown;
+}
+
+/**
+ * Intake row variant — same joins as PlanningClientRow plus the
+ * intake_date column the agenda groups by.
+ */
+export interface PlanningIntakeRow extends PlanningClientRow {
+  intake_date: string | null;
+}
