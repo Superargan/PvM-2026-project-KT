@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
 import { resolveAreaId, getAgeCategoryPlanning, getMissingFields, buildPrefsByClientMap, getMatchType, type AgeCategory } from "@/lib/DomainResolver";
 import { clientKeys, areaKeys } from "@/lib/queryKeys";
 
@@ -23,7 +24,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
   const queryClient = useQueryClient();
   const [fixingAreas, setFixingAreas] = useState(false);
 
-  const { data: clients = [] } = useQuery({
+  const { data: clients = [], isLoading: clientsLoading } = useQuery({
     queryKey: clientKeys.waitlistOverview,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -47,7 +48,7 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
     },
   });
 
-  const { data: areas = [] } = useQuery({
+  const { data: areas = [], isLoading: areasLoading } = useQuery({
     queryKey: areaKeys.all,
     queryFn: async () => {
       const { data, error } = await supabase.from("areas").select("id, name").order("name");
@@ -164,6 +165,21 @@ export default function WaitlistOverview({ onSelectGroup, onViewAvailability, fi
   // Count totals for summary
   const totalIntake = clients.filter((c) => c.intake_status === "intake_afgerond").length;
   const totalWachtlijst = clients.filter((c) => c.intake_status === "wachtlijst").length;
+
+  // Reserve layout space and show a skeleton matrix while the matrix data loads,
+  // so the page doesn't shift after fetch (CLS).
+  if (clientsLoading || areasLoading) {
+    return (
+      <div className="space-y-4 min-h-[420px]">
+        <div className="flex flex-wrap gap-3">
+          <Skeleton className="h-7 w-24" />
+          <Skeleton className="h-7 w-32" />
+          <Skeleton className="h-7 w-28" />
+        </div>
+        <Skeleton className="h-[360px] w-full rounded-xl" />
+      </div>
+    );
+  }
 
   return (
     <TooltipProvider>
