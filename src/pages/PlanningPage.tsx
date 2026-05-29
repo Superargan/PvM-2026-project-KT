@@ -474,6 +474,61 @@ export default function PlanningPage() {
     return new Set(overrideLogs.map((o) => o.client_id));
   }, [overrideLogs]);
 
+  // O(1) trainer lookups for the trainers tab.
+  const availabilityByStaff = useMemo(() => {
+    const m = new Map<string, StaffAvailabilityRow[]>();
+    availability.forEach((a) => {
+      const list = m.get(a.staff_id);
+      if (list) list.push(a);
+      else m.set(a.staff_id, [a]);
+    });
+    return m;
+  }, [availability]);
+
+  const programStaffSessionsByStaff = useMemo(() => {
+    const m = new Map<string, ProgramStaffRow[]>();
+    programStaff.forEach((ps) => {
+      if (ps.session_id !== null) return;
+      const list = m.get(ps.staff_id);
+      if (list) list.push(ps);
+      else m.set(ps.staff_id, [ps]);
+    });
+    return m;
+  }, [programStaff]);
+
+  const programStaffInvalByStaff = useMemo(() => {
+    const m = new Map<string, ProgramStaffRow[]>();
+    programStaff.forEach((ps) => {
+      if (ps.session_id === null) return;
+      const list = m.get(ps.staff_id);
+      if (list) list.push(ps);
+      else m.set(ps.staff_id, [ps]);
+    });
+    return m;
+  }, [programStaff]);
+
+  // Pre-filtered client lists for the availability sub-tabs.
+  const aanmeldingenClients = useMemo(
+    () =>
+      allClients.filter((c) => {
+        const status = c.intake_status ?? "nieuw";
+        if (!["nieuw", "intake_gepland", "intake", "intake_afgerond", "wachtlijst"].includes(status)) return false;
+        if (filterArea !== "alle" && resolveAreaId(c) !== filterArea) return false;
+        return true;
+      }),
+    [allClients, filterArea],
+  );
+
+  const actieveDeelnemers = useMemo(
+    () =>
+      allClients.filter((c) => {
+        if (c.intake_status !== "actief") return false;
+        if (filterArea !== "alle" && resolveAreaId(c) !== filterArea) return false;
+        return true;
+      }),
+    [allClients, filterArea],
+  );
+
   const availByClient = useMemo(() => buildAvailabilityByClient(allClientAvailability), [allClientAvailability]);
   const prefsByClient = useMemo(() => buildPrefsByClientMap(allPreferences), [allPreferences]);
 
