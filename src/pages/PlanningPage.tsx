@@ -1,6 +1,19 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { SessionWithProgram, ProgramStaffRow, ClientAssignmentRow } from "@/lib/queryShapes";
+import type {
+  SessionWithProgram,
+  ProgramStaffRow,
+  ClientAssignmentRow,
+  PlanningClientRow,
+  PlanningIntakeRow,
+  ClientAvailabilityRow,
+  ClientAvailabilityDetailRow,
+  StaffAvailabilityRow,
+  StaffTrainerRef,
+  OverrideLogRow,
+  AreaRef,
+  AreaPreferenceRow,
+} from "@/lib/queryShapes";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, eachDayOfInterval, parseISO, startOfMonth, endOfMonth, addMonths, subMonths, getDay } from "date-fns";
 import {
@@ -16,7 +29,7 @@ import {
 } from "@/lib/DomainResolver";
 import { clientKeys, areaKeys, planningKeys, staffKeys, authKeys } from "@/lib/queryKeys";
 import { nl } from "date-fns/locale";
-import { CalendarDays, ChevronLeft, ChevronRight, Users, Clock, Plus, X, FileSpreadsheet, Star, Palmtree, CalendarClock, AlertTriangle, ShieldAlert, MapPinOff, RefreshCw, ShieldCheck } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Users, Clock, Plus, X, FileSpreadsheet, Star, Palmtree, CalendarClock, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -36,6 +49,7 @@ import PlanningImport from "@/components/PlanningImport";
 import WaitlistOverview from "@/components/WaitlistOverview";
 import ClientFilters from "@/components/ClientFilters";
 import { isSpecialDay } from "@/lib/holidays";
+import { WarningBar, WarningDetailDialog, type WarningFilter, type WarningCounts } from "@/components/planning/WarningButtons";
 
 const trainerTypeLabels: Record<string, string> = {
   oudertrainer: "Oudertrainer",
@@ -53,7 +67,7 @@ type ViewMode = "week" | "maand";
 
 // Compact availability summary panel for a selected area+age
 function AvailabilitySummaryPanel({ filterArea, filterAge, areaName }: { filterArea: string; filterAge: string; areaName: string }) {
-  const { data: candidates = [] } = useQuery({
+  const { data: candidates = [] } = useQuery<PlanningClientRow[]>({
     queryKey: clientKeys.planningAvailPanel(filterArea, filterAge),
     queryFn: async () => {
       const { data, error } = await supabase
@@ -62,7 +76,7 @@ function AvailabilitySummaryPanel({ filterArea, filterAge, areaName }: { filterA
         .eq("archived", false)
         .in("intake_status", ["wachtlijst", "intake_afgerond"]);
       if (error) throw error;
-      return (data ?? []).filter((c: any) => {
+      return ((data ?? []) as unknown as PlanningClientRow[]).filter((c) => {
         if (resolveAreaId(c) !== filterArea) return false;
         if (filterAge.startsWith("exact-")) {
           const exactAge = parseInt(filterAge.replace("exact-", ""), 10);
@@ -73,9 +87,12 @@ function AvailabilitySummaryPanel({ filterArea, filterAge, areaName }: { filterA
     },
   });
 
-  const candidateIds = candidates.map((c: any) => c.id);
+  const candidateIds = useMemo(
+    () => candidates.map((c) => c.id).sort(),
+    [candidates],
+  );
 
-  const { data: availData = [] } = useQuery({
+  const { data: availData = [] } = useQuery<ClientAvailabilityRow[]>({
     queryKey: clientKeys.planningAvailPanelData(candidateIds),
     enabled: candidateIds.length > 0,
     queryFn: async () => {
@@ -84,7 +101,7 @@ function AvailabilitySummaryPanel({ filterArea, filterAge, areaName }: { filterA
         .select("client_id, available_date, start_time, end_time")
         .in("client_id", candidateIds);
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as ClientAvailabilityRow[];
     },
   });
 
@@ -92,7 +109,7 @@ function AvailabilitySummaryPanel({ filterArea, filterAge, areaName }: { filterA
   const daySummary = useMemo(() => {
     const counts: Record<number, number> = {};
     const clientsPerDay: Record<number, Set<string>> = {};
-    availData.forEach((a: any) => {
+    availData.forEach((a) => {
       const dow = getDay(parseISO(a.available_date));
       if (!clientsPerDay[dow]) clientsPerDay[dow] = new Set();
       clientsPerDay[dow].add(a.client_id);
@@ -103,7 +120,7 @@ function AvailabilitySummaryPanel({ filterArea, filterAge, areaName }: { filterA
     return counts;
   }, [availData]);
 
-  const clientsWithAvail = new Set(availData.map((a: any) => a.client_id)).size;
+  const clientsWithAvail = new Set(availData.map((a) => a.client_id)).size;
 
   if (candidates.length === 0) return null;
 
@@ -141,33 +158,6 @@ function AvailabilitySummaryPanel({ filterArea, filterAge, areaName }: { filterA
         })}
       </div>
     </div>
-  );
-}
-
-// Warning button component
-function WarningButton({ count, label, icon: Icon, color, onClick }: {
-  count: number;
-  label: string;
-  icon: any;
-  color: "warning" | "destructive" | "info" | "role";
-  onClick?: () => void;
-}) {
-  if (count === 0) return null;
-  const colorMap = {
-    warning: "bg-warning-muted text-warning-foreground border-warning-border hover:bg-warning-muted/80",
-    destructive: "bg-destructive/10 text-destructive border-destructive/30 hover:bg-destructive/15",
-    info: "bg-info-muted text-info-foreground border-info-border hover:bg-info-muted/80",
-    role: "bg-role-muted text-role-foreground border-role-border hover:bg-role-muted/80",
-  };
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${colorMap[color]}`}
-    >
-      <Icon className="h-3.5 w-3.5" />
-      <span>{count}</span>
-      <span className="hidden sm:inline">{label}</span>
-    </button>
   );
 }
 
