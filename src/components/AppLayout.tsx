@@ -9,7 +9,6 @@ import {
   FileText,
   ClipboardList,
   BarChart3,
-  Settings,
   LogOut,
   ChevronLeft,
   Menu,
@@ -32,10 +31,6 @@ const navItems = [
   { label: "Medewerkers", icon: UserCog, path: "/medewerkers" },
   { label: "Rapportages", icon: BarChart3, path: "/rapportages" },
   { label: "Documenten", icon: FileText, path: "/documenten" },
-];
-
-const bottomItems = [
-  { label: "Instellingen", icon: Settings, path: "/instellingen" },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -108,23 +103,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Bottom */}
         <div className="border-t border-sidebar-border px-3 py-3 space-y-1">
-          {bottomItems.map((item) => {
-            const active = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-all hover:bg-sidebar-accent hover:text-sidebar-foreground",
-                  collapsed && "justify-center px-2",
-                  active && "bg-sidebar-accent text-sidebar-primary"
-                )}
-              >
-                <item.icon className="h-5 w-5 shrink-0" />
-                {!collapsed && <span>{item.label}</span>}
-              </Link>
-            );
-          })}
           <button
             onClick={signOut}
             className={cn(
