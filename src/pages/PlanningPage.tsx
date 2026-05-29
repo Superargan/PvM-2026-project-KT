@@ -687,7 +687,7 @@ export default function PlanningPage() {
           <SelectTrigger className="w-40"><SelectValue placeholder="Gebied" /></SelectTrigger>
           <SelectContent className="bg-popover">
             <SelectItem value="alle">Alle gebieden</SelectItem>
-            {areas.map((a: any) => (
+            {areas.map((a) => (
               <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
             ))}
           </SelectContent>
@@ -810,7 +810,7 @@ export default function PlanningPage() {
                       )}
 
                       {/* Intakes — compact row */}
-                      {items?.intakes.map((intake: any) => (
+                      {items?.intakes.map((intake) => (
                         <div
                           key={intake.id}
                           className="flex items-center gap-2 rounded-md bg-warning-muted border border-warning-border px-2.5 py-1.5 cursor-pointer hover:bg-warning-muted/80 transition-colors"
@@ -965,7 +965,7 @@ export default function PlanningPage() {
                 <AvailabilitySummaryPanel
                   filterArea={filterArea}
                   filterAge={filterAge}
-                  areaName={areas.find((a: any) => a.id === filterArea)?.name ?? ""}
+                  areaName={areas.find((a) => a.id === filterArea)?.name ?? ""}
                 />
               )}
 
@@ -1042,10 +1042,10 @@ export default function PlanningPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {allTrainers.map((trainer: any) => {
-                      const trainerAvail = availability.filter((a: any) => a.staff_id === trainer.id);
-                      const trainerSessions = programStaff.filter((ps: any) => ps.staff_id === trainer.id && ps.session_id === null);
-                      const trainerInval = programStaff.filter((ps: any) => ps.staff_id === trainer.id && ps.session_id !== null);
+                    {allTrainers.map((trainer) => {
+                      const trainerAvail = availabilityByStaff.get(trainer.id) ?? [];
+                      const trainerSessions = programStaffSessionsByStaff.get(trainer.id) ?? [];
+                      const trainerInval = programStaffInvalByStaff.get(trainer.id) ?? [];
                       return (
                         <tr key={trainer.id} className="hover:bg-muted/30 transition-colors">
                           <td className="px-3 py-2">
@@ -1062,7 +1062,7 @@ export default function PlanningPage() {
                           </td>
                           <td className="px-3 py-2">
                             <div className="flex flex-wrap gap-1">
-                              {trainerAvail.length > 0 ? trainerAvail.map((a: any) => (
+                              {trainerAvail.length > 0 ? trainerAvail.map((a) => (
                                 <Badge key={a.id} variant="outline" className="text-[9px] border-success-border text-success-foreground">
                                   {format(parseISO(a.available_date), "d MMM", { locale: nl })}
                                 </Badge>
@@ -1100,13 +1100,11 @@ export default function PlanningPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {allClients
-                      .filter((c: any) => ["nieuw", "intake_gepland", "intake", "intake_afgerond", "wachtlijst"].includes(c.intake_status ?? "nieuw"))
-                      .filter((c: any) => filterArea === "alle" || resolveAreaId(c) === filterArea)
-                      .map((client: any) => {
-                        const clientAvail = clientAvailability.filter((a: any) => a.client_id === client.id);
+                    {aanmeldingenClients
+                      .map((client) => {
+                        const clientAvail = clientAvailabilityByClient.get(client.id) ?? [];
                         const hasOverride = overriddenClientIds.has(client.id);
-                        const overrideLog = overrideLogs.find((o: any) => o.client_id === client.id);
+                        const overrideLog = overrideLogByClient.get(client.id);
                         return (
                           <tr key={client.id} className="hover:bg-muted/30 transition-colors">
                             <td className="px-3 py-2">
@@ -1136,7 +1134,7 @@ export default function PlanningPage() {
                             </td>
                             <td className="px-3 py-2">
                               <div className="flex flex-wrap gap-1">
-                                {clientAvail.length > 0 ? clientAvail.map((a: any) => (
+                                {clientAvail.length > 0 ? clientAvail.map((a) => (
                                   <Badge key={a.id} variant="outline" className="text-[9px] border-success-border text-success-foreground">
                                     {format(parseISO(a.available_date), "d MMM", { locale: nl })}
                                   </Badge>
@@ -1165,9 +1163,7 @@ export default function PlanningPage() {
                           </tr>
                         );
                       })}
-                    {allClients
-                      .filter((c: any) => ["nieuw", "intake_gepland", "intake", "intake_afgerond", "wachtlijst"].includes(c.intake_status ?? "nieuw"))
-                      .filter((c: any) => filterArea === "alle" || resolveAreaId(c) === filterArea).length === 0 && (
+                    {aanmeldingenClients.length === 0 && (
                       <tr><td colSpan={isAdmin ? 5 : 4} className="px-3 py-6 text-center text-sm text-muted-foreground">Geen aanmeldingen</td></tr>
                     )}
                   </tbody>
@@ -1187,11 +1183,9 @@ export default function PlanningPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {allClients
-                      .filter((c: any) => c.intake_status === "actief")
-                      .filter((c: any) => filterArea === "alle" || resolveAreaId(c) === filterArea)
-                      .map((client: any) => {
-                        const clientAvail = clientAvailability.filter((a: any) => a.client_id === client.id);
+                    {actieveDeelnemers
+                      .map((client) => {
+                        const clientAvail = clientAvailabilityByClient.get(client.id) ?? [];
                         return (
                           <tr key={client.id} className="hover:bg-muted/30 transition-colors">
                             <td className="px-3 py-2">
@@ -1205,7 +1199,7 @@ export default function PlanningPage() {
                             </td>
                             <td className="px-3 py-2">
                               <div className="flex flex-wrap gap-1">
-                                {clientAvail.length > 0 ? clientAvail.map((a: any) => (
+                                {clientAvail.length > 0 ? clientAvail.map((a) => (
                                   <Badge key={a.id} variant="outline" className="text-[9px] border-success-border text-success-foreground">
                                     {format(parseISO(a.available_date), "d MMM", { locale: nl })}
                                   </Badge>
@@ -1217,9 +1211,7 @@ export default function PlanningPage() {
                           </tr>
                         );
                       })}
-                    {allClients
-                      .filter((c: any) => c.intake_status === "actief")
-                      .filter((c: any) => filterArea === "alle" || resolveAreaId(c) === filterArea).length === 0 && (
+                    {actieveDeelnemers.length === 0 && (
                       <tr><td colSpan={4} className="px-3 py-6 text-center text-sm text-muted-foreground">Geen actieve deelnemers</td></tr>
                     )}
                   </tbody>
@@ -1261,7 +1253,7 @@ export default function PlanningPage() {
                 <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
                   <SelectTrigger><SelectValue placeholder="Selecteer trainer..." /></SelectTrigger>
                   <SelectContent className="bg-popover">
-                    {allTrainers.map((t: any) => (
+                    {allTrainers.map((t) => (
                       <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -1273,7 +1265,7 @@ export default function PlanningPage() {
                 <Select value={selectedClientId} onValueChange={setSelectedClientId}>
                   <SelectTrigger><SelectValue placeholder="Selecteer deelnemer..." /></SelectTrigger>
                   <SelectContent className="bg-popover">
-                    {allClients.map((c: any) => (
+                    {allClients.map((c) => (
                       <SelectItem key={c.id} value={c.id}>{c.first_name} {c.last_name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -1319,9 +1311,10 @@ export default function PlanningPage() {
             <div className="space-y-1.5">
               <Label>Deelnemer</Label>
               <p className="text-sm font-medium text-foreground">
-                {allClients.find((c: any) => c.id === overrideClientId)
-                  ? `${allClients.find((c: any) => c.id === overrideClientId)!.first_name} ${allClients.find((c: any) => c.id === overrideClientId)!.last_name}`
-                  : "—"}
+                {(() => {
+                  const c = overrideClientId ? clientsById.get(overrideClientId) : undefined;
+                  return c ? `${c.first_name} ${c.last_name}` : "—";
+                })()}
               </p>
             </div>
             <div className="space-y-1.5">
