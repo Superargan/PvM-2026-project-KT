@@ -727,7 +727,10 @@ export default function PlanningPage() {
         </div>
       </div>
 
-      <WarningBar counts={warningCounts} onSelect={setWarningFilter} />
+      {/* Reserve vertical space so warning buttons don't push layout down on first paint (CLS) */}
+      <div className="min-h-9">
+        <WarningBar counts={warningCounts} onSelect={setWarningFilter} />
+      </div>
       <WarningDetailDialog
         filter={warningFilter}
         counts={warningCounts}
