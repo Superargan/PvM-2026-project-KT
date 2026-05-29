@@ -672,60 +672,14 @@ export default function PlanningPage() {
         </div>
       </div>
 
-      {/* Warning buttons */}
-      <div className="flex flex-wrap gap-2">
-        <WarningButton count={warningCounts.noAvail} label="Beschikbaarheid nog doorgeven" icon={AlertTriangle} color="warning" onClick={() => setWarningFilter("noAvail")} />
-        <WarningButton count={warningCounts.unusableAvail} label="Onbruikbare beschikbaarheid" icon={ShieldAlert} color="destructive" onClick={() => setWarningFilter("unusable")} />
-        <WarningButton count={warningCounts.staleCoverage} label="Beschikbaarheid actualiseren" icon={RefreshCw} color="warning" onClick={() => setWarningFilter("stale")} />
-        <WarningButton count={warningCounts.noArea} label="Geen gebied" icon={MapPinOff} color="info" onClick={() => setWarningFilter("noArea")} />
-        <WarningButton count={warningCounts.overridden} label="Overruled (admin)" icon={ShieldCheck} color="role" onClick={() => setWarningFilter("overridden")} />
-      </div>
-
-      {/* Warning detail dialog */}
-      <Dialog open={warningFilter !== null} onOpenChange={(open) => { if (!open) setWarningFilter(null); }}>
-        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {warningFilter === "noAvail" && "Beschikbaarheid nog doorgeven"}
-              {warningFilter === "unusable" && "Onbruikbare beschikbaarheid"}
-              {warningFilter === "stale" && "Beschikbaarheid actualiseren"}
-              {warningFilter === "noArea" && "Geen gebied"}
-              {warningFilter === "overridden" && "Overruled (admin)"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-1">
-            {(() => {
-              const ids = warningFilter === "noAvail" ? warningCounts.noAvailIds
-                : warningFilter === "unusable" ? warningCounts.unusableAvailIds
-                : warningFilter === "stale" ? warningCounts.staleCoverageIds
-                : warningFilter === "noArea" ? warningCounts.noAreaIds
-                : warningFilter === "overridden" ? warningCounts.overriddenIds
-                : [];
-              return ids.map((id) => {
-                const c = allClients.find((cl: any) => cl.id === id);
-                if (!c) return null;
-                return (
-                  <button
-                    key={id}
-                    className="w-full flex items-center gap-2 rounded-md px-3 py-2 text-left hover:bg-muted/50 transition-colors"
-                    onClick={() => { setWarningFilter(null); navigate(`/clienten/${id}`); }}
-                  >
-                    <span className="text-sm font-medium text-foreground truncate">
-                      {c.first_name} {c.last_name}
-                    </span>
-                    <span className="text-xs text-muted-foreground ml-auto shrink-0">
-                      {getResolvedAreaName(c) !== "—" ? getResolvedAreaName(c) : "Geen gebied"}
-                    </span>
-                    <Badge variant="outline" className="text-[10px] shrink-0">
-                      {c.intake_status ?? "—"}
-                    </Badge>
-                  </button>
-                );
-              });
-            })()}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <WarningBar counts={warningCounts} onSelect={setWarningFilter} />
+      <WarningDetailDialog
+        filter={warningFilter}
+        counts={warningCounts}
+        clientsById={clientsById}
+        onClose={() => setWarningFilter(null)}
+        onSelectClient={(id) => { setWarningFilter(null); navigate(`/clienten/${id}`); }}
+      />
 
       {/* Global filters */}
       <div className="flex flex-wrap items-center gap-3">
