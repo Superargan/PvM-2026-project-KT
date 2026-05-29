@@ -799,6 +799,8 @@ export interface PlanningClientRow {
   all_areas_flexible?: boolean;
   neighborhoods: NeighborhoodWithArea | null;
   schools: SchoolWithNeighborhood | null;
+  /** Index signature keeps it compatible with ClientLike helpers. */
+  [key: string]: unknown;
 }
 
 /**
