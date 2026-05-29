@@ -156,6 +156,11 @@ export interface GroupComposerProps {
   onFilterAreaChange?: (area: string) => void;
   filterAgeCategory?: AgeCategory;
   preLinkedProgramId?: string;
+  /**
+   * Called whenever `hasUnsavedWork` flips. Lets the parent react to
+   * dirty-state changes without polling the imperative ref handle.
+   */
+  onDirtyChange?: (hasUnsavedWork: boolean) => void;
 }
 
 // ─── Constants ──────────────────────────────────────────────────────
