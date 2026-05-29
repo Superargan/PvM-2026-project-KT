@@ -155,8 +155,10 @@ export const invoiceKeys = {
 /** Planning query keys */
 export const planningKeys = {
   availability: ["planning", "availability"] as const,
+  /** Base prefix for all per-window client availability queries (invalidation target). */
+  clientAvailability: ["planning", "client-availability"] as const,
   /** Per-window client availability — keyed on the visible date range. */
-  clientAvailability: (start: string, end: string) =>
+  clientAvailabilityWindow: (start: string, end: string) =>
     ["planning", "client-availability", start, end] as const,
   sessions: (start: string, end: string) => ["planning", "sessions", start, end] as const,
   programStaff: (ids: string[]) => ["planning", "program-staff", ids] as const,
