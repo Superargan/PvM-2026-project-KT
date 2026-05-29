@@ -727,7 +727,10 @@ export default function PlanningPage() {
         </div>
       </div>
 
-      <WarningBar counts={warningCounts} onSelect={setWarningFilter} />
+      {/* Reserve vertical space so warning buttons don't push layout down on first paint (CLS) */}
+      <div className="min-h-9">
+        <WarningBar counts={warningCounts} onSelect={setWarningFilter} />
+      </div>
       <WarningDetailDialog
         filter={warningFilter}
         counts={warningCounts}
@@ -983,8 +986,10 @@ export default function PlanningPage() {
 
         {/* === WACHTLIJST & GROEPEN TAB === */}
         <TabsContent value="groepen" className="space-y-6">
-          {/* ScenarioOverview always renders — werkstate-bescherming (T07-T10) */}
-          <ScenarioOverview
+          {/* ScenarioOverview always renders — werkstate-bescherming (T07-T10).
+              min-h reserveert ruimte zodat content niet naar beneden springt na fetch (CLS). */}
+          <div className="min-h-[80px]">
+            <ScenarioOverview
             onLoadScenario={(scenarioId) => {
               setActiveScenarioId(scenarioId);
               setShowGroupComposer(true);
@@ -999,7 +1004,8 @@ export default function PlanningPage() {
             onRequestSaveFirst={async () => {
               return groupComposerRef.current?.triggerSave() ?? false;
             }}
-          />
+            />
+          </div>
 
           {!showGroupComposer ? (
             <>
