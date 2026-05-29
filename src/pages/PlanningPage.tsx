@@ -179,7 +179,7 @@ export default function PlanningPage() {
   const [overrideDialogOpen, setOverrideDialogOpen] = useState(false);
   const [overrideClientId, setOverrideClientId] = useState<string>("");
   const [overrideReason, setOverrideReason] = useState("");
-  const [warningFilter, setWarningFilter] = useState<string | null>(null);
+  const [warningFilter, setWarningFilter] = useState<WarningFilter | null>(null);
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
   const groupComposerRef = useRef<GroupComposerHandle>(null);
   const [hasUnsavedWork, setHasUnsavedWork] = useState(false);
@@ -191,14 +191,8 @@ export default function PlanningPage() {
   const queryClient = useQueryClient();
   const { session } = useAuth();
 
-  // Sync parent-level dirty state from ref
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const current = groupComposerRef.current?.hasUnsavedWork ?? false;
-      setHasUnsavedWork(current);
-    }, 500);
-    return () => clearInterval(interval);
-  }, []);
+  // Dirty state is pushed by GroupComposer via the onDirtyChange prop —
+  // see GroupComposer below. No polling required.
 
   // beforeunload guard
   useEffect(() => {
@@ -228,7 +222,7 @@ export default function PlanningPage() {
   };
 
   // === DATA QUERIES ===
-  const { data: intakes = [] } = useQuery({
+  const { data: intakes = [] } = useQuery<PlanningIntakeRow[]>({
     queryKey: clientKeys.planningIntakes(dateRange.start.toISOString(), dateRange.end.toISOString()),
     queryFn: async () => {
       const { data, error } = await supabase
@@ -239,11 +233,15 @@ export default function PlanningPage() {
         .gte("intake_date", format(dateRange.start, "yyyy-MM-dd"))
         .lte("intake_date", format(dateRange.end, "yyyy-MM-dd"));
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as unknown as PlanningIntakeRow[];
     },
   });
 
-  const intakeClientIds = intakes.map((i: any) => i.id);
+  // Stable sorted ids — prevents queryKey identity from changing every render.
+  const intakeClientIds = useMemo(
+    () => intakes.map((i) => i.id).sort(),
+    [intakes],
+  );
   const { data: intakeAssignments = [] } = useQuery({
     queryKey: planningKeys.intakeAssignments(intakeClientIds),
     enabled: intakeClientIds.length > 0,
@@ -257,7 +255,7 @@ export default function PlanningPage() {
     },
   });
 
-  const { data: sessions = [] } = useQuery({
+  const { data: sessions = [] } = useQuery<SessionWithProgram[]>({
     queryKey: planningKeys.sessions(dateRange.start.toISOString(), dateRange.end.toISOString()),
     queryFn: async () => {
       const { data, error } = await supabase
@@ -267,12 +265,15 @@ export default function PlanningPage() {
         .lte("session_date", format(dateRange.end, "yyyy-MM-dd"))
         .order("session_date");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as unknown as SessionWithProgram[];
     },
   });
 
-  const programIds = [...new Set(sessions.map((s: any) => s.program_id))];
-  const { data: programStaff = [] } = useQuery({
+  const programIds = useMemo(
+    () => Array.from(new Set(sessions.map((s) => s.program_id))).sort(),
+    [sessions],
+  );
+  const { data: programStaff = [] } = useQuery<ProgramStaffRow[]>({
     queryKey: planningKeys.programStaff(programIds),
     enabled: programIds.length > 0,
     queryFn: async () => {
@@ -281,11 +282,11 @@ export default function PlanningPage() {
         .select("program_id, session_id, role, staff_id, replaces_staff_id, staff!program_staff_staff_id_fkey(name, trainer_type)")
         .in("program_id", programIds);
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as unknown as ProgramStaffRow[];
     },
   });
 
-  const { data: allTrainers = [] } = useQuery({
+  const { data: allTrainers = [] } = useQuery<StaffTrainerRef[]>({
     queryKey: planningKeys.trainers,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -295,11 +296,11 @@ export default function PlanningPage() {
         .not("name", "is", null)
         .order("name");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as StaffTrainerRef[];
     },
   });
 
-  const { data: availability = [], refetch: refetchAvailability } = useQuery({
+  const { data: availability = [], refetch: refetchAvailability } = useQuery<StaffAvailabilityRow[]>({
     queryKey: planningKeys.staffAvailability(dateRange.start.toISOString(), dateRange.end.toISOString()),
     queryFn: async () => {
       const { data, error } = await supabase
@@ -308,11 +309,11 @@ export default function PlanningPage() {
         .gte("available_date", format(dateRange.start, "yyyy-MM-dd"))
         .lte("available_date", format(dateRange.end, "yyyy-MM-dd"));
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as StaffAvailabilityRow[];
     },
   });
 
-  const { data: allClients = [] } = useQuery({
+  const { data: allClients = [] } = useQuery<PlanningClientRow[]>({
     queryKey: clientKeys.planning,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -322,15 +323,15 @@ export default function PlanningPage() {
         .in("intake_status", ["nieuw", "intake_gepland", "intake", "intake_afgerond", "actief", "wachtlijst"])
         .order("first_name");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as unknown as PlanningClientRow[];
     },
   });
 
-  // Use central helper for resolved area name
-  const getAreaNameForClient = (client: any): string => getResolvedAreaName(client, areas);
-
-  const { data: clientAvailability = [], refetch: refetchClientAvail } = useQuery({
-    queryKey: planningKeys.clientAvailability,
+  const { data: clientAvailability = [], refetch: refetchClientAvail } = useQuery<ClientAvailabilityDetailRow[]>({
+    queryKey: planningKeys.clientAvailabilityWindow(
+      dateRange.start.toISOString(),
+      dateRange.end.toISOString(),
+    ),
     queryFn: async () => {
       const { data, error } = await supabase
         .from("client_availability")
@@ -338,45 +339,70 @@ export default function PlanningPage() {
         .gte("available_date", format(dateRange.start, "yyyy-MM-dd"))
         .lte("available_date", format(dateRange.end, "yyyy-MM-dd"));
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as ClientAvailabilityDetailRow[];
     },
   });
 
-  // All client availability (no date filter) for warning calculations — paginated to avoid 1000-row limit
-  const { data: allClientAvailability = [] } = useQuery({
-    queryKey: clientKeys.allAvailability,
+  // Warning counts only care about the planning cohort
+  // (intake_afgerond + wachtlijst). Scope the availability fetch to that
+  // cohort — typically 5-20× less data than fetching the whole table.
+  const planningCohortIds = useMemo(
+    () =>
+      allClients
+        .filter((c) => {
+          const s = c.intake_status ?? "nieuw";
+          return s === "intake_afgerond" || s === "wachtlijst";
+        })
+        .map((c) => c.id)
+        .sort(),
+    [allClients],
+  );
+  const planningCohortHash = useMemo(
+    () => `${planningCohortIds.length}:${planningCohortIds.join(",")}`,
+    [planningCohortIds],
+  );
+
+  const { data: allClientAvailability = [] } = useQuery<ClientAvailabilityRow[]>({
+    queryKey: clientKeys.planningAvailability(planningCohortHash),
+    enabled: planningCohortIds.length > 0,
     queryFn: async () => {
-      const results: any[] = [];
-      let from = 0;
+      const results: ClientAvailabilityRow[] = [];
       const pageSize = 1000;
-      while (true) {
-        const { data, error } = await supabase
-          .from("client_availability")
-          .select("client_id, available_date, start_time, end_time")
-          .range(from, from + pageSize - 1);
-        if (error) throw error;
-        if (data) results.push(...data);
-        if (!data || data.length < pageSize) break;
-        from += pageSize;
+      // .in() over a chunked id list, paginated for safety.
+      for (let i = 0; i < planningCohortIds.length; i += pageSize) {
+        const chunk = planningCohortIds.slice(i, i + pageSize);
+        let from = 0;
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const { data, error } = await supabase
+            .from("client_availability")
+            .select("client_id, available_date, start_time, end_time")
+            .in("client_id", chunk)
+            .range(from, from + pageSize - 1);
+          if (error) throw error;
+          if (data) results.push(...(data as ClientAvailabilityRow[]));
+          if (!data || data.length < pageSize) break;
+          from += pageSize;
+        }
       }
       return results;
     },
   });
 
   // Client area preferences for warning calculations
-  const { data: allPreferences = [] } = useQuery({
+  const { data: allPreferences = [] } = useQuery<AreaPreferenceRow[]>({
     queryKey: clientKeys.allAreaPreferences,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("client_area_preferences")
         .select("client_id, area_id, preference_order");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as AreaPreferenceRow[];
     },
   });
 
   // Override logs
-  const { data: overrideLogs = [], refetch: refetchOverrides } = useQuery({
+  const { data: overrideLogs = [], refetch: refetchOverrides } = useQuery<OverrideLogRow[]>({
     queryKey: clientKeys.overrideLogs,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -384,7 +410,7 @@ export default function PlanningPage() {
         .select("*")
         .eq("active", true);
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as OverrideLogRow[];
     },
   });
 
@@ -403,32 +429,63 @@ export default function PlanningPage() {
     },
   });
 
-  const { data: areas = [] } = useQuery({
+  const { data: areas = [] } = useQuery<AreaRef[]>({
     queryKey: areaKeys.all,
     queryFn: async () => {
       const { data, error } = await supabase.from("areas").select("id, name").order("name");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as AreaRef[];
     },
   });
 
   // === DERIVED DATA ===
+  // O(1) client lookup by id — replaces O(n) Array.find calls in dialogs.
+  const clientsById = useMemo(() => {
+    const m = new Map<string, PlanningClientRow>();
+    allClients.forEach((c) => m.set(c.id, c));
+    return m;
+  }, [allClients]);
+
+  // Per-window availability grouped by client_id — replaces .filter per row.
+  const clientAvailabilityByClient = useMemo(() => {
+    const m = new Map<string, ClientAvailabilityDetailRow[]>();
+    clientAvailability.forEach((a) => {
+      const list = m.get(a.client_id);
+      if (list) list.push(a);
+      else m.set(a.client_id, [a]);
+    });
+    return m;
+  }, [clientAvailability]);
+
+  // Memoized resolved area name per client (cuts duplicate calls per row).
+  const areaNameByClient = useMemo(() => {
+    const m = new Map<string, string>();
+    allClients.forEach((c) => m.set(c.id, getResolvedAreaName(c, areas)));
+    return m;
+  }, [allClients, areas]);
+
+  const overrideLogByClient = useMemo(() => {
+    const m = new Map<string, OverrideLogRow>();
+    overrideLogs.forEach((o) => m.set(o.client_id, o));
+    return m;
+  }, [overrideLogs]);
+
   const overriddenClientIds = useMemo(() => {
-    return new Set(overrideLogs.map((o: any) => o.client_id as string));
+    return new Set(overrideLogs.map((o) => o.client_id));
   }, [overrideLogs]);
 
   const availByClient = useMemo(() => buildAvailabilityByClient(allClientAvailability), [allClientAvailability]);
   const prefsByClient = useMemo(() => buildPrefsByClientMap(allPreferences), [allPreferences]);
 
   // Warning counts (consistent met matrix-logica in WaitlistOverview)
-  const warningCounts = useMemo(() => {
-    const planningClients = allClients.filter((c: any) => {
+  const warningCounts = useMemo<WarningCounts>(() => {
+    const planningClients = allClients.filter((c) => {
       const s = c.intake_status ?? "nieuw";
       return s === "intake_afgerond" || s === "wachtlijst";
     });
 
     const rawAvailByClient: Record<string, number> = {};
-    allClientAvailability.forEach((a: any) => {
+    allClientAvailability.forEach((a) => {
       rawAvailByClient[a.client_id] = (rawAvailByClient[a.client_id] ?? 0) + 1;
     });
 
@@ -444,7 +501,7 @@ export default function PlanningPage() {
     const noAreaIds: string[] = [];
     const overriddenIds: string[] = [];
 
-    planningClients.forEach((c: any) => {
+    planningClients.forEach((c) => {
       // Zelfde basis als matrix: alleen deelnemers met geldige leeftijdscategorie
       const ageCategory = getAgeCategoryPlanning(c.date_of_birth);
       if (!ageCategory) return;
