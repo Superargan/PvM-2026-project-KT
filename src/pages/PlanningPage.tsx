@@ -362,12 +362,21 @@ export default function PlanningPage() {
     [planningCohortIds],
   );
 
+  // Rolling planning window: current month .. +4 months. The monthKey in
+  // the query key forces an automatic refetch when the month rolls over.
+  const availWindowStart = useMemo(() => startOfMonth(new Date()), []);
+  const availWindowEnd = useMemo(() => endOfMonth(addMonths(new Date(), 4)), []);
+  const availMonthKey = useMemo(() => format(availWindowStart, "yyyy-MM"), [availWindowStart]);
+
   const { data: allClientAvailability = [] } = useQuery<ClientAvailabilityRow[]>({
-    queryKey: clientKeys.planningAvailability(planningCohortHash),
+    queryKey: clientKeys.planningAvailability(planningCohortHash, availMonthKey),
     enabled: planningCohortIds.length > 0,
+    staleTime: 1000 * 60 * 30,
     queryFn: async () => {
       const results: ClientAvailabilityRow[] = [];
       const pageSize = 1000;
+      const fromDate = format(availWindowStart, "yyyy-MM-dd");
+      const toDate = format(availWindowEnd, "yyyy-MM-dd");
       // .in() over a chunked id list, paginated for safety.
       for (let i = 0; i < planningCohortIds.length; i += pageSize) {
         const chunk = planningCohortIds.slice(i, i + pageSize);
@@ -378,6 +387,8 @@ export default function PlanningPage() {
             .from("client_availability")
             .select("client_id, available_date, start_time, end_time")
             .in("client_id", chunk)
+            .gte("available_date", fromDate)
+            .lte("available_date", toDate)
             .range(from, from + pageSize - 1);
           if (error) throw error;
           if (data) results.push(...(data as ClientAvailabilityRow[]));

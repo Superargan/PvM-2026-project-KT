@@ -18,7 +18,7 @@ import {
 import {
   CalendarDays, Clock, Wand2, AlertTriangle, Check, Pencil, RotateCcw, Users, Info, ShieldAlert,
 } from "lucide-react";
-import { format, addWeeks, getDay } from "date-fns";
+import { format, addWeeks, getDay, startOfMonth, endOfMonth, addMonths } from "date-fns";
 import { nl } from "date-fns/locale";
 import { isSpecialDay, type Holiday, type SchoolVacation } from "@/lib/holidays";
 import {
@@ -174,16 +174,23 @@ export default function ScheduleGenerator({ programId, programName, programStart
     },
   });
 
-  // Fetch client availability
+  // Fetch client availability — scoped to the rolling planning window
+  // (current month .. +4 months) so we never pull the whole history.
   const clientIds = enrolledClients.map((c: any) => c.id);
-  const { data: availability = [] } = useQuery({
-    queryKey: clientKeys.allAvailability,
+  const availWindowStart = useMemo(() => startOfMonth(new Date()), []);
+  const availWindowEnd = useMemo(() => endOfMonth(addMonths(new Date(), 4)), []);
+  const availMonthKey = useMemo(() => format(availWindowStart, "yyyy-MM"), [availWindowStart]);
+  const { data: availability = [] } = useQuery<any[]>({
+    queryKey: clientKeys.allAvailability(availMonthKey),
     enabled: clientIds.length > 0,
+    staleTime: 1000 * 60 * 30,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("client_availability")
         .select("*")
-        .in("client_id", clientIds);
+        .in("client_id", clientIds)
+        .gte("available_date", format(availWindowStart, "yyyy-MM-dd"))
+        .lte("available_date", format(availWindowEnd, "yyyy-MM-dd"));
       if (error) throw error;
       return data ?? [];
     },
