@@ -867,27 +867,31 @@ export default function PlanningPage() {
                         </p>
                       )}
 
-                      {/* Intakes — compact row */}
+                      {/* Intakes — card */}
                       {items?.intakes.map((intake) => (
                         <div
                           key={intake.id}
-                          className="flex items-center gap-2 rounded-md bg-warning-muted border border-warning-border px-2.5 py-1.5 cursor-pointer hover:bg-warning-muted/80 transition-colors"
+                          className="min-h-[80px] flex flex-col gap-1 rounded-xl p-3 bg-warning-muted border border-warning-border cursor-pointer hover:bg-warning-muted/80 transition-colors"
                           onClick={() => navigate(`/clienten/${intake.id}`)}
                         >
-                          <Clock className="h-3.5 w-3.5 text-warning-foreground shrink-0" />
-                          <span className="text-xs font-semibold text-warning-foreground truncate">
-                            Intake: {intake.first_name} {intake.last_name}
-                          </span>
-                          <span className="text-[10px] text-warning-foreground/70 truncate ml-auto">
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-3.5 w-3.5 text-warning-foreground shrink-0" />
+                            <span className="text-sm font-bold text-warning-foreground truncate">
+                              Intake: {intake.first_name} {intake.last_name}
+                            </span>
+                          </div>
+                          <span className="text-xs text-muted-foreground truncate">
                             {intake.schools?.name ?? ""} {(() => { const aName = getResolvedAreaName(intake); return aName !== "—" ? `· ${aName}` : ""; })()}
                           </span>
-                          {(intakeAssignmentMap[intake.id] ?? []).map((name: string, i: number) => (
-                            <Badge key={i} variant="secondary" className="text-[9px] h-4 shrink-0">{name}</Badge>
-                          ))}
+                          <div className="flex flex-wrap gap-1 mt-auto">
+                            {(intakeAssignmentMap[intake.id] ?? []).map((name: string, i: number) => (
+                              <Badge key={i} variant="secondary" className="text-[9px] h-4 shrink-0">{name}</Badge>
+                            ))}
+                          </div>
                         </div>
                       ))}
 
-                      {/* Sessions — compact row */}
+                      {/* Sessions — card */}
                       {items?.sessions.map((session) => {
                         const typedSession = session as SessionWithProgram;
                         const prog = typedSession.programs;
@@ -895,17 +899,19 @@ export default function PlanningPage() {
                         return (
                           <div
                             key={typedSession.id}
-                            className="flex items-center gap-2 rounded-md bg-info-muted border border-info-border px-2.5 py-1.5 cursor-pointer hover:bg-info-muted/80 transition-colors"
+                            className="min-h-[80px] flex flex-col gap-1 rounded-xl p-3 bg-info-muted border border-info-border cursor-pointer hover:bg-info-muted/80 transition-colors"
                             onClick={() => navigate(`/programmas/${typedSession.program_id}`)}
                           >
-                            <CalendarDays className="h-3.5 w-3.5 text-info-foreground shrink-0" />
-                            <span className="text-xs font-semibold text-info-foreground truncate">
-                              {prog?.name ?? "Training"} — S{typedSession.session_number}
-                            </span>
-                            <span className="text-[10px] text-info-foreground/70 truncate">
+                            <div className="flex items-center gap-2">
+                              <CalendarDays className="h-3.5 w-3.5 text-info-foreground shrink-0" />
+                              <span className="text-sm font-bold text-info-foreground truncate">
+                                {prog?.name ?? "Training"} — S{typedSession.session_number}
+                              </span>
+                            </div>
+                            <span className="text-xs text-muted-foreground truncate">
                               {prog?.age_category ?? ""} {prog?.areas?.name ? `· ${prog.areas.name}` : ""}
                             </span>
-                            <div className="flex gap-0.5 ml-auto shrink-0">
+                            <div className="flex flex-wrap gap-1 mt-auto">
                               {vaste.slice(0, 2).map((ps) => (
                                 <Badge key={ps.staff_id} className={`text-[9px] h-4 ${trainerTypeColors[ps.staff?.trainer_type ?? ""] ?? "bg-muted text-muted-foreground"}`}>
                                   {ps.staff?.name?.split(" ")[0] ?? "?"}
