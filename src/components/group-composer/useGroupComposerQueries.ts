@@ -5,6 +5,7 @@
 
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { format, startOfMonth, endOfMonth, addMonths } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { clientKeys, areaKeys, programKeys, staffKeys } from "@/lib/queryKeys";
 import { buildPrefsByClientMap, buildAvailabilityByClient } from "@/lib/clientUtils";
@@ -48,22 +49,46 @@ export function useGroupComposerQueries() {
     },
   });
 
-  // Fetch all client availability — paginated to avoid 1000-row limit
+  // Scope availability to the waitlist/intake cohort AND a rolling
+  // 5-month window (current month .. +4 months). This avoids fetching
+  // the entire historical client_availability table on every load.
+  const cohortIds = useMemo(
+    () => waitlistClients.map((c) => c.id).sort(),
+    [waitlistClients],
+  );
+  const availWindowStart = useMemo(() => startOfMonth(new Date()), []);
+  const availWindowEnd = useMemo(() => endOfMonth(addMonths(new Date(), 4)), []);
+  const availMonthKey = useMemo(() => format(availWindowStart, "yyyy-MM"), [availWindowStart]);
+  const cohortHash = useMemo(
+    () => `${cohortIds.length}:${cohortIds.join(",")}`,
+    [cohortIds],
+  );
   const { data: allAvailability = [] } = useQuery<ClientAvailabilityRow[]>({
-    queryKey: clientKeys.allAvailability,
+    queryKey: [...clientKeys.allAvailability(availMonthKey), cohortHash],
+    enabled: cohortIds.length > 0,
+    staleTime: 1000 * 60 * 30,
     queryFn: async () => {
       const results: ClientAvailabilityRow[] = [];
-      let from = 0;
       const pageSize = 1000;
-      while (true) {
-        const { data, error } = await supabase
-          .from("client_availability")
-          .select("client_id, available_date, start_time, end_time")
-          .range(from, from + pageSize - 1);
-        if (error) throw error;
-        if (data) results.push(...(data as ClientAvailabilityRow[]));
-        if (!data || data.length < pageSize) break;
-        from += pageSize;
+      const fromDate = format(availWindowStart, "yyyy-MM-dd");
+      const toDate = format(availWindowEnd, "yyyy-MM-dd");
+      for (let i = 0; i < cohortIds.length; i += pageSize) {
+        const chunk = cohortIds.slice(i, i + pageSize);
+        let from = 0;
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const { data, error } = await supabase
+            .from("client_availability")
+            .select("client_id, available_date, start_time, end_time")
+            .in("client_id", chunk)
+            .gte("available_date", fromDate)
+            .lte("available_date", toDate)
+            .range(from, from + pageSize - 1);
+          if (error) throw error;
+          if (data) results.push(...(data as ClientAvailabilityRow[]));
+          if (!data || data.length < pageSize) break;
+          from += pageSize;
+        }
       }
       return results;
     },
