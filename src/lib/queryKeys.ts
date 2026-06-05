@@ -27,15 +27,20 @@ export const clientKeys = {
   allAreaPreferences: ["clients", "all-area-preferences"] as const,
   /** Override logs — single source of truth, shared across components */
   overrideLogs: ["clients", "override-logs"] as const,
-  /** All client availability (unpaginated) — single source of truth */
-  allAvailability: ["clients", "all-availability"] as const,
+  /**
+    * All client availability, scoped to a rolling month window.
+    * The monthKey (e.g. "2026-06") forces an automatic refetch when the
+    * calendar month rolls over so consumers never serve stale data.
+    */
+  allAvailability: (monthKey: string) =>
+    ["clients", "all-availability", monthKey] as const,
   /**
    * Planning-scoped availability for the warning counts. Keyed on a stable
    * hash of the planning client ids so cache invalidates only when the
    * planning cohort changes, not every render.
    */
-  planningAvailability: (clientIdsHash: string) =>
-    ["clients", "planning-availability", clientIdsHash] as const,
+  planningAvailability: (clientIdsHash: string, monthKey: string) =>
+    ["clients", "planning-availability", clientIdsHash, monthKey] as const,
   /** Programs linked to a specific client */
   programs: (clientId: string) => ["clients", "programs", clientId] as const,
   /** Generated docs for a specific client */
