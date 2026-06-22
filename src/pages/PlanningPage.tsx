@@ -24,6 +24,7 @@ import {
   getClientDataCompleteness,
   hasAvailabilityCoverage,
   resolveAreaId,
+  getResolvedAreaName,
   type ClientDataCompleteness,
 } from "@/lib/DomainResolver";
 import { clientKeys, areaKeys, planningKeys, staffKeys, authKeys } from "@/lib/queryKeys";
