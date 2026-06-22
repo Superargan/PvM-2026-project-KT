@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, RefreshCw, Trash2, FolderOpen, AlertTriangle, CheckCircle2, XCircle, HelpCircle, type LucideIcon } from "lucide-react";
-import { formatDistanceToNow, differenceInHours, parseISO } from "date-fns";
+import { formatDistanceToNow, differenceInHours, parseISO, format } from "date-fns";
 import { nl } from "date-fns/locale";
 
 interface ScenarioOverviewProps {
@@ -19,6 +19,7 @@ interface ScenarioOverviewProps {
   onRequestSaveFirst: () => Promise<boolean>;
   onScenarioDeleted?: (scenarioId: string) => void;
   clientsById?: Map<string, { first_name: string; last_name: string }>;
+  activeScenarioId?: string | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -66,7 +67,7 @@ const conversionStatusLabels: Record<string, string> = {
   mislukt: "✗ Mislukt",
 };
 
-export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, onRequestSaveFirst, onScenarioDeleted, clientsById }: ScenarioOverviewProps) {
+export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, onRequestSaveFirst, onScenarioDeleted, clientsById, activeScenarioId }: ScenarioOverviewProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -195,14 +196,27 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
               const isStale = scenario.last_validated_at &&
                 differenceInHours(new Date(), parseISO(scenario.last_validated_at)) > 24;
               const ValidationIcon = validationIcons[scenario.validation_status] ?? HelpCircle;
+              const isActive = activeScenarioId === scenario.id;
+              const convertedCount = slots.filter((s) => s.conversion_status === "gelukt").length;
+              const failedCount = slots.filter((s) => s.conversion_status === "mislukt").length;
 
               return (
                 <React.Fragment key={scenario.id}>
-                <tr className="hover:bg-muted/30 transition-colors">
+                <tr className={`hover:bg-muted/30 transition-colors ${isActive ? "ring-2 ring-primary ring-inset bg-primary/5" : ""}`}>
                   <td className="px-3 py-2">
-                    <p className="text-sm font-semibold text-foreground">{scenario.name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-semibold text-foreground">{scenario.name}</p>
+                      {isActive && (
+                        <Badge className="text-[9px] bg-primary text-primary-foreground border-transparent">Actief</Badge>
+                      )}
+                    </div>
                     {scenario.description && (
                       <p className="text-xs text-muted-foreground truncate max-w-xs">{scenario.description}</p>
+                    )}
+                    {scenario.created_at !== scenario.updated_at && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        Aangemaakt {formatDistanceToNow(parseISO(scenario.created_at), { locale: nl, addSuffix: true })}
+                      </p>
                     )}
                   </td>
                   <td className="px-3 py-2">
@@ -248,16 +262,18 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                     </TooltipProvider>
                   </td>
                   <td className="px-3 py-2">
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm text-foreground">{slots.length}</span>
-                      {slots.some((s) => s.conversion_status === "gelukt") && (
-                        <Badge variant="outline" className="text-[9px] border-success-border text-success-foreground">
-                          {slots.filter((s) => s.conversion_status === "gelukt").length}✓
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <span className="text-sm text-foreground">{slots.length} slots</span>
+                      {convertedCount > 0 && (
+                        <Badge variant="outline" className="text-[9px] gap-0.5 border-success-border text-success-foreground">
+                          <CheckCircle2 className="h-2.5 w-2.5" />
+                          {convertedCount} omgezet
                         </Badge>
                       )}
-                      {slots.some((s) => s.conversion_status === "mislukt") && (
-                        <Badge variant="outline" className="text-[9px] border-destructive/30 text-destructive">
-                          {slots.filter((s) => s.conversion_status === "mislukt").length}✗
+                      {failedCount > 0 && (
+                        <Badge variant="outline" className="text-[9px] gap-0.5 border-destructive/30 text-destructive">
+                          <XCircle className="h-2.5 w-2.5" />
+                          {failedCount} mislukt
                         </Badge>
                       )}
                     </div>
@@ -266,9 +282,18 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                     <span className="text-sm text-foreground">{memberCounts[scenario.id] ?? 0}</span>
                   </td>
                   <td className="px-3 py-2">
-                    <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(parseISO(scenario.updated_at), { locale: nl, addSuffix: true })}
-                    </span>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="text-xs text-muted-foreground cursor-help">
+                            {formatDistanceToNow(parseISO(scenario.updated_at), { locale: nl, addSuffix: true })}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          <p className="text-xs">{format(parseISO(scenario.updated_at), "d MMM yyyy HH:mm", { locale: nl })}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </td>
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-1 justify-end">
