@@ -18,6 +18,7 @@ interface ScenarioOverviewProps {
   hasActiveSimulation: boolean;
   onRequestSaveFirst: () => Promise<boolean>;
   onScenarioDeleted?: (scenarioId: string) => void;
+  clientsById?: Map<string, { first_name: string; last_name: string }>;
 }
 
 const statusColors: Record<string, string> = {
@@ -65,7 +66,7 @@ const conversionStatusLabels: Record<string, string> = {
   mislukt: "✗ Mislukt",
 };
 
-export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, onRequestSaveFirst, onScenarioDeleted }: ScenarioOverviewProps) {
+export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, onRequestSaveFirst, onScenarioDeleted, clientsById }: ScenarioOverviewProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -297,11 +298,11 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                   const details = scenario.validation_details as unknown as ValidationDetails;
                   const slotResults = details?.slotResults ?? [];
                   if (slotResults.length === 0) return (
-                    <tr><td colSpan={7} className="px-4 py-3 bg-muted/20 text-xs text-muted-foreground">Geen validatiedetails beschikbaar.</td></tr>
+                    <tr><td colSpan={8} className="px-4 py-3 bg-muted/20 text-xs text-muted-foreground">Geen validatiedetails beschikbaar.</td></tr>
                   );
                   return (
                     <tr>
-                      <td colSpan={7} className="px-4 py-3 bg-muted/20">
+                      <td colSpan={8} className="px-4 py-3 bg-muted/20">
                         <div className="space-y-2">
                           {slotResults.map((sr, i: number) => (
                             <div key={sr.slotId ?? i} className={`rounded-lg border p-2 text-xs ${
@@ -322,15 +323,19 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
                                   ))}
                                 </ul>
                               )}
-                              {((sr as Record<string, unknown>).memberResults as Array<{clientId: string; status: string; issues: string[]}> ?? []).filter((mr) => mr.issues?.length > 0).map((mr) => (
+                              {((sr as Record<string, unknown>).memberResults as Array<{clientId: string; status: string; issues: string[]}> ?? []).filter((mr) => mr.issues?.length > 0).map((mr) => {
+                                const c = clientsById?.get(mr.clientId);
+                                const label = c ? `${c.first_name} ${c.last_name}` : `${mr.clientId.slice(0, 8)}…`;
+                                return (
                                 <div key={mr.clientId} className="flex items-start gap-1.5 ml-3 mt-0.5">
                                   <span className="text-muted-foreground">•</span>
-                                  <span className="text-foreground font-medium">{mr.clientId.slice(0, 8)}…</span>
+                                  <span className="text-foreground font-medium">{label}</span>
                                   <span className={mr.status === "ongeldig" ? "text-destructive" : "text-warning-foreground"}>
                                     {mr.issues.join("; ")}
                                   </span>
                                 </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           ))}
                         </div>
