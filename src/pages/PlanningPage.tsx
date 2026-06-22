@@ -1008,6 +1008,7 @@ export default function PlanningPage() {
           <div className="min-h-[80px]">
             <ScenarioOverview
             clientsById={clientsById}
+            activeScenarioId={activeScenarioId}
             onLoadScenario={(scenarioId) => {
               setActiveScenarioId(scenarioId);
               setShowGroupComposer(true);
