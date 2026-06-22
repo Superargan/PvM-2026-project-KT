@@ -24,7 +24,6 @@ import {
   getClientDataCompleteness,
   hasAvailabilityCoverage,
   resolveAreaId,
-  getResolvedAreaName,
   type ClientDataCompleteness,
 } from "@/lib/DomainResolver";
 import { clientKeys, areaKeys, planningKeys, staffKeys, authKeys } from "@/lib/queryKeys";
@@ -892,7 +891,7 @@ export default function PlanningPage() {
                             </span>
                           </div>
                           <span className="text-xs text-muted-foreground truncate">
-                            {intake.schools?.name ?? ""} {(() => { const aName = getResolvedAreaName(intake); return aName !== "—" ? `· ${aName}` : ""; })()}
+                            {intake.schools?.name ?? ""} {(() => { const aName = areaNameByClient.get(intake.id) ?? "—"; return aName !== "—" ? `· ${aName}` : ""; })()}
                           </span>
                           <div className="flex flex-wrap gap-1 mt-auto">
                             {(intakeAssignmentMap[intake.id] ?? []).map((name: string, i: number) => (
@@ -1205,7 +1204,7 @@ export default function PlanningPage() {
                               </div>
                             </td>
                             <td className="px-3 py-2">
-                              <span className="text-sm text-card-foreground">{getResolvedAreaName(client)}</span>
+                              <span className="text-sm text-card-foreground">{areaNameByClient.get(client.id) ?? "—"}</span>
                             </td>
                             <td className="px-3 py-2">
                               <span className="text-xs text-muted-foreground">{client.intake_status ?? "—"}</span>
@@ -1270,7 +1269,7 @@ export default function PlanningPage() {
                               <p className="text-sm font-semibold text-foreground">{client.first_name} {client.last_name}</p>
                             </td>
                             <td className="px-3 py-2">
-                              <span className="text-sm text-card-foreground">{getResolvedAreaName(client)}</span>
+                              <span className="text-sm text-card-foreground">{areaNameByClient.get(client.id) ?? "—"}</span>
                             </td>
                             <td className="px-3 py-2">
                               <span className="text-xs text-muted-foreground">actief</span>
