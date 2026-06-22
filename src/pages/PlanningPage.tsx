@@ -1007,6 +1007,7 @@ export default function PlanningPage() {
               min-h reserveert ruimte zodat content niet naar beneden springt na fetch (CLS). */}
           <div className="min-h-[80px]">
             <ScenarioOverview
+            clientsById={clientsById}
             onLoadScenario={(scenarioId) => {
               setActiveScenarioId(scenarioId);
               setShowGroupComposer(true);
