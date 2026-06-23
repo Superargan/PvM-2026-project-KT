@@ -37,6 +37,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -181,6 +182,7 @@ export default function PlanningPage() {
   const [overrideReason, setOverrideReason] = useState("");
   const [warningFilter, setWarningFilter] = useState<WarningFilter | null>(null);
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
+  const [activeScenarioName, setActiveScenarioName] = useState<string>("");
   const groupComposerRef = useRef<GroupComposerHandle>(null);
   const [hasUnsavedWork, setHasUnsavedWork] = useState(false);
   const [pendingTabSwitch, setPendingTabSwitch] = useState<string | null>(null);
