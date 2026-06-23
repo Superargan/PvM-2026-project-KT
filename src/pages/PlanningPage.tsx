@@ -727,7 +727,39 @@ export default function PlanningPage() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-extrabold text-foreground">Planning</h1>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="font-display text-2xl font-extrabold text-foreground">Planning</h1>
+            {showGroupComposer && (
+              <Badge className="bg-primary/10 text-primary border-primary/20 gap-1.5 pl-2 pr-1 py-1">
+                <span className="h-2 w-2 rounded-full bg-primary inline-block" />
+                <span className="text-xs font-medium">Simulatie actief</span>
+                <span className="text-xs opacity-80">·</span>
+                <span className="text-xs">
+                  {activeScenarioId && activeScenarioName
+                    ? `Proforma: ${activeScenarioName}`
+                    : "Nieuwe simulatie"}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 ml-1 hover:bg-primary/20"
+                  onClick={() => {
+                    if (hasUnsavedWork) {
+                      setDirtyDialogAction("back");
+                      setDirtyDialogOpen(true);
+                      return;
+                    }
+                    setShowGroupComposer(false);
+                    setActiveScenarioId(null);
+                    setActiveScenarioName("");
+                  }}
+                  aria-label="Simulatie sluiten"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </Badge>
+            )}
+          </div>
           <p className="text-sm text-muted-foreground">Agenda, wachtlijst en beschikbaarheid</p>
         </div>
         <div className="flex gap-2">
