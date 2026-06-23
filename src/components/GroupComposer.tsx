@@ -1128,40 +1128,19 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
       </AlertDialog>
 
       {/* Save proforma dialog */}
-      <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{activeScenarioId ? "Proforma planning bijwerken" : "Opslaan als proforma planning"}</DialogTitle>
-            <DialogDescription>Geef de proforma planning een naam en optioneel een beschrijving.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <Label>Naam *</Label>
-              <Input value={scenarioName} onChange={(e) => setScenarioName(e.target.value)} placeholder="bijv. Kralingen 4-7 Q2" />
-            </div>
-            <div>
-              <Label>Beschrijving</Label>
-              <Textarea value={scenarioDescription} onChange={(e) => setScenarioDescription(e.target.value)} placeholder="Optionele toelichting..." rows={2} />
-            </div>
-            <div>
-              <Label>Status</Label>
-              <Select value={scenarioStatus} onValueChange={setScenarioStatus}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent className="bg-popover">
-                  <SelectItem value="concept">Proforma concept</SelectItem>
-                  <SelectItem value="vastgezet">Proforma vastgezet</SelectItem>
-                  <SelectItem value="in_uitwerking">Proforma in uitwerking</SelectItem>
-                  <SelectItem value="gecontroleerd">Proforma gecontroleerd</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSaveDialogOpen(false)}>Annuleren</Button>
-            <Button onClick={handleSaveScenario} disabled={saving}>{saving ? "Opslaan..." : "Opslaan"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SaveScenarioDialog
+        open={saveDialogOpen}
+        onOpenChange={setSaveDialogOpen}
+        activeScenarioId={activeScenarioId}
+        scenarioName={scenarioName}
+        onScenarioNameChange={setScenarioName}
+        scenarioDescription={scenarioDescription}
+        onScenarioDescriptionChange={setScenarioDescription}
+        scenarioStatus={scenarioStatus}
+        onScenarioStatusChange={setScenarioStatus}
+        saving={saving}
+        onSave={handleSaveScenario}
+      />
 
       {/* Convert result dialog */}
       <Dialog open={convertResultDialog !== null} onOpenChange={(open) => { if (!open) setConvertResultDialog(null); }}>
