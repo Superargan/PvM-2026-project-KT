@@ -1,33 +1,22 @@
 import { useState, useMemo, useCallback, useEffect, useImperativeHandle, forwardRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, UserCog, Check, AlertTriangle, CalendarClock, Search, Calendar, Maximize2, FlaskConical, RotateCcw, CheckCircle2, Save, Upload, ShieldAlert, Download, Link2, Unlink } from "lucide-react";
+import { Users, AlertTriangle, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import {
-  calculateAge,
   getAgeCategoryPlanning,
   getMatchType,
-  matchSortOrder,
-  matchColors,
-  statusBadgeStyles,
   getTopAvailabilityOverlaps,
-  getAlternativeWindowsForDay,
   resolveAreaId,
-  type MatchType,
 } from "@/lib/DomainResolver";
 import { clientKeys, scenarioKeys } from "@/lib/queryKeys";
 import { downloadExport } from "@/lib/csvExport";
@@ -51,18 +40,20 @@ import { useGroupComposerQueries } from "./group-composer/useGroupComposerQuerie
 import { useScenarioActions } from "./group-composer/useScenarioActions";
 import {
   getGroupKey,
-  getStatusInfo,
   buildGroups,
   getUnassignedClients,
   getReserveCandidates,
   filterTrainersByType,
-  trainerLabel,
   buildExportRows,
   serializeSnapshot,
   getBlockReason,
   buildAssignedGroupLabel,
   computeSlotFit,
 } from "./group-composer/utils";
+import { MemberRow } from "./group-composer/MemberRow";
+import { SlotCard } from "./group-composer/SlotCard";
+import { ComposerHeader } from "./group-composer/ComposerHeader";
+import { SaveScenarioDialog } from "./group-composer/SaveScenarioDialog";
 
 // Re-export handle type for consumers
 export type { GroupComposerHandle } from "./group-composer/types";
@@ -499,9 +490,7 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
 
   // ─── Client row renderer ───────────────────────────────────────
   const renderClientRow = (cm: ClientWithMatch, group: GroupedClients, selected: Set<string>) => {
-    const { client, matchType } = cm;
-    const age = calculateAge(client.date_of_birth);
-    const statusStyle = statusBadgeStyles[client.intake_status ?? ""] ?? statusBadgeStyles.wachtlijst;
+    const { client } = cm;
     const currentKey = getGroupKey(group);
     const assignedTo = clientGroupAssignment.get(client.id);
     const isAssignedElsewhere = !!assignedTo && assignedTo !== currentKey;
@@ -515,38 +504,16 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
     }
 
     return (
-      <TooltipProvider key={client.id}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <label
-              className={`flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors ${
-                isDisabled ? "opacity-50 cursor-not-allowed" : "hover:bg-muted/50 cursor-pointer"
-              }`}
-            >
-              <Checkbox checked={isCheckedHere} onCheckedChange={() => toggleClient(group, client.id)} disabled={isDisabled} />
-              <span className="text-sm text-foreground truncate">{client.first_name} {client.last_name}</span>
-              {isAssignedElsewhere && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 border-warning-border text-warning-foreground gap-0.5">
-                  <AlertTriangle className="h-2.5 w-2.5" /> Al in {assignedGroupLabel}
-                </Badge>
-              )}
-              {isInProgram && !isAssignedElsewhere && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 shrink-0 border-destructive/40 text-destructive gap-0.5">
-                  <ShieldAlert className="h-2.5 w-2.5" /> Al ingepland
-                </Badge>
-              )}
-              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ml-auto shrink-0 ${statusStyle.className}`}>{statusStyle.label}</Badge>
-              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 shrink-0 ${matchColors[matchType]}`}>{matchType}</Badge>
-              {age !== null && <span className="text-xs text-muted-foreground shrink-0">{age}j</span>}
-            </label>
-          </TooltipTrigger>
-          {isAssignedElsewhere && (
-            <TooltipContent>
-              <p className="text-xs">Al geselecteerd in groep {assignedGroupLabel}. Verwijder eerst de selectie daar.</p>
-            </TooltipContent>
-          )}
-        </Tooltip>
-      </TooltipProvider>
+      <MemberRow
+        key={client.id}
+        cm={cm}
+        isCheckedHere={isCheckedHere}
+        isDisabled={isDisabled}
+        isAssignedElsewhere={isAssignedElsewhere}
+        assignedGroupLabel={assignedGroupLabel}
+        isInProgram={isInProgram}
+        onToggle={() => toggleClient(group, client.id)}
+      />
     );
   };
 
@@ -626,70 +593,23 @@ const GroupComposer = forwardRef<GroupComposerHandle, GroupComposerProps>(functi
         }, 0);
 
         return (
-          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FlaskConical className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium text-foreground">
-                  {loadedScenarioName ? `Proforma planning: ${loadedScenarioName}` : "Simulatie (niet opgeslagen)"}
-                  {" — "}{simulatedGroups.size} voorstel(len), {simulatedClientIds.size} deelnemers
-                </span>
-                {loadedProformaNumber && (
-                  <Badge variant="outline" className="text-[10px] border-primary/40 text-primary font-mono">{loadedProformaNumber}</Badge>
-                )}
-                {isDirty && (
-                  <Badge variant="outline" className="text-[10px] border-warning-border text-warning-foreground gap-0.5">
-                    <AlertTriangle className="h-2.5 w-2.5" /> Wijzigingen niet opgeslagen
-                  </Badge>
-                )}
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Button variant="outline" size="sm" onClick={() => setSaveDialogOpen(true)} className="gap-1.5">
-                  <Save className="h-3 w-3" /> Opslaan als proforma
-                </Button>
-                {activeScenarioId && (
-                  <>
-                    <Button variant="outline" size="sm" onClick={handleValidate} className="gap-1.5">
-                      <CheckCircle2 className="h-3 w-3" /> Hervalideren
-                    </Button>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span>
-                            <Button variant="default" size="sm" onClick={handleConvert} disabled={isDirty || converting} className="gap-1.5">
-                              <Upload className="h-3 w-3" /> {converting ? "Omzetten..." : "Omzetten naar definitieve planning"}
-                            </Button>
-                          </span>
-                        </TooltipTrigger>
-                        {isDirty && <TooltipContent><p className="text-xs">Sla eerst op voordat je kunt omzetten</p></TooltipContent>}
-                      </Tooltip>
-                    </TooltipProvider>
-                  </>
-                )}
-                <Button variant="outline" size="sm" onClick={resetSimulation} className="gap-1.5">
-                  <RotateCcw className="h-3 w-3" /> Reset
-                </Button>
-              </div>
-            </div>
-            {impactedCount > 0 && (
-              <p className="text-xs text-muted-foreground pl-6">
-                ↳ {impactedCount} deelnemer(s) weggevallen uit {otherGroupsInSameArea.length} andere groep(en) in {affectedAreas.size === 1 ? "hetzelfde gebied" : `${affectedAreas.size} gebieden`}
-              </p>
-            )}
-            <div className="flex flex-wrap gap-1.5 pl-6">
-              {Array.from(simulatedGroups.entries()).map(([simKey, val]) => {
-                const parts = simKey.split("__");
-                const areaName = areaMap[parts[0]] ?? "Onbekend";
-                return (
-                  <Badge key={simKey} variant="outline" className="text-xs border-primary/30 text-primary gap-1">
-                    <CheckCircle2 className="h-3 w-3" />
-                    {areaName} · {parts[1]} — Voorstel {val.proposalIdx + 1}
-                    {val.suggestion && <span className="text-muted-foreground">({val.suggestion.dayName} {val.suggestion.startTime?.slice(0,5)})</span>}
-                  </Badge>
-                );
-              })}
-            </div>
-          </div>
+          <ComposerHeader
+            loadedScenarioName={loadedScenarioName}
+            loadedProformaNumber={loadedProformaNumber}
+            simulatedGroups={simulatedGroups}
+            simulatedClientIdsCount={simulatedClientIds.size}
+            isDirty={isDirty}
+            activeScenarioId={activeScenarioId}
+            converting={converting}
+            impactedCount={impactedCount}
+            otherGroupsCount={otherGroupsInSameArea.length}
+            affectedAreasCount={affectedAreas.size}
+            areaMap={areaMap}
+            onOpenSaveDialog={() => setSaveDialogOpen(true)}
+            onValidate={handleValidate}
+            onConvert={handleConvert}
+            onReset={resetSimulation}
+          />
         );
       })()}
 
