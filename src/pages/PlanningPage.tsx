@@ -1491,6 +1491,7 @@ export default function PlanningPage() {
                 } else {
                   setShowGroupComposer(false);
                   setActiveScenarioId(null);
+                  setActiveScenarioName("");
                 }
               }
             }} className="w-full">
@@ -1504,6 +1505,7 @@ export default function PlanningPage() {
               }
               setShowGroupComposer(false);
               setActiveScenarioId(null);
+              setActiveScenarioName("");
             }} className="w-full">
               Verwerpen
             </Button>
