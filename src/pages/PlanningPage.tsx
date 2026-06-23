@@ -37,6 +37,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -181,6 +182,7 @@ export default function PlanningPage() {
   const [overrideReason, setOverrideReason] = useState("");
   const [warningFilter, setWarningFilter] = useState<WarningFilter | null>(null);
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
+  const [activeScenarioName, setActiveScenarioName] = useState<string>("");
   const groupComposerRef = useRef<GroupComposerHandle>(null);
   const [hasUnsavedWork, setHasUnsavedWork] = useState(false);
   const [pendingTabSwitch, setPendingTabSwitch] = useState<string | null>(null);
@@ -725,7 +727,39 @@ export default function PlanningPage() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-extrabold text-foreground">Planning</h1>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="font-display text-2xl font-extrabold text-foreground">Planning</h1>
+            {showGroupComposer && (
+              <Badge className="bg-primary/10 text-primary border-primary/20 gap-1.5 pl-2 pr-1 py-1">
+                <span className="h-2 w-2 rounded-full bg-primary inline-block" />
+                <span className="text-xs font-medium">Simulatie actief</span>
+                <span className="text-xs opacity-80">·</span>
+                <span className="text-xs">
+                  {activeScenarioId && activeScenarioName
+                    ? `Proforma: ${activeScenarioName}`
+                    : "Nieuwe simulatie"}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 ml-1 hover:bg-primary/20"
+                  onClick={() => {
+                    if (hasUnsavedWork) {
+                      setDirtyDialogAction("back");
+                      setDirtyDialogOpen(true);
+                      return;
+                    }
+                    setShowGroupComposer(false);
+                    setActiveScenarioId(null);
+                    setActiveScenarioName("");
+                  }}
+                  aria-label="Simulatie sluiten"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </Badge>
+            )}
+          </div>
           <p className="text-sm text-muted-foreground">Agenda, wachtlijst en beschikbaarheid</p>
         </div>
         <div className="flex gap-2">
@@ -1005,17 +1039,20 @@ export default function PlanningPage() {
         <TabsContent value="groepen" className="space-y-6">
           {/* ScenarioOverview always renders — werkstate-bescherming (T07-T10).
               min-h reserveert ruimte zodat content niet naar beneden springt na fetch (CLS). */}
-          <div className="min-h-[80px]">
+          <div className="space-y-2 min-h-[80px]">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Proforma planningen</h2>
             <ScenarioOverview
             clientsById={clientsById}
             activeScenarioId={activeScenarioId}
-            onLoadScenario={(scenarioId) => {
+            onLoadScenario={(scenarioId, scenarioName) => {
               setActiveScenarioId(scenarioId);
+              setActiveScenarioName(scenarioName);
               setShowGroupComposer(true);
             }}
             onScenarioDeleted={(deletedId) => {
               if (deletedId === activeScenarioId) {
                 setActiveScenarioId(null);
+                setActiveScenarioName("");
                 setShowGroupComposer(false);
               }
             }}
@@ -1028,7 +1065,10 @@ export default function PlanningPage() {
 
           {!showGroupComposer ? (
             <>
-              <WaitlistOverview
+              <Separator />
+              <div className="space-y-2">
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Wachtlijst</h2>
+                <WaitlistOverview
                 filterArea={filterArea}
                 onSelectGroup={(areaId, age) => {
                   setFilterArea(areaId);
@@ -1039,7 +1079,8 @@ export default function PlanningPage() {
                   setFilterArea(areaId);
                   setActiveTab("beschikbaarheid");
                 }}
-              />
+                />
+              </div>
 
               {filterArea !== "alle" && filterAge !== "alle" && (
                 <AvailabilitySummaryPanel
@@ -1049,31 +1090,42 @@ export default function PlanningPage() {
                 />
               )}
 
-              <div className="flex justify-center">
-                <Button onClick={() => { setActiveScenarioId(null); setShowGroupComposer(true); }} size="lg">
-                  <Users className="h-4 w-4 mr-2" />
-                  Groepen samenstellen
+              <div className="rounded-xl border-2 border-dashed border-border bg-card p-6 text-center space-y-3">
+                <Users className="h-8 w-8 mx-auto text-muted-foreground/50" />
+                <p className="text-sm font-medium text-foreground">Nieuwe groepssimulatie starten</p>
+                <p className="text-xs text-muted-foreground">Stel groepen samen op basis van de wachtlijst en beschikbaarheid</p>
+                <Button onClick={() => { setActiveScenarioId(null); setActiveScenarioName(""); setShowGroupComposer(true); }} size="sm">
+                  <Users className="h-4 w-4 mr-2" /> Groepen samenstellen
                 </Button>
               </div>
             </>
           ) : (
             <>
-              <Button variant="ghost" size="sm" onClick={() => {
-                if (hasUnsavedWork) {
-                  setDirtyDialogAction("back");
-                  setDirtyDialogOpen(true);
-                  return;
-                }
-                setShowGroupComposer(false);
-                setActiveScenarioId(null);
-              }}>
-                ← Terug naar overzicht
-              </Button>
+              <div className="flex items-center gap-3 flex-wrap">
+                <Button variant="ghost" size="sm" onClick={() => {
+                  if (hasUnsavedWork) {
+                    setDirtyDialogAction("back");
+                    setDirtyDialogOpen(true);
+                    return;
+                  }
+                  setShowGroupComposer(false);
+                  setActiveScenarioId(null);
+                  setActiveScenarioName("");
+                }}>
+                  ← Terug naar overzicht
+                </Button>
+                <span className="text-muted-foreground/50">|</span>
+                <Badge variant="outline">
+                  {activeScenarioId && activeScenarioName
+                    ? `Proforma: ${activeScenarioName}`
+                    : "Nieuwe simulatie"}
+                </Badge>
+              </div>
               <GroupComposer
                 ref={groupComposerRef}
                 activeScenarioId={activeScenarioId}
                 onSaveScenario={(id) => setActiveScenarioId(id)}
-                onClearScenario={() => setActiveScenarioId(null)}
+                onClearScenario={() => { setActiveScenarioId(null); setActiveScenarioName(""); }}
                 filterArea={filterArea}
                 onFilterAreaChange={setFilterArea}
                 onDirtyChange={setHasUnsavedWork}
@@ -1439,6 +1491,7 @@ export default function PlanningPage() {
                 } else {
                   setShowGroupComposer(false);
                   setActiveScenarioId(null);
+                  setActiveScenarioName("");
                 }
               }
             }} className="w-full">
@@ -1452,6 +1505,7 @@ export default function PlanningPage() {
               }
               setShowGroupComposer(false);
               setActiveScenarioId(null);
+              setActiveScenarioName("");
             }} className="w-full">
               Verwerpen
             </Button>

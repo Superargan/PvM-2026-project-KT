@@ -14,7 +14,7 @@ import { formatDistanceToNow, differenceInHours, parseISO, format } from "date-f
 import { nl } from "date-fns/locale";
 
 interface ScenarioOverviewProps {
-  onLoadScenario: (scenarioId: string) => void;
+  onLoadScenario: (scenarioId: string, scenarioName: string) => void;
   hasActiveSimulation: boolean;
   onRequestSaveFirst: () => Promise<boolean>;
   onScenarioDeleted?: (scenarioId: string) => void;
@@ -114,7 +114,8 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
     if (hasActiveSimulation) {
       setWorkstateDialogScenarioId(scenarioId);
     } else {
-      onLoadScenario(scenarioId);
+      const s = scenarios.find((x) => x.id === scenarioId);
+      onLoadScenario(scenarioId, s?.name ?? "");
     }
   };
 
@@ -130,7 +131,8 @@ export default function ScenarioOverview({ onLoadScenario, hasActiveSimulation, 
     }
 
     if (targetId) {
-      onLoadScenario(targetId);
+      const s = scenarios.find((x) => x.id === targetId);
+      onLoadScenario(targetId, s?.name ?? "");
     }
   };
 
