@@ -28,6 +28,15 @@ serve(async (req) => {
 
     const serviceSupabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
+    // Check backoffice role
+    const { data: roleCheck } = await serviceSupabase
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("role", "backoffice")
+      .maybeSingle();
+    if (!roleCheck) throw new Error("Geen toegang: alleen backoffice gebruikers mogen documenten genereren");
+
     // Build a minimal .docx with all placeholders
     const placeholders = [
       { section: "Datum", fields: ["{{datum_vandaag}}"] },
