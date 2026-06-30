@@ -18,7 +18,7 @@ import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { getAreaFromAddress, statusLabels, statusStyles } from "@/lib/DomainResolver";
 import { downloadExport, ExportColumn } from "@/lib/csvExport";
-import type { SchoolListRow, SchoolEditForm, SchoolDocumentRow } from "@/lib/queryShapes";
+import type { SchoolListRow, SchoolEditForm, SchoolDocumentRow, TablesUpdate } from "@/lib/queryShapes";
 
 // ── CSV / Outlook helpers ──────────────────────────────────────────────
 
@@ -587,7 +587,7 @@ export default function ScholenPage() {
           if (hasTimeUpdate || hasBreakTimeUpdate || hasScheduleTypeUpdate || hasSourceUpdate || hasMunicipalityUpdate) {
             const schoolName = s.name;
             const updateFn = async () => {
-              const updatePayload: Record<string, string | null> = {};
+              const updatePayload: TablesUpdate<"schools"> = {};
               if (hasTimeUpdate) {
                 updatePayload.school_start_time = s.school_start_time;
                 updatePayload.school_end_time = s.school_end_time;
@@ -823,7 +823,7 @@ export default function ScholenPage() {
         const hasMunicipalityUpdate = municipality && !existing.municipality;
 
         if (hasTimeUpdate || hasScheduleTypeUpdate || hasSourceUpdate || hasMunicipalityUpdate) {
-          const updatePayload: Record<string, any> = {};
+          const updatePayload: TablesUpdate<"schools"> = {};
           if (hasTimeUpdate) {
             updatePayload.school_start_time = school_start_time;
             updatePayload.school_end_time = school_end_time;

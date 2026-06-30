@@ -32,6 +32,7 @@ import type {
   ParsedAvailabilityEntry,
   ImportClientRecord,
   ImportUpdateEntry,
+  TablesInsert,
 } from "@/lib/queryShapes";
 
 /** Raw parsed Excel row — keys are dynamic column headers */
@@ -519,7 +520,11 @@ export default function ClientImport({ open, onOpenChange, onComplete, mode: mod
         delete r.__availability;
         return avail;
       });
-      const { data: insertedRows, error } = await supabase.from("clients").insert(chunk).select("id");
+      const insertPayload: TablesInsert<"clients">[] = chunk.map((r) => {
+        const { __availability, __reserveAreas, ...rest } = r;
+        return rest;
+      });
+      const { data: insertedRows, error } = await supabase.from("clients").insert(insertPayload).select("id");
       if (error) {
         errors.push(`Nieuwe rijen ${i + 2}: ${error.message}`);
       } else {
