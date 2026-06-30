@@ -302,14 +302,14 @@ export default function ClientDetailPage() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      // Delete related records first
-      await supabase.from("attendance").delete().in(
-        "client_id", [id!]
-      );
-      await supabase.from("program_clients").delete().eq("client_id", id!);
-      await supabase.from("client_assignments").delete().eq("client_id", id!);
-      await supabase.from("client_availability").delete().eq("client_id", id!);
-      await supabase.from("audit_log").delete().eq("client_id", id!);
+      // Delete related records in parallel first
+      await Promise.all([
+        supabase.from("attendance").delete().in("client_id", [id!]),
+        supabase.from("program_clients").delete().eq("client_id", id!),
+        supabase.from("client_assignments").delete().eq("client_id", id!),
+        supabase.from("client_availability").delete().eq("client_id", id!),
+        supabase.from("audit_log").delete().eq("client_id", id!),
+      ]);
       const { error } = await supabase.from("clients").delete().eq("id", id!);
       if (error) throw error;
     },
@@ -700,7 +700,7 @@ export default function ClientDetailPage() {
                     </td>
                     <td className="px-5 py-4">
                       <span className={`status-indicator ${statusStyles[pc.programs?.status ?? ""] ?? "status-oranje"}`}>
-                        {pc.programs?.status ?? "—"}
+                        {statusLabels[pc.programs?.status ?? ""] ?? "—"}
                       </span>
                     </td>
                   </tr>
