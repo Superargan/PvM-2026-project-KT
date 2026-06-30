@@ -251,10 +251,12 @@ export default function ClientDetailPage() {
     }
   }, [client]);
 
-  useBlocker(() => {
+  const blocker = useCallback(() => {
     if (!dirty) return true;
     return window.confirm("Je hebt niet-opgeslagen wijzigingen. Weet je zeker dat je wilt verlaten?");
-  });
+  }, [dirty]);
+
+  useBlocker(blocker);
 
   const updateField = (field: string, value: string | boolean | null) => {
     setForm((prev: Record<string, unknown>) => {
