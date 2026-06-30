@@ -24,7 +24,14 @@ import WachtlijstPage from "./pages/WachtlijstPage";
 import TrainingslocatiesPage from "./pages/TrainingslocatiesPage";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000,
+      gcTime: 300_000,
+    },
+  },
+});
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();

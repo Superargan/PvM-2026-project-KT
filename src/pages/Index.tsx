@@ -3,9 +3,19 @@ import StatCard from "@/components/StatCard";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
+
 import { schoolKeys, clientKeys, programKeys, staffKeys } from "@/lib/queryKeys";
 
 export default function Dashboard() {
+  const [userName, setUserName] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      const name = user?.user_metadata?.first_name ?? user?.user_metadata?.name ?? null;
+      setUserName(name);
+    });
+  }, []);
   const { data: clientCount = 0 } = useQuery({
     queryKey: clientKeys.dashboard("participants"),
     queryFn: async () => {
@@ -120,10 +130,12 @@ export default function Dashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-extrabold text-foreground">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">Welkom terug! Hier is een overzicht van vandaag.</p>
+        <p className="text-sm text-muted-foreground">
+          {userName ? `Welkom terug, ${userName}!` : "Welkom terug!"}
+        </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard title="Deelnemers" value={clientCount} icon={<Users className="h-5 w-5" />} color="blauw" to="/clienten" />
         <StatCard title="In te plannen trainingen" value={programCount} icon={<GraduationCap className="h-5 w-5" />} color="groen" to="/programmas" />
         <StatCard title="PO Scholen Rotterdam" value={schoolCount} icon={<School className="h-5 w-5" />} color="geel" to="/scholen" />
@@ -181,7 +193,7 @@ export default function Dashboard() {
             {upcomingPrograms.map((prog: any) => {
               const enrolled = prog.program_clients?.[0]?.count ?? 0;
               return (
-                <Link key={prog.id} to="/programmas" className="flex items-center justify-between px-5 py-3 hover:bg-muted/50 transition-colors">
+                <Link key={prog.id} to={`/programmas/${prog.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-muted/50 transition-colors">
                   <div>
                     <p className="text-sm font-semibold text-card-foreground">{prog.name}</p>
                     <p className="text-xs text-muted-foreground capitalize">{prog.status}</p>
