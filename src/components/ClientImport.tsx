@@ -32,6 +32,7 @@ import type {
   ParsedAvailabilityEntry,
   ImportClientRecord,
   ImportUpdateEntry,
+  TablesInsert,
 } from "@/lib/queryShapes";
 
 /** Raw parsed Excel row — keys are dynamic column headers */

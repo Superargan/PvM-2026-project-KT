@@ -3,6 +3,7 @@ import { UserCog, Plus, Search, Mail, Phone, Loader2, Building2, Edit, FileText,
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { staffKeys, documentKeys } from "@/lib/queryKeys";
+import type { TablesUpdate } from "@/lib/queryShapes";
 import { toast } from "sonner";
 import {
   Dialog,

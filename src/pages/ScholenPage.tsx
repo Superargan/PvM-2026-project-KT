@@ -18,7 +18,7 @@ import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { getAreaFromAddress, statusLabels, statusStyles } from "@/lib/DomainResolver";
 import { downloadExport, ExportColumn } from "@/lib/csvExport";
-import type { SchoolListRow, SchoolEditForm, SchoolDocumentRow } from "@/lib/queryShapes";
+import type { SchoolListRow, SchoolEditForm, SchoolDocumentRow, TablesUpdate } from "@/lib/queryShapes";
 
 // ── CSV / Outlook helpers ──────────────────────────────────────────────
 
