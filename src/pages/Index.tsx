@@ -1,5 +1,6 @@
 import { Users, GraduationCap, School, ClipboardList, ArrowRight, UserCog, Clock } from "lucide-react";
 import StatCard from "@/components/StatCard";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,7 +17,7 @@ export default function Dashboard() {
       setUserName(name);
     });
   }, []);
-  const { data: clientCount = 0 } = useQuery({
+  const { data: clientCount = 0, isLoading: clientCountLoading } = useQuery({
     queryKey: clientKeys.dashboard("participants"),
     queryFn: async () => {
       const { count } = await supabase
@@ -28,7 +29,7 @@ export default function Dashboard() {
     },
   });
 
-  const { data: programCount = 0 } = useQuery({
+  const { data: programCount = 0, isLoading: programCountLoading } = useQuery({
     queryKey: programKeys.dashboard,
     queryFn: async () => {
       const { count } = await supabase.from("programs").select("*", { count: "exact", head: true }).eq("archived", false).eq("status", "te_plannen");
@@ -36,7 +37,7 @@ export default function Dashboard() {
     },
   });
 
-  const { data: schoolCount = 0 } = useQuery({
+  const { data: schoolCount = 0, isLoading: schoolCountLoading } = useQuery({
     queryKey: schoolKeys.dashboard,
     queryFn: async () => {
       const { count } = await supabase.from("schools").select("*", { count: "exact", head: true });
@@ -44,7 +45,7 @@ export default function Dashboard() {
     },
   });
 
-  const { data: newClientCount = 0 } = useQuery({
+  const { data: newClientCount = 0, isLoading: newClientCountLoading } = useQuery({
     queryKey: clientKeys.dashboard("new"),
     queryFn: async () => {
       const weekAgo = new Date();
@@ -58,7 +59,7 @@ export default function Dashboard() {
     },
   });
 
-  const { data: trainerCount = 0 } = useQuery({
+  const { data: trainerCount = 0, isLoading: trainerCountLoading } = useQuery({
     queryKey: staffKeys.all,
     queryFn: async () => {
       const { count } = await supabase.from("staff").select("*", { count: "exact", head: true }).eq("archived", false).not("name", "is", null);
@@ -66,7 +67,7 @@ export default function Dashboard() {
     },
   });
 
-  const { data: intakeGeplandCount = 0 } = useQuery({
+  const { data: intakeGeplandCount = 0, isLoading: intakeGeplandCountLoading } = useQuery({
     queryKey: clientKeys.dashboard("intake-gepland"),
     queryFn: async () => {
       const { count } = await supabase.from("clients").select("*", { count: "exact", head: true }).eq("archived", false).eq("intake_status", "intake_gepland");
@@ -74,7 +75,7 @@ export default function Dashboard() {
     },
   });
 
-  const { data: waitlistCount = 0 } = useQuery({
+  const { data: waitlistCount = 0, isLoading: waitlistCountLoading } = useQuery({
     queryKey: clientKeys.dashboard("waitlist"),
     queryFn: async () => {
       const { count } = await supabase
@@ -86,7 +87,7 @@ export default function Dashboard() {
     },
   });
 
-  const { data: recentClients = [] } = useQuery({
+  const { data: recentClients = [], isLoading: recentClientsLoading } = useQuery({
     queryKey: clientKeys.dashboard("recent"),
     queryFn: async () => {
       const { data } = await supabase
@@ -99,7 +100,7 @@ export default function Dashboard() {
     },
   });
 
-  const { data: upcomingPrograms = [] } = useQuery({
+  const { data: upcomingPrograms = [], isLoading: upcomingProgramsLoading } = useQuery({
     queryKey: programKeys.upcoming,
     queryFn: async () => {
       const { data } = await supabase
@@ -111,6 +112,15 @@ export default function Dashboard() {
       return data ?? [];
     },
   });
+
+  const isLoading =
+    clientCountLoading ||
+    programCountLoading ||
+    schoolCountLoading ||
+    newClientCountLoading ||
+    trainerCountLoading ||
+    intakeGeplandCountLoading ||
+    waitlistCountLoading;
 
   const statusMap: Record<string, { label: string; color: string }> = {
     nieuw: { label: "Nieuw", color: "rood" },
@@ -136,13 +146,13 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Deelnemers" value={clientCount} icon={<Users className="h-5 w-5" />} color="blauw" to="/clienten" />
-        <StatCard title="In te plannen trainingen" value={programCount} icon={<GraduationCap className="h-5 w-5" />} color="groen" to="/programmas" />
-        <StatCard title="PO Scholen Rotterdam" value={schoolCount} icon={<School className="h-5 w-5" />} color="geel" to="/scholen" />
-        <StatCard title="Trainers" value={trainerCount} icon={<UserCog className="h-5 w-5" />} color="blauw" to="/medewerkers" />
-        <StatCard title="Geplande intakes" value={intakeGeplandCount} icon={<ClipboardList className="h-5 w-5" />} color="oranje" to="/aanmeldingen" />
-        <StatCard title="Nieuwe Aanmeldingen" value={newClientCount} subtitle="Afgelopen 7 dagen" icon={<ClipboardList className="h-5 w-5" />} color="rood" to="/aanmeldingen" />
-        <StatCard title="Wachtlijst" value={waitlistCount} icon={<Clock className="h-5 w-5" />} color="oranje" to="/wachtlijst" />
+        <StatCard title="Deelnemers" value={isLoading ? <Skeleton className="h-9 w-12" /> : clientCount} icon={<Users className="h-5 w-5" />} color="blauw" to="/clienten" />
+        <StatCard title="In te plannen trainingen" value={isLoading ? <Skeleton className="h-9 w-12" /> : programCount} icon={<GraduationCap className="h-5 w-5" />} color="groen" to="/programmas" />
+        <StatCard title="PO Scholen Rotterdam" value={isLoading ? <Skeleton className="h-9 w-12" /> : schoolCount} icon={<School className="h-5 w-5" />} color="geel" to="/scholen" />
+        <StatCard title="Trainers" value={isLoading ? <Skeleton className="h-9 w-12" /> : trainerCount} icon={<UserCog className="h-5 w-5" />} color="blauw" to="/medewerkers" />
+        <StatCard title="Geplande intakes" value={isLoading ? <Skeleton className="h-9 w-12" /> : intakeGeplandCount} icon={<ClipboardList className="h-5 w-5" />} color="oranje" to="/aanmeldingen" />
+        <StatCard title="Nieuwe Aanmeldingen" value={isLoading ? <Skeleton className="h-9 w-12" /> : newClientCount} subtitle="Afgelopen 7 dagen" icon={<ClipboardList className="h-5 w-5" />} color="rood" to="/aanmeldingen" />
+        <StatCard title="Wachtlijst" value={isLoading ? <Skeleton className="h-9 w-12" /> : waitlistCount} icon={<Clock className="h-5 w-5" />} color="oranje" to="/wachtlijst" />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -155,26 +165,37 @@ export default function Dashboard() {
             </Link>
           </div>
           <div className="divide-y divide-border">
-            {recentClients.length === 0 && (
-              <p className="px-5 py-8 text-center text-sm text-muted-foreground">Nog geen deelnemers aangemeld</p>
-            )}
-            {recentClients.map((client: any) => {
-              const st = statusMap[client.intake_status] ?? statusMap.nieuw;
-              return (
-                <Link key={client.id} to={`/clienten/${client.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-muted/50 transition-colors">
-                  <div>
-                    <p className="text-sm font-semibold text-card-foreground">
-                      {client.first_name} {client.last_name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{client.schools?.name ?? "Geen school"}</p>
+            {recentClientsLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between px-5 py-3">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="h-3 w-24" />
                   </div>
-                  <span className={`status-indicator status-${st.color}`}>
-                    <span className={`inline-block h-1.5 w-1.5 rounded-full bg-status-${st.color}`} />
-                    {st.label}
-                  </span>
-                </Link>
-              );
-            })}
+                  <Skeleton className="h-5 w-16" />
+                </div>
+              ))
+            ) : recentClients.length === 0 ? (
+              <p className="px-5 py-8 text-center text-sm text-muted-foreground">Nog geen deelnemers aangemeld</p>
+            ) : (
+              recentClients.map((client: any) => {
+                const st = statusMap[client.intake_status] ?? statusMap.nieuw;
+                return (
+                  <Link key={client.id} to={`/clienten/${client.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-muted/50 transition-colors">
+                    <div>
+                      <p className="text-sm font-semibold text-card-foreground">
+                        {client.first_name} {client.last_name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{client.schools?.name ?? "Geen school"}</p>
+                    </div>
+                    <span className={`status-indicator status-${st.color}`}>
+                      <span className={`inline-block h-1.5 w-1.5 rounded-full bg-status-${st.color}`} />
+                      {st.label}
+                    </span>
+                  </Link>
+                );
+              })
+            )}
           </div>
         </div>
 
@@ -187,26 +208,40 @@ export default function Dashboard() {
             </Link>
           </div>
           <div className="divide-y divide-border">
-            {upcomingPrograms.length === 0 && (
+            {upcomingProgramsLoading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between px-5 py-3">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="h-3 w-20" />
+                  </div>
+                  <div className="space-y-2 text-right">
+                    <Skeleton className="h-4 w-12" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                </div>
+              ))
+            ) : upcomingPrograms.length === 0 ? (
               <p className="px-5 py-8 text-center text-sm text-muted-foreground">Nog geen programma's gepland</p>
+            ) : (
+              upcomingPrograms.map((prog: any) => {
+                const enrolled = prog.program_clients?.[0]?.count ?? 0;
+                return (
+                  <Link key={prog.id} to={`/programmas/${prog.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-muted/50 transition-colors">
+                    <div>
+                      <p className="text-sm font-semibold text-card-foreground">{prog.name}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{prog.status}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-card-foreground">{enrolled}/{prog.max_participants ?? "∞"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {prog.start_date ? new Date(prog.start_date).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" }) : "—"}
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })
             )}
-            {upcomingPrograms.map((prog: any) => {
-              const enrolled = prog.program_clients?.[0]?.count ?? 0;
-              return (
-                <Link key={prog.id} to={`/programmas/${prog.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-muted/50 transition-colors">
-                  <div>
-                    <p className="text-sm font-semibold text-card-foreground">{prog.name}</p>
-                    <p className="text-xs text-muted-foreground capitalize">{prog.status}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-card-foreground">{enrolled}/{prog.max_participants ?? "∞"}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {prog.start_date ? new Date(prog.start_date).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" }) : "—"}
-                    </p>
-                  </div>
-                </Link>
-              );
-            })}
           </div>
         </div>
       </div>
