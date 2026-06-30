@@ -1,4 +1,4 @@
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, useBlocker } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -250,6 +250,11 @@ export default function ClientDetailPage() {
       setDirty(false);
     }
   }, [client]);
+
+  useBlocker(() => {
+    if (!dirty) return true;
+    return window.confirm("Je hebt niet-opgeslagen wijzigingen. Weet je zeker dat je wilt verlaten?");
+  });
 
   const updateField = (field: string, value: string | boolean | null) => {
     setForm((prev: Record<string, unknown>) => {
@@ -691,7 +696,11 @@ export default function ClientDetailPage() {
                   <tr><td colSpan={4} className="px-5 py-8 text-center text-sm text-muted-foreground">Nog niet ingeschreven in een programma</td></tr>
                 )}
                 {programs.map((pc) => (
-                  <tr key={pc.id} className="transition-colors hover:bg-muted/30">
+                  <tr
+                    key={pc.id}
+                    className="cursor-pointer transition-colors hover:bg-muted/30"
+                    onClick={() => navigate(`/programmas/${pc.program_id}`)}
+                  >
                     <td className="px-5 py-4 text-sm font-medium text-card-foreground">{pc.programs?.name}</td>
                     <td className="px-5 py-4 text-sm text-card-foreground">{pc.programs?.schools?.name ?? "—"}</td>
                     <td className="px-5 py-4 text-sm text-card-foreground">
