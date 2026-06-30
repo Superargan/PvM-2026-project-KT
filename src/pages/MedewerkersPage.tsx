@@ -187,11 +187,17 @@ export default function MedewerkersPage() {
   const trainerMutation = useMutation({
     mutationFn: async () => {
       if (!trainerForm.name) throw new Error("Naam is verplicht");
-      const payload: Record<string, string | null> = { ...trainerForm };
-      for (const key of Object.keys(payload)) {
-        if (payload[key] === "") payload[key] = null;
-      }
-      payload.name = trainerForm.name;
+      const payload: TablesUpdate<"staff"> = {
+        name: trainerForm.name,
+        trade_name: trainerForm.trade_name || null,
+        kvk_number: trainerForm.kvk_number || null,
+        address: trainerForm.address || null,
+        postal_code: trainerForm.postal_code || null,
+        city: trainerForm.city || null,
+        phone: trainerForm.phone || null,
+        email: trainerForm.email || null,
+        trainer_type: trainerForm.trainer_type || null,
+      };
 
       if (editingTrainerId) {
         const { error } = await supabase.from("staff").update(payload).eq("id", editingTrainerId);
