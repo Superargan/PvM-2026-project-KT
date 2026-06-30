@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { areaKeys, clientKeys, schoolKeys, documentKeys, referrerKeys, auditKeys, programKeys } from "@/lib/queryKeys";
 import { formatSchoolTimeRange, getEffectiveMunicipality, DEFAULT_MUNICIPALITY, getResolvedAreaName, calculateAge, statusLabels, statusStyles, resolveSchedule, formatResolvedSchedule } from "@/lib/DomainResolver";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { ArrowLeft, Loader2, Save, User, ClipboardList, BookOpen, Shield, FileText, Download, CalendarDays, Trash2 } from "lucide-react";
 import AvailabilityManager from "@/components/AvailabilityManager";
 import AreaPreferencesEditor from "@/components/AreaPreferencesEditor";
