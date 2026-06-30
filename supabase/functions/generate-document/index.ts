@@ -36,6 +36,16 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error("Niet geautoriseerd");
 
+    // Check backoffice role
+    const serviceSupabaseCheck = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: roleCheck } = await serviceSupabaseCheck
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("role", "backoffice")
+      .maybeSingle();
+    if (!roleCheck) throw new Error("Geen toegang: alleen backoffice gebruikers mogen documenten genereren");
+
     const { template_id, client_id, staff_id, school_id, program_id } = await req.json();
     if (!template_id) throw new Error("template_id is verplicht");
     if (!client_id && !staff_id && !school_id) throw new Error("client_id, staff_id of school_id is verplicht");
