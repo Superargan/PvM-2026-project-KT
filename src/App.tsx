@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Outlet, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import AppLayout from "@/components/AppLayout";
 import AppErrorBoundary from "@/components/AppErrorBoundary";
@@ -35,7 +35,7 @@ const queryClient = new QueryClient({
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
-  
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -50,8 +50,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function AppRoutes() {
-  const { session, loading } = useAuth();
+function RootLayout() {
+  const { loading } = useAuth();
 
   if (loading) {
     return (
@@ -63,39 +63,49 @@ function AppRoutes() {
     );
   }
 
-  return (
-    <Routes>
-      <Route path="/login" element={session ? <Navigate to="/" replace /> : <AuthPage />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route path="/aanmelden" element={<ProtectedRoute><AppLayout><AanmeldenPublicPage /></AppLayout></ProtectedRoute>} />
-      <Route path="/" element={<ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute>} />
-      <Route path="/clienten" element={<ProtectedRoute><AppLayout><ClientenPage /></AppLayout></ProtectedRoute>} />
-      <Route path="/clienten/:id" element={<ProtectedRoute><AppLayout><ClientDetailPage /></AppLayout></ProtectedRoute>} />
-      <Route path="/aanmeldingen" element={<ProtectedRoute><AppLayout><AanmeldingenPage /></AppLayout></ProtectedRoute>} />
-      <Route path="/wachtlijst" element={<ProtectedRoute><AppLayout><WachtlijstPage /></AppLayout></ProtectedRoute>} />
-      <Route path="/programmas" element={<ProtectedRoute><AppLayout><ProgrammasPage /></AppLayout></ProtectedRoute>} />
-      <Route path="/planning" element={<ProtectedRoute><AppLayout><PlanningPage /></AppLayout></ProtectedRoute>} />
-      <Route path="/programmas/:id" element={<ProtectedRoute><AppLayout><ProgramDetailPage /></AppLayout></ProtectedRoute>} />
-      <Route path="/scholen" element={<ProtectedRoute><AppLayout><ScholenPage /></AppLayout></ProtectedRoute>} />
-      <Route path="/trainingslocaties" element={<ProtectedRoute><AppLayout><TrainingslocatiesPage /></AppLayout></ProtectedRoute>} />
-      <Route path="/medewerkers" element={<ProtectedRoute><AppLayout><MedewerkersPage /></AppLayout></ProtectedRoute>} />
-      <Route path="/rapportages" element={<ProtectedRoute><AppLayout><RapportagesPage /></AppLayout></ProtectedRoute>} />
-      <Route path="/documenten" element={<ProtectedRoute><AppLayout><DocumentenPage /></AppLayout></ProtectedRoute>} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
-  );
+  return <Outlet />;
 }
+
+function LoginRoute() {
+  const { session } = useAuth();
+  if (session) return <Navigate to="/" replace />;
+  return <AuthPage />;
+}
+
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <RootLayout />,
+    children: [
+      { index: true, element: <ProtectedRoute><AppLayout><Index /></AppLayout></ProtectedRoute> },
+      { path: "login", element: <LoginRoute /> },
+      { path: "reset-password", element: <ResetPasswordPage /> },
+      { path: "aanmelden", element: <ProtectedRoute><AppLayout><AanmeldenPublicPage /></AppLayout></ProtectedRoute> },
+      { path: "clienten", element: <ProtectedRoute><AppLayout><ClientenPage /></AppLayout></ProtectedRoute> },
+      { path: "clienten/:id", element: <ProtectedRoute><AppLayout><ClientDetailPage /></AppLayout></ProtectedRoute> },
+      { path: "aanmeldingen", element: <ProtectedRoute><AppLayout><AanmeldingenPage /></AppLayout></ProtectedRoute> },
+      { path: "wachtlijst", element: <ProtectedRoute><AppLayout><WachtlijstPage /></AppLayout></ProtectedRoute> },
+      { path: "programmas", element: <ProtectedRoute><AppLayout><ProgrammasPage /></AppLayout></ProtectedRoute> },
+      { path: "planning", element: <ProtectedRoute><AppLayout><PlanningPage /></AppLayout></ProtectedRoute> },
+      { path: "programmas/:id", element: <ProtectedRoute><AppLayout><ProgramDetailPage /></AppLayout></ProtectedRoute> },
+      { path: "scholen", element: <ProtectedRoute><AppLayout><ScholenPage /></AppLayout></ProtectedRoute> },
+      { path: "trainingslocaties", element: <ProtectedRoute><AppLayout><TrainingslocatiesPage /></AppLayout></ProtectedRoute> },
+      { path: "medewerkers", element: <ProtectedRoute><AppLayout><MedewerkersPage /></AppLayout></ProtectedRoute> },
+      { path: "rapportages", element: <ProtectedRoute><AppLayout><RapportagesPage /></AppLayout></ProtectedRoute> },
+      { path: "documenten", element: <ProtectedRoute><AppLayout><DocumentenPage /></AppLayout></ProtectedRoute> },
+      { path: "*", element: <NotFound /> },
+    ],
+  },
+]);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <AppErrorBoundary>
-          <AppRoutes />
-        </AppErrorBoundary>
-      </BrowserRouter>
+      <AppErrorBoundary>
+        <RouterProvider router={router} />
+      </AppErrorBoundary>
     </TooltipProvider>
   </QueryClientProvider>
 );
