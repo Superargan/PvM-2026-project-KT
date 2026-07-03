@@ -1,13 +1,25 @@
 project_id = "mohuzovlecrmvwfhqprk"
 
+# Enforce platform-level JWT verification on every function.
+# Each function also re-checks the JWT + backoffice role in code via
+# supabase/functions/_shared/auth.ts (defence in depth).
 [functions.invite-user]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-document]
-verify_jwt = false
+verify_jwt = true
 
 [functions.create-test-template]
-verify_jwt = false
+verify_jwt = true
 
 [functions.build-template]
-verify_jwt = false
+verify_jwt = true
+
+[functions.convert-template]
+verify_jwt = true
+
+[functions.read-template]
+verify_jwt = true
+
+[functions.update-template]
+verify_jwt = true
