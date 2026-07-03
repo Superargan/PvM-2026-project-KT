@@ -117,7 +117,7 @@ export default function ClientDetailPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("audit_log")
-        .select("*")
+        .select("*, profiles!viewed_by(full_name)")
         .eq("client_id", id!)
         .order("created_at", { ascending: false })
         .limit(50);
@@ -791,19 +791,21 @@ export default function ClientDetailPage() {
               <thead>
                 <tr className="border-b border-border bg-muted/50">
                   <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Datum/Tijd</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gebruiker</th>
                   <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actie</th>
                   <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Details</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {auditLog.length === 0 && (
-                  <tr><td colSpan={3} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen audit-logs gevonden</td></tr>
+                  <tr><td colSpan={4} className="px-5 py-8 text-center text-sm text-muted-foreground">Geen audit-logs gevonden</td></tr>
                 )}
                 {auditLog.map((log: any) => (
                   <tr key={log.id} className="transition-colors hover:bg-muted/30">
                     <td className="px-5 py-4 text-sm text-card-foreground">
                       {format(new Date(log.created_at), "d MMM yyyy HH:mm", { locale: nl })}
                     </td>
+                    <td className="px-5 py-4 text-sm text-card-foreground">{log.profiles?.full_name ?? "Systeem"}</td>
                     <td className="px-5 py-4">
                       <span className={`status-indicator ${log.action === "view" ? "status-oranje" : "status-groen"}`}>
                         {log.action === "view" ? "Bekeken" : log.action === "update" ? "Bijgewerkt" : log.action}
