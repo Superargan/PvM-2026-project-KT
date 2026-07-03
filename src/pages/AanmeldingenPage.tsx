@@ -1193,7 +1193,7 @@ function DuplicateScan({ clients, isLoading, onNavigate, onEdit }: {
       await supabase.from("client_availability").delete().eq("client_id", client.id);
       await supabase.from("client_area_preferences").delete().eq("client_id", client.id);
       await supabase.from("availability_override_logs").delete().eq("client_id", client.id);
-      await supabase.from("audit_log").delete().eq("client_id", client.id);
+      // audit_log rows are preserved for AVG (client_id FK is ON DELETE SET NULL).
       const { error } = await supabase.from("clients").delete().eq("id", client.id);
       if (error) throw error;
       toast({ title: `${client.first_name} ${client.last_name} verwijderd` });
