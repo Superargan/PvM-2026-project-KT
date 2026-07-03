@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { clientKeys, programKeys, areaKeys, schoolKeys } from "@/lib/queryKeys";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,22 @@ export default function WachtlijstPage() {
   const [selectedProgram, setSelectedProgram] = useState("");
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { session } = useAuth();
+
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+    const key = `audit-list:${userId}:wachtlijst:${new Date().toISOString().slice(0, 10)}`;
+    if (typeof window !== "undefined" && !window.sessionStorage.getItem(key)) {
+      window.sessionStorage.setItem(key, "1");
+      supabase.rpc("log_list_view", { p_list_name: "wachtlijst" }).then(({ error }) => {
+        if (error) {
+          window.sessionStorage.removeItem(key);
+          console.error("log_list_view failed", error);
+        }
+      });
+    }
+  }, [session?.user?.id]);
 
   const { data: areas = [] } = useQuery({
     queryKey: areaKeys.all,
@@ -101,7 +118,8 @@ export default function WachtlijstPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      for (const table of ["attendance", "program_clients", "client_assignments", "client_availability", "audit_log"] as const) {
+      // audit_log rows are preserved for AVG (client_id FK is ON DELETE SET NULL).
+      for (const table of ["attendance", "program_clients", "client_assignments", "client_availability"] as const) {
         const { error } = await supabase.from(table).delete().in("client_id", ids);
         if (error) throw error;
       }
