@@ -18,7 +18,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { userClient: supabase, serviceClient: serviceSupabase } = await assertBackoffice(req);
+    const { userClient: supabase, serviceClient: serviceSupabase, userId } = await assertBackoffice(req);
 
     const { template_id, client_id, staff_id, school_id, program_id } = await req.json();
     if (!template_id) throw new Error("template_id is verplicht");
@@ -415,7 +415,7 @@ serve(async (req) => {
       template_id,
       file_path: outputPath,
       file_name: outputFileName,
-      generated_by: user.id,
+      generated_by: userId,
     });
 
     return new Response(
@@ -425,7 +425,7 @@ serve(async (req) => {
   } catch (err: any) {
     return new Response(
       JSON.stringify({ error: err.message }),
-      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: err.message === "Niet geautoriseerd" ? 401 : err.message?.startsWith?.("Geen toegang") ? 403 : 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
