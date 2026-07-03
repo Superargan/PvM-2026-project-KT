@@ -1,8 +1,9 @@
 import { Users, Plus, Loader2, Download, Upload, X } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,23 @@ export default function ClientenPage() {
   const [addLastName, setAddLastName] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { session } = useAuth();
+
+  // Log list view once per (user, list, day)
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+    const key = `audit-list:${userId}:deelnemers:${new Date().toISOString().slice(0, 10)}`;
+    if (typeof window !== "undefined" && !window.sessionStorage.getItem(key)) {
+      window.sessionStorage.setItem(key, "1");
+      supabase.rpc("log_list_view", { p_list_name: "deelnemerslijst" }).then(({ error }) => {
+        if (error) {
+          window.sessionStorage.removeItem(key);
+          console.error("log_list_view failed", error);
+        }
+      });
+    }
+  }, [session?.user?.id]);
 
   const { data: clients = [], isLoading, refetch } = useQuery<ClientenPageRow[]>({
     queryKey: clientKeys.list(search),
