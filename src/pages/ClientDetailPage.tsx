@@ -204,12 +204,19 @@ export default function ClientDetailPage() {
 
   useEffect(() => {
     if (id && session?.user?.id) {
-      supabase.from("audit_log").insert({
-        client_id: id,
-        viewed_by: session.user.id,
-        action: "view",
-        details: "Dossier geopend",
-      }).then();
+      // Dedupe view logging per (user, client, day) using sessionStorage so
+      // React 18 StrictMode double-invokes + tab switches don't spam audit_log.
+      const key = `audit-view:${session.user.id}:${id}:${new Date().toISOString().slice(0, 10)}`;
+      if (typeof window !== "undefined" && !window.sessionStorage.getItem(key)) {
+        window.sessionStorage.setItem(key, "1");
+        supabase.rpc("log_client_view", { p_client_id: id }).then(({ error }) => {
+          if (error) {
+            // Roll back the dedupe marker so a later attempt can retry.
+            window.sessionStorage.removeItem(key);
+            console.error("log_client_view failed", error);
+          }
+        });
+      }
     }
   }, [id, session?.user?.id]);
 
@@ -286,14 +293,7 @@ export default function ClientDetailPage() {
       }
       const { error } = await supabase.from("clients").update(updateData).eq("id", id!);
       if (error) throw error;
-
-      // Audit log the save
-      await supabase.from("audit_log").insert({
-        client_id: id!,
-        viewed_by: session!.user.id,
-        action: "update",
-        details: "Gegevens bijgewerkt",
-      });
+      // Update logging happens automatically via the audit trigger on public.clients.
     },
     onSuccess: () => {
       toast({ title: "Opgeslagen" });
@@ -315,7 +315,7 @@ export default function ClientDetailPage() {
         supabase.from("program_clients").delete().eq("client_id", id!),
         supabase.from("client_assignments").delete().eq("client_id", id!),
         supabase.from("client_availability").delete().eq("client_id", id!),
-        supabase.from("audit_log").delete().eq("client_id", id!),
+        // audit_log rows are preserved on client deletion (client_id FK is ON DELETE SET NULL) for AVG.
       ]);
       const { error } = await supabase.from("clients").delete().eq("id", id!);
       if (error) throw error;

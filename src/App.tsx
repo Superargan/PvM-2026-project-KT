@@ -22,6 +22,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import PlanningPage from "./pages/PlanningPage";
 import WachtlijstPage from "./pages/WachtlijstPage";
 import TrainingslocatiesPage from "./pages/TrainingslocatiesPage";
+import AuditPage from "./pages/AuditPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -93,6 +94,7 @@ const router = createBrowserRouter([
       { path: "medewerkers", element: <ProtectedRoute><AppLayout><MedewerkersPage /></AppLayout></ProtectedRoute> },
       { path: "rapportages", element: <ProtectedRoute><AppLayout><RapportagesPage /></AppLayout></ProtectedRoute> },
       { path: "documenten", element: <ProtectedRoute><AppLayout><DocumentenPage /></AppLayout></ProtectedRoute> },
+      { path: "audit", element: <ProtectedRoute><AppLayout><AuditPage /></AppLayout></ProtectedRoute> },
       { path: "*", element: <NotFound /> },
     ],
   },

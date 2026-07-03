@@ -139,6 +139,9 @@ export const attendanceKeys = {
 export const auditKeys = {
   all: ["audit"] as const,
   forClient: (clientId: string) => ["audit", "client", clientId] as const,
+  /** Backoffice review page — filtered list */
+  review: (filters: Record<string, string | null | undefined>) =>
+    ["audit", "review", filters] as const,
 };
 
 /** Rapportages-specific composite query keys */
