@@ -1,9 +1,10 @@
 import { CheckCircle2, Loader2, ExternalLink, Clock, UserPlus, X, CalendarDays, Upload, Search, Pencil, AlertTriangle, Download, School, Users, Trash2, CalendarCheck, Phone } from "lucide-react";
 import AvailabilityValidation from "@/components/AvailabilityValidation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { areaKeys, clientKeys, schoolKeys, staffKeys, programKeys } from "@/lib/queryKeys";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -78,6 +79,22 @@ export default function AanmeldingenPage() {
   const [errors, setErrors] = useState<Partial<Record<keyof EditForm, string>>>({});
   const [saving, setSaving] = useState(false);
   const [selectedProgramId, setSelectedProgramId] = useState<string>("");
+  const { session } = useAuth();
+
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+    const key = `audit-list:${userId}:aanmeldingen:${new Date().toISOString().slice(0, 10)}`;
+    if (typeof window !== "undefined" && !window.sessionStorage.getItem(key)) {
+      window.sessionStorage.setItem(key, "1");
+      supabase.rpc("log_list_view", { p_list_name: "aanmeldingenlijst" }).then(({ error }) => {
+        if (error) {
+          window.sessionStorage.removeItem(key);
+          console.error("log_list_view failed", error);
+        }
+      });
+    }
+  }, [session?.user?.id]);
   const [importOpen, setImportOpen] = useState(false);
   const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set());
   const { toast } = useToast();
