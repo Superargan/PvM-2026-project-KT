@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth, useIsBackoffice } from "@/hooks/useAuth";
 import {
   LayoutDashboard,
   Users,
@@ -15,6 +15,7 @@ import {
   CalendarDays,
   Clock,
   MapPin,
+  Shield,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -33,11 +34,17 @@ const navItems = [
   { label: "Documenten", icon: FileText, path: "/documenten" },
 ];
 
+const backofficeNavItems = [
+  { label: "Audit log", icon: Shield, path: "/audit" },
+];
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { signOut } = useAuth();
+  const { isBackoffice } = useIsBackoffice();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const items = isBackoffice ? [...navItems, ...backofficeNavItems] : navItems;
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -79,7 +86,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Nav */}
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2">
-          {navItems.map((item) => {
+          {items.map((item) => {
             const active = location.pathname === item.path;
             return (
               <Link
