@@ -77,27 +77,42 @@ export type Database = {
       audit_log: {
         Row: {
           action: string
+          changed_fields: string[] | null
           client_id: string | null
           created_at: string
           details: string | null
           id: string
-          viewed_by: string
+          new_values: Json | null
+          old_values: Json | null
+          record_id: string | null
+          table_name: string | null
+          viewed_by: string | null
         }
         Insert: {
           action?: string
+          changed_fields?: string[] | null
           client_id?: string | null
           created_at?: string
           details?: string | null
           id?: string
-          viewed_by: string
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name?: string | null
+          viewed_by?: string | null
         }
         Update: {
           action?: string
+          changed_fields?: string[] | null
           client_id?: string | null
           created_at?: string
           details?: string | null
           id?: string
-          viewed_by?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name?: string | null
+          viewed_by?: string | null
         }
         Relationships: [
           {
@@ -1571,6 +1586,8 @@ export type Database = {
         Args: { _program_id: string }
         Returns: boolean
       }
+      log_client_view: { Args: { p_client_id: string }; Returns: undefined }
+      log_list_view: { Args: { p_list_name: string }; Returns: undefined }
       save_scenario: {
         Args: {
           p_description?: string
