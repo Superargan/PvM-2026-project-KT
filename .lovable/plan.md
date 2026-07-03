@@ -1,96 +1,179 @@
+# Audit Report — Kanjertraining OS
 
-## Doel
-
-1. Bewijzen dat de drie waarschuwingsknoppen (`Onbruikbare beschikbaarheid`, `Geen gebied`, `Overruled (admin)`) correct werken — ze staan nu op 0 omdat geen enkele deelnemer in die staat zit, niet omdat de logica stuk is.
-2. De Planning-pagina merkbaar versnellen (doel: ≥8× minder werk bij 64+ deelnemers) zonder runtime-gedrag te veranderen.
+Read-only audit. No files changed. Findings grouped by area and severity, each with a concrete recommended fix.
 
 ---
 
-## Deel 1 — Waarschuwingsknoppen verifiëren
+## 1. SECURITY
 
-De telling in `PlanningPage.tsx` (regels 434–497) gebruikt `getClientDataCompleteness` uit `DomainResolver`. Dat is dezelfde SSOT als de wachtlijst-matrix, dus de logica is al door tests gedekt. Het ontbreekt alleen aan **vitest-dekking voor de drie nul-categorieën** en aan **handmatige verificatie in de UI**.
+### CRITICAL
 
-Aanpak:
-- Unit-test toevoegen in `src/test/` die `getClientDataCompleteness` voedt met 3 fixtures:
-  - deelnemer met area + 1 beschikbaarheidsregel waarvan `start_time === end_time` → `unusableAvailability`
-  - deelnemer zonder `waitlist_area_id`, zonder `neighborhood_id`, zonder `school_id` → `noArea`
-  - deelnemer met record in `availability_override_logs` (active=true) → `isOverridden`
-- Aanvullend een lichte integratietest die de exclusieve telling in `warningCounts` (overridden → noArea → unusable → noAvail → stale) bewaakt, zodat een toekomstige refactor niet stilletjes dubbeltelt.
-- UI-verificatie: één seed-script of beschrijving in `.lovable/plan.md` met SQL die in de test-omgeving 1 deelnemer per categorie aanmaakt, zodat de knoppen visueel zichtbaar worden. Geen prod-data raken.
+**1.1 Public sign-up route `/aanmelden` is behind `ProtectedRoute`**
+`src/App.tsx` wraps `/aanmelden` with `<ProtectedRoute>`, so anonymous parents cannot reach the public sign-up form. Meanwhile, the database grants `INSERT` on `clients` to `anon` specifically to support this flow. Result: either the form is unreachable by its intended audience, or (if reachable via a signed-in staff account only) the anon INSERT grant is an unused attack surface.
+Fix: decide the intent. If the form is truly public, remove `ProtectedRoute` from `/aanmelden`, add rate limiting (see 1.2), and add a honeypot/captcha. If it's staff-only, revoke `GRANT INSERT ON clients TO anon`.
 
-Geen wijziging aan logic of resolvers — alleen extra tests + verificatiepad.
+**1.2 No rate limiting on anonymous `clients` INSERT**
+With anon INSERT enabled and no captcha/turnstile or edge-function throttle, a bot can flood `clients` with fake minors' data. `AanmeldenPublicPage` calls `supabase.from("clients").insert(...)` directly from the browser using the anon key.
+Fix: move the insert behind an edge function (`public-signup`) that (a) validates with zod server-side, (b) rate-limits by IP (e.g., Redis/Upstash or a Postgres counter with a short-lived unique constraint), (c) optionally verifies a Cloudflare Turnstile token, then (d) inserts using the service role. Revoke anon INSERT on `clients` after cutover.
 
----
+### HIGH
 
-## Deel 2 — Planning-pagina versnellen
+**1.3 `areas` table is world-readable (`anon SELECT` with `qual: true`)**
+Only table with an anon SELECT policy. Small leak, but inconsistent and exposes internal region structure without need.
+Fix: drop the "Anon read areas" policy; the public sign-up flow can fetch areas through the same edge function used in 1.2.
 
-### Geconstateerde knelpunten in `src/pages/PlanningPage.tsx`
+**1.4 RLS policies on `attendance`, `program_sessions`, `program_staff`, `program_clients` target role `public` instead of `authenticated`**
+Functionally safe because inner checks (`is_backoffice()`, `is_trainer_for_program()`) require `auth.uid()`, but `role = public` is a footgun — a future policy edit that removes the inner guard would open access to anon.
+Fix: `ALTER POLICY ... TO authenticated` for every policy currently scoped to `public` where the intent is signed-in-only.
 
-1. **Onbegrensde fetch `allClientAvailability`** (r. 356–374) haalt élke `client_availability`-rij ooit op (paginated loop), voor élke render van Planning. Bij groei is dit de #1 kostenpost en hij wordt voor de warning-counts gebruikt terwijl alleen de planning-doelgroep relevant is.
-2. **Query-key drift**: `planningKeys.clientAvailability` (r. 343) bevat geen `dateRange`, dus de cache voor week A wordt overschreven door week B → constante refetch bij navigatie.
-3. **Nieuwe array-identiteit elke render** voor `intakeClientIds`, `programIds`, `candidateIds` (r. 256, 284, 76) → queryKey verandert elke render → React Query refetcht / dropt cache onnodig.
-4. **`setInterval(…, 500)`** voor dirty-state polling (r. 205–211) draait permanent en triggert re-renders van de hele pagina, ook als er geen GroupComposer open is.
-5. **`allClients.find(...)` in de warning-dialog** (r. 658) is O(n) per regel; bij 64+ deelnemers is dat O(n²). Een `Map<id, client>` lost dat in O(n) op.
-6. **`getResolvedAreaName(c)` 2× per rij** in dezelfde render (r. 670). Memoize per client.
-7. **`as any` casts** door het bestand (regels 65, 76, 95, 241, 256, 284, 326, 340, 427, 441, 501, 657, e.v.) — schendt project-regel "0 `any` in main app". Vervangen door bestaande shapes in `queryShapes.ts` (uitbreiden waar nodig).
-8. **Verschillende queries fetchen overlappende kolommen**: `allClients` en `intakes` halen vrijwel dezelfde school/neighborhood-join. Niet samenvoegen (verschillende statusfilters), maar wél de geselecteerde kolommen strak gelijktrekken en hergebruiken via één `queryShape`.
+**1.5 `audit_log` write policy allows any authenticated user to backfill entries**
+`INSERT` policy is `WITH CHECK (auth.uid() = viewed_by)`. A trainer can insert arbitrary "view"/"update" rows for any `client_id`, polluting the AVG audit trail. RLS also does not prevent a trainer from writing audit rows for clients they cannot read.
+Fix: restrict inserts to backoffice or add `WITH CHECK (is_backoffice() OR is_trainer_for_client(client_id))`; disallow client-side inserts of `action = 'update'` (only save mutation should write those — move it into a `SECURITY DEFINER` RPC or trigger).
 
-### Wijzigingen (klein en deterministisch, geen gedragsverandering)
+**1.6 Client-side "audit view" write is trivial to spoof**
+`ClientDetailPage` inserts an audit row on every mount from the browser. A malicious signed-in user can suppress logging (block the request) or spam it. For AVG-grade audit you need server-side logging.
+Fix: create an edge function `log-client-access` that verifies JWT, checks read permission, then inserts via service role. Or better, move view logging into an RPC and revoke direct INSERT on `audit_log` from `authenticated`.
 
-a. **`allClientAvailability` inperken tot planning-relevante deelnemers**
-   - Verplaats de fetch achter een join: alleen `client_availability` waar `client_id ∈ planningClients`. Twee opties, kies de eenvoudigste:
-     - Server-side: nieuwe RPC of `.in("client_id", planningClientIds)` met chunking van 1000 per `.in`-call.
-   - Cache-key wordt `clientKeys.allAvailabilityForPlanning(planningClientIdsHash)` (toe te voegen in `queryKeys.ts`).
-   - Resultaat: bij projecten met veel oud-deelnemers daalt het rijvolume drastisch (typisch >10×).
+**1.7 Trainer scope on `clients` may be too broad**
+Not shown in this audit but implied by `is_trainer_for_client(_client_id)`: verify that the SELECT policy on `clients` requires either `is_backoffice()` or `is_trainer_for_client(clients.id)`. If any policy is `USING (is_trainer())` without the per-client scope, trainers can read every child's PII.
+Fix: enforce `is_trainer_for_client(id)` per row in the `clients` SELECT policy; same for `guardian_*` columns.
 
-b. **Stabiliseer afgeleide id-arrays** met `useMemo` + `JSON.stringify`-vrije sleutel (sorted join), zodat queryKeys niet bij elke render veranderen. Toepassen op `intakeClientIds`, `programIds`, `candidateIds`.
+### MEDIUM
 
-c. **Voeg `dateRange` toe aan `planningKeys.clientAvailability`** (in `queryKeys.ts`). Voorkomt week-naar-week cache-overschrijving.
+**1.8 Edge functions share a copy-pasted auth block, easy to skip**
+All six template/document functions repeat: `getClaims` → service-role role check → work. `create-test-template` was missing the check until recently. High risk of the next new function forgetting it.
+Fix: extract `assertBackoffice(req)` into `supabase/functions/_shared/auth.ts` and call it as the first line of every function.
 
-d. **Vervang `setInterval` door event-gedreven dirty-state**: `GroupComposerHandle` exposed nu al `hasUnsavedWork`; voeg een `onDirtyChange(cb)` subscription toe en gebruik die in `PlanningPage`. Polling verdwijnt.
+**1.9 `verify_jwt = false` on multiple functions**
+`generate-document`, `invite-user`, `build-template`, `create-test-template` set `verify_jwt = false` in `supabase/config.toml`. Auth is enforced in code via `getClaims`, but skipping the platform check means malformed/expired tokens reach app logic and an accidental early `return` before the check would open the function.
+Fix: keep `verify_jwt = true` unless there is a specific reason (only `public-signup` from 1.2 needs `false`). Remove the overrides from `config.toml` for all authenticated functions.
 
-e. **Bouw `clientsById = useMemo(() => new Map(allClients.map(c => [c.id, c])), [allClients])`** en gebruik die in de warning-dialog en agenda-mapping. Vervang ook `allClients.find` door lookups.
+**1.10 CORS `Access-Control-Allow-Origin: *` on all edge functions**
+Combined with the JWT check this is not exploitable directly, but it removes browser-side defense in depth.
+Fix: restrict to the app's origin(s) — read from an `ALLOWED_ORIGINS` env var.
 
-f. **Memoize `getResolvedAreaName` per client** binnen één render (kleine `Map<clientId, string>` in `useMemo` op `allClients + areas`).
+**1.11 No bulk email / WhatsApp / SharePoint edge functions deployed**
+Memory references Whapi and Resend integrations, but `supabase/functions/` contains only template/document/invite functions. Either the integrations were removed (dead memory) or they run client-side (leaks API keys).
+Fix: confirm intent with the user. If integrations are planned, design them as edge functions with per-user rate limits (e.g., `pg` table `outbound_message_log` with a window check) and role gating.
 
-g. **Type-discipline herstellen**: alle `(c: any)` / `(s: any)` callbacks vervangen door bestaande types (`ClientWithSchool`, `SessionWithProgram`, `ProgramStaffRow`) uit `queryShapes.ts`; uitbreiden waar een veld ontbreekt. Geen nieuwe ad-hoc types.
+**1.12 Storage bucket policies not audited here**
+All six buckets are private (good), but bucket-level RLS policies were not enumerated in this pass. Signed URLs are used for downloads in `ClientDetailPage`.
+Fix: run a follow-up audit of `storage.objects` policies per bucket; verify no anon SELECT, and that trainers can only read files tied to their programs.
 
-h. **Splits `WarningButton` en `WarningDetailDialog` naar een eigen bestand** met `React.memo`, zodat de hoofdpagina niet meer renderkant van de hele warning-balk + dialog herberekent bij elke datumnavigatie.
+**1.13 `handle_new_user` trigger inserts profile without role assignment**
+New auth users automatically get a `profiles` row but no `user_roles` row. Any signed-up user (if signup is ever re-enabled) would land in a "no role" limbo — and RLS policies keyed on `is_backoffice()`/`is_trainer()` would silently deny everything. Currently signup is disabled (`disable_signup=true`), so latent.
+Fix: keep signup disabled; document that invitations go through `invite-user`. Add a lint test that fails if `disable_signup` becomes `false` without a paired role-assignment path.
 
-### Verwachte impact
+### LOW
 
-| Bron van vertraging | Verwachte reductie |
-|---|---|
-| `allClientAvailability` volume | 5–20× minder rijen |
-| Re-fetch door instabiele queryKeys | wegval (cache hits) |
-| 500 ms polling re-renders | wegval |
-| O(n²) warning-dialog lookups | 64 deelnemers ≈ 64× sneller |
+**1.14 Anon key hardcoded in `src/integrations/supabase/client.ts`** — expected & safe (publishable key), but flag for the reviewer.
 
-Gecombineerd ruim boven de 8× target voor het 64+-deelnemers scenario.
-
-### Tests
-
-- Bestaande tests groen houden.
-- Nieuwe tests:
-  - `warningCounts`-exclusiviteit (Deel 1).
-  - `clientsById` lookup-gedrag in de dialog (snapshot van rendering met 3 fixtures).
-  - `queryKeys.clientAvailability` snapshot, om regressie op key-shape te voorkomen (Query Caching Rule SSOT).
-
-### Niet in scope
-
-- Geen wijziging aan `DomainResolver` / `clientUtils` of import-engine.
-- Geen DB-migraties (geen schema-aanpassing nodig; eventuele RPC is optioneel onder optie a).
-- Geen UI-redesign van de Planning-pagina; alleen interne refactor + extracties.
+**1.15 No content security policy / security headers on the SPA** — Vite SPA served without CSP. Add via hosting layer.
 
 ---
 
-## Volgorde van uitvoeren
+## 2. UX / USABILITY
 
-1. `queryShapes.ts` aanvullen waar velden ontbreken; types in `PlanningPage` vervangen → 0 `any`.
-2. `queryKeys.ts` aanvullen: `clientAvailability(dateRange)`, `allAvailabilityForPlanning(ids)`.
-3. Stabiele id-arrays + `clientsById`-map invoeren.
-4. `allClientAvailability` inperken tot planning-doelgroep.
-5. Polling → event-gedreven dirty-state.
-6. WarningButton/Dialog extractie + `React.memo`.
-7. Tests toevoegen (Deel 1 + queryKey snapshot + exclusiviteit).
-8. Sanity check: bestaande vitest-suite + handmatige UI-verificatie van de 3 nul-categorieën.
+### HIGH
+
+**2.1 Intake flow is a single long form, no step-by-step**
+`ClientDetailPage` "Gegevens" + "Intake" tabs contain 25+ fields on one page. High cognitive load, no progress guidance, error surface is diffuse.
+Fix: keep the detail page as-is for editing, but add a dedicated 3-step wizard for new intakes (kind → school/gebied → ouder/consent), with per-step validation and a summary. Public `/aanmelden` should also be a 2-step wizard.
+
+**2.2 Public sign-up: single generic error on failure**
+`AanmeldenPublicPage` writes any DB error into `errors.first_name` ("Er ging iets mis…"), which is misleading and hides the real cause (duplicate, missing school, RLS reject).
+Fix: show a top-level `<Alert variant="destructive">` with a friendly message and log the technical error to Sentry/console; keep field errors for validation.
+
+**2.3 No confirmation on `deleteMutation` in ClientDetailPage beyond the AlertDialog**
+The AlertDialog is present (good), but destructive parallel deletes across 5 tables happen without a soft-delete or undo window. AVG-required audit rows are wiped in the same batch, destroying evidence of prior actions on this client.
+Fix: switch to soft-delete (`clients.deleted_at`) and cascade-hide via RLS; retain `audit_log` rows keyed by client. Provide a 30-day admin restore.
+
+### MEDIUM
+
+**2.4 Bulk school import — error handling not verified in this pass**
+`PlanningImport` / `ClientImport` exist; a follow-up should verify: per-row error surfacing, dry-run mode, partial-commit vs all-or-nothing, and an explicit "X added / Y updated / Z skipped / N invalid" summary consistent with the ImportEngine contract.
+Fix: audit `src/lib/ImportEngine.ts` consumers; ensure all imports route through it and emit the standard summary shape.
+
+**2.5 Loading states are inconsistent**
+`Index.tsx` recently gained skeletons (per prior turn). Other pages (`ClientenPage`, `ProgrammasPage`, `ScholenPage`, `MedewerkersPage`) likely still show a spinner or blank while `useQuery` loads.
+Fix: standardize on `Skeleton` rows in every list table's loading state; extract a shared `<TableSkeleton rows columns />` in `src/components/ui/`.
+
+**2.6 Empty states are ad hoc**
+Several tables show `"Geen X gevonden"` as a bare `<td>`. No illustration, no primary action.
+Fix: create `<EmptyState title description action />` and use across list pages.
+
+**2.7 Dutch copy is generally consistent but mixes "Deelnemer" and "Cliënt"**
+Core memory says Deelnemer in UI, client in DB/URL. Spot-check: `ClientDetailPage` uses "Deelnemer" ✅. Verify all pages, toast messages, and empty states — likely stragglers in `ClientenPage`/`RapportagesPage`.
+Fix: grep for `\bcliënt\b|\bClient\b` in `src/**` (excluding URLs, types, DB names) and normalize.
+
+**2.8 Mobile responsiveness of key screens — not verified**
+Detail pages use `grid grid-cols-2` for form fields which collapses awkwardly on small screens; tables have no horizontal scroll wrapper.
+Fix: audit `md:` breakpoints on all form grids; wrap wide tables in `overflow-x-auto`; test AppLayout sidebar on <768px.
+
+### LOW
+
+**2.9 Toast/error copy is inconsistent** — sometimes "Fout", sometimes "Er ging iets mis". Pick one convention.
+
+**2.10 `useBlocker` uses `window.confirm`** — matches spec, but browser confirm can't be styled and is ignored by some in-app navigations (only route-level). Consider a custom AlertDialog wrapper if you want consistency and coverage of tab-close (add `beforeunload` too).
+
+---
+
+## 3. GENERAL QUALITY
+
+### HIGH
+
+**3.1 `as any` / `any` regressions in `ClientDetailPage.tsx`**
+Grepping shows `useState<any>({})` for form, `updateData: any`, `auditLog.map((log: any) => …)`, `saveMutation` payload untyped. Violates project rule "no `any` / `as any` in main app".
+Fix: use `TablesUpdate<"clients">` for form/update payload; introduce a typed shape for the audit-log embed (`AuditLogWithProfile`) in `queryShapes.ts`; retype `programs` list rows too.
+
+**3.2 Client-side deletion cascade in `deleteMutation` is fragile**
+Five parallel deletes from the browser depend on RLS allowing each; a partial failure leaves orphans (e.g., availability rows) with the client already gone or vice versa. Not transactional.
+Fix: move to a `SECURITY DEFINER` RPC `delete_client(p_id)` that runs the cascade in one transaction and returns a summary. Add `ON DELETE CASCADE` at the FK level where semantics allow.
+
+**3.3 Missing pagination on large lists**
+`ClientenPage` almost certainly loads all clients into memory; same for `AanmeldingenPage`, `WachtlijstPage`, `ProgrammasPage`. Beyond ~1000 rows Supabase silently caps (per project memory: `.range()` loops for >1000).
+Fix: add server-side pagination (page/limit query params + `count: 'exact'`), virtualize very long tables with `@tanstack/react-virtual`, or add "Load more" chunking.
+
+### MEDIUM
+
+**3.4 Silent failures in fire-and-forget writes**
+- `ClientDetailPage`'s view-log insert: `.then()` with no error handler.
+- `AanmeldenPublicPage`: only surfaces a single generic error.
+- `useAuth`: `signOut` swallows errors.
+Fix: wire every write to at least a `console.error` + toast; add a global `onError` on `QueryClient` mutations.
+
+**3.5 `queryClient.invalidateQueries({ queryKey: clientKeys.all })` after save is broad**
+Invalidates every client-scoped query, including all detail queries. Project rule: avoid broad invalidation.
+Fix: invalidate `clientKeys.detail(id)`, `clientKeys.list`, and `auditKeys.forClient(id)` explicitly.
+
+**3.6 Fresh audit-log insert on every mount causes duplicate rows**
+`useEffect` deps `[id, session?.user?.id]`; React 18 StrictMode double-invokes effects in dev → two "view" rows per open. In production a quick tab switch also writes multiple rows.
+Fix: debounce with a `sessionStorage` sentinel keyed by `client_id + date`, or move to server-side (see 1.6).
+
+**3.7 `NotFound` route is inside RootLayout without `ProtectedRoute`**
+Unauthenticated users hitting an unknown URL see a bare NotFound; may be intended, but the site chrome (AppLayout) is not rendered — inconsistent.
+Fix: decide on `<NotFound>` treatment (with or without chrome) and align.
+
+### LOW
+
+**3.8 Dead/unused imports** — full sweep not done; suggest running `bunx knip` or `eslint --report-unused-disable-directives` and reviewing.
+
+**3.9 Query defaults are generous** — `staleTime: 60_000`, `gcTime: 300_000`. Fine for most reads; for real-time-ish data (audit log, planning) consider per-query `staleTime: 0`.
+
+**3.10 No global error boundary telemetry** — `AppErrorBoundary` exists but likely only renders a fallback. Wire it to a logger (Sentry/Logtail) so silent crashes surface.
+
+**3.11 Edge-function shared code duplication** — same CORS block, createClient boilerplate, and role check copied across 6 files (see 1.8). Extract to `_shared/`.
+
+---
+
+## Suggested next steps (in order)
+
+1. **Decide the `/aanmelden` intent** (drives 1.1, 1.2, 1.3).
+2. **Harden `audit_log`** (1.5, 1.6, 3.6) — AVG-critical.
+3. **Extract `_shared` edge-function auth helper** (1.8, 1.9, 1.10, 3.11).
+4. **Server-side client deletion RPC + soft-delete** (2.3, 3.2).
+5. **Type cleanup in `ClientDetailPage`** (3.1) and broaden to sibling pages.
+6. **Pagination + shared loading/empty components** (2.5, 2.6, 3.3).
+7. **Follow-up audits**: storage.objects RLS (1.12), import summary consistency (2.4), mobile pass (2.8), Dutch copy grep (2.7).
+
+No code changes have been made. Approve to convert selected items into implementation tasks.
