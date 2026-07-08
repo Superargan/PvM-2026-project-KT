@@ -1,6 +1,7 @@
 import { Search, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { statusLabels } from "@/lib/DomainResolver";
 
 interface ClientFiltersProps {
@@ -20,6 +21,9 @@ interface ClientFiltersProps {
   availableStatuses?: string[];
   totalCount: number;
   filteredCount: number;
+  /** Optional ISO date filter (yyyy-mm-dd) shown as a dismissible chip. */
+  dateFrom?: string;
+  onDateFromClear?: () => void;
 }
 
 export default function ClientFilters({
@@ -31,12 +35,20 @@ export default function ClientFilters({
   areas, schools,
   availableStatuses,
   totalCount, filteredCount,
+  dateFrom,
+  onDateFromClear,
 }: ClientFiltersProps) {
-  const hasFilters = filterArea !== "all" || filterSchool !== "all" || filterAge !== "all" || filterStatus !== "all" || search.trim() !== "";
+  const hasFilters = filterArea !== "all" || filterSchool !== "all" || filterAge !== "all" || filterStatus !== "all" || search.trim() !== "" || !!dateFrom;
 
   const statusEntries = availableStatuses
     ? availableStatuses.map((k) => [k, statusLabels[k] ?? k] as [string, string])
     : Object.entries(statusLabels);
+
+  const fmtDate = (iso: string) => {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" });
+  };
 
   const clearAll = () => {
     onFilterAreaChange("all");
@@ -44,6 +56,7 @@ export default function ClientFilters({
     onFilterAgeChange("all");
     onFilterStatusChange("all");
     onSearchChange("");
+    onDateFromClear?.();
   };
 
   return (
