@@ -37,7 +37,14 @@ export default function StatCard({ title, value, subtitle, icon, color, to }: St
   );
 
   if (to) {
-    return <Link to={to}>{content}</Link>;
+    return (
+      <Link
+        to={to}
+        className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      >
+        {content}
+      </Link>
+    );
   }
   return content;
 }
