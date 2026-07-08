@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Shield, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, Shield, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 
@@ -16,6 +17,7 @@ const ACTION_LABELS: Record<string, string> = {
   list_view: "Lijst bekeken",
   insert: "Aangemaakt",
   update: "Bijgewerkt",
+  delete: "Verwijderd",
 };
 
 const TABLE_LABELS: Record<string, string> = {
@@ -49,6 +51,10 @@ export default function AuditPage() {
   const [actionFilter, setActionFilter] = useState<string>("all");
   const [tableFilter, setTableFilter] = useState<string>("all");
   const [clientSearch, setClientSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 50;
 
   const { data: clientOptions = [] } = useQuery({
     queryKey: clientKeys.list("audit-picker"),
@@ -64,7 +70,14 @@ export default function AuditPage() {
     enabled: isBackoffice,
   });
 
-  const filters = { client: clientFilter, action: actionFilter, table: tableFilter };
+  const filters: Record<string, string> = {
+    client: clientFilter,
+    action: actionFilter,
+    table: tableFilter,
+    from: dateFrom,
+    to: dateTo,
+    page: String(page),
+  };
   const { data: rows = [], isLoading } = useQuery<AuditRow[]>({
     queryKey: auditKeys.review(filters),
     queryFn: async () => {
@@ -74,16 +87,30 @@ export default function AuditPage() {
           "id, created_at, viewed_by, client_id, action, table_name, record_id, changed_fields, old_values, new_values, details, profiles!viewed_by(full_name), clients!client_id(first_name, last_name)"
         )
         .order("created_at", { ascending: false })
-        .limit(500);
+        .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
       if (clientFilter !== "all") q = q.eq("client_id", clientFilter);
       if (actionFilter !== "all") q = q.eq("action", actionFilter);
       if (tableFilter !== "all") q = q.eq("table_name", tableFilter);
+      if (dateFrom) q = q.gte("created_at", new Date(dateFrom).toISOString());
+      if (dateTo) {
+        const end = new Date(dateTo);
+        end.setHours(23, 59, 59, 999);
+        q = q.lte("created_at", end.toISOString());
+      }
       const { data, error } = await q;
       if (error) throw error;
       return (data ?? []) as unknown as AuditRow[];
     },
     enabled: isBackoffice,
   });
+
+  const hasNext = rows.length > PAGE_SIZE;
+  const pageRows = hasNext ? rows.slice(0, PAGE_SIZE) : rows;
+
+  const resetPage = <T,>(setter: (v: T) => void) => (v: T) => {
+    setter(v);
+    setPage(0);
+  };
 
   const filteredClientOptions = useMemo(() => {
     if (!clientSearch.trim()) return clientOptions;
@@ -138,7 +165,7 @@ export default function AuditPage() {
                 className="pl-8"
               />
             </div>
-            <Select value={clientFilter} onValueChange={setClientFilter}>
+            <Select value={clientFilter} onValueChange={resetPage(setClientFilter)}>
               <SelectTrigger className="w-64"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Alle deelnemers</SelectItem>
@@ -153,7 +180,7 @@ export default function AuditPage() {
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actie</Label>
-          <Select value={actionFilter} onValueChange={setActionFilter}>
+          <Select value={actionFilter} onValueChange={resetPage(setActionFilter)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Alle acties</SelectItem>
@@ -165,7 +192,7 @@ export default function AuditPage() {
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tabel</Label>
-          <Select value={tableFilter} onValueChange={setTableFilter}>
+          <Select value={tableFilter} onValueChange={resetPage(setTableFilter)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Alle tabellen</SelectItem>
@@ -174,6 +201,14 @@ export default function AuditPage() {
               ))}
             </SelectContent>
           </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Van</Label>
+          <Input type="date" value={dateFrom} onChange={(e) => resetPage(setDateFrom)(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Tot</Label>
+          <Input type="date" value={dateTo} onChange={(e) => resetPage(setDateTo)(e.target.value)} />
         </div>
       </div>
 
@@ -193,10 +228,10 @@ export default function AuditPage() {
             {isLoading && (
               <tr><td colSpan={6} className="px-4 py-10 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /></td></tr>
             )}
-            {!isLoading && rows.length === 0 && (
+            {!isLoading && pageRows.length === 0 && (
               <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-muted-foreground">Geen audit-logs gevonden</td></tr>
             )}
-            {rows.map((r) => {
+            {pageRows.map((r) => {
               const clientName = r.clients
                 ? `${r.clients.first_name ?? ""} ${r.clients.last_name ?? ""}`.trim()
                 : "—";
@@ -223,6 +258,29 @@ export default function AuditPage() {
             })}
           </tbody>
         </table>
+        <div className="flex items-center justify-between border-t border-border px-4 py-3">
+          <span className="text-xs text-muted-foreground">
+            Pagina {page + 1} — {pageRows.length} regels
+          </span>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0 || isLoading}
+            >
+              <ChevronLeft className="h-4 w-4" /> Vorige
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={!hasNext || isLoading}
+            >
+              Volgende <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -234,6 +292,9 @@ function ChangeSummary({ row }: { row: AuditRow }) {
   }
   if (row.action === "insert") {
     return <span>Nieuwe record aangemaakt</span>;
+  }
+  if (row.action === "delete") {
+    return <span>Record verwijderd</span>;
   }
   if (row.action === "update" && row.old_values) {
     const entries = Object.entries(row.old_values);
