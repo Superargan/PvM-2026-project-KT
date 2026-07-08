@@ -70,13 +70,13 @@ export default function AuditPage() {
     enabled: isBackoffice,
   });
 
-  const filters = {
+  const filters: Record<string, string> = {
     client: clientFilter,
     action: actionFilter,
     table: tableFilter,
     from: dateFrom,
     to: dateTo,
-    page,
+    page: String(page),
   };
   const { data: rows = [], isLoading } = useQuery<AuditRow[]>({
     queryKey: auditKeys.review(filters),
