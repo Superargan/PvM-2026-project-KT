@@ -551,6 +551,8 @@ export default function AanmeldingenPage() {
             filterStatus={filterStatus} onFilterStatusChange={setFilterStatus}
             areas={areas} schools={schools}
             totalCount={clients.length} filteredCount={filteredClients.length}
+            dateFrom={dateFrom}
+            onDateFromClear={() => setDateFrom("")}
           />
 
           {isLoading ? (
