@@ -126,6 +126,19 @@ export default function ClientFilters({
             <X className="h-3.5 w-3.5 mr-1" /> Wis filters
           </Button>
         )}
+        {dateFrom && (
+          <Badge variant="secondary" className="gap-1 pl-2.5 pr-1 font-normal">
+            Aangemeld vanaf {fmtDate(dateFrom)}
+            <button
+              type="button"
+              onClick={onDateFromClear}
+              className="ml-1 rounded-full p-0.5 hover:bg-muted-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Datumfilter wissen"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </Badge>
+        )}
       </div>
       {hasFilters && (
         <p className="text-xs text-muted-foreground">
