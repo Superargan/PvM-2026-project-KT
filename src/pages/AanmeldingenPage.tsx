@@ -65,14 +65,14 @@ const editSchema = z.object({
 type EditForm = z.infer<typeof editSchema>;
 
 export default function AanmeldingenPage() {
-  const [searchParams] = useSearchParams();
-  const initialSchool = searchParams.get("school") ?? "all";
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("lijst");
-  const [search, setSearch] = useState("");
-  const [filterArea, setFilterArea] = useState<string>("all");
-  const [filterSchool, setFilterSchool] = useState<string>(initialSchool);
-  const [filterAge, setFilterAge] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [search, setSearch] = useState(() => searchParams.get("q") ?? "");
+  const [filterArea, setFilterArea] = useState<string>(() => searchParams.get("area") ?? "all");
+  const [filterSchool, setFilterSchool] = useState<string>(() => searchParams.get("school") ?? "all");
+  const [filterAge, setFilterAge] = useState<string>(() => searchParams.get("age") ?? "all");
+  const [filterStatus, setFilterStatus] = useState<string>(() => searchParams.get("status") ?? "all");
+  const [dateFrom, setDateFrom] = useState<string>(() => searchParams.get("vanaf") ?? "");
   const [editOpen, setEditOpen] = useState(false);
   const [editClient, setEditClient] = useState<any>(null);
   const [form, setForm] = useState<Partial<EditForm>>({});
@@ -80,6 +80,18 @@ export default function AanmeldingenPage() {
   const [saving, setSaving] = useState(false);
   const [selectedProgramId, setSelectedProgramId] = useState<string>("");
   const { session } = useAuth();
+
+  // Reflect filters in URL so stat-card deep-links and shared URLs stay in sync
+  useEffect(() => {
+    const next = new URLSearchParams();
+    if (search.trim()) next.set("q", search.trim());
+    if (filterArea !== "all") next.set("area", filterArea);
+    if (filterSchool !== "all") next.set("school", filterSchool);
+    if (filterAge !== "all") next.set("age", filterAge);
+    if (filterStatus !== "all") next.set("status", filterStatus);
+    if (dateFrom) next.set("vanaf", dateFrom);
+    setSearchParams(next, { replace: true });
+  }, [search, filterArea, filterSchool, filterAge, filterStatus, dateFrom, setSearchParams]);
 
   useEffect(() => {
     const userId = session?.user?.id;
@@ -339,7 +351,7 @@ export default function AanmeldingenPage() {
 
   const filteredClients = filterClients(clients, {
     search, area: filterArea, school: filterSchool, age: filterAge, status: filterStatus,
-  });
+  }).filter((c: any) => !dateFrom || (c.registration_date ?? "") >= dateFrom);
 
   // Clients visible on the active tab – used for export & selection
   const visibleClients = activeTab === "intake_afgerond"
