@@ -1588,6 +1588,7 @@ export type Database = {
       }
       log_client_view: { Args: { p_client_id: string }; Returns: undefined }
       log_list_view: { Args: { p_list_name: string }; Returns: undefined }
+      purge_old_audit_logs: { Args: never; Returns: number }
       save_scenario: {
         Args: {
           p_description?: string
