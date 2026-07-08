@@ -11,6 +11,16 @@ import { schoolKeys, clientKeys, programKeys, staffKeys } from "@/lib/queryKeys"
 export default function Dashboard() {
   const [userName, setUserName] = useState<string | null>(null);
 
+  // Deep-link presets for aanmeldingen stat cards — keep in sync with the queries below
+  const vanafDate = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  })();
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       const name = user?.user_metadata?.first_name ?? user?.user_metadata?.name ?? null;
@@ -150,8 +160,8 @@ export default function Dashboard() {
         <StatCard title="In te plannen trainingen" value={isLoading ? <Skeleton className="h-9 w-12" /> : programCount} icon={<GraduationCap className="h-5 w-5" />} color="groen" to="/programmas" />
         <StatCard title="PO Scholen Rotterdam" value={isLoading ? <Skeleton className="h-9 w-12" /> : schoolCount} icon={<School className="h-5 w-5" />} color="geel" to="/scholen" />
         <StatCard title="Trainers" value={isLoading ? <Skeleton className="h-9 w-12" /> : trainerCount} icon={<UserCog className="h-5 w-5" />} color="blauw" to="/medewerkers" />
-        <StatCard title="Geplande intakes" value={isLoading ? <Skeleton className="h-9 w-12" /> : intakeGeplandCount} icon={<ClipboardList className="h-5 w-5" />} color="oranje" to="/aanmeldingen" />
-        <StatCard title="Nieuwe Aanmeldingen" value={isLoading ? <Skeleton className="h-9 w-12" /> : newClientCount} subtitle="Afgelopen 7 dagen" icon={<ClipboardList className="h-5 w-5" />} color="rood" to="/aanmeldingen" />
+        <StatCard title="Geplande intakes" value={isLoading ? <Skeleton className="h-9 w-12" /> : intakeGeplandCount} icon={<ClipboardList className="h-5 w-5" />} color="oranje" to="/aanmeldingen?status=intake_gepland" />
+        <StatCard title="Nieuwe Aanmeldingen" value={isLoading ? <Skeleton className="h-9 w-12" /> : newClientCount} subtitle="Afgelopen 7 dagen" icon={<ClipboardList className="h-5 w-5" />} color="rood" to={`/aanmeldingen?vanaf=${vanafDate}`} />
         <StatCard title="Wachtlijst" value={isLoading ? <Skeleton className="h-9 w-12" /> : waitlistCount} icon={<Clock className="h-5 w-5" />} color="oranje" to="/wachtlijst" />
       </div>
 
@@ -181,7 +191,7 @@ export default function Dashboard() {
               recentClients.map((client: any) => {
                 const st = statusMap[client.intake_status] ?? statusMap.nieuw;
                 return (
-                  <Link key={client.id} to={`/clienten/${client.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-muted/50 transition-colors">
+                  <Link key={client.id} to={`/clienten/${client.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
                     <div>
                       <p className="text-sm font-semibold text-card-foreground">
                         {client.first_name} {client.last_name}
@@ -226,11 +236,15 @@ export default function Dashboard() {
             ) : (
               upcomingPrograms.map((prog: any) => {
                 const enrolled = prog.program_clients?.[0]?.count ?? 0;
+                const pst = statusMap[prog.status] ?? { label: prog.status ?? "—", color: "oranje" };
                 return (
-                  <Link key={prog.id} to={`/programmas/${prog.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-muted/50 transition-colors">
+                  <Link key={prog.id} to={`/programmas/${prog.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
                     <div>
                       <p className="text-sm font-semibold text-card-foreground">{prog.name}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{prog.status}</p>
+                      <span className={`status-indicator status-${pst.color} mt-1`}>
+                        <span className={`inline-block h-1.5 w-1.5 rounded-full bg-status-${pst.color}`} />
+                        {pst.label}
+                      </span>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium text-card-foreground">{enrolled}/{prog.max_participants ?? "∞"}</p>
