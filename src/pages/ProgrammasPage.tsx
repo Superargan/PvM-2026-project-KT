@@ -47,6 +47,10 @@ export default function ProgrammasPage() {
   const [planNeighborhood, setPlanNeighborhood] = useState("");
   const [planStart, setPlanStart] = useState("");
   const [planEnd, setPlanEnd] = useState("");
+  const [editTarget, setEditTarget] = useState<ProgramListRow | null>(null);
+  const [editLocation, setEditLocation] = useState("");
+  const [editStartDate, setEditStartDate] = useState("");
+  const [editStartTime, setEditStartTime] = useState("");
   const [selectedArea, setSelectedArea] = useState<string>("");
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
   const [selectedAgeCategory, setSelectedAgeCategory] = useState<string>("");
