@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { GraduationCap, Users, Calendar, Plus, Loader2, MapPin, ArrowRight, Download } from "lucide-react";
+import { GraduationCap, Users, Calendar, Plus, Loader2, MapPin, ArrowRight, Download, Pencil, Clock } from "lucide-react";
 import ProgramTrainers from "@/components/ProgramTrainers";
 import ProgramAttendance from "@/components/ProgramAttendance";
 import { useState, useCallback } from "react";
@@ -381,6 +381,12 @@ export default function ProgrammasPage() {
                       {prog.end_date ? new Date(prog.end_date).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" }) : "—"}
                     </span>
                   </div>
+                  {prog.tentative_start_time && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="flex items-center gap-1.5 text-muted-foreground"><Clock className="h-3.5 w-3.5" /> Vermoedelijke tijd</span>
+                      <span className="text-card-foreground">{prog.tentative_start_time.slice(0, 5)}</span>
+                    </div>
+                  )}
                   <div className="h-1.5 w-full rounded-full bg-muted">
                     <div
                       className="h-1.5 rounded-full bg-kanjer-groen transition-all"
