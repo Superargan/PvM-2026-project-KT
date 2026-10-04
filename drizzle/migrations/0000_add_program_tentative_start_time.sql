@@ -1,0 +1,2 @@
+ALTER TABLE public.programs ADD COLUMN tentative_start_time time without time zone;
+COMMENT ON COLUMN public.programs.tentative_start_time IS 'Vermoedelijke starttijd van de training (indicatief, voor planning).'

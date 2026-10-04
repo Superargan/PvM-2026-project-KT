@@ -877,6 +877,7 @@ export type Database = {
           school_id: string | null
           start_date: string | null
           status: string | null
+          tentative_start_time: string | null
           training_location_id: string | null
           training_number: string | null
           updated_at: string
@@ -897,6 +898,7 @@ export type Database = {
           school_id?: string | null
           start_date?: string | null
           status?: string | null
+          tentative_start_time?: string | null
           training_location_id?: string | null
           training_number?: string | null
           updated_at?: string
@@ -917,6 +919,7 @@ export type Database = {
           school_id?: string | null
           start_date?: string | null
           status?: string | null
+          tentative_start_time?: string | null
           training_location_id?: string | null
           training_number?: string | null
           updated_at?: string
