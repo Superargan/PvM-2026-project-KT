@@ -106,7 +106,7 @@ export default function ProgramImport() {
             schoolId = match.id;
           } else {
             notes.push(`School niet herkend: "${schoolInput}"`);
-            summary.unresolved++;
+            summary.warnings.push(`${trainingNumber}: niet herkend`);
           }
         }
 
@@ -123,7 +123,7 @@ export default function ProgramImport() {
             neighborhoodId = match.id;
           } else {
             notes.push(`Wijk niet herkend: "${wijkInput}"`);
-            summary.unresolved++;
+            summary.warnings.push(`${trainingNumber}: niet herkend`);
           }
         }
 
@@ -135,7 +135,7 @@ export default function ProgramImport() {
             areaId = match.id;
           } else {
             notes.push(`Gebied niet herkend: "${areaInput}"`);
-            summary.unresolved++;
+            summary.warnings.push(`${trainingNumber}: niet herkend`);
           }
         }
         if (!areaId && neighborhoodId) {
