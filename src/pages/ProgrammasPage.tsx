@@ -191,6 +191,29 @@ export default function ProgrammasPage() {
     }
   };
 
+  const openEdit = (prog: ProgramListRow) => {
+    setEditTarget(prog);
+    setEditLocation(prog.location ?? "");
+    setEditStartDate(prog.start_date ?? "");
+    setEditStartTime(prog.tentative_start_time ?? "");
+  };
+
+  const handleEditSubmit = async () => {
+    if (!editTarget) return;
+    const { error } = await supabase.from("programs").update({
+      location: editLocation || null,
+      start_date: editStartDate || null,
+      tentative_start_time: editStartTime || null,
+    }).eq("id", editTarget.id);
+    if (error) {
+      toast({ title: "Fout", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Programma bijgewerkt" });
+      setEditTarget(null);
+      refetch();
+    }
+  };
+
   const planFilteredNeighborhoods = planArea
     ? neighborhoods.filter(n => n.area_id === planArea)
     : [];
