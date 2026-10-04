@@ -286,6 +286,7 @@ export type Database = {
         Row: {
           address: string | null
           all_areas_flexible: boolean
+          archive_batch: string | null
           archived: boolean
           area_notes: string | null
           city: string | null
@@ -323,6 +324,7 @@ export type Database = {
         Insert: {
           address?: string | null
           all_areas_flexible?: boolean
+          archive_batch?: string | null
           archived?: boolean
           area_notes?: string | null
           city?: string | null
@@ -360,6 +362,7 @@ export type Database = {
         Update: {
           address?: string | null
           all_areas_flexible?: boolean
+          archive_batch?: string | null
           archived?: boolean
           area_notes?: string | null
           city?: string | null
@@ -863,6 +866,7 @@ export type Database = {
       programs: {
         Row: {
           age_category: string | null
+          archive_batch: string | null
           archived: boolean
           area_id: string | null
           created_at: string
@@ -884,6 +888,7 @@ export type Database = {
         }
         Insert: {
           age_category?: string | null
+          archive_batch?: string | null
           archived?: boolean
           area_id?: string | null
           created_at?: string
@@ -905,6 +910,7 @@ export type Database = {
         }
         Update: {
           age_category?: string | null
+          archive_batch?: string | null
           archived?: boolean
           area_id?: string | null
           created_at?: string
