@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { GraduationCap, Users, Calendar, Plus, Loader2, MapPin, ArrowRight, Download } from "lucide-react";
+import { GraduationCap, Users, Calendar, Plus, Loader2, MapPin, ArrowRight, Download, Pencil, Clock } from "lucide-react";
 import ProgramTrainers from "@/components/ProgramTrainers";
 import ProgramAttendance from "@/components/ProgramAttendance";
 import { useState, useCallback } from "react";
@@ -47,6 +47,10 @@ export default function ProgrammasPage() {
   const [planNeighborhood, setPlanNeighborhood] = useState("");
   const [planStart, setPlanStart] = useState("");
   const [planEnd, setPlanEnd] = useState("");
+  const [editTarget, setEditTarget] = useState<ProgramListRow | null>(null);
+  const [editLocation, setEditLocation] = useState("");
+  const [editStartDate, setEditStartDate] = useState("");
+  const [editStartTime, setEditStartTime] = useState("");
   const [selectedArea, setSelectedArea] = useState<string>("");
   const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>("");
   const [selectedAgeCategory, setSelectedAgeCategory] = useState<string>("");
@@ -183,6 +187,29 @@ export default function ProgrammasPage() {
       toast({ title: "Training ingepland" });
       setPlanOpen(false);
       setPlanTarget(null);
+      refetch();
+    }
+  };
+
+  const openEdit = (prog: ProgramListRow) => {
+    setEditTarget(prog);
+    setEditLocation(prog.location ?? "");
+    setEditStartDate(prog.start_date ?? "");
+    setEditStartTime(prog.tentative_start_time ?? "");
+  };
+
+  const handleEditSubmit = async () => {
+    if (!editTarget) return;
+    const { error } = await supabase.from("programs").update({
+      location: editLocation || null,
+      start_date: editStartDate || null,
+      tentative_start_time: editStartTime || null,
+    }).eq("id", editTarget.id);
+    if (error) {
+      toast({ title: "Fout", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Programma bijgewerkt" });
+      setEditTarget(null);
       refetch();
     }
   };
@@ -354,23 +381,39 @@ export default function ProgrammasPage() {
                       {prog.end_date ? new Date(prog.end_date).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" }) : "—"}
                     </span>
                   </div>
+                  {prog.tentative_start_time && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="flex items-center gap-1.5 text-muted-foreground"><Clock className="h-3.5 w-3.5" /> Vermoedelijke tijd</span>
+                      <span className="text-card-foreground">{prog.tentative_start_time.slice(0, 5)}</span>
+                    </div>
+                  )}
                   <div className="h-1.5 w-full rounded-full bg-muted">
                     <div
                       className="h-1.5 rounded-full bg-kanjer-groen transition-all"
                       style={{ width: `${Math.min((enrolled / max) * 100, 100)}%` }}
                     />
                   </div>
-                  {next && (
+                  <div className="mt-2 flex gap-2">
                     <Button
                       size="sm"
                       variant="outline"
-                      className="mt-2 w-full text-xs"
-                      onClick={() => handleStatusChange(prog.id, status, next, enrolled, prog)}
+                      className="flex-1 text-xs"
+                      onClick={() => openEdit(prog)}
                     >
-                      <ArrowRight className="mr-1 h-3 w-3" />
-                      {nextStatusLabel[status]}
+                      <Pencil className="mr-1 h-3 w-3" /> Bewerken
                     </Button>
-                  )}
+                    {next && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 text-xs"
+                        onClick={() => handleStatusChange(prog.id, status, next, enrolled, prog)}
+                      >
+                        <ArrowRight className="mr-1 h-3 w-3" />
+                        {nextStatusLabel[status]}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -420,6 +463,32 @@ export default function ProgrammasPage() {
             <Button className="w-full" onClick={handlePlanSubmit}>
               <ArrowRight className="h-4 w-4 mr-1" /> Inplannen
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bewerk dialog: vermoedelijke locatie, startdatum en tijd */}
+      <Dialog open={editTarget !== null} onOpenChange={(open) => { if (!open) setEditTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Programma bewerken{editTarget ? `: ${editTarget.name}` : ""}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Vermoedelijke locatie</Label>
+              <Input value={editLocation} onChange={(e) => setEditLocation(e.target.value)} placeholder="bijv. Huis aan de Wijk, schoolnaam..." />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Vermoedelijke startdatum</Label>
+                <Input type="date" value={editStartDate} onChange={(e) => setEditStartDate(e.target.value)} />
+              </div>
+              <div>
+                <Label>Vermoedelijke starttijd</Label>
+                <Input type="time" value={editStartTime} onChange={(e) => setEditStartTime(e.target.value)} />
+              </div>
+            </div>
+            <Button className="w-full" onClick={handleEditSubmit}>Opslaan</Button>
           </div>
         </DialogContent>
       </Dialog>

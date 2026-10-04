@@ -699,6 +699,8 @@ export interface ProgramListRow {
   neighborhood_id: string | null;
   age_category: string | null;
   training_number: string | null;
+  location: string | null;
+  tentative_start_time: string | null;
   archived: boolean;
   schools: { name: string } | null;
   training_locations: { name: string } | null;
