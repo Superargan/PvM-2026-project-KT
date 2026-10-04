@@ -538,6 +538,13 @@ export default function ProgramDetailPage() {
       </Tabs>
 
       {/* Dropout dialog */}
+      <ProgramParticipantImport
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        programId={id!}
+        programName={program?.name ?? ""}
+      />
+
       <Dialog open={dropoutOpen} onOpenChange={setDropoutOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
