@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { GraduationCap, Users, Calendar, Plus, Loader2, MapPin, ArrowRight, Download, Pencil, Clock } from "lucide-react";
 import ProgramTrainers from "@/components/ProgramTrainers";
+import ProgramImport from "@/components/ProgramImport";
 import ProgramAttendance from "@/components/ProgramAttendance";
 import { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -269,6 +270,7 @@ export default function ProgrammasPage() {
               <Download className="h-4 w-4" /> {fmt.toUpperCase()}
             </Button>
           ))}
+          <ProgramImport />
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
               <Button><Plus className="h-4 w-4" /> Programma Aanmaken</Button>
