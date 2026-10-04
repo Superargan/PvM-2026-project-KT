@@ -18,6 +18,7 @@ import {
 } from "@/lib/importUtils";
 import { createImportSummary, buildSummaryMessage, type ImportSummary } from "@/lib/ImportEngine";
 import { programKeys } from "@/lib/queryKeys";
+import type { TablesUpdate } from "@/integrations/supabase/types";
 
 interface NeighborhoodRef extends EntityRef {
   area_id: string;
@@ -150,7 +151,7 @@ export default function ProgramImport() {
 
         if (existingId) {
           // Enrichment-only: blank values never overwrite
-          const update: Record<string, unknown> = {};
+          const update: TablesUpdate<"programs"> = {};
           if (name) update.name = name;
           if (areaId) update.area_id = areaId;
           if (neighborhoodId) update.neighborhood_id = neighborhoodId;
