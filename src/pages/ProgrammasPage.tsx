@@ -466,6 +466,32 @@ export default function ProgrammasPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Bewerk dialog: vermoedelijke locatie, startdatum en tijd */}
+      <Dialog open={editTarget !== null} onOpenChange={(open) => { if (!open) setEditTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Programma bewerken{editTarget ? `: ${editTarget.name}` : ""}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Vermoedelijke locatie</Label>
+              <Input value={editLocation} onChange={(e) => setEditLocation(e.target.value)} placeholder="bijv. Huis aan de Wijk, schoolnaam..." />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Vermoedelijke startdatum</Label>
+                <Input type="date" value={editStartDate} onChange={(e) => setEditStartDate(e.target.value)} />
+              </div>
+              <div>
+                <Label>Vermoedelijke starttijd</Label>
+                <Input type="time" value={editStartTime} onChange={(e) => setEditStartTime(e.target.value)} />
+              </div>
+            </div>
+            <Button className="w-full" onClick={handleEditSubmit}>Opslaan</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
