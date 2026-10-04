@@ -13,5 +13,5 @@
 - [ ] PA Spectrum 5-7 Wo (KT-26005) — bestand ontvangen
 - [ ] PA Spectrum 5-7 Vr (KT-26006) — bestand ontvangen
 - [ ] PA Spectrum 8-12 (KT-26007) — bestand ontvangen
-- [ ] HvW Irene 5-7 (KT-26008) — bestand ontvangen
+- [x] HvW Irene 5-7 (KT-26008) — bestand ontvangen
 - [ ] 2x uitnodigingsbrief PDF (nog geen taak; checken of gebruiker er iets mee wil)
