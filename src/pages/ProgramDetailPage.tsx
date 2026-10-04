@@ -20,6 +20,7 @@ import { getResolvedLocationName } from "@/lib/DomainResolver";
 import ProgramTrainers from "@/components/ProgramTrainers";
 import ProgramAttendance from "@/components/ProgramAttendance";
 import GroupComposer from "@/components/GroupComposer";
+import ProgramParticipantImport from "@/components/ProgramParticipantImport";
 import type { EnrolledClientRow, SchoolDropdownRow, ProgramStaffWithTradeName } from "@/lib/queryShapes";
 
 const statusMap: Record<string, { css: string; label: string }> = {
@@ -407,6 +408,9 @@ export default function ProgramDetailPage() {
               </Select>
               <Button disabled={!selectedClientId || addMutation.isPending} onClick={() => addMutation.mutate()}>
                 <UserPlus className="h-4 w-4 mr-1" /> Toevoegen
+              </Button>
+              <Button variant="outline" onClick={() => setImportOpen(true)}>
+                <Upload className="h-4 w-4 mr-1" /> Lijst inlezen
               </Button>
             </div>
           </div>
