@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, Loader2, Users, UserPlus, X, GraduationCap, Calendar, MapPin, Settings, ClipboardList, FileText, School, AlertTriangle, UsersRound,
+  ArrowLeft, Loader2, Users, UserPlus, X, GraduationCap, Calendar, MapPin, Settings, ClipboardList, FileText, School, AlertTriangle, UsersRound, Upload,
 } from "lucide-react";
 import { getResolvedLocationName } from "@/lib/DomainResolver";
 import ProgramTrainers from "@/components/ProgramTrainers";
@@ -37,6 +37,7 @@ export default function ProgramDetailPage() {
   const qc = useQueryClient();
   const [selectedClientId, setSelectedClientId] = useState("");
   const [dropoutOpen, setDropoutOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [dropoutTarget, setDropoutTarget] = useState<EnrolledClientRow | null>(null);
   const [dropoutReason, setDropoutReason] = useState("");
   const [dropoutAction, setDropoutAction] = useState("");
