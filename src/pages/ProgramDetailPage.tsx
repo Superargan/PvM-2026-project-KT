@@ -14,12 +14,13 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
-  ArrowLeft, Loader2, Users, UserPlus, X, GraduationCap, Calendar, MapPin, Settings, ClipboardList, FileText, School, AlertTriangle, UsersRound,
+  ArrowLeft, Loader2, Users, UserPlus, X, GraduationCap, Calendar, MapPin, Settings, ClipboardList, FileText, School, AlertTriangle, UsersRound, Upload,
 } from "lucide-react";
 import { getResolvedLocationName } from "@/lib/DomainResolver";
 import ProgramTrainers from "@/components/ProgramTrainers";
 import ProgramAttendance from "@/components/ProgramAttendance";
 import GroupComposer from "@/components/GroupComposer";
+import ProgramParticipantImport from "@/components/ProgramParticipantImport";
 import type { EnrolledClientRow, SchoolDropdownRow, ProgramStaffWithTradeName } from "@/lib/queryShapes";
 
 const statusMap: Record<string, { css: string; label: string }> = {
@@ -36,6 +37,7 @@ export default function ProgramDetailPage() {
   const qc = useQueryClient();
   const [selectedClientId, setSelectedClientId] = useState("");
   const [dropoutOpen, setDropoutOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [dropoutTarget, setDropoutTarget] = useState<EnrolledClientRow | null>(null);
   const [dropoutReason, setDropoutReason] = useState("");
   const [dropoutAction, setDropoutAction] = useState("");
@@ -408,6 +410,9 @@ export default function ProgramDetailPage() {
               <Button disabled={!selectedClientId || addMutation.isPending} onClick={() => addMutation.mutate()}>
                 <UserPlus className="h-4 w-4 mr-1" /> Toevoegen
               </Button>
+              <Button variant="outline" onClick={() => setImportOpen(true)}>
+                <Upload className="h-4 w-4 mr-1" /> Lijst inlezen
+              </Button>
             </div>
           </div>
 
@@ -533,6 +538,13 @@ export default function ProgramDetailPage() {
       </Tabs>
 
       {/* Dropout dialog */}
+      <ProgramParticipantImport
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        programId={id!}
+        programName={program?.name ?? ""}
+      />
+
       <Dialog open={dropoutOpen} onOpenChange={setDropoutOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
