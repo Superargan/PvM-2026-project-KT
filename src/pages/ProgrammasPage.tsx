@@ -393,17 +393,27 @@ export default function ProgrammasPage() {
                       style={{ width: `${Math.min((enrolled / max) * 100, 100)}%` }}
                     />
                   </div>
-                  {next && (
+                  <div className="mt-2 flex gap-2">
                     <Button
                       size="sm"
                       variant="outline"
-                      className="mt-2 w-full text-xs"
-                      onClick={() => handleStatusChange(prog.id, status, next, enrolled, prog)}
+                      className="flex-1 text-xs"
+                      onClick={() => openEdit(prog)}
                     >
-                      <ArrowRight className="mr-1 h-3 w-3" />
-                      {nextStatusLabel[status]}
+                      <Pencil className="mr-1 h-3 w-3" /> Bewerken
                     </Button>
-                  )}
+                    {next && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 text-xs"
+                        onClick={() => handleStatusChange(prog.id, status, next, enrolled, prog)}
+                      >
+                        <ArrowRight className="mr-1 h-3 w-3" />
+                        {nextStatusLabel[status]}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             );
