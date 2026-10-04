@@ -116,6 +116,7 @@ export default function Dashboard() {
       const { data } = await supabase
         .from("programs")
         .select("id, name, start_date, max_participants, status, program_clients(count)")
+        .eq("archived", false)
         .in("status", ["te_plannen", "ingepland", "gestart"])
         .order("start_date", { ascending: true })
         .limit(4);
