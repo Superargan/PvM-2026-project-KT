@@ -15,3 +15,4 @@
 - [x] PA Spectrum 8-12 (KT-26007): 10 kinderen
 - [x] HvW Irene 5-7 (KT-26008): 23 kinderen (Gymayro Maatsen overgeslagen — zat al in KT-26002)
 - [ ] 2x uitnodigingsbrief PDF (nog geen taak; checken of gebruiker er iets mee wil)
+- [ ] Lijsten: Irene-2, Wilgenstam 5-7, Arentschool 5-7 + 8-12, OBS Het Landje Centrum 5-7 (wacht op koppeling programma's)
